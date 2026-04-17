@@ -36,6 +36,13 @@
 
 ## გვერდები
 
+### ძირითადი ზოგადი გვერდები
+- `/` — მთავარი გვერდი.
+- `/dashboard` — მომხმარებლის უფასო დეშბორდი, სადაც თავმოყრილია საჯარო ხელსაწყოები.
+- `/admin` — ადმინისტრატორის პანელი.
+
+ინდივიდუალური კალკულატორები რჩება child route-ებად (`/calc/[slug]`) და იხსნება `/dashboard`-იდან.
+
 ### `/[lang]` მთავარი
 - 4–6 ბანერი carousel (auto-rotate 5s, click → `link_url`).
 - კალკულატორების grid (cards).
@@ -50,8 +57,11 @@
 ### `/admin`
 - Login form (username + password).
 - Tabs:
+  - **Hero Ads** — ფასიანი hero slot-ების ფასი, კლიენტი, დაკავების ვადა, live simulation.
   - **Banners** — upload / reorder / activate / link URL.
   - **Stats** — line chart, top pages, unique visitors, geo (ქვეყანა), per-calc usage.
+  - **Donate** — დონაციის რეკვიზიტების მართვა.
+  - **Share** — footer share ღილაკების ჩართვა/გამორთვა.
   - **Logout**.
 
 ## Data Model (Supabase)

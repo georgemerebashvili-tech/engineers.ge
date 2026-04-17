@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useSyncExternalStore} from 'react';
 import {Facebook, Linkedin, Send, Link as LinkIcon, Check} from 'lucide-react';
 import {useTranslations} from 'next-intl';
 
@@ -9,47 +9,86 @@ type Props = {
   title?: string;
 };
 
+type ShareSettings = {
+  facebook: boolean;
+  x: boolean;
+  linkedin: boolean;
+  telegram: boolean;
+  whatsapp: boolean;
+  copy_link: boolean;
+};
+
+const ALL_ON: ShareSettings = {
+  facebook: true,
+  x: true,
+  linkedin: true,
+  telegram: true,
+  whatsapp: true,
+  copy_link: true
+};
+
 export function ShareBar({url, title = ''}: Props) {
   const [copied, setCopied] = useState(false);
-  const [href, setHref] = useState(url ?? '');
+  const [settings, setSettings] = useState<ShareSettings>(ALL_ON);
   const t = useTranslations('share');
 
+  const windowHref = useSyncExternalStore(
+    subscribeNoop,
+    () => window.location.href,
+    () => ''
+  );
+  const href = url ?? windowHref;
+
   useEffect(() => {
-    if (!url && typeof window !== 'undefined') {
-      setHref(window.location.href);
-    }
-  }, [url]);
+    let cancelled = false;
+    fetch('/api/share/settings')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: ShareSettings | null) => {
+        if (!cancelled && data) setSettings(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const encoded = encodeURIComponent(href);
   const encodedTitle = encodeURIComponent(title);
 
-  const targets = [
+  const allTargets = [
     {
+      key: 'facebook' as const,
       name: 'Facebook',
       icon: Facebook,
       href: `https://www.facebook.com/sharer/sharer.php?u=${encoded}`
     },
     {
+      key: 'x' as const,
       name: 'X',
       icon: XIcon,
       href: `https://twitter.com/intent/tweet?url=${encoded}&text=${encodedTitle}`
     },
     {
+      key: 'linkedin' as const,
       name: 'LinkedIn',
       icon: Linkedin,
       href: `https://www.linkedin.com/sharing/share-offsite/?url=${encoded}`
     },
     {
+      key: 'telegram' as const,
       name: 'Telegram',
       icon: Send,
       href: `https://t.me/share/url?url=${encoded}&text=${encodedTitle}`
     },
     {
+      key: 'whatsapp' as const,
       name: 'WhatsApp',
       icon: WhatsAppIcon,
       href: `https://wa.me/?text=${encodedTitle}%20${encoded}`
     }
   ] as const;
+
+  const targets = allTargets.filter((tg) => settings[tg.key]);
 
   async function copy() {
     try {
@@ -73,17 +112,23 @@ export function ShareBar({url, title = ''}: Props) {
           <Icon size={18} />
         </a>
       ))}
-      <button
-        type="button"
-        onClick={copy}
-        aria-label={t('copy')}
-        title={copied ? t('copied') : t('copy')}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border hover:bg-surface-alt transition-colors"
-      >
-        {copied ? <Check size={18} /> : <LinkIcon size={18} />}
-      </button>
+      {settings.copy_link && (
+        <button
+          type="button"
+          onClick={copy}
+          aria-label={t('copy')}
+          title={copied ? t('copied') : t('copy')}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border hover:bg-surface-alt transition-colors"
+        >
+          {copied ? <Check size={18} /> : <LinkIcon size={18} />}
+        </button>
+      )}
     </div>
   );
+}
+
+function subscribeNoop() {
+  return () => {};
 }
 
 function XIcon({size = 18}: {size?: number}) {

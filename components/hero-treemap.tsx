@@ -1,108 +1,140 @@
 'use client';
 
-import {Treemap, ResponsiveContainer} from 'recharts';
+import {useEffect, useState} from 'react';
+import {
+  HERO_OWNER_NAME,
+  getDefaultHeroAdSlots,
+  type HeroAdSlot
+} from '@/lib/hero-ads';
 
 type Tile = {
   name: string;
-  size: number;
-  kind: 'headline' | 'photo' | 'slogan' | 'banner';
+  kind: 'headline' | 'photo';
   label?: string;
   sublabel?: string;
   img?: string;
   accent?: string;
-  children?: Tile[];
+  adSlot?: boolean;
+  priceGel?: number;
+  occupiedUntil?: string | null;
+  clientName?: string;
+  ownerName?: string;
+  personalName?: string;
+  personalTitle?: string;
+  bio?: string;
 };
 
-/* Placeholder images (replace with real personal photos later). */
-const DATA: Tile[] = [
+type LightboxState = {img: string; label: string} | null;
+type BioState = {name: string; title: string; bio: string; img?: string} | null;
+
+const DEFAULT_SLOTS = getDefaultHeroAdSlots();
+
+type TileFrame = {
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+const COLS = {
+  left: 272,
+  cta: 266,
+  stack: 244,
+  hvac: 170,
+  tall: 148
+} as const;
+
+const ROWS = {
+  top: 100,
+  mid: 116,
+  bottom: 140
+} as const;
+
+const VIEWBOX_WIDTH = COLS.left + COLS.cta + COLS.stack + COLS.hvac + COLS.tall;
+const VIEWBOX_HEIGHT = ROWS.top + ROWS.mid + ROWS.bottom;
+
+const TILE_LAYOUT: TileFrame[] = [
+  {name: 'headline', x: 0, y: 0, width: COLS.left, height: ROWS.top + ROWS.mid},
+  {name: 'site', x: 0, y: ROWS.top + ROWS.mid, width: COLS.left, height: ROWS.bottom},
+  {name: 'cta', x: COLS.left, y: 0, width: COLS.cta, height: VIEWBOX_HEIGHT},
+  {name: 'slogan', x: COLS.left + COLS.cta, y: 0, width: COLS.stack, height: ROWS.top},
   {
-    name: 'anchor',
-    size: 0,
-    kind: 'headline',
-    children: [
-      {
-        name: 'headline',
-        size: 600,
-        kind: 'headline'
-      },
-      {
-        name: 'site',
-        size: 400,
-        kind: 'photo',
-        label: 'ობიექტზე',
-        sublabel: 'ინჟინერია ველზე',
-        img: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=70'
-      },
-      {
-        name: 'cta',
-        size: 1000,
-        kind: 'photo',
-        label: 'კალკულატორები',
-        sublabel: '7 ინსტრუმენტი · უფასო',
-        img: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1400&q=70',
-        accent: 'var(--blue)'
-      }
-    ]
+    name: 'business',
+    x: COLS.left + COLS.cta,
+    y: ROWS.top,
+    width: COLS.stack,
+    height: ROWS.mid
   },
   {
-    name: 'brand',
-    size: 0,
-    kind: 'banner',
-    children: [
-      {
-        name: 'slogan',
-        size: 360,
-        kind: 'photo',
-        label: 'ინჟინერია.',
-        sublabel: 'ქართულად · ზუსტად',
-        img: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=900&q=70'
-      },
-      {
-        name: 'business',
-        size: 320,
-        kind: 'photo',
-        label: 'ბიზნესი',
-        sublabel: 'საინჟინრო სამუშაოზე',
-        img: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=900&q=70'
-      },
-      {
-        name: 'childhood',
-        size: 280,
-        kind: 'photo',
-        label: 'ბავშვობა',
-        sublabel: 'საწყისი',
-        img: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=800&q=70'
-      },
-      {
-        name: 'b1',
-        size: 240,
-        kind: 'photo',
-        label: 'HVAC',
-        sublabel: 'გათბობა · გაგრილება',
-        img: 'https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=900&q=70',
-        accent: 'var(--blue)'
-      },
-      {
-        name: 'b2',
-        size: 210,
-        kind: 'photo',
-        label: 'თბოდანაკარგი',
-        sublabel: 'EN 12831',
-        img: 'https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?w=900&q=70',
-        accent: 'var(--ora)'
-      },
-      {
-        name: 'b3',
-        size: 180,
-        kind: 'photo',
-        label: 'იზოლაცია',
-        sublabel: 'ISO 6946',
-        img: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=900&q=70',
-        accent: 'var(--grn)'
-      }
-    ]
+    name: 'childhood',
+    x: COLS.left + COLS.cta,
+    y: ROWS.top + ROWS.mid,
+    width: COLS.stack,
+    height: ROWS.bottom
+  },
+  {
+    name: 'b1',
+    x: COLS.left + COLS.cta + COLS.stack,
+    y: 0,
+    width: COLS.hvac,
+    height: ROWS.top + ROWS.mid
+  },
+  {
+    name: 'b3',
+    x: COLS.left + COLS.cta + COLS.stack,
+    y: ROWS.top + ROWS.mid,
+    width: COLS.hvac,
+    height: ROWS.bottom
+  },
+  {
+    name: 'b2',
+    x: COLS.left + COLS.cta + COLS.stack + COLS.hvac,
+    y: 0,
+    width: COLS.tall,
+    height: VIEWBOX_HEIGHT
   }
 ];
+
+function buildTileMap(slots: HeroAdSlot[]) {
+  const byKey = new Map(slots.map((slot) => [slot.slot_key, slot]));
+  const slot = (key: HeroAdSlot['slot_key']) => byKey.get(key) ?? DEFAULT_SLOTS.find((item) => item.slot_key === key)!;
+
+  return {
+    headline: {
+      name: 'headline',
+      kind: 'headline' as const,
+      img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=900&q=75',
+      personalName: HERO_OWNER_NAME,
+      personalTitle: 'HVAC ინჟინერი · ენტერპრენერი',
+      bio: 'გამარჯობა! მე ვარ გიორგი მერებაშვილი — HVAC ინჟინერი და engineers.ge-ის დამფუძნებელი. 10+ წელი ვმუშაობ საინჟინრო პროექტებზე — თბოდანაკარგების გაანგარიშება, ვენტილაციის სისტემის დიზაინი, შენობის ენერგოეფექტურობა. ეს პლატფორმა ქართველი ინჟინრების კოლექტიური ხელსაწყოა: უფასო კალკულატორები EN 12831, ISO 6946 და ASHRAE სტანდარტებით. ჩემი მიზანია გავხადო ქართული ენგინიერინგი უფრო სწრაფი, ზუსტი და ხელმისაწვდომი.'
+    },
+    site: toPhotoTile(slot('site')),
+    cta: toPhotoTile(slot('cta')),
+    slogan: toPhotoTile(slot('slogan')),
+    business: toPhotoTile(slot('business')),
+    childhood: toPhotoTile(slot('childhood')),
+    b1: toPhotoTile(slot('b1')),
+    b2: toPhotoTile(slot('b2')),
+    b3: toPhotoTile(slot('b3'))
+  };
+}
+
+function toPhotoTile(slot: HeroAdSlot): Tile {
+  return {
+    name: slot.slot_key,
+    kind: 'photo',
+    label: slot.label,
+    sublabel: slot.sublabel,
+    img: slot.image_url,
+    accent: 'var(--blue)',
+    adSlot: slot.is_ad_slot,
+    priceGel: slot.price_gel,
+    occupiedUntil: slot.occupied_until,
+    clientName: slot.client_name,
+    ownerName: HERO_OWNER_NAME
+  };
+}
 
 type CellProps = {
   x?: number;
@@ -116,10 +148,16 @@ type CellProps = {
   sublabel?: string;
   img?: string;
   accent?: string;
+  adSlot?: boolean;
+  priceGel?: number;
+  occupiedUntil?: string | null;
+  ownerName?: string;
+  onOpen?: (state: LightboxState) => void;
+  onBio?: (state: BioState) => void;
 };
 
 function Cell(props: CellProps) {
-  const {x = 0, y = 0, width = 0, height = 0, depth = 0} = props;
+  const {x = 0, y = 0, width = 0, height = 0, depth = 0, onOpen, onBio} = props;
 
   if (depth !== 2 || width < 2 || height < 2) return null;
 
@@ -127,9 +165,12 @@ function Cell(props: CellProps) {
   const label = props.label ?? props.payload?.label ?? '';
   const sublabel = props.sublabel ?? props.payload?.sublabel ?? '';
   const img = props.img ?? props.payload?.img;
-  const accent = props.accent ?? props.payload?.accent ?? 'var(--navy)';
+  const adSlot = props.adSlot ?? props.payload?.adSlot ?? false;
+  const priceGel = props.priceGel ?? props.payload?.priceGel ?? 0;
+  const occupiedUntil = props.occupiedUntil ?? props.payload?.occupiedUntil ?? null;
+  const ownerName = props.ownerName ?? props.payload?.ownerName ?? HERO_OWNER_NAME;
 
-  const padding = 5;
+  const padding = 4;
   const innerX = x + padding;
   const innerY = y + padding;
   const innerW = Math.max(0, width - padding * 2);
@@ -137,14 +178,49 @@ function Cell(props: CellProps) {
   const radius = 12;
 
   if (kind === 'headline') {
-    /* Font-size scales with cell's actual width — fits 3 Georgian lines without overflow.
-     * Height also caps it so tall-narrow cells don't render oversized text. */
-    const maxByWidth = innerW / 8.2;
-    const maxByHeight = innerH / 4.2;
-    const titleSize = Math.max(14, Math.min(48, maxByWidth, maxByHeight));
-    const pad = Math.max(10, Math.min(28, innerW * 0.045));
+    const personalName = props.payload?.personalName ?? '';
+    const personalTitle = props.payload?.personalTitle ?? '';
+    const bioText = props.payload?.bio ?? '';
+    const clipId = `clip-headline-${Math.round(x)}-${Math.round(y)}`;
+    const nameFs = Math.max(13, Math.min(20, innerW / 14));
+    const titleFs = Math.max(10, Math.min(12, innerW / 22));
+    const px = Math.max(12, Math.min(18, innerW * 0.05));
+
     return (
       <g>
+        <defs>
+          <clipPath id={clipId}>
+            <rect
+              x={innerX}
+              y={innerY}
+              width={innerW}
+              height={innerH}
+              rx={radius}
+              ry={radius}
+            />
+          </clipPath>
+        </defs>
+        {img ? (
+          <image
+            href={img}
+            x={innerX}
+            y={innerY}
+            width={innerW}
+            height={innerH}
+            preserveAspectRatio="xMidYMid slice"
+            clipPath={`url(#${clipId})`}
+          />
+        ) : (
+          <rect
+            x={innerX}
+            y={innerY}
+            width={innerW}
+            height={innerH}
+            rx={radius}
+            ry={radius}
+            fill="var(--sur)"
+          />
+        )}
         <rect
           x={innerX}
           y={innerY}
@@ -152,42 +228,89 @@ function Cell(props: CellProps) {
           height={innerH}
           rx={radius}
           ry={radius}
-          fill="var(--sur)"
-          stroke="var(--bdr)"
+          fill="url(#tile-shade)"
+          pointerEvents="none"
+        />
+        <rect
+          x={innerX}
+          y={innerY}
+          width={innerW}
+          height={innerH}
+          rx={radius}
+          ry={radius}
+          fill="none"
+          stroke="rgba(255,255,255,0.15)"
           strokeWidth={1}
         />
-        {innerW > 120 && innerH > 70 && (
-          <foreignObject x={innerX} y={innerY} width={innerW} height={innerH}>
-            <div
-              style={{
-                width: '100%',
-                height: '100%',
-                padding: pad,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
-                boxSizing: 'border-box',
-                fontFamily: 'var(--font-sans), system-ui, sans-serif',
-                overflow: 'hidden'
+        {bioText && innerW > 80 && (() => {
+          const btnW = 42;
+          const btnH = 22;
+          const bx = innerX + innerW - btnW - 8;
+          const by = innerY + 8;
+          return (
+            <g
+              onClick={(e) => {
+                e.stopPropagation();
+                onBio?.({
+                  name: personalName,
+                  title: personalTitle,
+                  bio: bioText,
+                  img
+                });
               }}
+              style={{cursor: 'pointer'}}
+              role="button"
+              aria-label="ბიოგრაფია"
             >
-              <div
-                style={{
-                  fontSize: titleSize,
-                  lineHeight: 1.05,
-                  fontWeight: 700,
-                  letterSpacing: '-0.01em',
-                  color: 'var(--navy)'
-                }}
+              <rect
+                x={bx}
+                y={by}
+                width={btnW}
+                height={btnH}
+                rx={11}
+                ry={11}
+                fill="rgba(0,0,0,0.55)"
+                stroke="rgba(255,255,255,0.25)"
+                strokeWidth={1}
+              />
+              <text
+                x={bx + btnW / 2}
+                y={by + btnH / 2 + 4}
+                textAnchor="middle"
+                fill="#fff"
+                fontSize={11}
+                fontWeight={600}
+                style={{letterSpacing: '0.02em'}}
               >
-                საინჟინრო
-                <br />
-                ხელსაწყოები
-                <br />
-                <span style={{color: 'var(--blue)'}}>ერთ ინტერფეისში.</span>
-              </div>
-            </div>
-          </foreignObject>
+                ბიო
+              </text>
+            </g>
+          );
+        })()}
+        {innerW > 100 && innerH > 70 && (
+          <>
+            <text
+              x={innerX + px}
+              y={innerY + innerH - (personalTitle ? titleFs + 16 : 14)}
+              fill="#fff"
+              fontSize={nameFs}
+              fontWeight={700}
+              style={{letterSpacing: '-0.01em'}}
+            >
+              {personalName}
+            </text>
+            {personalTitle && (
+              <text
+                x={innerX + px}
+                y={innerY + innerH - 12}
+                fill="rgba(255,255,255,0.85)"
+                fontSize={titleFs}
+                fontWeight={500}
+              >
+                {personalTitle}
+              </text>
+            )}
+          </>
         )}
       </g>
     );
@@ -195,8 +318,14 @@ function Cell(props: CellProps) {
 
   if (kind === 'photo' && img) {
     const clipId = `clip-${label}-${Math.round(x)}-${Math.round(y)}`;
+    const handleClick = () => onOpen?.({img, label});
     return (
-      <g>
+      <g
+        onClick={handleClick}
+        style={{cursor: 'pointer'}}
+        role="button"
+        aria-label={`გახსენი დიდი ზომით: ${label}`}
+      >
         <defs>
           <clipPath id={clipId}>
             <rect x={innerX} y={innerY} width={innerW} height={innerH} rx={radius} ry={radius} />
@@ -229,9 +358,46 @@ function Cell(props: CellProps) {
           rx={radius}
           ry={radius}
           fill="none"
-          stroke="rgba(255,255,255,0.15)"
-          strokeWidth={1}
+          stroke={adSlot ? 'rgba(184,208,240,0.95)' : 'rgba(255,255,255,0.15)'}
+          strokeWidth={adSlot ? 1.6 : 1}
         />
+        {innerW > 55 && innerH > 35 && (() => {
+          const btn = 18;
+          const by = innerY + 7;
+          const bxZoom = innerX + 7;
+          const c = 4;
+          const k = btn - c;
+          return (
+            <>
+              <g pointerEvents="none" opacity={0.9}>
+                <rect x={bxZoom} y={by} width={btn} height={btn} rx={4} ry={4} fill="rgba(0,0,0,0.5)" />
+                <path
+                  d={`M ${bxZoom + c} ${by + c + 4} L ${bxZoom + c} ${by + c} L ${bxZoom + c + 4} ${by + c} M ${bxZoom + k - 4} ${by + c} L ${bxZoom + k} ${by + c} L ${bxZoom + k} ${by + c + 4} M ${bxZoom + c} ${by + k - 4} L ${bxZoom + c} ${by + k} L ${bxZoom + c + 4} ${by + k} M ${bxZoom + k - 4} ${by + k} L ${bxZoom + k} ${by + k} L ${bxZoom + k} ${by + k - 4}`}
+                  stroke="#fff"
+                  strokeWidth={1.2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+              </g>
+            </>
+          );
+        })()}
+        {adSlot && innerW > 92 && innerH > 44 && (() => {
+          const ownerFs = Math.max(8, Math.min(10, innerW / 26));
+          return (
+            <text
+              x={innerX + innerW - 10}
+              y={innerY + 18}
+              textAnchor="end"
+              fill="rgba(232,241,253,0.92)"
+              fontSize={ownerFs}
+              fontWeight={600}
+            >
+              {ownerName}
+            </text>
+          );
+        })()}
         {innerW > 80 && innerH > 50 && (() => {
           const ls = Math.max(11, Math.min(15, innerW / 14));
           const ss = Math.max(9, Math.min(11, innerW / 18));
@@ -264,87 +430,137 @@ function Cell(props: CellProps) {
       </g>
     );
   }
-
-  const bg =
-    kind === 'slogan'
-      ? 'var(--navy)'
-      : `color-mix(in srgb, ${accent} 14%, var(--sur))`;
-  const fg = kind === 'slogan' ? '#fff' : accent;
-
-  const labelSize = Math.max(
-    10,
-    Math.min(
-      kind === 'slogan' ? 24 : 16,
-      innerW / (kind === 'slogan' ? 7 : 8),
-      innerH / 4
-    )
-  );
-  const subSize = Math.max(9, Math.min(12, innerW / 14));
-  const padX = Math.max(10, Math.min(18, innerW * 0.08));
-
-  return (
-    <g>
-      <rect
-        x={innerX}
-        y={innerY}
-        width={innerW}
-        height={innerH}
-        rx={radius}
-        ry={radius}
-        fill={bg}
-        stroke={`color-mix(in srgb, ${accent} 30%, transparent)`}
-        strokeWidth={1}
-      />
-      {innerW > 70 && innerH > 40 && (
-        <>
-          <text
-            x={innerX + padX}
-            y={innerY + innerH / 2 - (sublabel ? 4 : -labelSize / 3)}
-            fill={fg}
-            fontSize={labelSize}
-            fontWeight={800}
-            style={{letterSpacing: '0.01em'}}
-          >
-            {label}
-          </text>
-          {sublabel && (
-            <text
-              x={innerX + padX}
-              y={innerY + innerH / 2 + subSize + 2}
-              fill={kind === 'slogan' ? 'rgba(255,255,255,0.75)' : 'var(--text-3)'}
-              fontSize={subSize}
-            >
-              {sublabel}
-            </text>
-          )}
-        </>
-      )}
-    </g>
-  );
+  return null;
 }
 
-export function HeroTreemap() {
+export function HeroTreemap({slots = DEFAULT_SLOTS}: {slots?: HeroAdSlot[]}) {
+  const [lightbox, setLightbox] = useState<LightboxState>(null);
+  const [bio, setBio] = useState<BioState>(null);
+  const modalOpen = !!lightbox || !!bio;
+  const tiles = buildTileMap(slots);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setLightbox(null);
+        setBio(null);
+      }
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [modalOpen]);
+
   return (
-    <div className="w-full h-[308px] md:h-[364px]">
-      <svg width={0} height={0} style={{position: 'absolute'}}>
-        <defs>
-          <linearGradient id="tile-shade" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(0,0,0,0)" />
-            <stop offset="100%" stopColor="rgba(0,0,0,0.45)" />
-          </linearGradient>
-        </defs>
-      </svg>
-      <ResponsiveContainer width="100%" height="100%">
-        <Treemap
-          data={DATA}
-          dataKey="size"
-          aspectRatio={16 / 9}
-          stroke="transparent"
-          fill="transparent"
-          isAnimationActive={false}
-          content={<Cell />}
-        />
-      </ResponsiveContainer>
-    </div>
+    <>
+      <div className="w-full h-[308px] md:h-[364px]">
+        <svg
+          className="h-full w-full"
+          viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
+          preserveAspectRatio="none"
+        >
+          <defs>
+            <linearGradient id="tile-shade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="rgba(0,0,0,0)" />
+              <stop offset="100%" stopColor="rgba(0,0,0,0.45)" />
+            </linearGradient>
+          </defs>
+          {TILE_LAYOUT.map((tile) => (
+            <Cell
+              key={tile.name}
+              depth={2}
+              payload={tiles[tile.name as keyof typeof tiles]}
+              x={tile.x}
+              y={tile.y}
+              width={tile.width}
+              height={tile.height}
+              onOpen={setLightbox}
+              onBio={setBio}
+            />
+          ))}
+        </svg>
+      </div>
+
+      {lightbox && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={lightbox.label}
+          onClick={() => setLightbox(null)}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 md:p-8"
+        >
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            aria-label="დახურვა"
+            className="absolute top-4 right-4 md:top-6 md:right-6 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+          >
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6L6 18" />
+              <path d="M6 6l12 12" />
+            </svg>
+          </button>
+          <figure className="relative max-w-[min(1400px,92vw)] max-h-[88vh] flex flex-col items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={lightbox.img.replace(/w=\d+/, 'w=1800').replace(/q=\d+/, 'q=90')}
+              alt={lightbox.label}
+              className="max-h-[80vh] w-auto rounded-lg shadow-2xl"
+            />
+            <figcaption className="text-white/90 text-sm font-medium">
+              {lightbox.label}
+            </figcaption>
+          </figure>
+        </div>
+      )}
+
+      {bio && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="ბიოგრაფია"
+          onClick={() => setBio(null)}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 md:p-8"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative w-full max-w-[540px] rounded-2xl bg-sur shadow-2xl overflow-hidden"
+          >
+            <button
+              type="button"
+              onClick={() => setBio(null)}
+              aria-label="დახურვა"
+              className="absolute top-3 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/25 text-white hover:bg-black/40 transition-colors"
+            >
+              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6L6 18" />
+                <path d="M6 6l12 12" />
+              </svg>
+            </button>
+            {bio.img && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={bio.img.replace(/w=\d+/, 'w=1200').replace(/q=\d+/, 'q=85')}
+                alt={bio.name}
+                className="w-full h-64 object-cover"
+              />
+            )}
+            <div className="p-6 md:p-7">
+              <h2 className="text-xl md:text-2xl font-bold text-navy leading-tight">
+                {bio.name}
+              </h2>
+              <p className="mt-1 text-sm text-text-2 font-medium">{bio.title}</p>
+              <p className="mt-4 text-sm md:text-base text-text leading-relaxed whitespace-pre-line">
+                {bio.bio}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

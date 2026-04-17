@@ -1,7 +1,7 @@
 'use client';
 
-import Dashboard from '@/components/mui-dashboard/dashboard/Dashboard';
+import UserDashboard from './_components/UserDashboard';
 
 export default function DashboardPage() {
-  return <Dashboard />;
+  return <UserDashboard />;
 }

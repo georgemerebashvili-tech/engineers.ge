@@ -625,7 +625,7 @@ function CalculatorsSection() {
             return (
               <a
                 key={c.index}
-                href={c.href ?? '#'}
+                href={'href' in c ? c.href : '#'}
                 className="group flex flex-col overflow-hidden rounded-card border border-bdr bg-sur shadow-card transition-colors hover:border-blue"
               >
                 <div className="flex items-center gap-2 border-b border-bdr bg-gradient-to-r from-sur-2 to-sur px-3 py-2">

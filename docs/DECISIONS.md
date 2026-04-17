@@ -68,3 +68,41 @@ BgSlider იყენებს `@mui/material/Slider`-ს (`sx` prop-ით bran
 მიზეზი: user-ს სურდა MUI ხარისხის UX (hover halo, valueLabel, a11y).
 ქვეგვერდების სტილი mass ფაზაში MUI Dashboard template-ს გაჰყვება
 (იხ. `docs/tasks/002-site-style-mui-dashboard.md`).
+
+## 2026-04-17 — Analytics: საკუთარი first-party (არა GA / Vercel Analytics)
+ვიზიტორების ქცევის tracking-ი — საკუთარი Supabase `page_views` table, privacy-friendly.
+არქიტექტურა:
+- **Middleware** (`middleware.ts`) → `eng_vid` cookie (UUID v4, 1 წელი).
+- **Client `<Tracker />`** → root layout-ში, `usePathname`-ის ცვლილებაზე `POST /api/track`,
+  გვერდის დატოვებაზე `navigator.sendBeacon('/api/track/leave', {id, duration_ms})`.
+  `visibilitychange` (hidden) + `pagehide` = ზუსტი duration SPA navigation-ის დროსაც.
+- **API routes** Node.js runtime + service_role Supabase client. UA parsing
+  `ua-parser-js`-ით, geo — Vercel headers (`x-vercel-ip-country`, `x-vercel-ip-city`).
+- **Schema**: `page_views` (visitor_id, path, referrer, utm_*, country, device,
+  browser, os, ua_hash, entered_at, duration_ms). RLS enabled, service_role-only.
+- **Bot filter** UA regex-ით (googlebot, facebookexternalhit, lighthouse, etc.).
+- **Privacy**: raw IP არ ინახება, მხოლოდ SHA-256(ip+ua+daily_salt) hash.
+მიზეზი: GA4 dashboard-ს admin panel-ში embed ვერ ვუკეთებ (Data API OAuth-ის გარეშე),
+Vercel Analytics-ს time-on-page არ აქვს, Plausible/Umami — $9/თვე ან self-host.
+საკუთარი რომ ავაშენოთ, data ჩვენია, custom რეპორტები თავისუფალია, GDPR banner არ გვჭირდება.
+
+## 2026-04-17 — 3 ძირითადი entry page (superseded)
+საიტის ზოგადი სტრუქტურა ფიქსირდება 3 მთავარ entry point-ზე:
+`/` მთავარი გვერდი, `/user` უფასო მომხმარებლის გვერდი, `/admin` ადმინისტრაციის პანელი.
+ინდივიდუალური კალკულატორები რჩება child route-ებად (`/calc/[slug]`) მომხმარებლის ზონის ქვეშ.
+მიზეზი: public მხარე და admin მხარე მკაფიოდ უნდა გაიმიჯნოს, ხოლო მომხმარებლის გამოცდილება
+იყოს ერთი უფასო ჰაბის ირგვლივ ორგანიზებული.
+შემდგომ დაზუსტდა route naming და ეს ჩანაწერი ჩანაცვლდა ქვემოთ მოცემული `2 დეშბორდი` გადაწყვეტილებით.
+
+## 2026-04-17 — 2 დეშბორდი: user + admin
+დაზუსტდა, რომ მთავარი გვერდის გარდა სისტემას აქვს ზუსტად 2 დეშბორდი:
+`/dashboard` — უფასო მომხმარებლის დეშბორდი და `/admin` — ადმინისტრატორის დეშბორდი.
+`/user` დარჩა compatibility redirect-ად `/dashboard`-ზე.
+მიზეზი: naming უნდა ემთხვეოდეს რეალურ UX-ს და public მხარეც dashboard-ივით იყოს აღქმული.
+
+## 2026-04-17 — Hero Ads admin + public pricing overlay
+Hero treemap-ის სარეკლამო slot-ები გადავიდა მართვად მოდელში:
+Supabase table `hero_ad_slots`, admin tab `/admin/tiles`, public homepage-ზე
+ლურჯი outline + price + occupied-until overlay-ები. Admin მხარეს არსებობს
+live simulator, slot chooser და format/size + occupancy tables.
+`გიორგი მერებაშვილი` ფიქსირებული owner-ნიშანია hero სარეკლამო overlay-ებში.

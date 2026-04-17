@@ -45,7 +45,7 @@ export default async function CalcPage({
           <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
             <div className="flex items-center gap-3 min-w-0">
               <Link
-                href="/"
+                href="/dashboard"
                 className="inline-flex items-center gap-1.5 text-xs font-semibold text-text-2 hover:text-blue transition-colors"
               >
                 <ArrowLeft size={14} /> უკან

@@ -27,6 +27,7 @@
 - [ ] Date range selector.
 
 ## Phase 4 — Calculators (Codex, per-calc tasks)
+- [ ] Public `/dashboard` page — free-access user dashboard for calculators and visitor tools.
 - [ ] Base `<Calculator>` shell (form + cookie state).
 - [ ] Rate-limit middleware per calc.
 - [ ] First 2–3 calculators (user მოგვცემს ჩამონათვალს).

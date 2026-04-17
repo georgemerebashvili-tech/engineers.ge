@@ -1,10 +1,12 @@
 import type {Metadata} from 'next';
+import {preinit} from 'react-dom';
 import {Plus_Jakarta_Sans, IBM_Plex_Mono} from 'next/font/google';
 import NextTopLoader from 'nextjs-toploader';
 import {NextIntlClientProvider} from 'next-intl';
 import {getLocale, getMessages} from 'next-intl/server';
 import {AppRouterCacheProvider} from '@mui/material-nextjs/v16-appRouter';
 import {ThemeProvider} from '@/components/theme-provider';
+import {Tracker} from '@/components/analytics/Tracker';
 import './globals.css';
 
 const jakarta = Plus_Jakarta_Sans({
@@ -32,6 +34,8 @@ export default async function RootLayout({
   const locale = await getLocale();
   const messages = await getMessages();
 
+  preinit('/theme-init.js', {as: 'script', fetchPriority: 'high'});
+
   return (
     <html
       lang={locale}
@@ -40,9 +44,10 @@ export default async function RootLayout({
     >
       <body className="flex min-h-full flex-col bg-bg text-text">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ThemeProvider>
             <AppRouterCacheProvider options={{ enableCssLayer: true }}>
               <NextTopLoader color="var(--blue)" showSpinner={false} height={2} />
+              <Tracker />
               {children}
             </AppRouterCacheProvider>
           </ThemeProvider>
