@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --app --eslint --no-src-dir --import-alias \"@/*\" --use-npm --turbopack)",
+      "Bash(npm view *)",
+      "Bash(node -e \"const b=require\\('bcryptjs'\\);const p=process.argv[1];b.hash\\(p,10\\).then\\(h=>{console.log\\('HASH='+h\\);console.log\\('VERIFY='+require\\('bcryptjs'\\).compareSync\\(p,h\\)\\);}\\)\" \"?'/'''/'\")",
+      "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(32\\).toString\\('base64url'\\)\\)\")",
+      "Bash(PORT=3030 npm run dev)",
+      "Bash(curl -s -o /tmp/engsrc.html -w \"HTTP %{http_code} | %{size_download}b\\\\n\" http://localhost:3030/ --max-time 30)"
+    ],
+    "additionalDirectories": [
+      "/Users/macbookair/Desktop/engineers.ge/engineers.ge/app"
+    ]
+  }
+}

@@ -1,0 +1,1777 @@
+<!DOCTYPE html>
+<!-- saved from url=(0061)file:///Users/macbookair/Downloads/procurement_module_v5.html -->
+<html lang="ka"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>შესყიდვის მოდული</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f0f3f8;color:#1a2340;font-size:13px;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+/* TOPBAR */
+.topbar{background:#1a4fa0;color:#fff;padding:0 16px;display:flex;align-items:center;gap:11px;height:44px;flex-shrink:0}
+.topbar h1{font-size:14px;font-weight:700;white-space:nowrap}
+.vs{width:1px;height:22px;background:rgba(255,255,255,.2)}
+.pi{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:5px;color:#fff;padding:3px 8px;font-size:12px}
+.pi::placeholder{color:rgba(255,255,255,.4)}
+.pi:focus{outline:none;background:rgba(255,255,255,.2)}
+.tr{margin-left:auto;display:flex;gap:6px;align-items:center}
+.lb{height:25px;padding:0 9px;border-radius:4px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;cursor:pointer;font-size:11px;font-weight:700}
+.lb.on{background:#fff;color:#1a4fa0}
+.eb{height:25px;padding:0 9px;border-radius:4px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;cursor:pointer;font-size:11px}
+.eb:hover{background:rgba(255,255,255,.18)}
+
+/* LAYOUT */
+.main{display:flex;flex:1;overflow:hidden}
+.left{width:230px;min-width:230px;background:#fff;border-right:1px solid #dde3ef;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* LEFT */
+.lsec{padding:10px 13px;border-bottom:1px solid #eef0f5;flex-shrink:0}
+.stitle{font-size:9px;font-weight:700;color:#1a4fa0;text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px}
+.fld{margin-bottom:6px}
+.fld label{display:block;font-size:10px;color:#5a6a8a;margin-bottom:2px}
+.fld input,.fld textarea{width:100%;padding:4px 7px;border:1px solid #dde3ef;border-radius:5px;background:#f9fbfe;font-size:11px}
+.fld textarea{resize:vertical;height:44px;line-height:1.4}
+.fld input:focus,.fld textarea:focus{outline:none;border-color:#1a4fa0;background:#fff}
+
+/* Drive link */
+.drive-row{display:flex;gap:5px;align-items:center;margin-bottom:5px}
+.drive-row input{flex:1;height:27px;padding:0 7px;border:1px solid #dde3ef;border-radius:5px;font-size:11px;background:#f9fbfe}
+.drive-row input:focus{outline:none;border-color:#1a4fa0;background:#fff}
+.drive-row a{color:#1a4fa0;font-size:18px;text-decoration:none;flex-shrink:0}
+.drive-row a:hover{color:#0f2f6b}
+
+/* Attachments in left */
+.att-list{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.att-thumb{width:42px;height:42px;border-radius:5px;object-fit:cover;border:1px solid #dde3ef;cursor:pointer;transition:.12s}
+.att-thumb:hover{border-color:#1a4fa0;transform:scale(1.05)}
+.att-file{width:42px;height:42px;border-radius:5px;border:1px solid #dde3ef;background:#f0f3f8;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:18px;transition:.12s;position:relative}
+.att-file:hover{border-color:#1a4fa0;background:#eef3fb}
+.att-file .att-ext{font-size:8px;font-weight:700;color:#5a6a8a;margin-top:2px}
+.att-add{width:42px;height:42px;border-radius:5px;border:1.5px dashed #c0cce0;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:#c0cce0;transition:.12s}
+.att-add:hover{border-color:#1a4fa0;color:#1a4fa0}
+.att-del{position:absolute;top:-5px;right:-5px;width:14px;height:14px;border-radius:50%;background:#e74c3c;color:#fff;border:none;cursor:pointer;font-size:9px;display:none;align-items:center;justify-content:center;line-height:1}
+.att-file:hover .att-del,.att-thumb-wrap:hover .att-del{display:flex}
+.att-thumb-wrap{position:relative;display:inline-block}
+
+/* Column toggles */
+.col-toggles{padding:8px 13px 0;border-bottom:1px solid #eef0f5;flex-shrink:0}
+.ctr{display:flex;align-items:center;gap:6px;padding:4px 0;cursor:pointer}
+.ctr:hover{color:#1a4fa0}
+.tck{width:13px;height:13px;border:1.5px solid #c0cce0;border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.12s}
+.tck.on{background:#1a4fa0;border-color:#1a4fa0}
+.tck.on::after{content:'✓';color:#fff;font-size:9px;font-weight:700}
+.tlb{font-size:11px}
+
+/* Supplier list */
+.sup-scroll{overflow-y:auto;flex:1}
+.srow{display:grid;grid-template-columns:10px 16px 1fr auto;align-items:center;gap:5px;padding:6px 10px;border-bottom:1px solid #f5f6fa}
+.srow:hover{background:#f5f8ff}
+.sdot{width:9px;height:9px;border-radius:50%}
+.srow input[type=checkbox]{width:13px;height:13px;cursor:pointer;accent-color:#1a4fa0}
+.sname{border:none;background:transparent;font-size:12px;font-weight:600;color:#1a2340;width:100%;padding:0;min-width:0}
+.sname:focus{outline:none;border-bottom:1px solid #1a4fa0}
+.sname.off{color:#bbb;text-decoration:line-through;font-weight:400}
+.wstar{width:21px;height:21px;border:none;background:transparent;cursor:pointer;font-size:14px;border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.wstar:hover{background:#fff8e1}
+.wstar.won{color:#f5a623}.wstar.idle{color:#ddd}
+
+/* Winner box */
+.winner-box{margin:7px 13px;background:linear-gradient(135deg,#f5a623,#e09010);border-radius:8px;padding:9px 12px;display:none}
+.winner-box.show{display:block}
+.winner-box .wt{font-size:10px;color:rgba(255,255,255,.8);margin-bottom:2px}
+.winner-box .wn{font-size:13px;font-weight:700;color:#fff}
+.winner-box .wa{display:flex;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.3)}
+.winner-box .wl{font-size:10px;color:rgba(255,255,255,.8)}
+.winner-box .wv{font-size:13px;font-weight:700;color:#fff}
+.sadd{margin:6px 13px}
+.sadd button{width:100%;height:24px;border:1px dashed #c0cce0;border-radius:5px;background:transparent;color:#5a6a8a;font-size:11px;cursor:pointer}
+.sadd button:hover{border-color:#1a4fa0;color:#1a4fa0}
+
+/* TABS */
+.tabs{display:flex;background:#fff;border-bottom:2px solid #dde3ef;flex-shrink:0;padding:0 12px;overflow-x:auto}
+.tab{padding:9px 12px;font-size:12px;font-weight:600;color:#5a6a8a;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.tab:hover{color:#1a4fa0}.tab.on{color:#1a4fa0;border-bottom-color:#1a4fa0}
+
+/* PANE */
+.pane{display:none;flex:1;flex-direction:column;overflow:hidden}
+.pane.on{display:flex}
+
+/* TOOLBAR */
+.tbar{display:flex;align-items:center;gap:6px;padding:7px 13px;background:#fff;border-bottom:1px solid #eef0f5;flex-shrink:0;flex-wrap:wrap}
+.btn{height:27px;padding:0 11px;border:1px solid #dde3ef;border-radius:5px;background:#fff;color:#1a2340;cursor:pointer;font-size:11px;font-weight:600;white-space:nowrap;transition:.12s}
+.btn:hover{background:#eef3fb;border-color:#1a4fa0;color:#1a4fa0}
+.btn.pri{background:#1a4fa0;color:#fff;border-color:#1a4fa0}
+.btn.pri:hover{background:#0f2f6b}
+.btn.amb{background:#f5a623;color:#fff;border-color:#e09010}
+.btn.grn{background:#1a7a3c;color:#fff;border-color:#155f30}
+.tsep{width:1px;height:20px;background:#eef0f5}
+
+/* TABLE */
+.twrap{flex:1;overflow:auto}
+table{border-collapse:collapse;background:#fff;min-width:100%}
+thead{position:sticky;top:0;z-index:10}
+th{padding:7px 5px;text-align:left;font-size:10px;font-weight:700;white-space:nowrap;border-right:1px solid rgba(0,0,0,.06)}
+th.hf{background:#1a4fa0;color:#fff}th.hb{background:#1a7a3c;color:#fff;text-align:center}
+th.hs{background:#8a6200;color:#fff;text-align:center}th.hsp{color:#fff;text-align:center}
+td{padding:3px 4px;border-bottom:1px solid #f0f2f7;border-right:1px solid #f4f6fb;vertical-align:middle}
+tr:hover td{background:#f7f9ff}
+tr.trow td{font-weight:700;background:#eef3fb;border-top:2px solid #1a4fa0}
+td.idx{text-align:center;color:#bbb;font-size:11px;width:24px}
+td.num{text-align:right}
+td.bst{background:#e8f5e9}td.bst .dv{color:#1a6b3c;font-weight:700;font-size:12px;display:block;text-align:right;padding-right:5px}
+td.slc{background:#fff8e1}td.slc .dv{color:#7a5c00;font-weight:700;font-size:12px;display:block;text-align:right;padding-right:5px}
+td.bstc{background:#e8f5e9}td.bstc input{color:#1a6b3c;font-weight:700}
+td.wincol{background:#fff8e1}
+td input[type=text],td input[type=number]{width:100%;height:24px;border:1px solid transparent;border-radius:3px;padding:0 4px;background:transparent;font-size:12px;color:#1a2340}
+td input[type=number]{text-align:right}
+td input:focus{border-color:#1a4fa0;background:#fff;outline:none}
+td select{width:100%;height:24px;border:1px solid transparent;border-radius:3px;padding:0 2px;background:transparent;font-size:11px;cursor:pointer}
+td select:focus{border-color:#1a4fa0;background:#fff;outline:none}
+.dbtn{width:20px;height:20px;border:none;background:transparent;color:#ddd;cursor:pointer;font-size:13px;border-radius:3px}
+.dbtn:hover{background:#fdf0ef;color:#e74c3c}
+
+/* Row attachment thumb */
+.row-att{display:flex;gap:3px;align-items:center;flex-wrap:wrap}
+.rat{width:26px;height:26px;border-radius:3px;object-fit:cover;border:1px solid #dde3ef;cursor:pointer}
+.rat:hover{border-color:#1a4fa0}
+.rat-icon{width:26px;height:26px;border-radius:3px;border:1px solid #dde3ef;background:#f0f3f8;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer}
+.rat-add{width:22px;height:22px;border:1px dashed #c0cce0;border-radius:3px;background:transparent;display:flex;align-items:center;justify-content:center;font-size:13px;color:#c0cce0;cursor:pointer}
+.rat-add:hover{border-color:#1a4fa0;color:#1a4fa0}
+
+/* Combined formula bar */
+.cform-bar{background:#fff;border-top:2px solid #1a4fa0;padding:11px 15px;flex-shrink:0}
+.cform-bar h4{font-size:10px;font-weight:700;color:#1a4fa0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.chips{display:flex;gap:9px;flex-wrap:wrap}
+.fchip{background:#eef3fb;border:1px solid #c8d8f0;border-radius:7px;padding:7px 13px;min-width:130px}
+.fchip .fl{font-size:10px;color:#5a6a8a;margin-bottom:2px}.fchip .fv{font-size:15px;font-weight:700;color:#1a4fa0}
+
+/* SUMMARY */
+.swrap{flex:1;overflow-y:auto;padding:13px}
+.tv{background:#1a4fa0;color:#fff;border-radius:10px;padding:14px 18px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.tv-l{font-size:11px;opacity:.8}.tv-v{font-size:26px;font-weight:700}
+.scards{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:9px;margin-bottom:12px}
+.sc{background:#fff;border:1px solid #dde3ef;border-radius:8px;padding:11px 13px}
+.sc .sl{font-size:9px;color:#5a6a8a;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+.sc .sv{font-size:17px;font-weight:700}
+.sc.blue{background:#1a4fa0;border-color:#1a4fa0}.sc.blue .sl{color:#aac4f0}.sc.blue .sv{color:#fff}
+.sc.grn{background:#e8f5e9;border-color:#a8d5b5}.sc.grn .sv{color:#1a6b3c}
+.sc.amb{background:#fff8e1;border-color:#f5d98b}.sc.amb .sv{color:#7a5c00}
+.pbox{background:#fff;border:1px solid #dde3ef;border-radius:8px;padding:13px;margin-bottom:11px}
+.pbox h3{font-size:10px;font-weight:700;color:#1a4fa0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px}
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.pf label{font-size:10px;color:#5a6a8a;display:block;margin-bottom:3px}
+.pf input{width:100%;height:29px;padding:0 8px;border:1px solid #dde3ef;border-radius:5px;text-align:right;background:#f9fbfe;font-size:12px}
+.pf input:focus{border-color:#1a4fa0;background:#fff;outline:none}
+.fbox{background:#fff;border:1px solid #dde3ef;border-radius:8px;padding:13px;margin-bottom:11px}
+.fbox h3{font-size:10px;font-weight:700;color:#1a4fa0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:9px}
+.frow{display:grid;grid-template-columns:145px 1fr 115px auto;gap:7px;align-items:center;margin-bottom:6px;padding:6px 8px;background:#f9fbfe;border:1px solid #eef0f5;border-radius:6px}
+.frow-lbl{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.frow-expr{font-size:10px;color:#888;font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.frow-res{font-size:14px;font-weight:700;color:#1a4fa0;text-align:right;white-space:nowrap}
+.frow-res.err{color:#c0392b;font-size:10px;font-weight:400}
+.inv-btns{display:flex;gap:9px;margin-bottom:10px;flex-wrap:wrap}
+
+/* INVOICES */
+.inv-tbar{display:flex;gap:7px;align-items:center;padding:9px 13px;background:#fff;border-bottom:1px solid #eef0f5;flex-shrink:0}
+.inv-wrap{flex:1;overflow-y:auto;padding:13px}
+.icard{background:#fff;border:1px solid #dde3ef;border-radius:8px;padding:12px 15px;margin-bottom:9px;display:flex;align-items:center;gap:13px;cursor:pointer}
+.icard:hover{border-color:#1a4fa0;background:#f7faff}
+.iav{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+.iinfo{flex:1}.ico{font-size:13px;font-weight:700}.imt{font-size:11px;color:#888;margin-top:2px}
+.ist{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.badge{height:19px;padding:0 8px;border-radius:9px;font-size:10px;font-weight:700;display:inline-flex;align-items:center}
+.badge.s{background:#e8f5e9;color:#1a6b3c}.badge.u{background:#fff8e1;color:#8a6200}
+.iamt{font-size:14px;font-weight:700;color:#1a4fa0}
+
+/* Q&A */
+.qa-wrap{flex:1;display:flex;overflow:hidden}
+.qa-left{width:260px;min-width:260px;border-right:1px solid #dde3ef;display:flex;flex-direction:column;background:#fff}
+.qa-right{flex:1;display:flex;flex-direction:column;overflow:hidden;background:#f4f7fb}
+.qa-tbar{padding:9px 13px;border-bottom:1px solid #eef0f5;display:flex;gap:7px;align-items:center;flex-shrink:0;background:#fff}
+.qa-list{flex:1;overflow-y:auto;padding:8px}
+.qa-item{padding:9px 11px;border-radius:7px;margin-bottom:6px;cursor:pointer;border:1px solid #eef0f5;background:#fff;transition:.12s}
+.qa-item:hover{border-color:#1a4fa0;background:#f5f8ff}
+.qa-item.active{border-color:#1a4fa0;background:#eef3fb}
+.qa-sup{font-size:10px;font-weight:700;margin-bottom:3px}
+.qa-q-preview{font-size:11px;color:#5a6a8a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qa-badge{height:16px;padding:0 6px;border-radius:8px;font-size:9px;font-weight:700;display:inline-flex;align-items:center;margin-left:5px}
+.qa-badge.open{background:#fff8e1;color:#8a6200}.qa-badge.ans{background:#e8f5e9;color:#1a6b3c}
+.qa-thread{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.qa-empty{flex:1;display:flex;align-items:center;justify-content:center;color:#bbb;font-size:13px}
+.qa-bubble{max-width:80%;border-radius:10px;padding:10px 13px;font-size:12px;line-height:1.5}
+.qa-bubble.question{background:#fff;border:1px solid #dde3ef;align-self:flex-start}
+.qa-bubble.answer{background:#1a4fa0;color:#fff;align-self:flex-end}
+.qa-bubble .qb-meta{font-size:10px;margin-bottom:4px;font-weight:600}
+.qa-bubble.question .qb-meta{color:#5a6a8a}
+.qa-bubble.answer .qb-meta{color:rgba(255,255,255,.7)}
+.qa-input-bar{padding:10px 13px;border-top:1px solid #dde3ef;background:#fff;display:flex;gap:8px;align-items:flex-end;flex-shrink:0}
+.qa-input-bar textarea{flex:1;height:60px;padding:8px 10px;border:1px solid #dde3ef;border-radius:7px;resize:none;font-size:12px;line-height:1.4;background:#f9fbfe}
+.qa-input-bar textarea:focus{outline:none;border-color:#1a4fa0;background:#fff}
+.qa-add-form{padding:10px 13px;border-top:1px solid #eef0f5;background:#f9fbfe;flex-shrink:0}
+.qa-add-form select,.qa-add-form input{width:100%;height:28px;padding:0 8px;border:1px solid #dde3ef;border-radius:5px;font-size:11px;background:#fff;margin-bottom:5px}
+.qa-add-form input:focus,.qa-add-form select:focus{outline:none;border-color:#1a4fa0}
+
+/* SUPPLIER WINDOW */
+.supwin-tbar{display:flex;gap:8px;align-items:center;padding:10px 14px;background:#fff;border-bottom:1px solid #eef0f5;flex-shrink:0;flex-wrap:wrap}
+.supwin-wrap{flex:1;overflow:auto;padding:16px;background:#f4f7fb}
+.supwin-card{background:#fff;border-radius:10px;border:1px solid #dde3ef;max-width:800px;margin:0 auto;overflow:hidden}
+.swcard-head{background:#1a4fa0;color:#fff;padding:18px 22px}
+.swcard-head h2{font-size:16px;font-weight:700}
+.swcard-head p{font-size:12px;opacity:.75;margin-top:4px}
+.swcard-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 22px;border-bottom:1px solid #eef0f5;background:#f9fbfe}
+.sw-mf label{font-size:10px;color:#5a6a8a;display:block;margin-bottom:2px}
+.sw-mf .val{font-size:13px;font-weight:600}
+.swcard-table{padding:14px 22px}
+.swcard-table table{width:100%;border-collapse:collapse}
+.swcard-table th{background:#eef3fb;color:#1a4fa0;font-size:11px;font-weight:700;padding:7px 8px;text-align:left;border-bottom:2px solid #c8d8f0}
+.swcard-table td{padding:7px 8px;border-bottom:1px solid #f0f2f7;font-size:12px}
+.swcard-table tr:last-child td{border-bottom:none}
+.swcard-atts{padding:0 22px 14px}
+.swcard-atts h4{font-size:11px;font-weight:700;color:#1a4fa0;margin-bottom:8px}
+.swcard-atts-list{display:flex;gap:8px;flex-wrap:wrap}
+.swcard-att-thumb{width:60px;height:60px;border-radius:6px;object-fit:cover;border:1px solid #dde3ef}
+.swcard-att-file{width:60px;height:60px;border-radius:6px;border:1px solid #dde3ef;background:#f0f3f8;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:22px;cursor:pointer}
+.swcard-att-file .ext{font-size:9px;font-weight:700;color:#5a6a8a;margin-top:2px}
+.swcard-footer{padding:14px 22px;border-top:1px solid #eef0f5;background:#f9fbfe;font-size:11px;color:#888}
+
+/* MODALS */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;display:none;align-items:center;justify-content:center}
+.ov.show{display:flex}
+
+/* Formula modal */
+.fmodal{background:#fff;border-radius:12px;width:580px;max-width:95vw;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.2)}
+.mh{background:#1a4fa0;color:#fff;padding:13px 17px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.mh h2{font-size:14px;font-weight:700}
+.mcl{background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer}
+.mb{flex:1;overflow-y:auto;padding:15px}
+.mf{padding:11px 15px;border-top:1px solid #eef0f5;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.mlw{margin-bottom:12px}
+.mlw label{font-size:10px;color:#5a6a8a;display:block;margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+.mlw input{width:100%;height:31px;padding:0 9px;border:1px solid #dde3ef;border-radius:6px;font-size:13px;background:#f9fbfe}
+.mlw input:focus{border-color:#1a4fa0;background:#fff;outline:none}
+.fdisp{background:#f9fbfe;border:1.5px solid #c8d8f0;border-radius:7px;padding:9px 12px;font-family:monospace;font-size:13px;min-height:40px;margin-bottom:12px;word-break:break-all;cursor:pointer}
+.ftk{background:#eef3fb;border-radius:3px;padding:1px 4px;color:#1a4fa0}
+.fnu{color:#1a6b3c}.fop{color:#8a6200;font-weight:700}
+.caret{display:inline-block;width:2px;height:14px;background:#1a4fa0;animation:blink .7s infinite;vertical-align:middle}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.vgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-bottom:12px}
+.vchip{background:#eef3fb;border:1px solid #c8d8f0;border-radius:6px;padding:6px 9px;cursor:pointer;transition:.12s}
+.vchip:hover{background:#1a4fa0;border-color:#1a4fa0}
+.vchip:hover .vcn{color:#fff}.vchip:hover .vcs{color:rgba(255,255,255,.7)}
+.vcn{font-size:11px;font-weight:700;font-family:monospace;color:#1a4fa0}
+.vcs{font-size:10px;color:#5a6a8a;margin-top:1px}
+.op-sec h4{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.opad{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.okey{width:40px;height:34px;border:1px solid #dde3ef;border-radius:5px;background:#fff;cursor:pointer;font-size:14px;font-weight:600;color:#1a2340;transition:.12s}
+.okey:hover{background:#1a4fa0;color:#fff;border-color:#1a4fa0}
+.okey.wide{width:auto;padding:0 10px;font-size:12px}
+.mprev{display:flex;align-items:center;gap:9px;font-size:12px;color:#5a6a8a}
+.mprev .rv{font-size:18px;font-weight:700;color:#1a4fa0}
+.mprev .rv.err{color:#c0392b;font-size:11px;font-weight:400}
+
+/* Lightbox */
+.lightbox{background:rgba(0,0,0,.9);z-index:300}
+.lightbox img{max-width:90vw;max-height:85vh;border-radius:8px;object-fit:contain}
+.lb-close{position:absolute;top:16px;right:20px;background:transparent;border:none;color:#fff;font-size:28px;cursor:pointer}
+.lb-caption{color:#fff;font-size:12px;margin-top:10px;text-align:center;opacity:.7}
+
+/* Row attachment modal */
+.attmod{background:#fff;border-radius:12px;width:460px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.2)}
+
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:#f0f3f8}
+::-webkit-scrollbar-thumb{background:#c0cce0;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:#1a4fa0}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <h1 id="tt">⚙ Procurement Module</h1>
+  <div class="vs"></div>
+  <input class="pi" id="pnum" value="PRJ-2025-041" style="width:108px">
+  <input class="pi" id="pname" value="ყვერლის ედემი — HVAC" style="width:180px">
+  <div class="tr">
+    <button class="eb" onclick="demo(&#39;Excel&#39;)">⬇ Excel</button>
+    <button class="eb" onclick="demo(&#39;Upload&#39;)">⬆ Upload</button>
+    <button class="eb" onclick="demo(&#39;Send&#39;)">✉ Send</button>
+    <div class="vs"></div>
+    <button class="lb" onclick="setLang(&#39;ka&#39;)" id="lka">KA</button>
+    <button class="lb on" onclick="setLang(&#39;en&#39;)" id="len">EN</button>
+  </div>
+</div>
+
+<div class="main">
+<!-- LEFT -->
+<div class="left">
+  <div class="lsec">
+    <div class="stitle" data-t="projectInfo">Project Info</div>
+    <div class="fld"><label data-t="date">Date</label><input type="date" id="pdate"></div>
+    <div class="fld"><label data-t="notes">Notes</label><textarea id="pnotes">Telavi Airport. HVAC.</textarea></div>
+  </div>
+
+  <!-- PROJECT FILES & DRIVE -->
+  <div class="lsec">
+    <div class="stitle" data-t="projFiles">Project Files</div>
+    <div class="drive-row">
+      <input id="drive-url" placeholder="Google Drive ლინკი..." style="font-size:10px">
+      <a id="drive-link" href="file:///Users/macbookair/Downloads/procurement_module_v5.html#" target="_blank" onclick="openDrive(event)" title="Drive-ში გახსნა">🔗</a>
+    </div>
+    <div class="att-list" id="proj-atts">
+      <div class="att-add" onclick="document.getElementById(&#39;proj-file-in&#39;).click()" title="ფაილის დამატება">+</div>
+    </div>
+    <input type="file" id="proj-file-in" multiple="" accept="image/*,.pdf,.doc,.docx,.xlsx,.xls" style="display:none" onchange="addProjFiles(event)">
+  </div>
+
+  <!-- COLUMN TOGGLES -->
+  <div class="col-toggles">
+    <div class="stitle" data-t="colVis">Columns</div>
+    <div class="ctr" onclick="toggleCol(&#39;best&#39;)"><div class="tck on" id="tog-best"></div><span class="tlb" data-t="colBest">Best Price</span></div>
+    <div class="ctr" onclick="toggleCol(&#39;mysel&#39;)"><div class="tck on" id="tog-mysel"></div><span class="tlb" data-t="colMySel">My Selected</span></div>
+    <div class="ctr" onclick="toggleCol(&#39;supsel&#39;)"><div class="tck on" id="tog-supsel"></div><span class="tlb" data-t="colSupSel">Supplier Select</span></div>
+    <div class="ctr" onclick="toggleCol(&#39;attcol&#39;)"><div class="tck on" id="tog-attcol"></div><span class="tlb" data-t="colAtt">📎 Files</span></div>
+    <div style="height:7px"></div>
+  </div>
+
+  <!-- SUPPLIERS -->
+  <div class="lsec" style="flex-shrink:0;padding-bottom:5px">
+    <div class="stitle" data-t="suppliers">Participants</div>
+  </div>
+  <div class="sup-scroll" id="slist">
+    <div class="srow">
+      <div class="sdot" style="background:#1a4fa0"></div>
+      <input type="checkbox" checked="" onchange="sups[0].vis=this.checked;renderAll()">
+      <input type="text" class="sname" value="HERZ Georgia" onchange="sups[0].name=this.value;renderAll();renderSupWinDD()">
+      <button class="wstar idle" onclick="setWinner(0)">⭐</button>
+    </div>
+    <div class="srow">
+      <div class="sdot" style="background:#e67e22"></div>
+      <input type="checkbox" checked="" onchange="sups[1].vis=this.checked;renderAll()">
+      <input type="text" class="sname" value="Aquaterm LLC" onchange="sups[1].name=this.value;renderAll();renderSupWinDD()">
+      <button class="wstar idle" onclick="setWinner(1)">⭐</button>
+    </div>
+    <div class="srow">
+      <div class="sdot" style="background:#27ae60"></div>
+      <input type="checkbox" checked="" onchange="sups[2].vis=this.checked;renderAll()">
+      <input type="text" class="sname" value="TechnoPlast" onchange="sups[2].name=this.value;renderAll();renderSupWinDD()">
+      <button class="wstar idle" onclick="setWinner(2)">⭐</button>
+    </div>
+    <div class="srow">
+      <div class="sdot" style="background:#8e44ad"></div>
+      <input type="checkbox" checked="" onchange="sups[3].vis=this.checked;renderAll()">
+      <input type="text" class="sname" value="BuildSupply Co." onchange="sups[3].name=this.value;renderAll();renderSupWinDD()">
+      <button class="wstar idle" onclick="setWinner(3)">⭐</button>
+    </div>
+    <div class="srow">
+      <div class="sdot" style="background:#c0392b"></div>
+      <input type="checkbox" checked="" onchange="sups[4].vis=this.checked;renderAll()">
+      <input type="text" class="sname" value="ProMech Ltd." onchange="sups[4].name=this.value;renderAll();renderSupWinDD()">
+      <button class="wstar idle" onclick="setWinner(4)">⭐</button>
+    </div></div>
+  <div class="winner-box" id="winner-box">
+    <div class="wt" data-t="winnerTitle">🏆 Winner</div>
+    <div class="wn" id="winner-name">—</div>
+    <div class="wa">
+      <div><div class="wl" data-t="wProd">Prod.</div><div class="wv" id="winner-prod">—</div></div>
+      <div><div class="wl" data-t="wInst">Inst.</div><div class="wv" id="winner-inst">—</div></div>
+      <div><div class="wl" data-t="wTot">Total</div><div class="wv" id="winner-tot">—</div></div>
+    </div>
+  </div>
+  <div class="sadd"><button onclick="addSup()">+ <span data-t="addSup">Add Supplier</span></button></div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+  <div class="tabs" id="tabs">
+    <div class="tab on" onclick="swTab(0)" data-t="tab0">📦 Product</div>
+    <div class="tab" onclick="swTab(1)" data-t="tab1">🔧 Install</div>
+    <div class="tab" onclick="swTab(2)" data-t="tab2">📋 Combined</div>
+    <div class="tab" onclick="swTab(3)" data-t="tab3">📊 Summary</div>
+    <div class="tab" onclick="swTab(4)" data-t="tab4">📨 Invoices</div>
+    <div class="tab" onclick="swTab(5)" data-t="tab5">💬 Q&amp;A</div>
+    <div class="tab" onclick="swTab(6)" data-t="tab6">👁 Supplier View</div>
+  </div>
+
+  <!-- TAB 0 PRODUCT -->
+  <div class="pane on" id="p0">
+    <div class="tbar">
+      <button class="btn pri" onclick="addRow()" data-t="addRow">+ Add Row</button>
+      <button class="btn amb" onclick="autoBest(&#39;p&#39;)" data-t="autoBest">⚡ Auto-select Best</button>
+    </div>
+    <div class="twrap"><table><thead id="hd0"><tr>
+    <th class="hf" style="width:26px">#</th>
+    <th class="hf" style="min-width:140px">Item Name</th>
+    <th class="hf" style="width:40px">Unit</th>
+    <th class="hf" style="width:46px">Qty</th>
+    <th class="hf" style="min-width:90px">Labor</th>
+    <th class="hf" style="min-width:80px">📎</th>
+    <th class="hb" style="min-width:72px">Best Price</th>
+    <th class="hs" style="min-width:72px">My Selected</th>
+    <th class="hs" style="min-width:105px">Supplier</th>
+    <th class="hsp" style="background:#1a4fa0;min-width:82px">HERZ Georgia</th><th class="hsp" style="background:#e67e22;min-width:82px">Aquaterm LLC</th><th class="hsp" style="background:#27ae60;min-width:82px">TechnoPlast</th><th class="hsp" style="background:#8e44ad;min-width:82px">BuildSupply Co.</th><th class="hsp" style="background:#c0392b;min-width:82px">ProMech Ltd.</th>
+    <th class="hf" style="width:24px"></th>
+  </tr></thead><tbody id="bd0"><tr>
+      <td class="idx">1</td>
+      <td><input type="text" value="HERZ STRÖMAX 4017M" onchange="rows[0].name=this.value;renderAll()"></td>
+      <td><input type="text" value="pcs" style="width:36px" onchange="rows[0].unit=this.value"></td>
+      <td class="num"><input type="number" value="34" min="0" onchange="rows[0].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="mounting" onchange="rows[0].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-icon" title="Construction Drawings - 10-1.pdf">📄</div><div class="rat-add" onclick="openRowAtt(0)">+</div><span style="font-size:9px;color:#888">1</span></div></td>
+      <td class="bst"><span class="dv">78.00</span></td>
+      <td class="slc"><span class="dv">78.00</span></td>
+      <td><select onchange="rows[0][&#39;selP&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2" selected="">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="85" min="0" step="0.01" placeholder="—" onchange="rows[0][&#39;pp&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="92" min="0" step="0.01" placeholder="—" onchange="rows[0][&#39;pp&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="78" min="0" step="0.01" placeholder="—" onchange="rows[0][&#39;pp&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[0][&#39;pp&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="88" min="0" step="0.01" placeholder="—" onchange="rows[0][&#39;pp&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(0)">✕</button></td>
+    </tr><tr>
+      <td class="idx">2</td>
+      <td><input type="text" value="Aquatherm PPR-C DN32" onchange="rows[1].name=this.value;renderAll()"></td>
+      <td><input type="text" value="m" style="width:36px" onchange="rows[1].unit=this.value"></td>
+      <td class="num"><input type="number" value="120" min="0" onchange="rows[1].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="welding" onchange="rows[1].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(1)">+</div></div></td>
+      <td class="bst"><span class="dv">3.90</span></td>
+      <td class="slc"><span class="dv">3.90</span></td>
+      <td><select onchange="rows[1][&#39;selP&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1" selected="">Aquaterm LLC</option><option value="2">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="4.2" min="0" step="0.01" placeholder="—" onchange="rows[1][&#39;pp&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="3.9" min="0" step="0.01" placeholder="—" onchange="rows[1][&#39;pp&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[1][&#39;pp&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="4.5" min="0" step="0.01" placeholder="—" onchange="rows[1][&#39;pp&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="4.1" min="0" step="0.01" placeholder="—" onchange="rows[1][&#39;pp&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(1)">✕</button></td>
+    </tr><tr>
+      <td class="idx">3</td>
+      <td><input type="text" value="FCU Fan Coil 4-pipe" onchange="rows[2].name=this.value;renderAll()"></td>
+      <td><input type="text" value="pcs" style="width:36px" onchange="rows[2].unit=this.value"></td>
+      <td class="num"><input type="number" value="18" min="0" onchange="rows[2].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="install" onchange="rows[2].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(2)">+</div></div></td>
+      <td class="bst"><span class="dv">395.00</span></td>
+      <td class="slc"><span class="dv">395.00</span></td>
+      <td><select onchange="rows[2][&#39;selP&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2" selected="">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="420" min="0" step="0.01" placeholder="—" onchange="rows[2][&#39;pp&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[2][&#39;pp&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="395" min="0" step="0.01" placeholder="—" onchange="rows[2][&#39;pp&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="410" min="0" step="0.01" placeholder="—" onchange="rows[2][&#39;pp&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="435" min="0" step="0.01" placeholder="—" onchange="rows[2][&#39;pp&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(2)">✕</button></td>
+    </tr><tr>
+      <td class="idx">4</td>
+      <td><input type="text" value="Balancing Valve DN20" onchange="rows[3].name=this.value;renderAll()"></td>
+      <td><input type="text" value="pcs" style="width:36px" onchange="rows[3].unit=this.value"></td>
+      <td class="num"><input type="number" value="56" min="0" onchange="rows[3].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="mounting" onchange="rows[3].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(3)">+</div></div></td>
+      <td class="bst"><span class="dv">17.00</span></td>
+      <td class="slc"><span class="dv">17.00</span></td>
+      <td><select onchange="rows[3][&#39;selP&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2" selected="">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="18" min="0" step="0.01" placeholder="—" onchange="rows[3][&#39;pp&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="22" min="0" step="0.01" placeholder="—" onchange="rows[3][&#39;pp&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="17" min="0" step="0.01" placeholder="—" onchange="rows[3][&#39;pp&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="20" min="0" step="0.01" placeholder="—" onchange="rows[3][&#39;pp&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[3][&#39;pp&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(3)">✕</button></td>
+    </tr><tr>
+      <td class="idx">5</td>
+      <td><input type="text" value="Insulation Cover 25mm" onchange="rows[4].name=this.value;renderAll()"></td>
+      <td><input type="text" value="m" style="width:36px" onchange="rows[4].unit=this.value"></td>
+      <td class="num"><input type="number" value="200" min="0" onchange="rows[4].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="gluing" onchange="rows[4].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(4)">+</div></div></td>
+      <td class="bst"><span class="dv">1.90</span></td>
+      <td class="slc"><span class="dv">1.90</span></td>
+      <td><select onchange="rows[4][&#39;selP&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4" selected="">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="2.1" min="0" step="0.01" placeholder="—" onchange="rows[4][&#39;pp&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="2" min="0" step="0.01" placeholder="—" onchange="rows[4][&#39;pp&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="2.3" min="0" step="0.01" placeholder="—" onchange="rows[4][&#39;pp&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[4][&#39;pp&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="1.9" min="0" step="0.01" placeholder="—" onchange="rows[4][&#39;pp&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(4)">✕</button></td>
+    </tr><tr>
+      <td class="idx">6</td>
+      <td><input type="text" value="Expansion Vessel 50L" onchange="rows[5].name=this.value;renderAll()"></td>
+      <td><input type="text" value="pcs" style="width:36px" onchange="rows[5].unit=this.value"></td>
+      <td class="num"><input type="number" value="4" min="0" onchange="rows[5].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="commission" onchange="rows[5].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(5)">+</div></div></td>
+      <td class="bst"><span class="dv">138.00</span></td>
+      <td class="slc"><span class="dv">138.00</span></td>
+      <td><select onchange="rows[5][&#39;selP&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1" selected="">Aquaterm LLC</option><option value="2">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="145" min="0" step="0.01" placeholder="—" onchange="rows[5][&#39;pp&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="138" min="0" step="0.01" placeholder="—" onchange="rows[5][&#39;pp&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[5][&#39;pp&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="150" min="0" step="0.01" placeholder="—" onchange="rows[5][&#39;pp&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="142" min="0" step="0.01" placeholder="—" onchange="rows[5][&#39;pp&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(5)">✕</button></td>
+    </tr><tr>
+      <td class="idx">7</td>
+      <td><input type="text" value="Circulation Pump DN32" onchange="rows[6].name=this.value;renderAll()"></td>
+      <td><input type="text" value="pcs" style="width:36px" onchange="rows[6].unit=this.value"></td>
+      <td class="num"><input type="number" value="6" min="0" onchange="rows[6].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="install" onchange="rows[6].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(6)">+</div></div></td>
+      <td class="bst"><span class="dv">260.00</span></td>
+      <td class="slc"><span class="dv">260.00</span></td>
+      <td><select onchange="rows[6][&#39;selP&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2" selected="">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="285" min="0" step="0.01" placeholder="—" onchange="rows[6][&#39;pp&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="270" min="0" step="0.01" placeholder="—" onchange="rows[6][&#39;pp&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="260" min="0" step="0.01" placeholder="—" onchange="rows[6][&#39;pp&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[6][&#39;pp&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="295" min="0" step="0.01" placeholder="—" onchange="rows[6][&#39;pp&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(6)">✕</button></td>
+    </tr><tr>
+      <td class="idx">8</td>
+      <td><input type="text" value="Thermostatic Valve" onchange="rows[7].name=this.value;renderAll()"></td>
+      <td><input type="text" value="pcs" style="width:36px" onchange="rows[7].unit=this.value"></td>
+      <td class="num"><input type="number" value="90" min="0" onchange="rows[7].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="mounting" onchange="rows[7].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(7)">+</div></div></td>
+      <td class="bst"><span class="dv">7.80</span></td>
+      <td class="slc"><span class="dv">7.80</span></td>
+      <td><select onchange="rows[7][&#39;selP&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2" selected="">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="8.5" min="0" step="0.01" placeholder="—" onchange="rows[7][&#39;pp&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[7][&#39;pp&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="7.8" min="0" step="0.01" placeholder="—" onchange="rows[7][&#39;pp&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="9" min="0" step="0.01" placeholder="—" onchange="rows[7][&#39;pp&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="8.2" min="0" step="0.01" placeholder="—" onchange="rows[7][&#39;pp&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(7)">✕</button></td>
+    </tr><tr>
+      <td class="idx">9</td>
+      <td><input type="text" value="Pressure Gauge 0-10bar" onchange="rows[8].name=this.value;renderAll()"></td>
+      <td><input type="text" value="pcs" style="width:36px" onchange="rows[8].unit=this.value"></td>
+      <td class="num"><input type="number" value="12" min="0" onchange="rows[8].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="mounting" onchange="rows[8].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(8)">+</div></div></td>
+      <td class="bst"><span class="dv">12.00</span></td>
+      <td class="slc"><span class="dv">12.00</span></td>
+      <td><select onchange="rows[8][&#39;selP&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2">TechnoPlast</option><option value="3" selected="">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="14" min="0" step="0.01" placeholder="—" onchange="rows[8][&#39;pp&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="13" min="0" step="0.01" placeholder="—" onchange="rows[8][&#39;pp&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="15" min="0" step="0.01" placeholder="—" onchange="rows[8][&#39;pp&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="12" min="0" step="0.01" placeholder="—" onchange="rows[8][&#39;pp&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[8][&#39;pp&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(8)">✕</button></td>
+    </tr><tr>
+      <td class="idx">10</td>
+      <td><input type="text" value="Heat Exchanger HX-50" onchange="rows[9].name=this.value;renderAll()"></td>
+      <td><input type="text" value="pcs" style="width:36px" onchange="rows[9].unit=this.value"></td>
+      <td class="num"><input type="number" value="2" min="0" onchange="rows[9].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="commission" onchange="rows[9].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(9)">+</div></div></td>
+      <td class="bst"><span class="dv">650.00</span></td>
+      <td class="slc"><span class="dv">650.00</span></td>
+      <td><select onchange="rows[9][&#39;selP&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2" selected="">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="680" min="0" step="0.01" placeholder="—" onchange="rows[9][&#39;pp&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[9][&#39;pp&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="650" min="0" step="0.01" placeholder="—" onchange="rows[9][&#39;pp&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="720" min="0" step="0.01" placeholder="—" onchange="rows[9][&#39;pp&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="695" min="0" step="0.01" placeholder="—" onchange="rows[9][&#39;pp&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(9)">✕</button></td>
+    </tr></tbody><tfoot id="ft0"><tr class="trow">
+    <td colspan="6" style="text-align:right;font-size:11px;padding-right:6px">Total</td>
+    <td class="num" style="background:#d4edda;color:#1a6b3c">15,820.00</td>
+    <td class="num" style="background:#fff3cd;color:#7a5c00">15,820.00</td>
+    <td></td>
+    <td class="num">16,965.00</td><td class="num">7,556.00</td><td class="num">14,916.00</td><td class="num">12,034.00</td><td class="num">16,160.00</td>
+    <td></td>
+  </tr></tfoot></table></div>
+  </div>
+
+  <!-- TAB 1 INSTALL -->
+  <div class="pane" id="p1">
+    <div class="tbar">
+      <button class="btn pri" onclick="addRow()" data-t="addRow">+ Add Row</button>
+      <button class="btn amb" onclick="autoBest(&#39;i&#39;)" data-t="autoBest">⚡ Auto-select Best</button>
+    </div>
+    <div class="twrap"><table><thead id="hd1"><tr>
+    <th class="hf" style="width:26px">#</th>
+    <th class="hf" style="min-width:140px">Item Name</th>
+    <th class="hf" style="width:40px">Unit</th>
+    <th class="hf" style="width:46px">Qty</th>
+    <th class="hf" style="min-width:90px">Labor</th>
+    <th class="hf" style="min-width:80px">📎</th>
+    <th class="hb" style="min-width:72px">Best Price</th>
+    <th class="hs" style="min-width:72px">My Selected</th>
+    <th class="hs" style="min-width:105px">Supplier</th>
+    <th class="hsp" style="background:#1a4fa0;min-width:82px">HERZ Georgia</th><th class="hsp" style="background:#e67e22;min-width:82px">Aquaterm LLC</th><th class="hsp" style="background:#27ae60;min-width:82px">TechnoPlast</th><th class="hsp" style="background:#8e44ad;min-width:82px">BuildSupply Co.</th><th class="hsp" style="background:#c0392b;min-width:82px">ProMech Ltd.</th>
+    <th class="hf" style="width:24px"></th>
+  </tr></thead><tbody id="bd1"><tr>
+      <td class="idx">1</td>
+      <td><input type="text" value="HERZ STRÖMAX 4017M" onchange="rows[0].name=this.value;renderAll()"></td>
+      <td><input type="text" value="pcs" style="width:36px" onchange="rows[0].unit=this.value"></td>
+      <td class="num"><input type="number" value="34" min="0" onchange="rows[0].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="mounting" onchange="rows[0].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-icon" title="Construction Drawings - 10-1.pdf">📄</div><div class="rat-add" onclick="openRowAtt(0)">+</div><span style="font-size:9px;color:#888">1</span></div></td>
+      <td class="bst"><span class="dv">10.00</span></td>
+      <td class="slc"><span class="dv">—</span></td>
+      <td><select onchange="rows[0][&#39;selI&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="12" min="0" step="0.01" placeholder="—" onchange="rows[0][&#39;ip&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="15" min="0" step="0.01" placeholder="—" onchange="rows[0][&#39;ip&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="10" min="0" step="0.01" placeholder="—" onchange="rows[0][&#39;ip&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[0][&#39;ip&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="13" min="0" step="0.01" placeholder="—" onchange="rows[0][&#39;ip&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(0)">✕</button></td>
+    </tr><tr>
+      <td class="idx">2</td>
+      <td><input type="text" value="Aquatherm PPR-C DN32" onchange="rows[1].name=this.value;renderAll()"></td>
+      <td><input type="text" value="m" style="width:36px" onchange="rows[1].unit=this.value"></td>
+      <td class="num"><input type="number" value="120" min="0" onchange="rows[1].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="welding" onchange="rows[1].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(1)">+</div></div></td>
+      <td class="bst"><span class="dv">1.20</span></td>
+      <td class="slc"><span class="dv">—</span></td>
+      <td><select onchange="rows[1][&#39;selI&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="1.5" min="0" step="0.01" placeholder="—" onchange="rows[1][&#39;ip&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="1.2" min="0" step="0.01" placeholder="—" onchange="rows[1][&#39;ip&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[1][&#39;ip&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="1.8" min="0" step="0.01" placeholder="—" onchange="rows[1][&#39;ip&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="1.4" min="0" step="0.01" placeholder="—" onchange="rows[1][&#39;ip&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(1)">✕</button></td>
+    </tr><tr>
+      <td class="idx">3</td>
+      <td><input type="text" value="FCU Fan Coil 4-pipe" onchange="rows[2].name=this.value;renderAll()"></td>
+      <td><input type="text" value="pcs" style="width:36px" onchange="rows[2].unit=this.value"></td>
+      <td class="num"><input type="number" value="18" min="0" onchange="rows[2].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="install" onchange="rows[2].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(2)">+</div></div></td>
+      <td class="bst"><span class="dv">40.00</span></td>
+      <td class="slc"><span class="dv">—</span></td>
+      <td><select onchange="rows[2][&#39;selI&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="45" min="0" step="0.01" placeholder="—" onchange="rows[2][&#39;ip&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[2][&#39;ip&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="40" min="0" step="0.01" placeholder="—" onchange="rows[2][&#39;ip&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="50" min="0" step="0.01" placeholder="—" onchange="rows[2][&#39;ip&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="42" min="0" step="0.01" placeholder="—" onchange="rows[2][&#39;ip&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(2)">✕</button></td>
+    </tr><tr>
+      <td class="idx">4</td>
+      <td><input type="text" value="Balancing Valve DN20" onchange="rows[3].name=this.value;renderAll()"></td>
+      <td><input type="text" value="pcs" style="width:36px" onchange="rows[3].unit=this.value"></td>
+      <td class="num"><input type="number" value="56" min="0" onchange="rows[3].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="mounting" onchange="rows[3].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(3)">+</div></div></td>
+      <td class="bst"><span class="dv">3.00</span></td>
+      <td class="slc"><span class="dv">—</span></td>
+      <td><select onchange="rows[3][&#39;selI&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="bstc  num"><input type="number" value="3" min="0" step="0.01" placeholder="—" onchange="rows[3][&#39;ip&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="4" min="0" step="0.01" placeholder="—" onchange="rows[3][&#39;ip&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="3" min="0" step="0.01" placeholder="—" onchange="rows[3][&#39;ip&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="3.5" min="0" step="0.01" placeholder="—" onchange="rows[3][&#39;ip&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[3][&#39;ip&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(3)">✕</button></td>
+    </tr><tr>
+      <td class="idx">5</td>
+      <td><input type="text" value="Insulation Cover 25mm" onchange="rows[4].name=this.value;renderAll()"></td>
+      <td><input type="text" value="m" style="width:36px" onchange="rows[4].unit=this.value"></td>
+      <td class="num"><input type="number" value="200" min="0" onchange="rows[4].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="gluing" onchange="rows[4].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(4)">+</div></div></td>
+      <td class="bst"><span class="dv">0.40</span></td>
+      <td class="slc"><span class="dv">—</span></td>
+      <td><select onchange="rows[4][&#39;selI&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="0.5" min="0" step="0.01" placeholder="—" onchange="rows[4][&#39;ip&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="0.4" min="0" step="0.01" placeholder="—" onchange="rows[4][&#39;ip&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="0.6" min="0" step="0.01" placeholder="—" onchange="rows[4][&#39;ip&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[4][&#39;ip&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="0.45" min="0" step="0.01" placeholder="—" onchange="rows[4][&#39;ip&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(4)">✕</button></td>
+    </tr><tr>
+      <td class="idx">6</td>
+      <td><input type="text" value="Expansion Vessel 50L" onchange="rows[5].name=this.value;renderAll()"></td>
+      <td><input type="text" value="pcs" style="width:36px" onchange="rows[5].unit=this.value"></td>
+      <td class="num"><input type="number" value="4" min="0" onchange="rows[5].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="commission" onchange="rows[5].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(5)">+</div></div></td>
+      <td class="bst"><span class="dv">18.00</span></td>
+      <td class="slc"><span class="dv">—</span></td>
+      <td><select onchange="rows[5][&#39;selI&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="20" min="0" step="0.01" placeholder="—" onchange="rows[5][&#39;ip&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="18" min="0" step="0.01" placeholder="—" onchange="rows[5][&#39;ip&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[5][&#39;ip&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="22" min="0" step="0.01" placeholder="—" onchange="rows[5][&#39;ip&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="19" min="0" step="0.01" placeholder="—" onchange="rows[5][&#39;ip&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(5)">✕</button></td>
+    </tr><tr>
+      <td class="idx">7</td>
+      <td><input type="text" value="Circulation Pump DN32" onchange="rows[6].name=this.value;renderAll()"></td>
+      <td><input type="text" value="pcs" style="width:36px" onchange="rows[6].unit=this.value"></td>
+      <td class="num"><input type="number" value="6" min="0" onchange="rows[6].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="install" onchange="rows[6].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(6)">+</div></div></td>
+      <td class="bst"><span class="dv">28.00</span></td>
+      <td class="slc"><span class="dv">—</span></td>
+      <td><select onchange="rows[6][&#39;selI&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="35" min="0" step="0.01" placeholder="—" onchange="rows[6][&#39;ip&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="30" min="0" step="0.01" placeholder="—" onchange="rows[6][&#39;ip&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="28" min="0" step="0.01" placeholder="—" onchange="rows[6][&#39;ip&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[6][&#39;ip&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="32" min="0" step="0.01" placeholder="—" onchange="rows[6][&#39;ip&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(6)">✕</button></td>
+    </tr><tr>
+      <td class="idx">8</td>
+      <td><input type="text" value="Thermostatic Valve" onchange="rows[7].name=this.value;renderAll()"></td>
+      <td><input type="text" value="pcs" style="width:36px" onchange="rows[7].unit=this.value"></td>
+      <td class="num"><input type="number" value="90" min="0" onchange="rows[7].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="mounting" onchange="rows[7].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(7)">+</div></div></td>
+      <td class="bst"><span class="dv">1.20</span></td>
+      <td class="slc"><span class="dv">—</span></td>
+      <td><select onchange="rows[7][&#39;selI&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="1.5" min="0" step="0.01" placeholder="—" onchange="rows[7][&#39;ip&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[7][&#39;ip&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="1.2" min="0" step="0.01" placeholder="—" onchange="rows[7][&#39;ip&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="1.8" min="0" step="0.01" placeholder="—" onchange="rows[7][&#39;ip&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="1.4" min="0" step="0.01" placeholder="—" onchange="rows[7][&#39;ip&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(7)">✕</button></td>
+    </tr><tr>
+      <td class="idx">9</td>
+      <td><input type="text" value="Pressure Gauge 0-10bar" onchange="rows[8].name=this.value;renderAll()"></td>
+      <td><input type="text" value="pcs" style="width:36px" onchange="rows[8].unit=this.value"></td>
+      <td class="num"><input type="number" value="12" min="0" onchange="rows[8].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="mounting" onchange="rows[8].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(8)">+</div></div></td>
+      <td class="bst"><span class="dv">1.80</span></td>
+      <td class="slc"><span class="dv">—</span></td>
+      <td><select onchange="rows[8][&#39;selI&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="2" min="0" step="0.01" placeholder="—" onchange="rows[8][&#39;ip&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="2" min="0" step="0.01" placeholder="—" onchange="rows[8][&#39;ip&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="2.5" min="0" step="0.01" placeholder="—" onchange="rows[8][&#39;ip&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="1.8" min="0" step="0.01" placeholder="—" onchange="rows[8][&#39;ip&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[8][&#39;ip&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(8)">✕</button></td>
+    </tr><tr>
+      <td class="idx">10</td>
+      <td><input type="text" value="Heat Exchanger HX-50" onchange="rows[9].name=this.value;renderAll()"></td>
+      <td><input type="text" value="pcs" style="width:36px" onchange="rows[9].unit=this.value"></td>
+      <td class="num"><input type="number" value="2" min="0" onchange="rows[9].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="commission" onchange="rows[9].labor=this.value"></td>
+      <td style="min-width:80px"><div class="row-att"><div class="rat-add" onclick="openRowAtt(9)">+</div></div></td>
+      <td class="bst"><span class="dv">75.00</span></td>
+      <td class="slc"><span class="dv">—</span></td>
+      <td><select onchange="rows[9][&#39;selI&#39;]=this.value&lt;0?null:parseInt(this.value);renderAll()"><option value="-1">— choose —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select></td>
+      <td class="  num"><input type="number" value="80" min="0" step="0.01" placeholder="—" onchange="rows[9][&#39;ip&#39;][0]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="" min="0" step="0.01" placeholder="—" onchange="rows[9][&#39;ip&#39;][1]=parseFloat(this.value)||0;renderAll()"></td><td class="bstc  num"><input type="number" value="75" min="0" step="0.01" placeholder="—" onchange="rows[9][&#39;ip&#39;][2]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="90" min="0" step="0.01" placeholder="—" onchange="rows[9][&#39;ip&#39;][3]=parseFloat(this.value)||0;renderAll()"></td><td class="  num"><input type="number" value="82" min="0" step="0.01" placeholder="—" onchange="rows[9][&#39;ip&#39;][4]=parseFloat(this.value)||0;renderAll()"></td>
+      <td><button class="dbtn" onclick="delRow(9)">✕</button></td>
+    </tr></tbody><tfoot id="ft1"><tr class="trow">
+    <td colspan="6" style="text-align:right;font-size:11px;padding-right:6px">Total</td>
+    <td class="num" style="background:#d4edda;color:#1a6b3c">1,971.60</td>
+    <td class="num" style="background:#fff3cd;color:#7a5c00">0.00</td>
+    <td></td>
+    <td class="num">2,275.00</td><td class="num">1,234.00</td><td class="num">1,804.00</td><td class="num">1,763.60</td><td class="num">2,014.00</td>
+    <td></td>
+  </tr></tfoot></table></div>
+  </div>
+
+  <!-- TAB 2 COMBINED -->
+  <div class="pane" id="p2" style="overflow:hidden">
+    <div class="twrap"><table><thead id="hd2"><tr>
+    <th class="hf" style="width:26px">#</th>
+    <th class="hf" style="min-width:140px">Item Name</th>
+    <th class="hf" style="width:40px">Unit</th>
+    <th class="hf" style="width:46px">Qty</th>
+    <th class="hf" style="min-width:105px">Prod.Sup.</th>
+    <th class="hb" style="min-width:72px">Prod.Price</th>
+    <th class="hf" style="min-width:105px">Inst.Sup.</th>
+    <th class="hs" style="min-width:72px">Inst.Price</th>
+    <th class="hf" style="min-width:80px;background:#444">Combined</th>
+    <th class="hf" style="min-width:92px;background:#222">Total</th>
+  </tr></thead><tbody id="bd2"><tr>
+      <td class="idx">1</td><td>HERZ STRÖMAX 4017M</td><td>pcs</td><td class="num">34</td>
+      <td>TechnoPlast</td><td class="bst"><span class="dv" style="color:#1a6b3c">78.00</span></td>
+      <td>—</td><td class="slc"><span class="dv" style="color:#7a5c00">—</span></td>
+      <td class="num">78.00</td>
+      <td class="num" style="font-weight:700;color:#1a4fa0">2,652.00</td>
+    </tr><tr>
+      <td class="idx">2</td><td>Aquatherm PPR-C DN32</td><td>m</td><td class="num">120</td>
+      <td>Aquaterm LLC</td><td class="bst"><span class="dv" style="color:#1a6b3c">3.90</span></td>
+      <td>—</td><td class="slc"><span class="dv" style="color:#7a5c00">—</span></td>
+      <td class="num">3.90</td>
+      <td class="num" style="font-weight:700;color:#1a4fa0">468.00</td>
+    </tr><tr>
+      <td class="idx">3</td><td>FCU Fan Coil 4-pipe</td><td>pcs</td><td class="num">18</td>
+      <td>TechnoPlast</td><td class="bst"><span class="dv" style="color:#1a6b3c">395.00</span></td>
+      <td>—</td><td class="slc"><span class="dv" style="color:#7a5c00">—</span></td>
+      <td class="num">395.00</td>
+      <td class="num" style="font-weight:700;color:#1a4fa0">7,110.00</td>
+    </tr><tr>
+      <td class="idx">4</td><td>Balancing Valve DN20</td><td>pcs</td><td class="num">56</td>
+      <td>TechnoPlast</td><td class="bst"><span class="dv" style="color:#1a6b3c">17.00</span></td>
+      <td>—</td><td class="slc"><span class="dv" style="color:#7a5c00">—</span></td>
+      <td class="num">17.00</td>
+      <td class="num" style="font-weight:700;color:#1a4fa0">952.00</td>
+    </tr><tr>
+      <td class="idx">5</td><td>Insulation Cover 25mm</td><td>m</td><td class="num">200</td>
+      <td>ProMech Ltd.</td><td class="bst"><span class="dv" style="color:#1a6b3c">1.90</span></td>
+      <td>—</td><td class="slc"><span class="dv" style="color:#7a5c00">—</span></td>
+      <td class="num">1.90</td>
+      <td class="num" style="font-weight:700;color:#1a4fa0">380.00</td>
+    </tr><tr>
+      <td class="idx">6</td><td>Expansion Vessel 50L</td><td>pcs</td><td class="num">4</td>
+      <td>Aquaterm LLC</td><td class="bst"><span class="dv" style="color:#1a6b3c">138.00</span></td>
+      <td>—</td><td class="slc"><span class="dv" style="color:#7a5c00">—</span></td>
+      <td class="num">138.00</td>
+      <td class="num" style="font-weight:700;color:#1a4fa0">552.00</td>
+    </tr><tr>
+      <td class="idx">7</td><td>Circulation Pump DN32</td><td>pcs</td><td class="num">6</td>
+      <td>TechnoPlast</td><td class="bst"><span class="dv" style="color:#1a6b3c">260.00</span></td>
+      <td>—</td><td class="slc"><span class="dv" style="color:#7a5c00">—</span></td>
+      <td class="num">260.00</td>
+      <td class="num" style="font-weight:700;color:#1a4fa0">1,560.00</td>
+    </tr><tr>
+      <td class="idx">8</td><td>Thermostatic Valve</td><td>pcs</td><td class="num">90</td>
+      <td>TechnoPlast</td><td class="bst"><span class="dv" style="color:#1a6b3c">7.80</span></td>
+      <td>—</td><td class="slc"><span class="dv" style="color:#7a5c00">—</span></td>
+      <td class="num">7.80</td>
+      <td class="num" style="font-weight:700;color:#1a4fa0">702.00</td>
+    </tr><tr>
+      <td class="idx">9</td><td>Pressure Gauge 0-10bar</td><td>pcs</td><td class="num">12</td>
+      <td>BuildSupply Co.</td><td class="bst"><span class="dv" style="color:#1a6b3c">12.00</span></td>
+      <td>—</td><td class="slc"><span class="dv" style="color:#7a5c00">—</span></td>
+      <td class="num">12.00</td>
+      <td class="num" style="font-weight:700;color:#1a4fa0">144.00</td>
+    </tr><tr>
+      <td class="idx">10</td><td>Heat Exchanger HX-50</td><td>pcs</td><td class="num">2</td>
+      <td>TechnoPlast</td><td class="bst"><span class="dv" style="color:#1a6b3c">650.00</span></td>
+      <td>—</td><td class="slc"><span class="dv" style="color:#7a5c00">—</span></td>
+      <td class="num">650.00</td>
+      <td class="num" style="font-weight:700;color:#1a4fa0">1,300.00</td>
+    </tr></tbody><tfoot id="ft2"><tr class="trow"><td colspan="9" style="text-align:right;padding-right:8px">Grand Total</td><td class="num" style="font-size:14px;color:#1a4fa0">15,820.00</td></tr></tfoot></table></div>
+    <div class="cform-bar"><h4 data-t="fResults">Formula Results</h4><div class="chips" id="cfchips"><div class="fchip"><div class="fl">შემოსავალი</div><div class="fv">18,984.00</div></div><div class="fchip"><div class="fl">მოგების თანხა</div><div class="fv">3,164.00</div></div><div class="fchip"><div class="fl">საბ.+დღგ</div><div class="fv">22,401.12</div></div><div class="fchip"><div class="fl">დაზოგვა</div><div class="fv">-1,971.60</div></div></div></div>
+  </div>
+
+  <!-- TAB 3 SUMMARY -->
+  <div class="pane" id="p3">
+    <div class="swrap">
+      <div class="tv">
+        <div><div class="tv-l" data-t="selComb">Selected Combined</div><div class="tv-v" id="tv1">15,820.00</div></div>
+        <div style="text-align:right"><div class="tv-l" data-t="finalP">Final Price (+VAT)</div><div class="tv-v" id="tv2">23,334.50</div></div>
+      </div>
+      <div class="scards" id="scards"><div class="sc "><div class="sl">Best Prod.</div><div class="sv">15,820.00</div></div><div class="sc amb"><div class="sl">Sel.Prod.</div><div class="sv">15,820.00</div></div><div class="sc "><div class="sl">Best Inst.</div><div class="sv">1,971.60</div></div><div class="sc amb"><div class="sl">Sel.Inst.</div><div class="sv">0.00</div></div><div class="sc blue"><div class="sl">Combined</div><div class="sv">15,820.00</div></div><div class="sc grn"><div class="sl">Profit</div><div class="sv">3,164.00</div></div><div class="sc "><div class="sl">Overhead</div><div class="sv">791.00</div></div><div class="sc blue"><div class="sl">Revenue</div><div class="sv">19,775.00</div></div><div class="sc blue"><div class="sl">+VAT</div><div class="sv">23,334.50</div></div></div>
+      <div class="pbox">
+        <h3 data-t="params">Parameters</h3>
+        <div class="pgrid">
+          <div class="pf"><label data-t="profit">Profit %</label><input id="pp" type="number" value="20" min="0" oninput="recalc()"></div>
+          <div class="pf"><label data-t="overhead">Overhead %</label><input id="po" type="number" value="5" min="0" oninput="recalc()"></div>
+          <div class="pf"><label data-t="discount">Discount %</label><input id="pd" type="number" value="0" min="0" oninput="recalc()"></div>
+          <div class="pf"><label data-t="vat">VAT %</label><input id="pv" type="number" value="18" min="0" oninput="recalc()"></div>
+        </div>
+      </div>
+      <div class="fbox">
+        <h3 data-t="formulas">Formulas</h3>
+        <div id="frows"><div class="frow">
+      <div class="frow-lbl">შემოსავალი</div>
+      <div class="frow-expr">selCombinedTotal*(1+profitPct/100)</div>
+      <div class="frow-res">18,984.00</div>
+      <div style="display:flex;gap:4px">
+        <button class="btn" style="height:24px;padding:0 7px;font-size:10px" onclick="openFModal(0)">✏</button>
+        <button class="dbtn" onclick="formulas.splice(0,1);renderFRows();if(curTab===2)renderCombined()">✕</button>
+      </div>
+    </div><div class="frow">
+      <div class="frow-lbl">მოგების თანხა</div>
+      <div class="frow-expr">selCombinedTotal*profitPct/100</div>
+      <div class="frow-res">3,164.00</div>
+      <div style="display:flex;gap:4px">
+        <button class="btn" style="height:24px;padding:0 7px;font-size:10px" onclick="openFModal(1)">✏</button>
+        <button class="dbtn" onclick="formulas.splice(1,1);renderFRows();if(curTab===2)renderCombined()">✕</button>
+      </div>
+    </div><div class="frow">
+      <div class="frow-lbl">საბ.+დღგ</div>
+      <div class="frow-expr">selCombinedTotal*(1+profitPct/100)*(1+vatPct/100)</div>
+      <div class="frow-res">22,401.12</div>
+      <div style="display:flex;gap:4px">
+        <button class="btn" style="height:24px;padding:0 7px;font-size:10px" onclick="openFModal(2)">✏</button>
+        <button class="dbtn" onclick="formulas.splice(2,1);renderFRows();if(curTab===2)renderCombined()">✕</button>
+      </div>
+    </div><div class="frow">
+      <div class="frow-lbl">დაზოგვა</div>
+      <div class="frow-expr">(selProductTotal+selInstallTotal)-(bestProductTotal+bestInstallTotal)</div>
+      <div class="frow-res">-1,971.60</div>
+      <div style="display:flex;gap:4px">
+        <button class="btn" style="height:24px;padding:0 7px;font-size:10px" onclick="openFModal(3)">✏</button>
+        <button class="dbtn" onclick="formulas.splice(3,1);renderFRows();if(curTab===2)renderCombined()">✕</button>
+      </div>
+    </div></div>
+        <button class="btn" onclick="openFModal(null)" style="margin-top:8px" data-t="addFormula">+ Add Formula</button>
+      </div>
+      <div class="pbox">
+        <h3 data-t="invActions">Invoices</h3>
+        <div class="inv-btns">
+          <button class="btn grn" onclick="sendInvs(&#39;best&#39;)" data-t="reqBest">📩 Invoice (Best)</button>
+          <button class="btn pri" onclick="sendInvs(&#39;sel&#39;)" data-t="reqSel">📩 Invoice (Selected)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4 INVOICES -->
+  <div class="pane" id="p4">
+    <div class="inv-tbar">
+      <span style="font-size:12px;font-weight:600;color:#1a4fa0" data-t="sentInv">Sent Invoices</span>
+      <div style="margin-left:auto;display:flex;gap:5px">
+        <button class="btn pri" id="fi-all" onclick="filtInv(&#39;all&#39;)" data-t="all">All</button>
+        <button class="btn" id="fi-seen" onclick="filtInv(&#39;seen&#39;)" data-t="seen">Seen</button>
+        <button class="btn" id="fi-unseen" onclick="filtInv(&#39;unseen&#39;)" data-t="unseen">Unseen</button>
+      </div>
+    </div>
+    <div class="inv-wrap" id="ilist"><div style="padding:40px;text-align:center;color:#bbb">No invoices</div></div>
+  </div>
+
+  <!-- TAB 5 Q&A -->
+  <div class="pane" id="p5">
+    <div class="qa-wrap">
+      <!-- LEFT: question list -->
+      <div class="qa-left">
+        <div class="qa-tbar">
+          <span style="font-size:12px;font-weight:600;color:#1a4fa0" data-t="qaTitle">Questions</span>
+          <button class="btn pri" style="height:25px;font-size:11px;margin-left:auto" onclick="openQANew()" data-t="qaNew">+ New</button>
+        </div>
+        <div class="qa-list" id="qa-list"><div style="padding:20px;text-align:center;color:#bbb;font-size:11px">No questions</div></div>
+        <!-- Add question form -->
+        <div class="qa-add-form" id="qa-add-form" style="display:none">
+          <select id="qa-sup-sel" style="margin-bottom:5px"><option value="-1">— choose supplier —</option><option value="0">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select>
+          <input id="qa-q-inp" placeholder="კითხვა..." style="height:28px">
+          <div style="display:flex;gap:5px;margin-top:5px">
+            <button class="btn" style="flex:1;height:25px;font-size:11px" onclick="closeQANew()" data-t="cancel">Cancel</button>
+            <button class="btn pri" style="flex:1;height:25px;font-size:11px" onclick="submitQA()" data-t="qaSend">Send</button>
+          </div>
+        </div>
+      </div>
+      <!-- RIGHT: thread -->
+      <div class="qa-right">
+        <div class="qa-empty" id="qa-empty" data-t="qaEmpty">Select a question</div>
+        <div class="qa-thread" id="qa-thread" style="display:none"></div>
+        <div class="qa-input-bar" id="qa-input-bar" style="display:none">
+          <textarea id="qa-ans" data-ph="qaAnsPlaceholder" placeholder="პასუხი..."></textarea>
+          <button class="btn pri" style="height:60px;padding:0 14px" onclick="sendAnswer()" data-t="qaAnswer">↩ Answer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 6 SUPPLIER WINDOW -->
+  <div class="pane" id="p6">
+    <div class="supwin-tbar">
+      <label style="font-size:12px;font-weight:600;color:#1a4fa0" data-t="supWin">Supplier Window —</label>
+      <select id="sw-sup" onchange="renderSupWin()" style="height:28px;border:1px solid #dde3ef;border-radius:5px;padding:0 8px;font-size:12px;background:#fff"><option value="-1">— choose supplier —</option><option value="0" selected="">HERZ Georgia</option><option value="1">Aquaterm LLC</option><option value="2">TechnoPlast</option><option value="3">BuildSupply Co.</option><option value="4">ProMech Ltd.</option></select>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button class="btn" onclick="demo(&#39;Print&#39;)" data-t="swPrint">🖨 Print</button>
+        <button class="btn" onclick="demo(&#39;Excel&#39;)" data-t="swExcel">⬇ Excel</button>
+      </div>
+    </div>
+    <div class="supwin-wrap" id="supwin-content"><div class="supwin-card">
+    <div class="swcard-head">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:40px;height:40px;border-radius:50%;background:#dce8f5;color:#1a4fa0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">HG</div>
+        <div><h2>შესყიდვის მოთხოვნა</h2><p>გთხოვთ შეავსოთ ფასები</p></div>
+      </div>
+    </div>
+    <div class="swcard-meta">
+      <div class="sw-mf"><label>პროექტი</label><div class="val">PRJ-2025-041 · ყვერლის ედემი — HVAC</div></div>
+      <div class="sw-mf"><label>თარიღი</label><div class="val">4/8/2026</div></div>
+      <div class="sw-mf"><label>კომპანია</label><div class="val" style="color:#1a4fa0">HERZ Georgia</div></div>
+      <div class="sw-mf"><label>Drive</label><div class="val"><a href="file:///Users/macbookair/Downloads/procurement_module_v5.html#" target="_blank" style="color:#1a4fa0;font-size:12px">—</a></div></div>
+    </div>
+    
+    <div class="swcard-table">
+      <table>
+        <thead><tr>
+          <th style="width:26px">№</th>
+          <th>დასახელება</th>
+          <th style="width:42px">ერთ.</th>
+          <th style="width:46px">რაოდ.</th>
+          <th>ხელობა</th>
+          <th style="background:#fff8e1;border:1px solid #f5d98b;min-width:100px">თქვ. ფასი (პ.)</th>
+          <th style="background:#fff8e1;border:1px solid #f5d98b;min-width:100px">თქვ. ფასი (მ.)</th>
+        </tr></thead>
+        <tbody><tr>
+            <td style="text-align:center;color:#bbb">1</td>
+            <td style="font-weight:500">HERZ STRÖMAX 4017M <span style="font-size:10px;color:#1a4fa0">📎1</span>
+            </td>
+            <td style="text-align:center">pcs</td>
+            <td style="text-align:right;font-weight:600">34</td>
+            <td style="color:#888;font-size:11px">mounting</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">85.00</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">12.00</td>
+          </tr><tr>
+            <td style="text-align:center;color:#bbb">2</td>
+            <td style="font-weight:500">Aquatherm PPR-C DN32
+            </td>
+            <td style="text-align:center">m</td>
+            <td style="text-align:right;font-weight:600">120</td>
+            <td style="color:#888;font-size:11px">welding</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">4.20</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">1.50</td>
+          </tr><tr>
+            <td style="text-align:center;color:#bbb">3</td>
+            <td style="font-weight:500">FCU Fan Coil 4-pipe
+            </td>
+            <td style="text-align:center">pcs</td>
+            <td style="text-align:right;font-weight:600">18</td>
+            <td style="color:#888;font-size:11px">install</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">420.00</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">45.00</td>
+          </tr><tr>
+            <td style="text-align:center;color:#bbb">4</td>
+            <td style="font-weight:500">Balancing Valve DN20
+            </td>
+            <td style="text-align:center">pcs</td>
+            <td style="text-align:right;font-weight:600">56</td>
+            <td style="color:#888;font-size:11px">mounting</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">18.00</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">3.00</td>
+          </tr><tr>
+            <td style="text-align:center;color:#bbb">5</td>
+            <td style="font-weight:500">Insulation Cover 25mm
+            </td>
+            <td style="text-align:center">m</td>
+            <td style="text-align:right;font-weight:600">200</td>
+            <td style="color:#888;font-size:11px">gluing</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">2.10</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">0.50</td>
+          </tr><tr>
+            <td style="text-align:center;color:#bbb">6</td>
+            <td style="font-weight:500">Expansion Vessel 50L
+            </td>
+            <td style="text-align:center">pcs</td>
+            <td style="text-align:right;font-weight:600">4</td>
+            <td style="color:#888;font-size:11px">commission</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">145.00</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">20.00</td>
+          </tr><tr>
+            <td style="text-align:center;color:#bbb">7</td>
+            <td style="font-weight:500">Circulation Pump DN32
+            </td>
+            <td style="text-align:center">pcs</td>
+            <td style="text-align:right;font-weight:600">6</td>
+            <td style="color:#888;font-size:11px">install</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">285.00</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">35.00</td>
+          </tr><tr>
+            <td style="text-align:center;color:#bbb">8</td>
+            <td style="font-weight:500">Thermostatic Valve
+            </td>
+            <td style="text-align:center">pcs</td>
+            <td style="text-align:right;font-weight:600">90</td>
+            <td style="color:#888;font-size:11px">mounting</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">8.50</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">1.50</td>
+          </tr><tr>
+            <td style="text-align:center;color:#bbb">9</td>
+            <td style="font-weight:500">Pressure Gauge 0-10bar
+            </td>
+            <td style="text-align:center">pcs</td>
+            <td style="text-align:right;font-weight:600">12</td>
+            <td style="color:#888;font-size:11px">mounting</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">14.00</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">2.00</td>
+          </tr><tr>
+            <td style="text-align:center;color:#bbb">10</td>
+            <td style="font-weight:500">Heat Exchanger HX-50
+            </td>
+            <td style="text-align:center">pcs</td>
+            <td style="text-align:right;font-weight:600">2</td>
+            <td style="color:#888;font-size:11px">commission</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">680.00</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:#1a6b3c">80.00</td>
+          </tr></tbody>
+        <tfoot><tr>
+          <td colspan="5" style="text-align:right;font-weight:700;padding-right:8px;color:#1a4fa0">სულ</td>
+          <td style="text-align:right;font-weight:700;color:#1a4fa0;background:#fff8e1">16,965.00</td>
+          <td style="text-align:right;font-weight:700;color:#1a4fa0;background:#fff8e1">2,275.00</td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <div class="swcard-footer">* ყვ. = შეავსეთ</div>
+  </div></div>
+  </div>
+</div>
+</div>
+
+<!-- FORMULA MODAL -->
+<div class="ov" id="fov" onclick="closeFOvOut(event)">
+<div class="fmodal">
+  <div class="mh"><h2 id="fmtitle">ფორმ. რედაქტ.</h2><button class="mcl" onclick="closeFModal()">×</button></div>
+  <div class="mb">
+    <div class="mlw"><label data-t="fLabel">Label</label><input id="m-lbl"></div>
+    <div style="font-size:10px;color:#5a6a8a;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px" data-t="fExpr">Formula</div>
+    <div class="fdisp" id="mdisp" onclick="document.getElementById(&#39;mhid&#39;).focus()"></div>
+    <input id="mhid" style="opacity:0;position:absolute;width:0;height:0" onkeydown="mkey(event)">
+    <div class="vgrid" id="vgrid"><div class="vchip" onclick="pushTok(&#39;var&#39;,&#39;bestProductTotal&#39;)"><div class="vcn">bestProductTotal</div><div class="vcs">Best Prod.</div></div><div class="vchip" onclick="pushTok(&#39;var&#39;,&#39;selProductTotal&#39;)"><div class="vcn">selProductTotal</div><div class="vcs">Sel.Prod.</div></div><div class="vchip" onclick="pushTok(&#39;var&#39;,&#39;bestInstallTotal&#39;)"><div class="vcn">bestInstallTotal</div><div class="vcs">Best Inst.</div></div><div class="vchip" onclick="pushTok(&#39;var&#39;,&#39;selInstallTotal&#39;)"><div class="vcn">selInstallTotal</div><div class="vcs">Sel.Inst.</div></div><div class="vchip" onclick="pushTok(&#39;var&#39;,&#39;selCombinedTotal&#39;)"><div class="vcn">selCombinedTotal</div><div class="vcs">Combined</div></div><div class="vchip" onclick="pushTok(&#39;var&#39;,&#39;profitPct&#39;)"><div class="vcn">profitPct</div><div class="vcs">Profit%</div></div><div class="vchip" onclick="pushTok(&#39;var&#39;,&#39;overheadPct&#39;)"><div class="vcn">overheadPct</div><div class="vcs">Overhead%</div></div><div class="vchip" onclick="pushTok(&#39;var&#39;,&#39;discountPct&#39;)"><div class="vcn">discountPct</div><div class="vcs">Discount%</div></div><div class="vchip" onclick="pushTok(&#39;var&#39;,&#39;vatPct&#39;)"><div class="vcn">vatPct</div><div class="vcs">VAT%</div></div></div>
+    <div class="op-sec"><h4 data-t="arithmetic">Operators &amp; Numbers</h4><div class="opad" id="opad"><button class="okey wide" onclick="pushTok(&#39;op&#39;,&#39;+&#39;)">+</button><button class="okey wide" onclick="pushTok(&#39;op&#39;,&#39;-&#39;)">-</button><button class="okey wide" onclick="pushTok(&#39;op&#39;,&#39;*&#39;)">*</button><button class="okey wide" onclick="pushTok(&#39;op&#39;,&#39;/&#39;)">/</button><button class="okey wide" onclick="pushTok(&#39;op&#39;,&#39;^&#39;)">^</button><button class="okey" onclick="pushTok(&#39;op&#39;,&#39;(&#39;)">(</button><button class="okey" onclick="pushTok(&#39;op&#39;,&#39;)&#39;)">)</button><button class="okey" onclick="pushTok(&#39;op&#39;,&#39;100&#39;)">100</button><button class="okey" onclick="pushTok(&#39;op&#39;,&#39;1000&#39;)">1000</button><button class="okey" onclick="pushTok(&#39;op&#39;,&#39;10&#39;)">10</button><button class="okey" onclick="pushTok(&#39;op&#39;,&#39;0.01&#39;)">0.01</button><button class="okey" onclick="pushTok(&#39;op&#39;,&#39;0.1&#39;)">0.1</button><button class="okey" onclick="pushTok(&#39;op&#39;,&#39;1&#39;)">1</button><button class="okey wide" onclick="popTok()" style="background:#fdf0ef;color:#c0392b">⌫</button><button class="okey wide" onclick="clearFml()">C</button></div></div>
+    <div class="mprev"><span data-t="preview">Result:</span><span class="rv" id="mres">—</span></div>
+  </div>
+  <div class="mf">
+    <button class="btn" onclick="clearFml()" data-t="clearFml">Clear</button>
+    <div style="display:flex;gap:7px">
+      <button class="btn" onclick="closeFModal()" data-t="cancel">Cancel</button>
+      <button class="btn pri" onclick="saveFml()" data-t="saveFml">Save</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="ov lightbox" id="lbox" onclick="closeLbox()">
+  <button class="lb-close" onclick="closeLbox()">×</button>
+  <div style="display:flex;flex-direction:column;align-items:center">
+    <img id="lbox-img" src="file:///Users/macbookair/Downloads/procurement_module_v5.html" alt="">
+    <div class="lb-caption" id="lbox-cap"></div>
+  </div>
+</div>
+
+<!-- ROW ATTACHMENT MODAL -->
+<div class="ov" id="rov" onclick="closeROvOut(event)">
+<div class="attmod">
+  <div class="mh"><h2 id="rov-title">📎 HERZ STRÖMAX 4017M</h2><button class="mcl" onclick="closeRov()">×</button></div>
+  <div class="mb">
+    <div class="att-list" id="rov-att-list"><div class="att-file" title="Construction Drawings - 10-1.pdf" style="width: 60px; height: 60px;"><span>📄</span><span class="att-ext">PDF</span>
+        <button class="att-del" onclick="rows[0].atts.splice(0,1);renderRowAtts();renderAll()">×</button></div></div>
+    <div style="margin-top:10px;display:flex;gap:7px">
+      <button class="btn" onclick="document.getElementById(&#39;row-file-in&#39;).click()">📎 ფაილი</button>
+      <input type="file" id="row-file-in" multiple="" accept="image/*,.pdf,.doc,.docx,.xlsx" style="display:none" onchange="addRowFiles(event)">
+      <input id="rov-drive" placeholder="Google Drive ლინკი..." style="flex:1;height:27px;padding:0 8px;border:1px solid #dde3ef;border-radius:5px;font-size:11px">
+      <button class="btn pri" onclick="addDriveToRow()">+ Drive</button>
+    </div>
+  </div>
+  <div class="mf" style="justify-content:flex-end">
+    <button class="btn pri" onclick="closeRov()">დახურვა</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ════════════════════
+// TRANSLATIONS
+// ════════════════════
+const T={
+  ka:{
+    projectInfo:'პროექტის ინფო',date:'თარიღი',notes:'შენიშვნა',
+    projFiles:'პროექტის ფაილები',
+    colVis:'სვეტები',colBest:'საუკ. ფასი',colMySel:'ჩემი ფასი',colSupSel:'მომწ. ამორჩევა',colAtt:'📎 ფაილები',
+    suppliers:'მონაწილეები',addSup:'მონაწილე',
+    winnerTitle:'🏆 გამარჯვებული',wProd:'პროდ.',wInst:'მონტ.',wTot:'ჯამი',
+    tab0:'📦 პროდუქცია',tab1:'🔧 მონტაჟი',tab2:'📋 კომბინაცია',tab3:'📊 შეჯამება',
+    tab4:'📨 ინვოისები',tab5:'💬 კითხვა/პასუხი',tab6:'👁 მომწ. ფანჯარა',
+    addRow:'+ სტრიქონი',autoBest:'⚡ ავტო-საუკ.',
+    params:'პარამეტრები',profit:'მოგება %',overhead:'ზედნადები %',discount:'ფასდაკლება %',vat:'დღგ %',
+    formulas:'ფორმულები',addFormula:'+ ფორმ. დამატება',
+    invActions:'ინვოისი',reqBest:'📩 ინვოის (საუკ.)',reqSel:'📩 ინვოის (ამორჩ.)',
+    sentInv:'გაგზ. ინვოისები',all:'ყველა',seen:'ნანახი',unseen:'უნახავი',
+    fResults:'ფორმ. შედეგები',selComb:'ამორჩ. კომბ.',finalP:'საბ. ფასი (+დღგ)',
+    supWin:'მომწ. ფანჯარა —',swPrint:'🖨 ბეჭდვა',swExcel:'⬇ Excel',
+    no:'№',itemName:'დასახელება',unit:'ერთ.',qty:'რაოდ.',labor:'ხელობა',att:'📎',
+    bestP:'საუკ. ფასი',mySelP:'ჩემი ფასი',selSup:'მომწ.',unitP:'ერთ. ფასი',
+    total:'სულ',grandTotal:'საერთო',choose:'— ამოირჩიე —',
+    selPS:'პ. მომწ.',selPP:'პ. ფასი',selIS:'მ. მომწ.',selIP:'მ. ფასი',
+    combU:'კომბ.',lineT:'ჯამი',
+    s_bP:'საუკ. პ.',s_sP:'ამ. პ.',s_bI:'საუკ. მ.',s_sI:'ამ. მ.',
+    s_sC:'კომბ.',s_pr:'მოგება',s_ov:'ზედნ.',s_rv:'შემოსავ.',s_fn:'+დღგ',
+    fLabel:'დასახელება',fExpr:'ფორმულა',arithmetic:'ოპერ. & რიცხვები',
+    preview:'შედეგი:',clearFml:'გასუფთ.',cancel:'გაუქმება',saveFml:'შენახვა',
+    editFml:'ფორმ. რედ.',newFml:'ახალი ფორმ.',
+    df0:'შემოსავალი',df1:'მოგების თანხა',df2:'საბ.+დღგ',df3:'დაზოგვა',
+    choose_sup:'— მომწ. ამოირჩიე —',delRow:'წაიშალოს?',lastRow:'ბოლო სტრ.!',
+    swTitle:'შესყიდვის მოთხოვნა',swSub:'გთხოვთ შეავსოთ ფასები',
+    swProj:'პროექტი',swDate:'თარიღი',swCompany:'კომპანია',swYourP:'თქვ. ფასი',swNote:'* ყვ. = შეავსეთ',
+    swPh:'შეიყვანეთ...',invSent:'ინვოისი გაიგზავნა!',
+    // Q&A
+    qaTitle:'კითხვები',qaNew:'+ ახალი',qaEmpty:'ამოირჩიეთ კითხვა',
+    qaAnswer:'↩ პასუხი',qaSend:'გაგზავნა',qaAnsPlaceholder:'პასუხი...',
+    qaOpen:'ღია',qaAnswered:'პასუხი გაცემულია',
+    varLbls:{bestProductTotal:'პ. საუკ.',selProductTotal:'პ. ამ.',bestInstallTotal:'მ. საუკ.',
+      selInstallTotal:'მ. ამ.',selCombinedTotal:'კომბ.',profitPct:'მოგ. %',overheadPct:'ზედნ. %',
+      discountPct:'ფასდ. %',vatPct:'დღგ %'},
+  },
+  en:{
+    projectInfo:'Project Info',date:'Date',notes:'Notes',
+    projFiles:'Project Files',
+    colVis:'Columns',colBest:'Best Price',colMySel:'My Selected',colSupSel:'Supplier Select',colAtt:'📎 Files',
+    suppliers:'Participants',addSup:'Add Supplier',
+    winnerTitle:'🏆 Winner',wProd:'Prod.',wInst:'Inst.',wTot:'Total',
+    tab0:'📦 Product',tab1:'🔧 Install',tab2:'📋 Combined',tab3:'📊 Summary',
+    tab4:'📨 Invoices',tab5:'💬 Q&A',tab6:'👁 Supplier View',
+    addRow:'+ Add Row',autoBest:'⚡ Auto-select Best',
+    params:'Parameters',profit:'Profit %',overhead:'Overhead %',discount:'Discount %',vat:'VAT %',
+    formulas:'Formulas',addFormula:'+ Add Formula',
+    invActions:'Invoices',reqBest:'📩 Invoice (Best)',reqSel:'📩 Invoice (Selected)',
+    sentInv:'Sent Invoices',all:'All',seen:'Seen',unseen:'Unseen',
+    fResults:'Formula Results',selComb:'Selected Combined',finalP:'Final Price (+VAT)',
+    supWin:'Supplier Window —',swPrint:'🖨 Print',swExcel:'⬇ Excel',
+    no:'#',itemName:'Item Name',unit:'Unit',qty:'Qty',labor:'Labor',att:'📎',
+    bestP:'Best Price',mySelP:'My Selected',selSup:'Supplier',unitP:'Unit Price',
+    total:'Total',grandTotal:'Grand Total',choose:'— choose —',
+    selPS:'Prod.Sup.',selPP:'Prod.Price',selIS:'Inst.Sup.',selIP:'Inst.Price',
+    combU:'Combined',lineT:'Total',
+    s_bP:'Best Prod.',s_sP:'Sel.Prod.',s_bI:'Best Inst.',s_sI:'Sel.Inst.',
+    s_sC:'Combined',s_pr:'Profit',s_ov:'Overhead',s_rv:'Revenue',s_fn:'+VAT',
+    fLabel:'Label',fExpr:'Formula',arithmetic:'Operators & Numbers',
+    preview:'Result:',clearFml:'Clear',cancel:'Cancel',saveFml:'Save',
+    editFml:'Edit Formula',newFml:'New Formula',
+    df0:'Revenue',df1:'Profit Amount',df2:'Final+VAT',df3:'Savings vs Best',
+    choose_sup:'— choose supplier —',delRow:'Delete row?',lastRow:'Last row!',
+    swTitle:'Procurement Request',swSub:'Please fill in your prices',
+    swProj:'Project',swDate:'Date',swCompany:'Company',swYourP:'Your Price',swNote:'* Fill yellow cells',
+    swPh:'Enter...',invSent:'Invoice sent!',
+    qaTitle:'Questions',qaNew:'+ New',qaEmpty:'Select a question',
+    qaAnswer:'↩ Answer',qaSend:'Send',qaAnsPlaceholder:'Your answer...',
+    qaOpen:'Open',qaAnswered:'Answered',
+    varLbls:{bestProductTotal:'Best Prod.',selProductTotal:'Sel.Prod.',bestInstallTotal:'Best Inst.',
+      selInstallTotal:'Sel.Inst.',selCombinedTotal:'Combined',profitPct:'Profit%',overheadPct:'Overhead%',
+      discountPct:'Discount%',vatPct:'VAT%'},
+  }
+};
+let lang='ka';
+function t(k){return T[lang][k]??k}
+function setLang(l){
+  lang=l;
+  document.getElementById('lka').classList.toggle('on',l==='ka');
+  document.getElementById('len').classList.toggle('on',l==='en');
+  document.getElementById('tt').textContent=l==='ka'?'⚙ შესყიდვის მოდული':'⚙ Procurement Module';
+  applyT();renderAll();recalc();renderFRows();buildVGrid();renderSupWinDD();renderQAList();
+}
+function applyT(){document.querySelectorAll('[data-t]').forEach(el=>{const k=el.getAttribute('data-t');if(T[lang][k])el.textContent=T[lang][k];});}
+
+// ════════════════════
+// DATA
+// ════════════════════
+const COLS=['#1a4fa0','#e67e22','#27ae60','#8e44ad','#c0392b'];
+const SAVS=[['HG','#dce8f5','#1a4fa0'],['AL','#fde8cc','#8a4000'],['TP','#d4f0e0','#155f30'],['BS','#eadaf5','#5a2080'],['PM','#f5d5d5','#8a1010']];
+let sups=[
+  {name:'HERZ Georgia',vis:true,winner:false},
+  {name:'Aquaterm LLC',vis:true,winner:false},
+  {name:'TechnoPlast',vis:true,winner:false},
+  {name:'BuildSupply Co.',vis:true,winner:false},
+  {name:'ProMech Ltd.',vis:true,winner:false},
+];
+function mkR(id,name,unit,qty,labor,pp,ip){
+  return{id,name,unit,qty,labor,pp:[...pp],ip:[...ip],selP:null,selI:null,atts:[]};
+}
+let rows=[
+  mkR(1,'HERZ STRÖMAX 4017M','pcs',34,'mounting',   [85,92,78,0,88],[12,15,10,0,13]),
+  mkR(2,'Aquatherm PPR-C DN32','m',120,'welding',   [4.2,3.9,0,4.5,4.1],[1.5,1.2,0,1.8,1.4]),
+  mkR(3,'FCU Fan Coil 4-pipe','pcs',18,'install',   [420,0,395,410,435],[45,0,40,50,42]),
+  mkR(4,'Balancing Valve DN20','pcs',56,'mounting', [18,22,17,20,0],[3,4,3,3.5,0]),
+  mkR(5,'Insulation Cover 25mm','m',200,'gluing',   [2.1,2.0,2.3,0,1.9],[0.5,0.4,0.6,0,0.45]),
+  mkR(6,'Expansion Vessel 50L','pcs',4,'commission',[145,138,0,150,142],[20,18,0,22,19]),
+  mkR(7,'Circulation Pump DN32','pcs',6,'install',  [285,270,260,0,295],[35,30,28,0,32]),
+  mkR(8,'Thermostatic Valve','pcs',90,'mounting',   [8.5,0,7.8,9.0,8.2],[1.5,0,1.2,1.8,1.4]),
+  mkR(9,'Pressure Gauge 0-10bar','pcs',12,'mounting',[14,13,15,12,0],[2,2,2.5,1.8,0]),
+  mkR(10,'Heat Exchanger HX-50','pcs',2,'commission',[680,0,650,720,695],[80,0,75,90,82]),
+];
+let nid=11,curTab=0,formulas=[],fid=0,editFi=null,mTok=[];
+let invs=[],invFilt='all';
+let colVis={best:true,mysel:true,supsel:true,attcol:true};
+let projAtts=[]; // {type:'img'|'file'|'drive', name, data, url}
+let curRowAtt=null; // row index for attachment modal
+let qaItems=[]; // {id, supIdx, question, answers:[{text,date}], date}
+let qaSelId=null;
+let qId=0;
+
+// ════════════════════
+// HELPERS
+// ════════════════════
+function fmt(n){if(n===null||n===undefined||isNaN(n))return'—';return Number(n).toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function best(arr){const v=arr.filter(p=>parseFloat(p)>0).map(Number);return v.length?Math.min(...v):null;}
+function bestI(arr){let m=Infinity,ix=null;arr.forEach((p,i)=>{if(parseFloat(p)>0&&parseFloat(p)<m){m=parseFloat(p);ix=i;}});return ix;}
+function selP(row,type){const k=type==='p'?'selP':'selI',a=type==='p'?'pp':'ip';if(row[k]===null)return null;const p=row[a][row[k]];return parseFloat(p)>0?parseFloat(p):null;}
+function visSups(){return sups.map((s,i)=>({...s,i})).filter(s=>s.vis);}
+function supOpts(sel,ph){return`<option value="-1">${ph||t('choose')}</option>`+sups.map((s,i)=>`<option value="${i}"${sel===i?' selected':''}>${s.name}</option>`).join('');}
+function calcTotals(){
+  const bP=rows.reduce((a,r)=>{const b=best(r.pp);return a+(b!==null?b*r.qty:0);},0);
+  const sP=rows.reduce((a,r)=>{const p=selP(r,'p');return a+(p!==null?p*r.qty:0);},0);
+  const bI=rows.reduce((a,r)=>{const b=best(r.ip);return a+(b!==null?b*r.qty:0);},0);
+  const sI=rows.reduce((a,r)=>{const p=selP(r,'i');return a+(p!==null?p*r.qty:0);},0);
+  return{bP,sP,bI,sI,sC:sP+sI};
+}
+function getVars(){
+  const{bP,sP,bI,sI,sC}=calcTotals();
+  return{bestProductTotal:bP,selProductTotal:sP,bestInstallTotal:bI,selInstallTotal:sI,selCombinedTotal:sC,
+    profitPct:parseFloat(document.getElementById('pp')?.value)||0,
+    overheadPct:parseFloat(document.getElementById('po')?.value)||0,
+    discountPct:parseFloat(document.getElementById('pd')?.value)||0,
+    vatPct:parseFloat(document.getElementById('pv')?.value)||0};
+}
+function evalF(expr){try{const v=getVars();const fn=new Function(...Object.keys(v),`"use strict";return(${expr});`);const r=fn(...Object.values(v));if(!isFinite(r)||isNaN(r))throw 0;return{ok:true,val:r};}catch{return{ok:false};}}
+
+// ════════════════════
+// COLUMN TOGGLES
+// ════════════════════
+function toggleCol(k){colVis[k]=!colVis[k];document.getElementById(`tog-${k}`).classList.toggle('on',colVis[k]);renderAll();}
+
+// ════════════════════
+// WINNER
+// ════════════════════
+function setWinner(i){const w=sups[i].winner;sups.forEach(s=>s.winner=false);sups[i].winner=!w;renderSups();updateWinnerBox();}
+function updateWinnerBox(){
+  const wi=sups.findIndex(s=>s.winner);
+  const box=document.getElementById('winner-box');
+  if(wi<0){box.classList.remove('show');return;}
+  box.classList.add('show');
+  document.getElementById('winner-name').textContent=sups[wi].name;
+  const wP=rows.reduce((a,r)=>a+(parseFloat(r.pp[wi])||0)*r.qty,0);
+  const wI=rows.reduce((a,r)=>a+(parseFloat(r.ip[wi])||0)*r.qty,0);
+  document.getElementById('winner-prod').textContent=fmt(wP);
+  document.getElementById('winner-inst').textContent=fmt(wI);
+  document.getElementById('winner-tot').textContent=fmt(wP+wI);
+}
+
+// ════════════════════
+// SUPPLIERS
+// ════════════════════
+function renderSups(){
+  document.getElementById('slist').innerHTML=sups.map((s,i)=>`
+    <div class="srow">
+      <div class="sdot" style="background:${COLS[i%5]}"></div>
+      <input type="checkbox" ${s.vis?'checked':''} onchange="sups[${i}].vis=this.checked;renderAll()">
+      <input type="text" class="sname${s.vis?'':' off'}" value="${s.name}" onchange="sups[${i}].name=this.value;renderAll();renderSupWinDD()">
+      <button class="wstar ${s.winner?'won':'idle'}" onclick="setWinner(${i})">⭐</button>
+    </div>`).join('');
+}
+function addSup(){
+  sups.push({name:`Supplier ${sups.length+1}`,vis:true,winner:false});
+  rows.forEach(r=>{r.pp.push(0);r.ip.push(0);});
+  renderSups();renderAll();renderSupWinDD();
+}
+
+// ════════════════════
+// ATTACHMENTS (PROJECT)
+// ════════════════════
+function addProjFiles(e){
+  Array.from(e.target.files).forEach(f=>{
+    const ext=f.name.split('.').pop().toLowerCase();
+    const isImg=['jpg','jpeg','png','gif','webp'].includes(ext);
+    if(isImg){
+      const fr=new FileReader();
+      fr.onload=ev=>{projAtts.push({type:'img',name:f.name,data:ev.target.result});renderProjAtts();};
+      fr.readAsDataURL(f);
+    } else {
+      projAtts.push({type:'file',name:f.name,ext:ext.toUpperCase()});renderProjAtts();
+    }
+  });
+  e.target.value='';
+}
+function renderProjAtts(){
+  const el=document.getElementById('proj-atts');
+  el.innerHTML='';
+  projAtts.forEach((a,i)=>{
+    if(a.type==='img'){
+      const w=document.createElement('div');w.className='att-thumb-wrap';
+      w.innerHTML=`<img class="att-thumb" src="${a.data}" title="${a.name}" onclick="openLbox('${a.data}','${a.name}')">
+        <button class="att-del" onclick="projAtts.splice(${i},1);renderProjAtts()">×</button>`;
+      el.appendChild(w);
+    } else if(a.type==='file'){
+      const w=document.createElement('div');w.className='att-file';
+      w.innerHTML=`<span>📄</span><span class="att-ext">${a.ext}</span>
+        <button class="att-del" onclick="projAtts.splice(${i},1);renderProjAtts()">×</button>`;
+      w.title=a.name;el.appendChild(w);
+    } else if(a.type==='drive'){
+      const w=document.createElement('div');w.className='att-file';
+      w.innerHTML=`<span>🔗</span><span class="att-ext">Drive</span>
+        <button class="att-del" onclick="projAtts.splice(${i},1);renderProjAtts()">×</button>`;
+      w.title=a.url;w.onclick=()=>window.open(a.url,'_blank');el.appendChild(w);
+    }
+  });
+  const addBtn=document.createElement('div');
+  addBtn.className='att-add';addBtn.textContent='+';addBtn.title='ფაილი';
+  addBtn.onclick=()=>document.getElementById('proj-file-in').click();
+  el.appendChild(addBtn);
+}
+function openDrive(e){
+  e.preventDefault();
+  const url=document.getElementById('drive-url').value.trim();
+  if(url){window.open(url,'_blank');}
+  else {
+    // add current drive URL as attachment
+    const u=prompt('Google Drive URL:','https://drive.google.com/');
+    if(u){projAtts.push({type:'drive',name:'Drive Link',url:u});renderProjAtts();}
+  }
+}
+
+// ════════════════════
+// ROW ATTACHMENTS
+// ════════════════════
+function openRowAtt(ri){
+  curRowAtt=ri;
+  document.getElementById('rov-title').textContent=`📎 ${rows[ri].name}`;
+  renderRowAtts();
+  document.getElementById('rov').classList.add('show');
+}
+function closeRov(){document.getElementById('rov').classList.remove('show');curRowAtt=null;}
+function closeROvOut(e){if(e.target===document.getElementById('rov'))closeRov();}
+function addRowFiles(e){
+  if(curRowAtt===null)return;
+  Array.from(e.target.files).forEach(f=>{
+    const ext=f.name.split('.').pop().toLowerCase();
+    const isImg=['jpg','jpeg','png','gif','webp'].includes(ext);
+    if(isImg){
+      const fr=new FileReader();
+      fr.onload=ev=>{rows[curRowAtt].atts.push({type:'img',name:f.name,data:ev.target.result});renderRowAtts();renderAll();};
+      fr.readAsDataURL(f);
+    } else {
+      rows[curRowAtt].atts.push({type:'file',name:f.name,ext:ext.toUpperCase()});renderRowAtts();renderAll();
+    }
+  });
+  e.target.value='';
+}
+function addDriveToRow(){
+  if(curRowAtt===null)return;
+  const url=document.getElementById('rov-drive').value.trim();
+  if(!url)return;
+  rows[curRowAtt].atts.push({type:'drive',name:'Drive',url});
+  document.getElementById('rov-drive').value='';
+  renderRowAtts();renderAll();
+}
+function renderRowAtts(){
+  if(curRowAtt===null)return;
+  const el=document.getElementById('rov-att-list');
+  el.innerHTML='';
+  rows[curRowAtt].atts.forEach((a,i)=>{
+    if(a.type==='img'){
+      const w=document.createElement('div');w.className='att-thumb-wrap';
+      w.innerHTML=`<img class="att-thumb" src="${a.data}" style="width:60px;height:60px" title="${a.name}" onclick="openLbox('${a.data}','${a.name}')">
+        <button class="att-del" onclick="rows[${curRowAtt}].atts.splice(${i},1);renderRowAtts();renderAll()">×</button>`;
+      el.appendChild(w);
+    } else if(a.type==='file'){
+      const w=document.createElement('div');w.className='att-file';w.style.cssText='width:60px;height:60px';
+      w.innerHTML=`<span>📄</span><span class="att-ext">${a.ext}</span>
+        <button class="att-del" onclick="rows[${curRowAtt}].atts.splice(${i},1);renderRowAtts();renderAll()">×</button>`;
+      w.title=a.name;el.appendChild(w);
+    } else if(a.type==='drive'){
+      const w=document.createElement('div');w.className='att-file';w.style.cssText='width:60px;height:60px';
+      w.innerHTML=`<span>🔗</span><span class="att-ext">Drive</span>
+        <button class="att-del" onclick="rows[${curRowAtt}].atts.splice(${i},1);renderRowAtts();renderAll()">×</button>`;
+      w.title=a.url;w.onclick=()=>window.open(a.url,'_blank');el.appendChild(w);
+    }
+  });
+  if(!rows[curRowAtt].atts.length){
+    el.innerHTML=`<span style="font-size:11px;color:#bbb">${lang==='ka'?'ფაილები არ არის':'No files'}</span>`;
+  }
+}
+
+// Row attachment thumbnail rendering
+function rowAttHtml(row,ri){
+  if(!colVis.attcol)return'';
+  let h=`<td style="min-width:80px"><div class="row-att">`;
+  const preview=row.atts.slice(0,3);
+  preview.forEach(a=>{
+    if(a.type==='img')h+=`<img class="rat" src="${a.data}" title="${a.name}" onclick="openLbox('${a.data}','${a.name}')">`;
+    else if(a.type==='file')h+=`<div class="rat-icon" title="${a.name}">📄</div>`;
+    else h+=`<div class="rat-icon" title="${a.url}" onclick="window.open('${a.url}','_blank')">🔗</div>`;
+  });
+  h+=`<div class="rat-add" onclick="openRowAtt(${ri})">+</div>`;
+  if(row.atts.length)h+=`<span style="font-size:9px;color:#888">${row.atts.length}</span>`;
+  h+=`</div></td>`;
+  return h;
+}
+
+// ════════════════════
+// LIGHTBOX
+// ════════════════════
+function openLbox(src,cap){
+  document.getElementById('lbox-img').src=src;
+  document.getElementById('lbox-cap').textContent=cap||'';
+  document.getElementById('lbox').classList.add('show');
+}
+function closeLbox(){document.getElementById('lbox').classList.remove('show');}
+
+// ════════════════════
+// TABS
+// ════════════════════
+function swTab(n){
+  curTab=n;
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('on',i===n));
+  document.querySelectorAll('.pane').forEach((p,i)=>p.classList.toggle('on',i===n));
+  if(n===2)renderCombined();
+  if(n===3)recalc();
+  if(n===4)renderInvs();
+  if(n===5)renderQAList();
+  if(n===6)renderSupWin();
+}
+
+// ════════════════════
+// RENDER TABLE
+// ════════════════════
+function renderTable(type){
+  const isP=type==='p';
+  const prk=isP?'pp':'ip',sk=isP?'selP':'selI';
+  const hd=document.getElementById(`hd${isP?0:1}`);
+  const bd=document.getElementById(`bd${isP?0:1}`);
+  const ft=document.getElementById(`ft${isP?0:1}`);
+  const vs=visSups();
+  const cB=colVis.best,cM=colVis.mysel,cS=colVis.supsel,cA=colVis.attcol;
+  hd.innerHTML=`<tr>
+    <th class="hf" style="width:26px">${t('no')}</th>
+    <th class="hf" style="min-width:140px">${t('itemName')}</th>
+    <th class="hf" style="width:40px">${t('unit')}</th>
+    <th class="hf" style="width:46px">${t('qty')}</th>
+    <th class="hf" style="min-width:90px">${t('labor')}</th>
+    ${cA?`<th class="hf" style="min-width:80px">${t('att')}</th>`:''}
+    ${cB?`<th class="hb" style="min-width:72px">${t('bestP')}</th>`:''}
+    ${cM?`<th class="hs" style="min-width:72px">${t('mySelP')}</th>`:''}
+    ${cS?`<th class="hs" style="min-width:105px">${t('selSup')}</th>`:''}
+    ${vs.map(s=>`<th class="hsp" style="background:${COLS[s.i%5]};min-width:82px">${s.winner?'⭐ ':''}${s.name}</th>`).join('')}
+    <th class="hf" style="width:24px"></th>
+  </tr>`;
+  let h='';
+  rows.forEach((row,ri)=>{
+    const b=best(row[prk]),bi=bestI(row[prk]),sp=selP(row,type);
+    h+=`<tr>
+      <td class="idx">${row.id}</td>
+      <td><input type="text" value="${row.name}" onchange="rows[${ri}].name=this.value;renderAll()"></td>
+      <td><input type="text" value="${row.unit}" style="width:36px" onchange="rows[${ri}].unit=this.value"></td>
+      <td class="num"><input type="number" value="${row.qty}" min="0" onchange="rows[${ri}].qty=parseFloat(this.value)||0;renderAll()"></td>
+      <td><input type="text" value="${row.labor}" onchange="rows[${ri}].labor=this.value"></td>
+      ${rowAttHtml(row,ri)}
+      ${cB?`<td class="bst"><span class="dv">${b!==null?fmt(b):'—'}</span></td>`:''}
+      ${cM?`<td class="slc"><span class="dv">${sp!==null?fmt(sp):'—'}</span></td>`:''}
+      ${cS?`<td><select onchange="rows[${ri}]['${sk}']=this.value<0?null:parseInt(this.value);renderAll()">${supOpts(row[sk])}</select></td>`:''}
+      ${vs.map(s=>{
+        const p=row[prk][s.i]||'',isB=s.i===bi,isW=s.winner;
+        return`<td class="${isB?'bstc':''} ${isW?'wincol':''} num"><input type="number" value="${p||''}" min="0" step="0.01" placeholder="—" onchange="rows[${ri}]['${prk}'][${s.i}]=parseFloat(this.value)||0;renderAll()"></td>`;
+      }).join('')}
+      <td><button class="dbtn" onclick="delRow(${ri})">✕</button></td>
+    </tr>`;
+  });
+  bd.innerHTML=h;
+  const tB=rows.reduce((a,r)=>{const b=best(r[prk]);return a+(b!==null?b*r.qty:0);},0);
+  const tS=rows.reduce((a,r)=>{const p=selP(r,type);return a+(p!==null?p*r.qty:0);},0);
+  ft.innerHTML=`<tr class="trow">
+    <td colspan="${5+(cA?1:0)}" style="text-align:right;font-size:11px;padding-right:6px">${t('total')}</td>
+    ${cB?`<td class="num" style="background:#d4edda;color:#1a6b3c">${fmt(tB)}</td>`:''}
+    ${cM?`<td class="num" style="background:#fff3cd;color:#7a5c00">${fmt(tS)}</td>`:''}
+    ${cS?`<td></td>`:''}
+    ${vs.map(s=>{const st=rows.reduce((a,r)=>a+(parseFloat(r[prk][s.i])||0)*r.qty,0);return`<td class="num">${st>0?fmt(st):'—'}</td>`;}).join('')}
+    <td></td>
+  </tr>`;
+}
+
+// ════════════════════
+// COMBINED
+// ════════════════════
+function renderCombined(){
+  const hd=document.getElementById('hd2'),bd=document.getElementById('bd2'),ft=document.getElementById('ft2');
+  hd.innerHTML=`<tr>
+    <th class="hf" style="width:26px">${t('no')}</th>
+    <th class="hf" style="min-width:140px">${t('itemName')}</th>
+    <th class="hf" style="width:40px">${t('unit')}</th>
+    <th class="hf" style="width:46px">${t('qty')}</th>
+    <th class="hf" style="min-width:105px">${t('selPS')}</th>
+    <th class="hb" style="min-width:72px">${t('selPP')}</th>
+    <th class="hf" style="min-width:105px">${t('selIS')}</th>
+    <th class="hs" style="min-width:72px">${t('selIP')}</th>
+    <th class="hf" style="min-width:80px;background:#444">${t('combU')}</th>
+    <th class="hf" style="min-width:92px;background:#222">${t('lineT')}</th>
+  </tr>`;
+  let grand=0,h='';
+  rows.forEach(row=>{
+    const pp=selP(row,'p'),ip=selP(row,'i'),cu=(pp||0)+(ip||0),lt=row.qty*cu;
+    grand+=lt;
+    const ps=row.selP!==null?sups[row.selP]?.name:'—';
+    const is=row.selI!==null?sups[row.selI]?.name:'—';
+    h+=`<tr>
+      <td class="idx">${row.id}</td><td>${row.name}</td><td>${row.unit}</td><td class="num">${row.qty}</td>
+      <td>${ps}</td><td class="bst"><span class="dv" style="color:#1a6b3c">${pp!==null?fmt(pp):'—'}</span></td>
+      <td>${is}</td><td class="slc"><span class="dv" style="color:#7a5c00">${ip!==null?fmt(ip):'—'}</span></td>
+      <td class="num">${cu>0?fmt(cu):'—'}</td>
+      <td class="num" style="font-weight:700;color:#1a4fa0">${lt>0?fmt(lt):'—'}</td>
+    </tr>`;
+  });
+  bd.innerHTML=h;
+  ft.innerHTML=`<tr class="trow"><td colspan="9" style="text-align:right;padding-right:8px">${t('grandTotal')}</td><td class="num" style="font-size:14px;color:#1a4fa0">${fmt(grand)}</td></tr>`;
+  const chips=document.getElementById('cfchips');
+  if(!chips)return;
+  chips.innerHTML=formulas.length===0
+    ?`<span style="font-size:11px;color:#bbb">${lang==='ka'?'ფორმ. არ არის':'No formulas'}</span>`
+    :formulas.map(f=>{const r=evalF(f.formula);return`<div class="fchip"><div class="fl">${f.label}</div><div class="fv">${r.ok?fmt(r.val):'⚠'}</div></div>`;}).join('');
+}
+
+// ════════════════════
+// ROW ACTIONS
+// ════════════════════
+function addRow(){rows.push(mkR(nid++,lang==='ka'?'ახალი პოზიცია':'New Item','pcs',1,'',sups.map(()=>0),sups.map(()=>0)));renderAll();}
+function delRow(ri){if(rows.length<=1){alert(t('lastRow'));return;}if(!confirm(t('delRow')))return;rows.splice(ri,1);renderAll();}
+function autoBest(type){const prk=type==='p'?'pp':'ip',sk=type==='p'?'selP':'selI';rows.forEach(r=>{r[sk]=bestI(r[prk]);});renderAll();}
+function renderAll(){renderSups();renderTable('p');renderTable('i');updateWinnerBox();if(curTab===2)renderCombined();if(curTab===3)recalc();}
+
+// ════════════════════
+// SUMMARY
+// ════════════════════
+function recalc(){
+  const{bP,sP,bI,sI,sC}=calcTotals();
+  const v=getVars(),pr=v.profitPct,ov=v.overheadPct,dc=v.discountPct,vt=v.vatPct;
+  const profit=sC*pr/100,ovhd=sC*ov/100,rev=(sC+profit+ovhd)*(1-dc/100),final=rev*(1+vt/100);
+  const tv1=document.getElementById('tv1'),tv2=document.getElementById('tv2');
+  if(tv1)tv1.textContent=fmt(sC);if(tv2)tv2.textContent=fmt(final);
+  const cards=[
+    {l:t('s_bP'),v:bP,c:''},{l:t('s_sP'),v:sP,c:'amb'},
+    {l:t('s_bI'),v:bI,c:''},{l:t('s_sI'),v:sI,c:'amb'},
+    {l:t('s_sC'),v:sC,c:'blue'},{l:t('s_pr'),v:profit,c:'grn'},
+    {l:t('s_ov'),v:ovhd,c:''},{l:t('s_rv'),v:rev,c:'blue'},{l:t('s_fn'),v:final,c:'blue'},
+  ];
+  const el=document.getElementById('scards');
+  if(el)el.innerHTML=cards.map(c=>`<div class="sc ${c.c}"><div class="sl">${c.l}</div><div class="sv">${fmt(c.v)}</div></div>`).join('');
+  renderFRows();
+}
+
+// ════════════════════
+// FORMULA ENGINE
+// ════════════════════
+const VKEYS=['bestProductTotal','selProductTotal','bestInstallTotal','selInstallTotal','selCombinedTotal','profitPct','overheadPct','discountPct','vatPct'];
+const OPS=['+','-','*','/','^','(',')','100','1000','10','0.01','0.1','1'];
+function buildVGrid(){
+  document.getElementById('vgrid').innerHTML=VKEYS.map(k=>`<div class="vchip" onclick="pushTok('var','${k}')"><div class="vcn">${k}</div><div class="vcs">${T[lang].varLbls[k]||k}</div></div>`).join('');
+  document.getElementById('opad').innerHTML=OPS.map(op=>{
+    const w=isNaN(op)&&op!='('&&op!=')';
+    return`<button class="okey${w?' wide':''}" onclick="pushTok('op','${op}')">${op}</button>`;
+  }).join('')+`<button class="okey wide" onclick="popTok()" style="background:#fdf0ef;color:#c0392b">⌫</button><button class="okey wide" onclick="clearFml()">C</button>`;
+}
+function openFModal(fi){
+  editFi=fi;const f=fi!==null?formulas[fi]:null;
+  document.getElementById('m-lbl').value=f?f.label:(lang==='ka'?'ახალი ფორმ.':'New Formula');
+  mTok=f?tokz(f.formula):[];
+  document.getElementById('fmtitle').textContent=fi!==null?t('editFml'):t('newFml');
+  buildVGrid();updDisp();document.getElementById('fov').classList.add('show');
+}
+function closeFModal(){document.getElementById('fov').classList.remove('show');}
+function closeFOvOut(e){if(e.target===document.getElementById('fov'))closeFModal();}
+function tokz(expr){if(!expr)return[];const parts=[];let last=0;const rx=new RegExp('('+VKEYS.join('|')+')','g');let m;rx.lastIndex=0;
+  while((m=rx.exec(expr))!==null){if(m.index>last)parts.push({t:'op',v:expr.slice(last,m.index).trim()});parts.push({t:'var',v:m[0]});last=m.index+m[0].length;}
+  if(last<expr.length)parts.push({t:'op',v:expr.slice(last).trim()});return parts.filter(p=>p.v);}
+function pushTok(t,v){mTok.push({t,v});updDisp();}
+function popTok(){mTok.pop();updDisp();}
+function clearFml(){mTok=[];updDisp();}
+function mkey(e){if(e.key==='Backspace'){popTok();e.preventDefault();}}
+function tok2expr(tk){return tk.map(t=>t.v).join('');}
+function updDisp(){
+  const d=document.getElementById('mdisp'),expr=tok2expr(mTok);
+  d.innerHTML=mTok.length===0
+    ?`<span style="color:#bbb">${lang==='ka'?'ცვლადები + ოპერ...':'Variables + operators...'}</span><span class="caret"></span>`
+    :mTok.map(tk=>tk.t==='var'?`<span class="ftk">${tk.v}</span>`:!isNaN(tk.v)?`<span class="fnu">${tk.v}</span>`:`<span class="fop">${tk.v}</span>`).join('')+`<span class="caret"></span>`;
+  const rv=document.getElementById('mres');
+  if(!expr.trim()){rv.textContent='—';rv.className='rv';return;}
+  const r=evalF(expr);r.ok?(rv.textContent=fmt(r.val),rv.className='rv'):(rv.textContent='⚠',rv.className='rv err');
+}
+function saveFml(){
+  const label=document.getElementById('m-lbl').value.trim()||'Formula';
+  const formula=tok2expr(mTok);if(!formula){closeFModal();return;}
+  if(editFi!==null){formulas[editFi].label=label;formulas[editFi].formula=formula;}
+  else formulas.push({id:fid++,label,formula});
+  closeFModal();renderFRows();if(curTab===2)renderCombined();
+}
+function initFormulas(){
+  formulas=[['df0','selCombinedTotal*(1+profitPct/100)'],['df1','selCombinedTotal*profitPct/100'],
+    ['df2','selCombinedTotal*(1+profitPct/100)*(1+vatPct/100)'],
+    ['df3','(selProductTotal+selInstallTotal)-(bestProductTotal+bestInstallTotal)']
+  ].map(([lk,formula])=>({id:fid++,label:t(lk),formula}));
+}
+function renderFRows(){
+  const el=document.getElementById('frows');if(!el)return;
+  el.innerHTML=formulas.length===0
+    ?`<p style="font-size:11px;color:#bbb;padding:7px 0">${lang==='ka'?'ფორმ. არ არის':'No formulas'}</p>`
+    :formulas.map((f,fi)=>{const r=evalF(f.formula);return`<div class="frow">
+      <div class="frow-lbl">${f.label}</div>
+      <div class="frow-expr">${f.formula}</div>
+      <div class="frow-res${r.ok?'':' err'}">${r.ok?fmt(r.val):'⚠'}</div>
+      <div style="display:flex;gap:4px">
+        <button class="btn" style="height:24px;padding:0 7px;font-size:10px" onclick="openFModal(${fi})">✏</button>
+        <button class="dbtn" onclick="formulas.splice(${fi},1);renderFRows();if(curTab===2)renderCombined()">✕</button>
+      </div>
+    </div>`;}).join('');
+}
+
+// ════════════════════
+// INVOICES
+// ════════════════════
+function sendInvs(mode){
+  const now=new Date();
+  sups.forEach((s,i)=>{if(!s.vis)return;const{bP,sP,bI,sI,sC}=calcTotals();
+    invs.unshift({id:Date.now()+i,si:i,name:s.name,type:mode,
+      date:now.toLocaleDateString(),time:now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+      amount:mode==='best'?(bP+bI):sC,seen:false,proj:document.getElementById('pnum').value});});
+  swTab(4);alert(t('invSent'));
+}
+function filtInv(f){invFilt=f;['all','seen','unseen'].forEach(k=>document.getElementById(`fi-${k}`).classList.toggle('pri',k===f));renderInvs();}
+function renderInvs(){
+  const el=document.getElementById('ilist');
+  let data=invFilt==='seen'?invs.filter(i=>i.seen):invFilt==='unseen'?invs.filter(i=>!i.seen):invs;
+  if(!data.length){el.innerHTML=`<div style="padding:40px;text-align:center;color:#bbb">${lang==='ka'?'ინვ. არ არის':'No invoices'}</div>`;return;}
+  el.innerHTML=data.map(inv=>{
+    const av=SAVS[inv.si%5];const tl=inv.type==='best'?(lang==='ka'?'საუკ.':'Best'):(lang==='ka'?'ამორჩ.':'Selected');
+    return`<div class="icard" onclick="invs.find(x=>x.id===${inv.id}).seen=true;renderInvs()">
+      <div class="iav" style="background:${av[1]};color:${av[2]}">${av[0]}</div>
+      <div class="iinfo"><div class="ico">${inv.name}</div><div class="imt">${inv.proj}·${tl}·${inv.date} ${inv.time}</div></div>
+      <div class="ist"><span class="badge ${inv.seen?'s':'u'}">${inv.seen?(lang==='ka'?'✓ ნანახი':'✓ Seen'):(lang==='ka'?'● უნახავი':'● Unseen')}</span><span class="iamt">${fmt(inv.amount)}</span></div>
+    </div>`;}).join('');
+}
+
+// ════════════════════
+// Q&A
+// ════════════════════
+function renderQAList(){
+  const el=document.getElementById('qa-list');
+  const supSel=document.getElementById('qa-sup-sel');
+  if(supSel)supSel.innerHTML=`<option value="-1">${t('choose_sup')}</option>`+sups.map((s,i)=>`<option value="${i}">${s.name}</option>`).join('');
+  if(!qaItems.length){
+    el.innerHTML=`<div style="padding:20px;text-align:center;color:#bbb;font-size:11px">${lang==='ka'?'კითხვები არ არის':'No questions'}</div>`;
+    return;
+  }
+  el.innerHTML=qaItems.map(q=>{
+    const si=q.supIdx%5;const answered=q.answers.length>0;
+    return`<div class="qa-item${qaSelId===q.id?' active':''}" onclick="selectQA(${q.id})">
+      <div class="qa-sup" style="color:${COLS[si]}">${sups[q.supIdx]?.name||'?'}
+        <span class="qa-badge ${answered?'ans':'open'}">${answered?t('qaAnswered'):t('qaOpen')}</span>
+      </div>
+      <div class="qa-q-preview">${q.question}</div>
+    </div>`;}).join('');
+}
+function openQANew(){document.getElementById('qa-add-form').style.display='block';}
+function closeQANew(){document.getElementById('qa-add-form').style.display='none';}
+function submitQA(){
+  const si=parseInt(document.getElementById('qa-sup-sel').value);
+  const q=document.getElementById('qa-q-inp').value.trim();
+  if(si<0||!q)return;
+  qaItems.unshift({id:qId++,supIdx:si,question:q,answers:[],date:new Date().toLocaleString()});
+  document.getElementById('qa-q-inp').value='';
+  closeQANew();renderQAList();
+}
+function selectQA(id){
+  qaSelId=id;renderQAList();
+  const q=qaItems.find(x=>x.id===id);
+  if(!q)return;
+  const si=q.supIdx%5;
+  const thread=document.getElementById('qa-thread');
+  const empty=document.getElementById('qa-empty');
+  const bar=document.getElementById('qa-input-bar');
+  empty.style.display='none';thread.style.display='flex';bar.style.display='flex';
+  let h=`<div class="qa-bubble question"><div class="qb-meta" style="color:${COLS[si]}">${sups[q.supIdx]?.name||'?'} · ${q.date}</div>${q.question}</div>`;
+  q.answers.forEach(a=>{h+=`<div class="qa-bubble answer"><div class="qb-meta">${lang==='ka'?'ჩემი პასუხი':'My Answer'} · ${a.date}</div>${a.text}</div>`;});
+  thread.innerHTML=h;
+  thread.scrollTop=thread.scrollHeight;
+}
+function sendAnswer(){
+  if(qaSelId===null)return;
+  const ans=document.getElementById('qa-ans').value.trim();
+  if(!ans)return;
+  const q=qaItems.find(x=>x.id===qaSelId);
+  if(!q)return;
+  q.answers.push({text:ans,date:new Date().toLocaleString()});
+  document.getElementById('qa-ans').value='';
+  renderQAList();selectQA(qaSelId);
+}
+
+// ════════════════════
+// SUPPLIER WINDOW
+// ════════════════════
+function renderSupWinDD(){
+  const sel=document.getElementById('sw-sup');const cur=sel.value;
+  sel.innerHTML=`<option value="-1">${t('choose_sup')}</option>`+sups.map((s,i)=>`<option value="${i}"${cur==i?' selected':''}>${s.name}</option>`).join('');
+}
+function renderSupWin(){
+  const si=parseInt(document.getElementById('sw-sup').value);
+  const el=document.getElementById('supwin-content');
+  if(si<0){el.innerHTML=`<div style="padding:60px;text-align:center;color:#bbb;font-size:14px">${lang==='ka'?'მომწ. ამოირჩიეთ':'Select a supplier above'}</div>`;return;}
+  const s=sups[si];const av=SAVS[si%5];
+  const proj=document.getElementById('pnum').value;
+  const pname=document.getElementById('pname').value;
+  const now=new Date().toLocaleDateString(lang==='ka'?'ka-GE':'en-GB');
+  // Project attachments for supplier
+  const attHtml=projAtts.length?`<div class="swcard-atts">
+    <h4>${lang==='ka'?'პროექტის ფაილები':'Project Files'}</h4>
+    <div class="swcard-atts-list">
+      ${projAtts.map(a=>{
+        if(a.type==='img')return`<img class="swcard-att-thumb" src="${a.data}" title="${a.name}" style="cursor:pointer" onclick="openLbox('${a.data}','${a.name}')">`;
+        if(a.type==='file')return`<div class="swcard-att-file" title="${a.name}"><span>📄</span><span class="ext">${a.ext}</span></div>`;
+        return`<div class="swcard-att-file" title="${a.url}" onclick="window.open('${a.url}','_blank')" style="cursor:pointer"><span>🔗</span><span class="ext">Drive</span></div>`;
+      }).join('')}
+    </div>
+  </div>`:'';
+  el.innerHTML=`<div class="supwin-card">
+    <div class="swcard-head">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:40px;height:40px;border-radius:50%;background:${av[1]};color:${av[2]};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0">${av[0]}</div>
+        <div><h2>${t('swTitle')}</h2><p>${t('swSub')}</p></div>
+      </div>
+    </div>
+    <div class="swcard-meta">
+      <div class="sw-mf"><label>${t('swProj')}</label><div class="val">${proj} · ${pname}</div></div>
+      <div class="sw-mf"><label>${t('swDate')}</label><div class="val">${now}</div></div>
+      <div class="sw-mf"><label>${t('swCompany')}</label><div class="val" style="color:#1a4fa0">${s.name}</div></div>
+      <div class="sw-mf"><label>Drive</label><div class="val"><a href="${document.getElementById('drive-url').value||'#'}" target="_blank" style="color:#1a4fa0;font-size:12px">${document.getElementById('drive-url').value||'—'}</a></div></div>
+    </div>
+    ${attHtml}
+    <div class="swcard-table">
+      <table>
+        <thead><tr>
+          <th style="width:26px">${t('no')}</th>
+          <th>${t('itemName')}</th>
+          <th style="width:42px">${t('unit')}</th>
+          <th style="width:46px">${t('qty')}</th>
+          <th>${t('labor')}</th>
+          <th style="background:#fff8e1;border:1px solid #f5d98b;min-width:100px">${t('swYourP')} (${lang==='ka'?'პ.':'Prod.'})</th>
+          <th style="background:#fff8e1;border:1px solid #f5d98b;min-width:100px">${t('swYourP')} (${lang==='ka'?'მ.':'Inst.'})</th>
+        </tr></thead>
+        <tbody>${rows.map(row=>{
+          const pp=parseFloat(row.pp[si])||null;
+          const ip=parseFloat(row.ip[si])||null;
+          return`<tr>
+            <td style="text-align:center;color:#bbb">${row.id}</td>
+            <td style="font-weight:500">${row.name}${row.atts.length?` <span style="font-size:10px;color:#1a4fa0">📎${row.atts.length}</span>`:''}
+            </td>
+            <td style="text-align:center">${row.unit}</td>
+            <td style="text-align:right;font-weight:600">${row.qty}</td>
+            <td style="color:#888;font-size:11px">${row.labor||'—'}</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:${pp?'#1a6b3c':'#aaa'}">${pp?fmt(pp):`<span style="font-size:10px;color:#ccc">${t('swPh')}</span>`}</td>
+            <td style="background:#fff8e1;text-align:right;font-weight:600;color:${ip?'#1a6b3c':'#aaa'}">${ip?fmt(ip):`<span style="font-size:10px;color:#ccc">${t('swPh')}</span>`}</td>
+          </tr>`;
+        }).join('')}</tbody>
+        <tfoot><tr>
+          <td colspan="5" style="text-align:right;font-weight:700;padding-right:8px;color:#1a4fa0">${t('total')}</td>
+          <td style="text-align:right;font-weight:700;color:#1a4fa0;background:#fff8e1">${fmt(rows.reduce((a,r)=>(parseFloat(r.pp[si])||0)*r.qty+a,0))}</td>
+          <td style="text-align:right;font-weight:700;color:#1a4fa0;background:#fff8e1">${fmt(rows.reduce((a,r)=>(parseFloat(r.ip[si])||0)*r.qty+a,0))}</td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <div class="swcard-footer">${t('swNote')}</div>
+  </div>`;
+}
+
+// ════════════════════
+// BOOT
+// ════════════════════
+function demo(a){alert(`[Demo] ${a}`);}
+document.getElementById('pdate').valueAsDate=new Date();
+initFormulas();renderAll();recalc();renderSupWinDD();
+['all','seen','unseen'].forEach(k=>document.getElementById(`fi-${k}`).classList.toggle('pri',k==='all'));
+</script>
+
+
+</body></html>

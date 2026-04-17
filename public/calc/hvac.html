@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MEP Calc v0.3</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#f0f2f5;--sf:#fff;--s2:#f6f8fa;--s3:#eef1f5;
+  --bd:#e0e4ea;--bd2:#c8cdd6;
+  --tx:#1a1f2e;--t2:#525c6e;--t3:#9aa3b0;
+  --ac:#2563eb;--ab:#eff4ff;--ad:#bfdbfe;
+  --gr:#16a34a;--gb:#dcfce7;
+  --rd:#dc2626;--rb:#fee2e2;
+  --or:#d97706;--ob:#fef3c7;
+  --pu:#7c3aed;--pb:#ede9fe;
+  --te:#0d9488;--tb:#ccfbf1;
+  --HH:48px;--SW:264px;--r:7px;--rs:5px;--T:.2s ease;
+  --f:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--f);font-size:13px;background:var(--bg);color:var(--tx);height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none;}
+
+/* ── HEADER ── */
+#hdr{height:var(--HH);background:var(--sf);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 10px;gap:5px;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.06);z-index:100;}
+.logo{display:flex;align-items:center;gap:8px;padding-right:14px;border-right:1px solid var(--bd);flex-shrink:0;}
+.lico{width:32px;height:32px;background:var(--ab);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--ac);}
+.logo b{font-size:14px;font-weight:700;letter-spacing:-.3px;}
+.logo small{font-size:10px;color:var(--t3);display:block;margin-top:-2px;}
+.tabs{display:flex;gap:1px;}
+.tab{display:flex;align-items:center;gap:5px;height:32px;padding:0 13px;border-radius:var(--rs);border:none;background:transparent;color:var(--t2);font-family:var(--f);font-size:12.5px;font-weight:500;cursor:pointer;transition:all var(--T);white-space:nowrap;}
+.tab:hover{background:var(--s2);color:var(--tx);}
+.tab.active{background:var(--ab);color:var(--ac);font-weight:600;}
+.hdr-r{display:flex;align-items:center;gap:4px;margin-left:auto;}
+.ib{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--sf);color:var(--t2);cursor:pointer;transition:all var(--T);}
+.ib:hover{background:var(--s2);color:var(--tx);border-color:var(--bd2);}
+.ib.save:hover{background:var(--ab);color:var(--ac);border-color:var(--ad);}
+.ib.load-btn:hover{background:var(--gb);color:var(--gr);border-color:#86efac;}
+.hdr-sep{width:1px;height:20px;background:var(--bd);margin:0 2px;}
+
+/* ── LAYOUT ── */
+#main{display:flex;flex:1;overflow:hidden;}
+.sb{background:var(--sf);display:flex;flex-direction:column;flex-shrink:0;transition:width var(--T);overflow:hidden;position:relative;z-index:10;}
+#lsb{width:var(--SW);border-right:1px solid var(--bd);}
+#rsb{width:var(--SW);border-left:1px solid var(--bd);}
+#lsb.col{width:0;}
+#rsb.col{width:0;}
+
+/* toggle btns */
+.sbt{position:absolute;top:50%;width:22px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:20;transition:all var(--T);}
+#lsb .sbt{right:-22px;border-radius:0 10px 10px 0;background:var(--ac);color:#fff;transform:translateY(-50%);box-shadow:4px 0 14px rgba(37,99,235,.4);}
+#rsb .sbt{left:-22px;border-radius:10px 0 0 10px;background:var(--rd);color:#fff;transform:translateY(-50%);box-shadow:-4px 0 14px rgba(220,38,38,.35);}
+#lsb .sbt:hover{filter:brightness(1.15);}
+#rsb .sbt:hover{filter:brightness(1.1);}
+#lsb .sbt svg,#rsb .sbt svg{transition:transform var(--T);}
+#lsb.col .sbt svg{transform:rotate(180deg);}
+#rsb.col .sbt svg{transform:rotate(180deg);}
+
+/* sidebar header */
+.sbh{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--bd);flex-shrink:0;min-height:40px;}
+.sbtl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);white-space:nowrap;overflow:hidden;}
+.col .sbtl{opacity:0;}
+.sb-sc{flex:1;overflow-y:auto;overflow-x:hidden;}
+.sb-sc::-webkit-scrollbar{width:3px;}
+.sb-sc::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px;}
+
+/* ── LEFT ACCORDION ── */
+.ag{border-bottom:1px solid var(--bd);}
+.ah{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;transition:background var(--T);min-height:37px;}
+.ah:hover{background:var(--s2);}
+.ach{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ach.bl{background:var(--ab);color:var(--ac);}
+.ach.te{background:var(--tb);color:var(--te);}
+.ach.or{background:var(--ob);color:var(--or);}
+.ach.pu{background:var(--pb);color:var(--pu);}
+.al{font-size:12.5px;font-weight:600;color:var(--tx);flex:1;white-space:nowrap;overflow:hidden;}
+.col .al,.col .apm{opacity:0;pointer-events:none;}
+.apm{width:20px;height:20px;border-radius:4px;border:1px solid var(--bd);background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--t3);flex-shrink:0;line-height:1;transition:all var(--T);padding-bottom:1px;}
+.ag.open .apm{background:var(--ab);color:var(--ac);border-color:var(--ad);}
+.ab2{max-height:0;overflow:hidden;transition:max-height .28s ease;background:var(--s2);}
+.ag.open .ab2{max-height:600px;}
+.ci{display:flex;align-items:center;gap:9px;padding:7px 10px 7px 30px;cursor:grab;transition:background var(--T);border-bottom:1px solid rgba(0,0,0,.03);}
+.ci:hover{background:#e8f0fe;}
+.ci:active{cursor:grabbing;}
+.cico{width:30px;height:30px;border-radius:7px;background:var(--sf);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.cn{font-size:12px;font-weight:500;color:var(--tx);}
+.cs{font-size:10px;color:var(--t3);}
+.col .ci{padding-left:7px;}
+.col .cn,.col .cs{display:none;}
+.ae{padding:8px 30px;font-size:11px;color:var(--t3);font-style:italic;}
+.col .ae{display:none;}
+
+/* ── CENTER ── */
+#cw{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.tp{display:none;flex-direction:column;flex:1;overflow:hidden;}
+.tp.active{display:flex;}
+
+/* canvas toolbar */
+.ctb{display:flex;align-items:center;gap:5px;padding:7px 12px;background:var(--sf);border-bottom:1px solid var(--bd);flex-shrink:0;flex-wrap:wrap;}
+.csep{width:1px;height:18px;background:var(--bd);margin:0 2px;}
+.cb{display:flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--sf);color:var(--t2);font-family:var(--f);font-size:12px;font-weight:500;cursor:pointer;transition:all var(--T);}
+.cb:hover{background:var(--s2);color:var(--tx);border-color:var(--bd2);}
+.cb.on{background:var(--ab);color:var(--ac);border-color:var(--ad);}
+.cb.sq{width:28px;padding:0;justify-content:center;}
+.zb{font-size:11.5px;font-weight:700;color:var(--t2);min-width:44px;text-align:center;background:var(--s2);border:1px solid var(--bd);border-radius:var(--rs);height:28px;display:flex;align-items:center;justify-content:center;}
+.csp{flex:1;}
+
+/* canvas */
+#cc{flex:1;position:relative;overflow:hidden;cursor:crosshair;}
+#cc.pan{cursor:grab;}
+#cc.pan:active{cursor:grabbing;}
+canvas{position:absolute;top:0;left:0;display:block;}
+.cht{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.92);border:1px solid var(--bd);border-radius:20px;padding:5px 16px;font-size:11px;color:var(--t3);backdrop-filter:blur(6px);pointer-events:none;white-space:nowrap;}
+.cco{position:absolute;bottom:14px;right:14px;background:rgba(255,255,255,.88);border:1px solid var(--bd);border-radius:var(--rs);padding:4px 10px;font-size:11px;color:var(--t3);font-family:'Courier New',monospace;}
+
+/* Function placeholder */
+.fnp{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:var(--t3);}
+.fnp svg{opacity:.18;}
+
+/* ── FUNCTION 4 PANEL ── */
+.f4-wrap{flex:1;overflow-y:auto;padding:20px;}
+.f4-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:20px;max-width:480px;margin:0 auto 16px;}
+.f4-title{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px;}
+.f4-sub{font-size:11px;color:var(--t3);margin-bottom:16px;}
+.f4-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.f4-row label{font-size:12px;color:var(--t2);width:160px;flex-shrink:0;}
+.f4-row input[type=range]{flex:1;accent-color:var(--ac);height:4px;}
+.f4-row .f4-val{font-size:12px;font-weight:600;color:var(--ac);min-width:36px;text-align:right;}
+.f4-row input[type=color]{width:36px;height:28px;border:1px solid var(--bd);border-radius:var(--rs);cursor:pointer;padding:2px;}
+.f4-prev{width:100%;height:64px;border:1px solid var(--bd);border-radius:var(--rs);margin-top:8px;background:var(--s2);}
+.f4-sep{height:1px;background:var(--bd);margin:12px 0;}
+.f4-apply{display:flex;align-items:center;gap:8px;height:32px;padding:0 14px;border-radius:var(--rs);border:none;background:var(--ac);color:#fff;font-family:var(--f);font-size:12.5px;font-weight:600;cursor:pointer;transition:all var(--T);}
+.f4-apply:hover{background:var(--ac);filter:brightness(1.1);}
+
+/* ── RIGHT SIDEBAR ── */
+.rsrch{padding:7px 10px;border-bottom:1px solid var(--bd);flex-shrink:0;}
+.rsrch input{width:100%;height:28px;border:1px solid var(--bd);border-radius:var(--rs);padding:0 28px 0 8px;font-family:var(--f);font-size:12px;color:var(--tx);background:var(--s2);outline:none;transition:border-color var(--T);}
+.rsrch input:focus{border-color:var(--ac);background:var(--sf);}
+.rsrch-w{position:relative;}
+.rsrch-w svg{position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none;}
+.col .rsrch{display:none;}
+.rtabs{display:flex;border-bottom:1px solid var(--bd);flex-shrink:0;}
+.rt{flex:1;height:34px;display:flex;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:500;color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;transition:all var(--T);}
+.rt:hover{color:var(--tx);background:var(--s2);}
+.rt.active{color:var(--ac);border-bottom-color:var(--ac);background:var(--ab);}
+.col .rtabs{display:none;}
+.fla{display:flex;gap:4px;padding:7px 10px;border-bottom:1px solid var(--bd);flex-shrink:0;}
+.col .fla{display:none;}
+.fb{display:flex;align-items:center;gap:4px;flex:1;height:28px;padding:0 8px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--s2);color:var(--t2);font-family:var(--f);font-size:11.5px;font-weight:500;cursor:pointer;transition:all var(--T);justify-content:center;}
+.fb:hover{background:var(--sf);border-color:var(--bd2);}
+.fb.add:hover{background:var(--gb);color:var(--gr);border-color:#86efac;}
+.fb.rem:hover{background:var(--rb);color:var(--rd);border-color:#fca5a5;}
+
+/* tree */
+.tree{flex:1;overflow-y:auto;padding:4px 0;}
+.tree::-webkit-scrollbar{width:3px;}
+.tree::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px;}
+.col .tree,.col .bom{display:none;}
+
+.tn{}
+.tr{display:flex;align-items:center;gap:5px;padding:5px 8px;cursor:pointer;border-radius:var(--rs);margin:0 5px;transition:background var(--T);min-height:30px;}
+.tr:hover{background:var(--s2);}
+.tr.sel{background:var(--ab);}
+.tr.sel .tl{color:var(--ac);font-weight:600;}
+.tcar{width:14px;height:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--t3);transition:transform var(--T);}
+.tn.open>.tr>.tcar{transform:rotate(90deg);}
+.tico{width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tl{font-size:12px;font-weight:500;color:var(--tx);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+/* badge + eye group */
+.tbadge-grp{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.tbg{font-size:10px;color:var(--t3);background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:1px 6px;}
+.eye-btn{width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:4px;cursor:pointer;color:var(--t3);transition:all var(--T);}
+.eye-btn:hover{color:var(--ac);background:var(--ab);}
+.eye-btn.off{color:var(--bd2);}
+.tc{display:none;}
+.tn.open>.tc{display:block;}
+
+/* floor params */
+.flp{background:var(--s3);border-radius:var(--rs);margin:2px 10px 6px 10px;padding:8px 10px;border:1px solid var(--bd);}
+.flp-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
+.flp-row:last-child{margin-bottom:0;}
+.flp-row label{font-size:10.5px;color:var(--t2);width:90px;flex-shrink:0;}
+.flp-row input[type=number]{flex:1;height:24px;border:1px solid var(--bd);border-radius:4px;padding:0 5px;font-size:11px;font-family:var(--f);color:var(--tx);background:var(--sf);outline:none;min-width:0;}
+.flp-row input[type=number]:focus{border-color:var(--ac);}
+.flp-row span{font-size:10.5px;color:var(--t3);flex-shrink:0;}
+
+/* device sub-accordion */
+.da{margin:0 5px 0 5px;}
+.dah{display:flex;align-items:center;gap:5px;padding:5px 8px 5px 10px;cursor:pointer;border-radius:var(--rs);transition:background var(--T);}
+.dah:hover{background:var(--s2);}
+.dacar{width:12px;height:12px;display:flex;align-items:center;justify-content:center;color:var(--t3);transition:transform var(--T);flex-shrink:0;}
+.da.open .dacar{transform:rotate(90deg);}
+.dal{font-size:11.5px;font-weight:600;flex:1;}
+.dac{font-size:10px;color:var(--t3);background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:1px 5px;}
+.dab{display:none;padding-bottom:4px;}
+.da.open .dab{display:block;}
+.di{display:flex;align-items:center;gap:6px;padding:4px 8px 4px 26px;border-radius:var(--rs);cursor:pointer;transition:background var(--T);}
+.di:hover{background:var(--s2);}
+.dll{font-size:11.5px;color:var(--tx);flex:1;}
+.di-del{width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:3px;cursor:pointer;color:var(--t3);opacity:0;transition:all var(--T);}
+.di:hover .di-del{opacity:1;}
+.di-del:hover{color:var(--rd);background:var(--rb);}
+.dadd{display:flex;align-items:center;gap:4px;padding:3px 8px 5px 26px;cursor:pointer;color:var(--ac);font-size:11px;opacity:.65;transition:opacity var(--T);}
+.dadd:hover{opacity:1;}
+
+/* BOM */
+.bom{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--t3);}
+.bom svg{opacity:.18;}
+.bom p{font-size:12px;}
+.bom small{font-size:11px;text-align:center;line-height:1.5;}
+
+/* ── STATUS ── */
+#sbar{height:24px;background:var(--sf);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:14px;flex-shrink:0;font-size:11px;color:var(--t3);}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--gr);}
+.ssep{width:1px;height:12px;background:var(--bd);}
+.ssp{flex:1;}
+
+/* ── MODAL ── */
+#modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+#modal.show{display:flex;}
+.modal-box{background:var(--sf);border-radius:14px;padding:24px 28px;width:320px;box-shadow:0 24px 64px rgba(0,0,0,.25);animation:mIn .15s ease;}
+@keyframes mIn{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-ico{width:40px;height:40px;background:var(--rb);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;color:var(--rd);}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:6px;}
+.modal-msg{font-size:12.5px;color:var(--t2);line-height:1.5;margin-bottom:20px;}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;}
+.mbtn{height:32px;padding:0 16px;border-radius:var(--rs);font-family:var(--f);font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--s2);color:var(--t2);transition:all var(--T);}
+.mbtn:hover{background:var(--sf);}
+.mbtn.danger{background:var(--rd);color:#fff;border-color:var(--rd);}
+.mbtn.danger:hover{filter:brightness(1.08);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="hdr">
+  <div class="logo">
+    <div class="lico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <div><b>MEP Calc</b><small>HVAC / Refrigeration</small></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="swTab(0,this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>გრაფიკები
+    </button>
+    <button class="tab" onclick="swTab(1,this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M21 12h-2M5 12H3"/></svg>ფუნქცია 1
+    </button>
+    <button class="tab" onclick="swTab(2,this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>ფუნქცია 2
+    </button>
+    <button class="tab" onclick="swTab(3,this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>ფუნქცია 3
+    </button>
+    <button class="tab" onclick="swTab(4,this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>ხაზის სტილი
+    </button>
+  </div>
+
+  <div class="hdr-r">
+    <button class="ib save" title="შენახვა (JSON)" onclick="saveProject()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    </button>
+    <button class="ib load-btn" title="ჩატვირთვა" onclick="document.getElementById('fi').click()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    </button>
+    <div class="hdr-sep"></div>
+    <button class="ib" title="პარამეტრები"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 19.07l-1.41 1.41M21 12h-2M5 12H3M19.07 19.07l-1.41-1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2"/></svg></button>
+  </div>
+  <input type="file" id="fi" accept=".json,.hvac" style="display:none" onchange="loadProject(event)">
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- LEFT SIDEBAR -->
+  <div class="sb" id="lsb">
+    <div class="sbh">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--t3);flex-shrink:0"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <span class="sbtl">კომპონენტები</span>
+    </div>
+    <div class="sb-sc">
+
+      <!-- მილები -->
+      <div class="ag open" id="ag-p">
+        <div class="ah" onclick="togAg('ag-p')">
+          <div class="ach bl"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9h18M3 15h18M9 9v6M15 9v6"/></svg></div>
+          <span class="al">მილები</span><span class="apm">−</span>
+        </div>
+        <div class="ab2">
+          <div class="ci" draggable="true" data-type="supply">
+            <div class="cico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2"><line x1="4" y1="12" x2="18" y2="12"/><polyline points="13 7 18 12 13 17"/><rect x="1" y="9" width="3" height="6" rx="1" fill="#dbeafe" stroke="#2563eb"/></svg></div>
+            <div><div class="cn">მიწოდების მილი</div><div class="cs">Supply Pipe</div></div>
+          </div>
+          <div class="ci" draggable="true" data-type="return">
+            <div class="cico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2"><line x1="20" y1="12" x2="6" y2="12"/><polyline points="11 7 6 12 11 17"/><rect x="20" y="9" width="3" height="6" rx="1" fill="#fee2e2" stroke="#dc2626"/></svg></div>
+            <div><div class="cn">უკუსვლის მილი</div><div class="cs">Return Pipe</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ფიტინგები -->
+      <div class="ag" id="ag-f">
+        <div class="ah" onclick="togAg('ag-f')">
+          <div class="ach te"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+          <span class="al">ფიტინგები</span><span class="apm">+</span>
+        </div>
+        <div class="ab2"><div class="ae">მალე დაემატება…</div></div>
+      </div>
+
+      <!-- შიდა ბლოკები -->
+      <div class="ag" id="ag-i">
+        <div class="ah" onclick="togAg('ag-i')">
+          <div class="ach or"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></div>
+          <span class="al">შიდა ბლოკები</span><span class="apm">+</span>
+        </div>
+        <div class="ab2"><div class="ae">მალე დაემატება…</div></div>
+      </div>
+
+      <!-- გარე ბლოკები -->
+      <div class="ag" id="ag-o">
+        <div class="ah" onclick="togAg('ag-o')">
+          <div class="ach pu"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+          <span class="al">გარე ბლოკები</span><span class="apm">+</span>
+        </div>
+        <div class="ab2"><div class="ae">მალე დაემატება…</div></div>
+      </div>
+
+    </div>
+    <div class="sbt" onclick="togLeft()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="15 18 9 12 15 6"/></svg>
+    </div>
+  </div>
+
+  <!-- CENTER -->
+  <div id="cw">
+
+    <!-- Panel 0: 2D Canvas -->
+    <div class="tp active" id="p0">
+      <div class="ctb">
+        <span style="font-size:11px;color:var(--t3);font-weight:500;">ზუმი:</span>
+        <button class="cb sq" onclick="zIn()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+        <div class="zb" id="zlbl">100%</div>
+        <button class="cb sq" onclick="zOut()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+        <button class="cb" onclick="showAll()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>Show All</button>
+        <div class="csep"></div>
+        <button class="cb on" id="btn-gr" onclick="togGrid(this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"/></svg>გრიდი</button>
+        <button class="cb" id="btn-pan" onclick="togPan(this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9V5l2 2M5 5L3 7M19 9V5l-2 2m2-2l2 2M9 19h10m0 0l-2-2m2 2l-2 2M5 19v-4"/></svg>პანი</button>
+        <div class="csep"></div>
+        <span style="font-size:11px;color:var(--t3);font-weight:500;">ფენა:</span>
+        <button class="cb" id="layer-btn">სართული 1</button>
+        <div class="csp"></div>
+        <span style="font-size:10.5px;color:var(--t3);" id="cinfo">2D ხედი · drag&amp;drop</span>
+      </div>
+      <div id="cc">
+        <canvas id="cv"></canvas>
+        <div class="cht">🖱 კომპონენტი: მარცხნიდან drag&drop · Scroll = ზუმი · Middle/Pan = გადაადგილება</div>
+        <div class="cco" id="coords">x: 0.00 მ  y: 0.00 მ</div>
+      </div>
+    </div>
+
+    <!-- Panels 1-3: placeholders -->
+    <div class="tp" id="p1"><div class="fnp"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M21 12h-2M5 12H3"/></svg><p>ფუნქცია 1 — მალე დაემატება</p></div></div>
+    <div class="tp" id="p2"><div class="fnp"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/></svg><p>ფუნქცია 2 — მალე დაემატება</p></div></div>
+    <div class="tp" id="p3"><div class="fnp"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg><p>ფუნქცია 3 — მალე დაემატება</p></div></div>
+
+    <!-- Panel 4: Line Style -->
+    <div class="tp" id="p4">
+      <div class="f4-wrap">
+        <div class="f4-card">
+          <div class="f4-title">📐 სართულის ხაზის სტილი</div>
+          <div class="f4-sub">პარამეტრები გავრცელდება ყველა სართულის ხაზზე canvas-ზე</div>
+          <div class="f4-sep"></div>
+
+          <div class="f4-row">
+            <label>სისქე (px)</label>
+            <input type="range" id="f4t" min="0.5" max="12" step="0.5" value="2" oninput="updF4()">
+            <span class="f4-val" id="f4tv">2 px</span>
+          </div>
+          <div class="f4-row">
+            <label>წყვეტის სიგრძე (px)</label>
+            <input type="range" id="f4d" min="2" max="50" step="1" value="12" oninput="updF4()">
+            <span class="f4-val" id="f4dv">12 px</span>
+          </div>
+          <div class="f4-row">
+            <label>პაუზა / gap (px)</label>
+            <input type="range" id="f4g" min="1" max="30" step="1" value="6" oninput="updF4()">
+            <span class="f4-val" id="f4gv">6 px</span>
+          </div>
+          <div class="f4-row">
+            <label>ფერი</label>
+            <input type="color" id="f4c" value="#1a1f2e" oninput="updF4()">
+            <span class="f4-val" id="f4cv" style="font-size:11px;color:var(--t2)">#1a1f2e</span>
+          </div>
+
+          <div class="f4-sep"></div>
+          <div style="margin-bottom:8px;font-size:11.5px;font-weight:600;color:var(--t2);">გადახედვა</div>
+          <canvas id="f4prev" height="64" style="width:100%;border:1px solid var(--bd);border-radius:var(--rs);background:var(--s2);display:block;"></canvas>
+
+          <div class="f4-sep"></div>
+          <button class="f4-apply" onclick="applyF4()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+            გამოყენება canvas-ზე
+          </button>
+        </div>
+
+        <div class="f4-card">
+          <div class="f4-title">📋 ახსნა</div>
+          <div class="f4-sub">სართულის ხაზი canvas-ზე</div>
+          <div style="font-size:12px;color:var(--t2);line-height:1.7;">
+            <b>ნიშნული</b> — სართულის სიმაღლე (მ.) — Y ღერძი<br>
+            <b>X₀ — საწყისი X</b> — სადან იწყება ხაზი (მ.) — X ღერძი<br>
+            <b>სიგანე</b> — ხაზის სრული სიგრძე (მ.)<br>
+            <b>1 ბადე = 1 მ.</b> (minor grid 0.5 მ.)
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /cw -->
+
+  <!-- RIGHT SIDEBAR -->
+  <div class="sb" id="rsb">
+    <div class="sbh">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--t3);flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+      <span class="sbtl">პროექტი</span>
+    </div>
+
+    <div class="rsrch">
+      <div class="rsrch-w">
+        <input type="text" id="rsq" placeholder="ძებნა პროექტში…" oninput="srch(this.value)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+    </div>
+
+    <div class="rtabs">
+      <div class="rt active" onclick="rTab('fl',this)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        სართული
+      </div>
+      <div class="rt" onclick="rTab('bom',this)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
+        BOM
+      </div>
+    </div>
+
+    <div class="fla" id="fla">
+      <button class="fb add" onclick="addFloor()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>სართული
+      </button>
+      <button class="fb rem" onclick="askDelFloor()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>წაშლა
+      </button>
+    </div>
+
+    <div class="tree" id="tw"></div>
+
+    <div class="bom" id="bom" style="display:none;">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg>
+      <p>BOM ცარიელია</p>
+      <small>კომპონენტების დამატებისას<br>ავტომატურად გამოჩნდება</small>
+    </div>
+
+    <div class="sbt" onclick="togRight()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+  </div>
+
+</div>
+
+<!-- STATUS BAR -->
+<div id="sbar">
+  <div class="sdot"></div><span>მზად</span>
+  <div class="ssep"></div>
+  <span id="st-c">კომპ: 0</span>
+  <div class="ssep"></div>
+  <span id="st-f">სართ: 1</span>
+  <div class="ssep"></div>
+  <span id="st-save" style="color:var(--t3);">—</span>
+  <div class="ssp"></div>
+  <span>MEP Calc v0.3</span>
+</div>
+
+<!-- MODAL -->
+<div id="modal" onclick="if(event.target===this)mCancel()">
+  <div class="modal-box">
+    <div class="modal-ico" id="m-ico">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+    </div>
+    <div class="modal-title" id="m-title">წაშლა</div>
+    <div class="modal-msg" id="m-msg">ნამდვილად გსურთ წაშლა?</div>
+    <div class="modal-btns">
+      <button class="mbtn" onclick="mCancel()">გაუქმება</button>
+      <button class="mbtn danger" id="m-ok" onclick="mConfirm()">წაშლა</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════
+   STATE
+══════════════════════════════════════ */
+const SCALE = 50; // px per meter at zoom=1
+
+const S = {
+  zoom: 1, ox: 0, oy: 0,
+  grid: true, panMode: false, panning: false, lm: {x:0, y:0},
+  comps: [],
+  floors: [
+    {id:1, name:'სართული 1', elev:0,   open:true,  visible:true, offset:0, width:10, fit:[], ind:['FCU-01','FCU-02'], out:[]},
+    {id:2, name:'სართული 2', elev:3.2, open:false, visible:true, offset:0, width:10, fit:[], ind:[], out:['ODU-01']},
+  ],
+  nid: 3, selF: null, curTab: 0, rsbMode: 'fl',
+  lineStyle: { thick:2, dash:12, gap:6, color:'#1a1f2e' },
+  modalCb: null,
+};
+
+// load from localStorage on start
+try {
+  const saved = localStorage.getItem('mep_project');
+  if (saved) { const d = JSON.parse(saved); if (d.floors) S.floors = d.floors; if (d.lineStyle) S.lineStyle = d.lineStyle; if (d.comps) S.comps = d.comps; S.nid = Math.max(...S.floors.map(f=>f.id)) + 1; }
+} catch(e) {}
+
+/* ══════════════════════════════════════
+   AUTOSAVE
+══════════════════════════════════════ */
+function autoSave() {
+  localStorage.setItem('mep_project', JSON.stringify({ floors: S.floors, lineStyle: S.lineStyle, comps: S.comps }));
+  const n = new Date();
+  document.getElementById('st-save').textContent = `ავტო-სეივი: ${n.getHours().toString().padStart(2,'0')}:${n.getMinutes().toString().padStart(2,'0')}`;
+}
+setInterval(autoSave, 30000);
+
+/* ══════════════════════════════════════
+   SAVE / LOAD FILE
+══════════════════════════════════════ */
+function saveProject() {
+  const data = JSON.stringify({ version:'0.3', floors: S.floors, lineStyle: S.lineStyle, comps: S.comps }, null, 2);
+  const blob = new Blob([data], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'project.hvac.json';
+  a.click();
+  autoSave();
+  document.getElementById('st-save').textContent = '💾 შენახულია';
+}
+function loadProject(e) {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => {
+    try {
+      const d = JSON.parse(ev.target.result);
+      if (d.floors) S.floors = d.floors;
+      if (d.lineStyle) S.lineStyle = d.lineStyle;
+      if (d.comps) S.comps = d.comps;
+      S.nid = Math.max(...S.floors.map(f=>f.id)) + 1;
+      buildTree(); draw(); updCount();
+      syncF4();
+      document.getElementById('st-save').textContent = '📂 ჩატვირთულია: ' + f.name;
+    } catch(err) { alert('ფაილი არ არის სწორი ფორმატის'); }
+  };
+  r.readAsText(f);
+  e.target.value = '';
+}
+
+/* ══════════════════════════════════════
+   MODAL
+══════════════════════════════════════ */
+function showModal(title, msg, cb, btnTxt='წაშლა', isDanger=true) {
+  document.getElementById('m-title').textContent = title;
+  document.getElementById('m-msg').textContent = msg;
+  document.getElementById('m-ok').textContent = btnTxt;
+  document.getElementById('m-ok').className = 'mbtn ' + (isDanger ? 'danger' : '');
+  S.modalCb = cb;
+  document.getElementById('modal').classList.add('show');
+}
+function mConfirm() { document.getElementById('modal').classList.remove('show'); if (S.modalCb) { S.modalCb(); S.modalCb = null; } }
+function mCancel()  { document.getElementById('modal').classList.remove('show'); S.modalCb = null; }
+
+/* ══════════════════════════════════════
+   HEADER TABS
+══════════════════════════════════════ */
+function swTab(i, btn) {
+  document.querySelectorAll('#hdr .tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tp').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('p' + i).classList.add('active');
+  S.curTab = i;
+  if (i === 0) setTimeout(resizeCv, 10);
+  if (i === 4) setTimeout(() => { syncF4(); drawF4Prev(); }, 10);
+}
+
+/* ══════════════════════════════════════
+   SIDEBAR TOGGLES
+══════════════════════════════════════ */
+function togLeft()  { document.getElementById('lsb').classList.toggle('col'); setTimeout(resizeCv, 240); }
+function togRight() { document.getElementById('rsb').classList.toggle('col'); setTimeout(resizeCv, 240); }
+
+/* ══════════════════════════════════════
+   LEFT ACCORDION
+══════════════════════════════════════ */
+function togAg(id) {
+  const el = document.getElementById(id);
+  const o = el.classList.toggle('open');
+  el.querySelector('.apm').textContent = o ? '−' : '+';
+}
+
+/* ══════════════════════════════════════
+   RIGHT TAB SWITCH
+══════════════════════════════════════ */
+function rTab(mode, el) {
+  document.querySelectorAll('.rt').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  S.rsbMode = mode;
+  const isF = mode === 'fl';
+  document.getElementById('tw').style.display = isF ? 'block' : 'none';
+  document.getElementById('fla').style.display = isF ? 'flex' : 'none';
+  document.getElementById('bom').style.display = isF ? 'none' : 'flex';
+}
+
+/* ══════════════════════════════════════
+   TREE
+══════════════════════════════════════ */
+const CATS = [
+  { k:'fit', lbl:'ფიტინგები',     clr:'#0d9488' },
+  { k:'ind', lbl:'შიდა ბლოკები',  clr:'#d97706' },
+  { k:'out', lbl:'გარე ბლოკები',  clr:'#7c3aed' },
+];
+
+function eyeIcon(on) {
+  return on
+    ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
+    : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+}
+
+function buildTree(q = '') {
+  const tw = document.getElementById('tw');
+  tw.innerHTML = '';
+  const ql = q.toLowerCase();
+
+  S.floors.forEach(f => {
+    if (ql) {
+      const hit = f.name.toLowerCase().includes(ql) || CATS.some(c => f[c.k].some(x => x.toLowerCase().includes(ql)));
+      if (!hit) return;
+    }
+    const total = f.fit.length + f.ind.length + f.out.length;
+
+    const catsHtml = CATS.map(c => `
+      <div class="da" id="da${f.id}${c.k}">
+        <div class="dah" onclick="togDA('da${f.id}${c.k}')">
+          <div class="dacar"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg></div>
+          <span class="dal" style="color:${c.clr}">${c.lbl}</span>
+          <span class="dac">${f[c.k].length}</span>
+        </div>
+        <div class="dab">
+          ${f[c.k].map((it, i) => `
+            <div class="di">
+              <svg width="8" height="8" viewBox="0 0 10 10" fill="${c.clr}"><circle cx="5" cy="5" r="3.5"/></svg>
+              <span class="dll">${it}</span>
+              <div class="di-del" onclick="askDelDev(${f.id},'${c.k}',${i},'${it}')" title="წაშლა">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </div>
+            </div>`).join('')}
+          <div class="dadd" onclick="addDev(${f.id},'${c.k}')">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            დამატება
+          </div>
+        </div>
+      </div>`).join('');
+
+    const node = document.createElement('div');
+    node.className = 'tn' + (f.open ? ' open' : '');
+    node.innerHTML = `
+      <div class="tr${S.selF === f.id ? ' sel' : ''}" onclick="selF(${f.id});togTN(this)">
+        <div class="tcar"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg></div>
+        <div class="tico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
+        <span class="tl">${f.name}</span>
+        <div class="tbadge-grp">
+          <span class="tbg">${total}</span>
+          <div class="eye-btn${f.visible ? '' : ' off'}" onclick="togVis(event,${f.id})" title="${f.visible ? 'დამალვა' : 'ჩვენება'}">${eyeIcon(f.visible)}</div>
+        </div>
+      </div>
+
+      <div class="flp">
+        <div class="flp-row">
+          <label>ნიშნული</label>
+          <input type="number" step="0.1" value="${f.elev}"
+            onchange="setFloorProp(${f.id},'elev',this.value)"
+            onclick="event.stopPropagation()">
+          <span>მ.</span>
+        </div>
+        <div class="flp-row">
+          <label>X₀ (საწყისი)</label>
+          <input type="number" step="0.5" value="${f.offset ?? 0}"
+            onchange="setFloorProp(${f.id},'offset',this.value)"
+            onclick="event.stopPropagation()">
+          <span>მ.</span>
+        </div>
+        <div class="flp-row">
+          <label>სიგანე</label>
+          <input type="number" step="0.5" min="1" value="${f.width ?? 10}"
+            onchange="setFloorProp(${f.id},'width',this.value)"
+            onclick="event.stopPropagation()">
+          <span>მ.</span>
+        </div>
+      </div>
+
+      <div class="tc">${catsHtml}</div>`;
+
+    tw.appendChild(node);
+  });
+
+  document.getElementById('st-f').textContent = 'სართ: ' + S.floors.length;
+  draw();
+}
+
+function togTN(row) {
+  const node = row.closest('.tn');
+  node.classList.toggle('open');
+  const lbl = row.querySelector('.tl').textContent;
+  const f = S.floors.find(x => x.name === lbl);
+  if (f) f.open = node.classList.contains('open');
+}
+function togDA(id) { document.getElementById(id)?.classList.toggle('open'); }
+function selF(id) { S.selF = id; buildTree(); }
+function togVis(e, id) {
+  e.stopPropagation();
+  const f = S.floors.find(x => x.id === id);
+  if (f) { f.visible = !f.visible; buildTree(); }
+}
+function setFloorProp(fid, prop, val) {
+  const f = S.floors.find(x => x.id === fid);
+  if (f) { f[prop] = parseFloat(val) || 0; draw(); autoSave(); }
+}
+
+function addFloor() {
+  const newF = {
+    id: S.nid, name: 'სართული ' + S.nid,
+    elev: parseFloat((S.floors.length * 3.0).toFixed(1)),
+    open: true, visible: true,
+    offset: 0, width: 10,
+    fit: [], ind: [], out: []
+  };
+  S.floors.push(newF);
+  S.nid++;
+  buildTree();
+  autoSave();
+}
+
+function askDelFloor() {
+  const f = S.floors.find(x => x.id === S.selF);
+  if (!f) { showModal('არ არის მონიშნული', 'გთხოვთ ჯერ მონიშნოთ სართული tree-ში', null, 'გასაგებია', false); return; }
+  if (S.floors.length <= 1) { showModal('შეუძლებელია', 'მინიმუმ 1 სართული საჭიროა', null, 'გასაგებია', false); return; }
+  showModal('სართულის წაშლა', `ნამდვილად გსურთ "${f.name}" წაშლა? ეს ქმედება შეუქცევადია.`, () => {
+    S.floors = S.floors.filter(x => x.id !== S.selF);
+    S.selF = null;
+    buildTree(); autoSave();
+  });
+}
+
+function askDelDev(fid, k, i, name) {
+  showModal('კომპონენტის წაშლა', `ნამდვილად წაშალოთ "${name}"?`, () => {
+    const f = S.floors.find(x => x.id === fid);
+    if (f) { f[k].splice(i, 1); buildTree(); updCount(); autoSave(); }
+  });
+}
+
+function addDev(fid, k) {
+  const f = S.floors.find(x => x.id === fid);
+  if (!f) return;
+  const nm = { fit:'FIT', ind:'FCU', out:'ODU' };
+  f[k].push(nm[k] + '-' + (f[k].length + 1).toString().padStart(2, '0'));
+  buildTree(); updCount(); autoSave();
+}
+
+function srch(q) { buildTree(q); }
+function updCount() {
+  const t = S.comps.length + S.floors.reduce((a, f) => a + f.fit.length + f.ind.length + f.out.length, 0);
+  document.getElementById('st-c').textContent = 'კომპ: ' + t;
+}
+
+/* ══════════════════════════════════════
+   CANVAS
+══════════════════════════════════════ */
+const cv  = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+function resizeCv() {
+  const cc = document.getElementById('cc');
+  cv.width  = cc.offsetWidth;
+  cv.height = cc.offsetHeight;
+  draw();
+}
+
+function draw() {
+  if (S.curTab !== 0) return;
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.fillStyle = '#f6f8fa'; ctx.fillRect(0, 0, cv.width, cv.height);
+  ctx.save();
+  ctx.translate(S.ox, S.oy);
+  ctx.scale(S.zoom, S.zoom);
+
+  // GRID
+  if (S.grid) {
+    const GS = SCALE * 0.5; // minor grid = 0.5m
+    const sx = Math.floor(-S.ox / S.zoom / GS) * GS;
+    const sy = Math.floor(-S.oy / S.zoom / GS) * GS;
+    const ex = sx + cv.width  / S.zoom + GS;
+    const ey = sy + cv.height / S.zoom + GS;
+    ctx.strokeStyle = '#e2e6ea'; ctx.lineWidth = .4 / S.zoom;
+    for (let x = sx; x < ex; x += GS) { ctx.beginPath(); ctx.moveTo(x,sy); ctx.lineTo(x,ey); ctx.stroke(); }
+    for (let y = sy; y < ey; y += GS) { ctx.beginPath(); ctx.moveTo(sx,y); ctx.lineTo(ex,y); ctx.stroke(); }
+    // major grid = 1m
+    ctx.strokeStyle = '#cdd3da'; ctx.lineWidth = .7 / S.zoom;
+    const MG = SCALE;
+    const msx = Math.floor(-S.ox / S.zoom / MG) * MG;
+    const msy = Math.floor(-S.oy / S.zoom / MG) * MG;
+    for (let x = msx; x < ex; x += MG) { ctx.beginPath(); ctx.moveTo(x,msy); ctx.lineTo(x,ey); ctx.stroke(); }
+    for (let y = msy; y < ey; y += MG) { ctx.beginPath(); ctx.moveTo(msx,y); ctx.lineTo(ex,y); ctx.stroke(); }
+  }
+
+  // X AXIS
+  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1 / S.zoom;
+  ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(-3000, 0); ctx.lineTo(3000, 0); ctx.stroke();
+  // Y AXIS
+  ctx.beginPath(); ctx.moveTo(0, -3000); ctx.lineTo(0, 3000); ctx.stroke();
+
+  // X label
+  ctx.fillStyle = '#64748b'; ctx.font = `bold ${11/S.zoom}px Inter`;
+  ctx.textAlign = 'left';
+  ctx.fillText('X →', 80 / S.zoom, -6 / S.zoom);
+  // Y label (canvas Y is down, world Y is up)
+  ctx.textAlign = 'center';
+  ctx.fillText('↑ Y', 8 / S.zoom, -80 / S.zoom);
+  // Origin
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#94a3b8'; ctx.font = `${10/S.zoom}px Inter`;
+  ctx.fillText('±0.000', 4 / S.zoom, -4 / S.zoom);
+
+  // FLOOR LINES
+  S.floors.forEach(fl => {
+    if (!fl.visible) return;
+    const y   = -fl.elev * SCALE;       // canvas Y (up = negative)
+    const x1  = (fl.offset ?? 0) * SCALE;
+    const x2  = ((fl.offset ?? 0) + (fl.width ?? 10)) * SCALE;
+    const ls  = S.lineStyle;
+
+    ctx.save();
+    ctx.strokeStyle = ls.color;
+    ctx.lineWidth   = ls.thick / S.zoom;
+    ctx.setLineDash([ls.dash / S.zoom, ls.gap / S.zoom]);
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // end cap ticks
+    ctx.lineWidth = ls.thick / S.zoom;
+    const tk = 6 / S.zoom;
+    ctx.beginPath(); ctx.moveTo(x1, y - tk); ctx.lineTo(x1, y + tk); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x2, y - tk); ctx.lineTo(x2, y + tk); ctx.stroke();
+
+    // elevation labels at both ends
+    const lbl = (fl.elev >= 0 ? '+' : '') + fl.elev.toFixed(3);
+    ctx.fillStyle = ls.color;
+    ctx.font = `bold ${11/S.zoom}px Inter`;
+    ctx.textAlign = 'right';
+    ctx.fillText(lbl, x1 - 6/S.zoom, y - 5/S.zoom);
+    ctx.textAlign = 'left';
+    ctx.fillText(lbl, x2 + 6/S.zoom, y - 5/S.zoom);
+
+    // floor name centered
+    ctx.font = `${10/S.zoom}px Inter`;
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'center';
+    ctx.fillText(fl.name, (x1 + x2) / 2, y - 16/S.zoom);
+    ctx.restore();
+  });
+
+  // COMPONENTS (pipes dragged onto canvas)
+  S.comps.forEach(c => {
+    if (c.type === 'supply') {
+      ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 3 / S.zoom;
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(c.x + 100/S.zoom, c.y); ctx.stroke();
+      ctx.fillStyle = '#2563eb';
+      ctx.beginPath(); ctx.moveTo(c.x+100/S.zoom,c.y); ctx.lineTo(c.x+88/S.zoom,c.y-5/S.zoom); ctx.lineTo(c.x+88/S.zoom,c.y+5/S.zoom); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#1a1f2e'; ctx.font = `${10/S.zoom}px Inter`; ctx.textAlign='left';
+      ctx.fillText('მიწოდება', c.x+2/S.zoom, c.y-7/S.zoom);
+    } else {
+      ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 3 / S.zoom;
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(c.x+100/S.zoom,c.y); ctx.lineTo(c.x,c.y); ctx.stroke();
+      ctx.fillStyle = '#dc2626';
+      ctx.beginPath(); ctx.moveTo(c.x,c.y); ctx.lineTo(c.x+12/S.zoom,c.y-5/S.zoom); ctx.lineTo(c.x+12/S.zoom,c.y+5/S.zoom); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#1a1f2e'; ctx.font = `${10/S.zoom}px Inter`; ctx.textAlign='left';
+      ctx.fillText('უკუსვლა', c.x+2/S.zoom, c.y-7/S.zoom);
+    }
+  });
+
+  ctx.restore();
+}
+
+/* ══════════════════════════════════════
+   ZOOM / PAN
+══════════════════════════════════════ */
+function updZ() { document.getElementById('zlbl').textContent = Math.round(S.zoom * 100) + '%'; }
+function zIn()  { S.zoom = Math.min(S.zoom * 1.2, 12); updZ(); draw(); }
+function zOut() { S.zoom = Math.max(S.zoom / 1.2, 0.05); updZ(); draw(); }
+function showAll() {
+  S.zoom = 1; S.ox = cv.width / 2; S.oy = cv.height * 0.7; // origin at bottom-center
+  updZ(); draw();
+}
+function togGrid(b) { S.grid = !S.grid; b.classList.toggle('on', S.grid); draw(); }
+function togPan(b)  { S.panMode = !S.panMode; b.classList.toggle('on', S.panMode); document.getElementById('cc').className = S.panMode ? 'pan' : ''; }
+
+document.getElementById('cc').addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+  const f = e.deltaY < 0 ? 1.12 : 0.88;
+  const nz = Math.max(0.05, Math.min(12, S.zoom * f));
+  S.ox = mx - (mx - S.ox) * (nz / S.zoom);
+  S.oy = my - (my - S.oy) * (nz / S.zoom);
+  S.zoom = nz; updZ(); draw();
+}, { passive: false });
+
+document.getElementById('cc').addEventListener('mousedown', e => {
+  if (e.button === 1 || S.panMode) { S.panning = true; S.lm = {x:e.clientX, y:e.clientY}; e.preventDefault(); }
+});
+window.addEventListener('mousemove', e => {
+  if (S.panning) {
+    S.ox += e.clientX - S.lm.x; S.oy += e.clientY - S.lm.y;
+    S.lm = {x:e.clientX, y:e.clientY}; draw();
+  }
+  const r = cv.getBoundingClientRect();
+  const wx = ((e.clientX - r.left - S.ox) / S.zoom / SCALE).toFixed(2);
+  const wy = (-(e.clientY - r.top - S.oy) / S.zoom / SCALE).toFixed(2);
+  document.getElementById('coords').textContent = `x: ${wx} მ   y: ${wy} მ`;
+});
+window.addEventListener('mouseup', () => { S.panning = false; });
+
+/* ══════════════════════════════════════
+   DRAG & DROP
+══════════════════════════════════════ */
+let dType = null;
+document.querySelectorAll('.ci').forEach(it => {
+  it.addEventListener('dragstart', e => { dType = it.dataset.type; e.dataTransfer.effectAllowed = 'copy'; });
+});
+cv.addEventListener('dragover', e => e.preventDefault());
+cv.addEventListener('drop', e => {
+  e.preventDefault();
+  const r = cv.getBoundingClientRect();
+  S.comps.push({ type: dType, x: (e.clientX - r.left - S.ox) / S.zoom, y: (e.clientY - r.top - S.oy) / S.zoom });
+  updCount(); draw(); dType = null; autoSave();
+});
+
+/* ══════════════════════════════════════
+   FUNCTION 4 — LINE STYLE
+══════════════════════════════════════ */
+function syncF4() {
+  document.getElementById('f4t').value = S.lineStyle.thick;
+  document.getElementById('f4d').value = S.lineStyle.dash;
+  document.getElementById('f4g').value = S.lineStyle.gap;
+  document.getElementById('f4c').value = S.lineStyle.color;
+  document.getElementById('f4tv').textContent = S.lineStyle.thick + ' px';
+  document.getElementById('f4dv').textContent = S.lineStyle.dash + ' px';
+  document.getElementById('f4gv').textContent = S.lineStyle.gap + ' px';
+  document.getElementById('f4cv').textContent  = S.lineStyle.color;
+}
+function updF4() {
+  const t = parseFloat(document.getElementById('f4t').value);
+  const d = parseFloat(document.getElementById('f4d').value);
+  const g = parseFloat(document.getElementById('f4g').value);
+  const c = document.getElementById('f4c').value;
+  document.getElementById('f4tv').textContent = t + ' px';
+  document.getElementById('f4dv').textContent = d + ' px';
+  document.getElementById('f4gv').textContent = g + ' px';
+  document.getElementById('f4cv').textContent  = c;
+  drawF4Prev(t, d, g, c);
+}
+function applyF4() {
+  S.lineStyle.thick = parseFloat(document.getElementById('f4t').value);
+  S.lineStyle.dash  = parseFloat(document.getElementById('f4d').value);
+  S.lineStyle.gap   = parseFloat(document.getElementById('f4g').value);
+  S.lineStyle.color = document.getElementById('f4c').value;
+  draw(); autoSave();
+}
+function drawF4Prev(t, d, g, c) {
+  const pc = document.getElementById('f4prev');
+  if (!pc) return;
+  pc.width = pc.offsetWidth || 400;
+  const px = pc.getContext('2d');
+  px.clearRect(0, 0, pc.width, pc.height);
+  px.fillStyle = '#f6f8fa'; px.fillRect(0, 0, pc.width, pc.height);
+  const thick = t ?? S.lineStyle.thick;
+  const dash  = d ?? S.lineStyle.dash;
+  const gap   = g ?? S.lineStyle.gap;
+  const color = c ?? S.lineStyle.color;
+  px.strokeStyle = color; px.lineWidth = thick;
+  px.setLineDash([dash, gap]); px.lineCap = 'round';
+  px.beginPath(); px.moveTo(20, pc.height/2); px.lineTo(pc.width-20, pc.height/2); px.stroke();
+  px.setLineDash([]);
+  // end ticks
+  px.lineWidth = thick;
+  px.beginPath(); px.moveTo(20, pc.height/2-8); px.lineTo(20, pc.height/2+8); px.stroke();
+  px.beginPath(); px.moveTo(pc.width-20, pc.height/2-8); px.lineTo(pc.width-20, pc.height/2+8); px.stroke();
+  // labels
+  px.fillStyle = color; px.font = 'bold 10px Inter';
+  px.textAlign = 'right'; px.fillText('+0.000', 16, pc.height/2-10);
+  px.textAlign = 'left';  px.fillText('+0.000', pc.width-16, pc.height/2-10);
+}
+
+/* ══════════════════════════════════════
+   INIT
+══════════════════════════════════════ */
+window.addEventListener('resize', resizeCv);
+resizeCv();
+buildTree();
+updCount();
+// Origin: center-bottom area
+S.ox = cv.width / 2;
+S.oy = cv.height * 0.7;
+draw();
+syncF4();
+setTimeout(drawF4Prev, 100);
+</script>
+</body>
+</html>

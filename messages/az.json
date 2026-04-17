@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "title": "engineers.ge",
+    "description": "Mühəndislik bilikləri və onlayn kalkulyatorlar"
+  },
+  "nav": {
+    "home": "Ana səhifə",
+    "calculators": "Kalkulyatorlar",
+    "about": "Haqqında"
+  },
+  "home": {
+    "hero": "Mühəndislik bilikləri bir yerdə",
+    "subhero": "Pulsuz onlayn kalkulyatorlar və materiallar",
+    "calculators_title": "Kalkulyatorlar",
+    "calculators_empty": "Tezliklə..."
+  },
+  "share": {
+    "label": "Paylaş",
+    "copy": "Linki kopyala",
+    "copied": "Kopyalandı"
+  },
+  "theme": {
+    "light": "Açıq",
+    "dark": "Tünd",
+    "system": "Sistem"
+  },
+  "lang": {
+    "label": "Dil"
+  },
+  "admin": {
+    "login": "Daxil ol",
+    "username": "İstifadəçi",
+    "password": "Şifrə",
+    "submit": "Daxil ol",
+    "error": "Məlumatlar yanlışdır",
+    "banners": "Bannerlər",
+    "stats": "Statistika",
+    "logout": "Çıxış"
+  },
+  "loader": {
+    "loading": "Yüklənir..."
+  }
+}

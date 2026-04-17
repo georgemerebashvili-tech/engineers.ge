@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<!-- saved from url=(0056)file:///Users/macbookair/Downloads/thermal-wall-geo.html -->
+<html lang="ka"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>კედლის თბოგამტარობა · ISO 6946</title>
+<link href="./კედლის თბოგამტარობა · ISO 6946_files/css2" rel="stylesheet">
+<style>
+:root{
+  --bg:#f2f5fa;--sur:#fff;--sur2:#f7f9fd;
+  --bdr:#dde6f2;--bdr2:#c4d4e8;
+  --navy:#1a3a6b;--blue:#1f6fd4;--blt:#e8f1fd;--bbd:#b8d0f0;
+  --ora:#c05010;--olt:#fff5ea;--obd:#e8c080;
+  --grn:#107040;--glt:#edfaf3;--gbd:#8ecfaa;
+  --red:#c03020;--rlt:#fff0ef;--rbd:#f0b0a8;
+  --text:#1a2840;--t2:#3d5470;--t3:#7a96b8;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 14px rgba(0,0,0,.05);
+  --r:10px;--mono:'IBM Plex Mono',monospace;--sans:'Plus Jakarta Sans',sans-serif;
+  --sb:370px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-size:13px}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.5;overflow:hidden}
+input[type=number]{-moz-appearance:textfield}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none}
+
+/* ═══ LAYOUT ═══ */
+.layout{display:flex;height:100vh;overflow:hidden}
+
+/* ═══ SIDEBAR ═══ */
+#sb{width:var(--sb);min-width:var(--sb);background:var(--sur);border-right:1px solid var(--bdr);display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.sb-top{background:var(--navy);padding:13px 15px 11px;flex-shrink:0;border-bottom:2px solid var(--blue)}
+.sb-top h1{font-size:13px;font-weight:700;color:#fff;letter-spacing:.04em}
+.sb-top p{font-size:9px;color:rgba(255,255,255,.45);font-family:var(--mono);margin-top:2px}
+.sb-scroll{flex:1;overflow-y:auto}
+
+/* conditions */
+.ptgl{width:100%;background:var(--sur2);border:none;border-bottom:1px solid var(--bdr);padding:7px 13px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-family:var(--sans);font-size:10px;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:.05em;transition:background .12s}
+.ptgl:hover{background:var(--blt);color:var(--blue)}
+.cond-body{padding:10px 13px;border-bottom:1px solid var(--bdr);display:grid;gap:7px;transition:all .2s}
+.cond-body.closed{display:none}
+.sec-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);border-bottom:1px solid var(--bdr);padding-bottom:3px;margin-bottom:3px}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:5px 8px}
+.crow{display:flex;align-items:center;gap:5px}
+.clbl{font-size:10px;font-weight:600;color:var(--t2);min-width:72px;white-space:nowrap}
+.cin{width:56px;font-family:var(--mono);font-size:12px;font-weight:500;background:#fff;border:1.5px solid var(--bdr);color:var(--text);padding:4px 6px;border-radius:5px;outline:none;text-align:right;transition:border-color .12s}
+.cin:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(31,111,212,.1)}
+.cu{font-size:10px;color:var(--t3);font-family:var(--mono)}
+
+/* walls header */
+.wh{display:flex;align-items:center;justify-content:space-between;padding:8px 13px 6px;border-bottom:1px solid var(--bdr)}
+.wh-title{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3)}
+.btn-addw{background:var(--sur2);border:1.5px solid var(--bdr2);color:var(--t2);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-family:var(--sans);font-weight:700;display:flex;align-items:center;gap:4px;transition:all .15s}
+.btn-addw:hover{border-color:var(--blue);color:var(--blue);background:var(--blt)}
+
+/* wall card */
+.wcard{border-bottom:1px solid var(--bdr);animation:slin .18s ease}
+@keyframes slin{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+.wcard-h{display:flex;align-items:center;gap:6px;padding:8px 13px;cursor:pointer;background:var(--sur);transition:background .12s;user-select:none}
+.wcard-h:hover{background:var(--sur2)}
+.wcard-h.act{background:var(--blt);border-left:3px solid var(--blue);padding-left:10px}
+.wcard-num{font-family:var(--mono);font-size:9px;font-weight:700;background:var(--navy);color:#fff;padding:2px 6px;border-radius:4px;letter-spacing:.5px;flex-shrink:0}
+.wcard-h.act .wcard-num{background:var(--blue)}
+.wcard-name{flex:1;border:none;background:transparent;font-family:var(--sans);font-size:12px;font-weight:700;color:var(--navy);outline:none;border-bottom:2px solid transparent;transition:border-color .12s;padding:1px 2px;cursor:text;min-width:0}
+.wcard-name:focus{border-color:var(--bdr2)}
+.wubadge{font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0;background:var(--glt);color:var(--grn);border:1px solid var(--gbd)}
+.wubadge.bad{background:var(--olt);color:var(--ora);border-color:var(--obd)}
+.wchev{font-size:10px;color:var(--t3);transition:transform .2s;flex-shrink:0;margin-right:2px}
+.wchev.op{transform:rotate(90deg)}
+.btn-delw{background:none;border:1px solid var(--bdr2);color:var(--t3);width:22px;height:22px;border-radius:5px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0}
+.btn-delw:hover{border-color:#c03020;color:#c03020;background:var(--rlt)}
+
+/* wall body */
+.wcard-body{overflow:hidden;transition:max-height .25s ease;background:var(--sur2)}
+.wcard-body.col{max-height:0!important}
+
+/* layer list */
+.llist{padding:7px 10px;display:flex;flex-direction:column;gap:4px}
+.litem{background:#fff;border:1px solid var(--bdr);border-radius:6px;overflow:hidden}
+.litem-h{display:flex;align-items:center;gap:5px;padding:6px 9px;cursor:pointer}
+.litem-h:hover{background:var(--sur2)}
+.lnum{width:17px;height:17px;border-radius:50%;background:var(--ora);color:#fff;font-size:9px;font-weight:700;font-family:var(--mono);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.linfo{flex:1;min-width:0}
+.lname{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lmeta{font-size:9px;color:var(--t3);font-family:var(--mono);margin-top:1px}
+.lacts{display:flex;gap:2px;flex-shrink:0}
+.blic{width:21px;height:21px;border:1px solid var(--bdr2);border-radius:4px;cursor:pointer;background:var(--sur2);color:var(--t3);font-size:11px;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.blic:hover{background:var(--navy);color:#fff;border-color:var(--navy)}
+.blic.del:hover{background:#c03020;color:#fff;border-color:#c03020}
+.blic:disabled{opacity:.35;cursor:not-allowed}
+.ledit{border-top:1px solid var(--bdr);padding:8px 9px;display:none;flex-direction:column;gap:6px}
+.ledit.op{display:flex}
+.legrid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.matbtn{width:100%;background:var(--sur2);border:1.5px solid var(--bdr);border-radius:5px;padding:5px 9px;font-size:11px;font-weight:600;color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:all .12s;font-family:var(--sans)}
+.matbtn:hover{border-color:var(--blue);color:var(--blue)}
+.matbtn em{color:var(--t3);font-size:9px;font-family:var(--mono);font-style:normal}
+.fg{display:flex;flex-direction:column;gap:2px}
+.fg label{font-size:9px;color:var(--t3);font-weight:700;letter-spacing:.05em;text-transform:uppercase;font-family:var(--mono)}
+.fin{width:100%;font-family:var(--mono);font-size:12px;background:#fff;border:1.5px solid var(--bdr);color:var(--text);padding:4px 6px;border-radius:5px;outline:none;transition:border-color .12s}
+.fin:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(31,111,212,.1)}
+.btn-addl{width:calc(100% - 20px);margin:2px 10px 7px;background:transparent;border:1.5px dashed var(--bdr2);border-radius:6px;padding:6px;font-size:10px;color:var(--t3);cursor:pointer;font-family:var(--sans);font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .15s}
+.btn-addl:hover{border-color:var(--blue);color:var(--blue);background:var(--blt)}
+.empty-layers{padding:12px;text-align:center;font-size:10px;color:var(--t3)}
+
+/* sidebar footer */
+.sb-foot{border-top:1px solid var(--bdr);padding:9px 13px;display:flex;flex-direction:column;gap:6px;flex-shrink:0;background:var(--sur2)}
+.foot-row{display:flex;gap:5px}
+.bact{flex:1;padding:7px 6px;border-radius:7px;cursor:pointer;font-size:10px;font-family:var(--sans);font-weight:700;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .15s;border:1.5px solid;letter-spacing:.02em}
+.bpdf{background:var(--navy);color:#fff;border-color:var(--navy)}
+.bpdf:hover{background:#0f2550}
+.bexp{background:var(--sur);color:var(--t2);border-color:var(--bdr2)}
+.bexp:hover{border-color:var(--blue);color:var(--blue);background:var(--blt)}
+.bimp{background:var(--sur);color:var(--t2);border-color:var(--bdr2)}
+.bimp:hover{border-color:var(--grn);color:var(--grn);background:var(--glt)}
+
+/* ═══ MAIN ═══ */
+#main{flex:1;min-width:0;overflow-y:auto;padding:15px;display:flex;flex-direction:column;gap:11px}
+
+/* placeholder */
+.ph{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--t3);text-align:center;padding:40px;min-height:300px}
+.ph svg{opacity:.25}
+.ph h2{font-size:15px;font-weight:600}
+.ph p{font-size:11px}
+
+/* analysis */
+.an-hdr{background:#fff;border:1px solid var(--bdr);border-radius:var(--r);padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);flex-wrap:wrap;gap:8px}
+.an-title{font-size:15px;font-weight:700;color:var(--navy);flex:1;min-width:0}
+.ubig{font-family:var(--mono);font-size:13px;font-weight:700;padding:5px 14px;border-radius:20px}
+.ubig.ok{background:var(--glt);color:var(--grn);border:1.5px solid var(--gbd)}
+.ubig.bad{background:var(--olt);color:var(--ora);border:1.5px solid var(--obd)}
+
+/* stats */
+.sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.scard{background:#fff;border:1px solid var(--bdr);border-radius:8px;padding:10px 11px;box-shadow:var(--shadow)}
+.scard-l{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t3)}
+.scard-v{font-family:var(--mono);font-size:18px;font-weight:600;color:var(--navy);margin-top:1px}
+.scard-v.g{color:var(--grn)}.scard-v.o{color:var(--ora)}.scard-v.b{color:var(--blue)}.scard-v.r{color:var(--red)}
+.scard-u{font-size:9px;color:var(--t3);font-family:var(--mono)}
+
+/* chart */
+.chcard{background:#fff;border:1px solid var(--bdr);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.chhead{padding:8px 13px;background:var(--sur2);border-bottom:1px solid var(--bdr);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--t3);display:flex;align-items:center;gap:8px}
+canvas{width:100%;display:block}
+.chleg{display:flex;gap:13px;padding:8px 13px;border-top:1px solid var(--bdr);flex-wrap:wrap}
+.leg-i{display:flex;align-items:center;gap:5px;font-size:10px}
+.leg-ln{width:20px;height:2px;flex-shrink:0;border-radius:1px}
+
+/* table */
+.rescard{background:#fff;border:1px solid var(--bdr);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+table.rt{width:100%;border-collapse:collapse;font-size:11px}
+table.rt th{padding:6px 9px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--t2);border-bottom:1px solid var(--bdr);border-right:1px solid var(--bdr);background:var(--sur2);text-align:left;white-space:nowrap}
+table.rt th:last-child{border-right:none}
+table.rt td{padding:5px 9px;border-bottom:1px solid var(--bdr);border-right:1px solid var(--bdr);font-family:var(--mono);font-size:11px}
+table.rt td:first-child{font-family:var(--sans);font-size:11px;font-weight:500}
+table.rt td:last-child{border-right:none}
+table.rt tr.sum td{background:var(--sur2);font-weight:700;border-bottom:none}
+.tr{color:var(--blue)}.to{color:var(--ora)}.tb{color:var(--blue)}.tg{color:var(--grn);font-weight:700}
+td.dim{color:var(--t3);font-size:10px;font-style:italic;font-family:var(--sans)}
+
+/* warn */
+.wbox{border-radius:6px;padding:8px 12px;font-size:11px;display:flex;gap:6px;align-items:flex-start}
+.wbox.mold{background:var(--olt);border:1px solid var(--obd);color:#7a3000}
+.wbox.cond{background:var(--rlt);border:1px solid var(--rbd);color:#7a0010}
+
+/* ═══ MODAL ═══ */
+.moverlay{position:fixed;inset:0;background:rgba(20,30,60,.48);z-index:300;display:none;align-items:flex-end;justify-content:center}
+.moverlay.op{display:flex}
+.modal{background:#fff;width:100%;max-width:500px;border-radius:14px 14px 0 0;max-height:86vh;display:flex;flex-direction:column;overflow:hidden;animation:mup .2s ease}
+@keyframes mup{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.mhead{padding:12px 15px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.mtitle{font-size:14px;font-weight:700;color:var(--navy)}
+.mclose{width:27px;height:27px;border:none;border-radius:50%;background:var(--sur2);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;color:var(--t3)}
+.msrch{padding:8px 13px;border-bottom:1px solid var(--bdr);flex-shrink:0}
+.msrch input{width:100%;border:1.5px solid var(--bdr);border-radius:6px;padding:7px 10px;font-size:13px;outline:none;background:var(--sur2);font-family:var(--sans)}
+.msrch input:focus{border-color:var(--blue)}
+.mbody{overflow-y:auto;flex:1}
+.mcat{padding:6px 13px 3px;font-size:9px;font-weight:700;color:var(--t3);letter-spacing:.07em;text-transform:uppercase;background:var(--sur2);border-top:1px solid var(--bdr);position:sticky;top:0}
+.mmat{padding:9px 13px;border-bottom:1px solid #eff2f8;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .1s}
+.mmat:hover{background:var(--blt)}
+.mmat-n{font-size:12px;font-weight:600;color:var(--text)}
+.mmat-m{font-size:9px;color:var(--t3);font-family:var(--mono);margin-top:1px}
+.mmat-l{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--blue)}
+.mnone{padding:30px;text-align:center;color:var(--t3);font-size:12px}
+
+/* ═══ PRINT ═══ */
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body{overflow:auto!important;height:auto!important}
+  .layout{display:block!important;height:auto!important;overflow:visible!important}
+  #sb{display:none!important}
+  #main{overflow:visible!important;height:auto!important;max-height:none!important}
+  .moverlay{display:none!important}
+  .sgrid{grid-template-columns:repeat(4,1fr)!important}
+  .no-print{display:none!important}
+  .chcard,.rescard,.scard,.an-hdr{box-shadow:none!important}
+  @page{margin:15mm}
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media(max-width:760px){
+  body{overflow:auto}
+  .layout{flex-direction:column;height:auto;overflow:auto}
+  #sb{width:100%;min-width:100%;height:auto;position:static}
+  #main{overflow:visible;height:auto}
+  .sgrid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ═══════════════ SIDEBAR ═══════════════ -->
+<div id="sb">
+  <div class="sb-top">
+    <h1>⚡ კედლის თბოგამტარობა</h1>
+    <p>ISO 6946 · Glaser · EN 673</p>
+  </div>
+
+  <div class="sb-scroll">
+    <!-- CONDITIONS -->
+    <button class="ptgl" onclick="toggleCond()">
+      <span>🌡 კლიმატ. პირობები</span>
+      <span id="cond-arr">▸</span>
+    </button>
+    <div class="cond-body closed" id="cond-body">
+      <div class="sec-lbl" style="color:var(--navy)">🏠 შიდა</div>
+      <div class="cgrid">
+        <div class="crow"><span class="clbl">t შიდა</span><input class="cin" id="ti" type="number" value="20" step=".5" oninput="calcAll()"><span class="cu">°C</span></div>
+        <div class="crow"><span class="clbl">φ შიდა</span><input class="cin" id="rhi" type="number" value="60" min="0" max="100" step="5" oninput="calcAll()"><span class="cu">%</span></div>
+      </div>
+      <div class="sec-lbl" style="color:var(--ora);margin-top:3px">☀ გარე</div>
+      <div class="cgrid">
+        <div class="crow"><span class="clbl">t გარე</span><input class="cin" id="to" type="number" value="10" step=".5" oninput="calcAll()"><span class="cu">°C</span></div>
+        <div class="crow"><span class="clbl">φ გარე</span><input class="cin" id="rho" type="number" value="50" min="0" max="100" step="5" oninput="calcAll()"><span class="cu">%</span></div>
+      </div>
+    </div>
+
+    <!-- WALLS -->
+    <div class="wh">
+      <span class="wh-title">📐 კედლის კონფ-ები</span>
+      <button class="btn-addw" onclick="addWall()">＋ ახალი</button>
+    </div>
+    <div id="walls-list"><div class="wcard" id="wc1">
+      <div class="wcard-h act" onclick="selWall(1,event)">
+        <span class="wchev" id="wchev1">▶</span>
+        <span class="wcard-num">01</span>
+        <input class="wcard-name" value="კედელი 1" placeholder="კედლის სახ." oninput="walls.find(x=&gt;x.id===1).name=this.value;renderAnalysis()" onclick="event.stopPropagation()">
+        <span class="wubadge">U=0.308</span>
+        <button class="btn-delw" onclick="event.stopPropagation();delWall(1)">×</button>
+      </div>
+      <div class="wcard-body col" style="max-height:0">
+        <div class="llist"><div class="litem">
+    <div class="litem-h" onclick="togLayer(1,2)">
+      <div class="lnum">1</div>
+      <div class="linfo">
+        <div class="lname">EPS (პოლ. ქაფი)</div>
+        <div class="lmeta">d=100mm · λ=0.035 · R=2.857</div>
+      </div>
+      <div class="lacts" onclick="event.stopPropagation()">
+        <button class="blic" onclick="moveLayer(1,2,-1)" disabled="">↑</button>
+        <button class="blic" onclick="moveLayer(1,2,1)">↓</button>
+        <button class="blic del" onclick="delLayer(1,2)">×</button>
+      </div>
+    </div>
+    <div class="ledit" id="le1_2">
+      <button class="matbtn" onclick="openMod(1,2)">EPS (პოლ. ქაფი)<em>λ=0.035 W/mK ›</em></button>
+      <div class="legrid">
+        <div class="fg"><label>სისქე (mm)</label><input class="fin" type="number" value="100" min="1" step="5" oninput="setD(1,2,+this.value)"></div>
+        <div class="fg"><label>λ (W/mK)</label><input class="fin" type="number" value="0.035" min="0.001" step="0.001" oninput="setLam(1,2,+this.value)"></div>
+        <div class="fg"><label>μ min</label><input class="fin" type="number" value="20" min="0.1" step="1" oninput="setMu(1,2,0,+this.value)"></div>
+        <div class="fg"><label>ρ (kg/m³)</label><input class="fin" type="number" value="25" min="1" step="10" oninput=""></div>
+      </div>
+    </div>
+  </div><div class="litem">
+    <div class="litem-h" onclick="togLayer(1,1)">
+      <div class="lnum">2</div>
+      <div class="linfo">
+        <div class="lname">არმ. ბეტონი 1%</div>
+        <div class="lmeta">d=150mm · λ=2.3 · R=0.065</div>
+      </div>
+      <div class="lacts" onclick="event.stopPropagation()">
+        <button class="blic" onclick="moveLayer(1,1,-1)">↑</button>
+        <button class="blic" onclick="moveLayer(1,1,1)">↓</button>
+        <button class="blic del" onclick="delLayer(1,1)">×</button>
+      </div>
+    </div>
+    <div class="ledit" id="le1_1">
+      <button class="matbtn" onclick="openMod(1,1)">არმ. ბეტონი 1%<em>λ=2.3 W/mK ›</em></button>
+      <div class="legrid">
+        <div class="fg"><label>სისქე (mm)</label><input class="fin" type="number" value="150" min="1" step="5" oninput="setD(1,1,+this.value)"></div>
+        <div class="fg"><label>λ (W/mK)</label><input class="fin" type="number" value="2.3" min="0.001" step="0.001" oninput="setLam(1,1,+this.value)"></div>
+        <div class="fg"><label>μ min</label><input class="fin" type="number" value="80" min="0.1" step="1" oninput="setMu(1,1,0,+this.value)"></div>
+        <div class="fg"><label>ρ (kg/m³)</label><input class="fin" type="number" value="2400" min="1" step="10" oninput=""></div>
+      </div>
+    </div>
+  </div><div class="litem">
+    <div class="litem-h" onclick="togLayer(1,3)">
+      <div class="lnum">3</div>
+      <div class="linfo">
+        <div class="lname">გიფსოკარტონი</div>
+        <div class="lmeta">d=12mm · λ=0.25 · R=0.048</div>
+      </div>
+      <div class="lacts" onclick="event.stopPropagation()">
+        <button class="blic" onclick="moveLayer(1,3,-1)">↑</button>
+        <button class="blic" onclick="moveLayer(1,3,1)">↓</button>
+        <button class="blic del" onclick="delLayer(1,3)">×</button>
+      </div>
+    </div>
+    <div class="ledit" id="le1_3">
+      <button class="matbtn" onclick="openMod(1,3)">გიფსოკარტონი<em>λ=0.25 W/mK ›</em></button>
+      <div class="legrid">
+        <div class="fg"><label>სისქე (mm)</label><input class="fin" type="number" value="12" min="1" step="5" oninput="setD(1,3,+this.value)"></div>
+        <div class="fg"><label>λ (W/mK)</label><input class="fin" type="number" value="0.25" min="0.001" step="0.001" oninput="setLam(1,3,+this.value)"></div>
+        <div class="fg"><label>μ min</label><input class="fin" type="number" value="10" min="0.1" step="1" oninput="setMu(1,3,0,+this.value)"></div>
+        <div class="fg"><label>ρ (kg/m³)</label><input class="fin" type="number" value="900" min="1" step="10" oninput=""></div>
+      </div>
+    </div>
+  </div><div class="litem">
+    <div class="litem-h" onclick="togLayer(1,4)">
+      <div class="lnum">4</div>
+      <div class="linfo">
+        <div class="lname">ქვიშა (მ-ტ.)</div>
+        <div class="lmeta">d=100mm · λ=0.9 · R=0.111</div>
+      </div>
+      <div class="lacts" onclick="event.stopPropagation()">
+        <button class="blic" onclick="moveLayer(1,4,-1)">↑</button>
+        <button class="blic" onclick="moveLayer(1,4,1)" disabled="">↓</button>
+        <button class="blic del" onclick="delLayer(1,4)">×</button>
+      </div>
+    </div>
+    <div class="ledit" id="le1_4">
+      <button class="matbtn" onclick="openMod(1,4)">ქვიშა (მ-ტ.)<em>λ=0.9 W/mK ›</em></button>
+      <div class="legrid">
+        <div class="fg"><label>სისქე (mm)</label><input class="fin" type="number" value="100" min="1" step="5" oninput="setD(1,4,+this.value)"></div>
+        <div class="fg"><label>λ (W/mK)</label><input class="fin" type="number" value="0.9" min="0.001" step="0.001" oninput="setLam(1,4,+this.value)"></div>
+        <div class="fg"><label>μ min</label><input class="fin" type="number" value="1" min="0.1" step="1" oninput="setMu(1,4,0,+this.value)"></div>
+        <div class="fg"><label>ρ (kg/m³)</label><input class="fin" type="number" value="1900" min="1" step="10" oninput=""></div>
+      </div>
+    </div>
+  </div></div>
+        <button class="btn-addl" onclick="addLayer(1)">＋ შრის დამატება</button>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="sb-foot">
+    <div class="foot-row">
+      <button class="bact bpdf no-print" onclick="doPrint()">🖨 PDF ბეჭდვა</button>
+    </div>
+    <div class="foot-row">
+      <button class="bact bexp" onclick="exportJSON()">⬆ JSON ექსპ.</button>
+      <button class="bact bimp" onclick="document.getElementById(&#39;imp-inp&#39;).click()">⬇ JSON ჩა-ტ.</button>
+    </div>
+    <input type="file" id="imp-inp" accept=".json" style="display:none" onchange="importJSON(this)">
+  </div>
+</div>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<div id="main">
+  <div class="ph" id="ph" style="display: none;">
+    <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="18" rx="2"></rect><path d="M7 3v18M12 3v18M17 3v18"></path><path d="M2 9h5M7 9h5M12 9h5M17 9h5"></path></svg>
+    <h2>კედელი არ არის არჩეული</h2>
+    <p>მარცხნიდან შექმენით ან ჩატვირთეთ კედლის კონფიგურაცია</p>
+  </div>
+  <div id="analysis" style="display: flex; flex-direction: column; gap: 11px;">
+    <div class="an-hdr">
+      <span class="an-title">📐 კედელი 1</span>
+      <span class="ubig ok">U = 0.308 W/m²K</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px"><div class="wbox cond">⚠️ <div><b>კონდენსაციის რისკი!</b> ორთქლის წნევა აღემატება ნაჯ. წნევას ერთ ან მეტ ინტ-ზე. განიხილეთ ორთქ. ბარიერი ან გაუუმჯობ. საიზოლ.</div></div></div>
+    <div class="sgrid">
+      <div class="scard"><div class="scard-l">R სულ</div><div class="scard-v g">3.251<span class="scard-u"> m²K/W</span></div></div>
+      <div class="scard"><div class="scard-l">U კოეფ.</div><div class="scard-v g">0.308<span class="scard-u"> W/m²K</span></div></div>
+      <div class="scard"><div class="scard-l">შ. ზდ. ტ.</div><div class="scard-v g">18.0<span class="scard-u"> °C</span></div></div>
+      <div class="scard"><div class="scard-l">გ. ზდ. ტ.</div><div class="scard-v b">-29.4<span class="scard-u"> °C</span></div></div>
+    </div>
+    <div class="chcard">
+      <div class="chhead">📈 ტემ. · ნამ. წ-ლი · ფარდ. ტენ. <span style="margin-left:auto;font-size:9px">შიდა → გარე</span></div>
+      <canvas id="chart" width="2132" height="1108" style="width: 1066px; height: 554px;"></canvas>
+      <div class="chleg">
+        <div class="leg-i"><div class="leg-ln" style="background:#1a2840"></div>ტემპ. t °C</div>
+        <div class="leg-i"><div class="leg-ln" style="background:#1f6fd4"></div>ნამის წ-ლი</div>
+        <div class="leg-i"><div class="leg-ln" style="background:#c05010"></div>ფარდ. ტენ. %</div>
+      </div>
+    </div>
+    <div class="rescard">
+      <div class="chhead">📋 შედეგების ცხრილი — ინტ-ის ტ-ები</div>
+      <table class="rt"><thead><tr><th>შრე / მასალა</th><th>d, სმ</th><th>R, m²K/W</th><th>T მაქს. °C</th><th>T მინ. °C</th></tr></thead><tbody><tr><td class="dim">Rsi — შიდა ზდ. წ-ა</td><td style="text-align:right">—</td><td class="tr">0.13</td><td class="to">20.0</td><td class="tb">18.00</td></tr><tr><td>EPS (პოლ. ქაფი)</td><td style="text-align:right">10.00</td><td class="tr">2.857</td><td class="to">18.00</td><td class="tb">-25.94</td></tr><tr><td>არმ. ბეტონი 1%</td><td style="text-align:right">15.00</td><td class="tr">0.065</td><td class="to">-25.94</td><td class="tb">-26.94</td></tr><tr><td>გიფსოკარტონი</td><td style="text-align:right">1.20</td><td class="tr">0.048</td><td class="to">-26.94</td><td class="tb">-27.68</td></tr><tr><td>ქვიშა (მ-ტ.)</td><td style="text-align:right">10.00</td><td class="tr">0.111</td><td class="to">-27.68</td><td class="tb">-29.38</td></tr><tr><td class="dim">Rse — გარე ზდ. წ-ა</td><td style="text-align:right">—</td><td class="tr">0.04</td><td class="to">-29.4</td><td class="tb">-30.0</td></tr><tr class="sum"><td>სულ</td><td style="text-align:right">36.20</td><td class="tr tg">3.251</td><td colspan="2" style="text-align:center;color:var(--ora);font-weight:700">U = 0.308 W/m²K</td></tr></tbody></table>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════ MODAL ═══════════════ -->
+<div class="moverlay" id="moverlay" onclick="if(event.target===this)closeMod()">
+  <div class="modal">
+    <div class="mhead">
+      <span class="mtitle">მასალის არჩევა</span>
+      <button class="mclose" onclick="closeMod()">✕</button>
+    </div>
+    <div class="msrch"><input type="text" id="msrch" placeholder="ძებნა მასალის სახელით…" oninput="renderMod(this.value.toLowerCase())"></div>
+    <div class="mbody" id="mbody"><div class="mcat">ბეტონი</div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ანჰიდრიტის სახეობის ხსნარი\&quot;,\&quot;λ\&quot;:1.2,\&quot;μ\&quot;:[15,35],\&quot;ρ\&quot;:2100,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">ანჰიდრიტის სახეობის ხსნარი</div><div class="mmat-m">μ=15 · ρ=2100 · c=1000</div></div>
+        <div class="mmat-l">1.2</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ცემენტის სახეობის ხსნარი\&quot;,\&quot;λ\&quot;:1.4,\&quot;μ\&quot;:[10,20],\&quot;ρ\&quot;:1900,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">ცემენტის სახეობის ხსნარი</div><div class="mmat-m">μ=10 · ρ=1900 · c=840</div></div>
+        <div class="mmat-l">1.4</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ბეტონი\&quot;,\&quot;λ\&quot;:1.65,\&quot;μ\&quot;:[70,120],\&quot;ρ\&quot;:2000,\&quot;c\&quot;:880}&quot;)">
+        <div><div class="mmat-n">ბეტონი</div><div class="mmat-m">μ=70 · ρ=2000 · c=880</div></div>
+        <div class="mmat-l">1.65</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ქაფბეტონი\&quot;,\&quot;λ\&quot;:0.29,\&quot;μ\&quot;:[5,10],\&quot;ρ\&quot;:700,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">ქაფბეტონი</div><div class="mmat-m">μ=5 · ρ=700 · c=840</div></div>
+        <div class="mmat-l">0.29</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;მასტიკის ასფალტი\&quot;,\&quot;λ\&quot;:0.7,\&quot;μ\&quot;:[50000,50000],\&quot;ρ\&quot;:2100,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">მასტიკის ასფალტი</div><div class="mmat-m">μ=50000 · ρ=2100 · c=1000</div></div>
+        <div class="mmat-l">0.7</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;არმ. ბეტონი 1%\&quot;,\&quot;λ\&quot;:2.3,\&quot;μ\&quot;:[80,130],\&quot;ρ\&quot;:2400,\&quot;c\&quot;:880}&quot;)">
+        <div><div class="mmat-n">არმ. ბეტონი 1%</div><div class="mmat-m">μ=80 · ρ=2400 · c=880</div></div>
+        <div class="mmat-l">2.3</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;არმ. ბეტონი 2%\&quot;,\&quot;λ\&quot;:2.5,\&quot;μ\&quot;:[80,130],\&quot;ρ\&quot;:2400,\&quot;c\&quot;:880}&quot;)">
+        <div><div class="mmat-n">არმ. ბეტონი 2%</div><div class="mmat-m">μ=80 · ρ=2400 · c=880</div></div>
+        <div class="mmat-l">2.5</div></div><div class="mcat">ხე-ტყე</div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;სხივი (Rafter)\&quot;,\&quot;λ\&quot;:0.13,\&quot;μ\&quot;:[50,200],\&quot;ρ\&quot;:500,\&quot;c\&quot;:1600}&quot;)">
+        <div><div class="mmat-n">სხივი (Rafter)</div><div class="mmat-m">μ=50 · ρ=500 · c=1600</div></div>
+        <div class="mmat-l">0.13</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ჯვ. ლამინირ. ხე (CLT)\&quot;,\&quot;λ\&quot;:0.13,\&quot;μ\&quot;:[50,200],\&quot;ρ\&quot;:500,\&quot;c\&quot;:1600}&quot;)">
+        <div><div class="mmat-n">ჯვ. ლამინირ. ხე (CLT)</div><div class="mmat-m">μ=50 · ρ=500 · c=1600</div></div>
+        <div class="mmat-l">0.13</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;წიფელი\&quot;,\&quot;λ\&quot;:0.2,\&quot;μ\&quot;:[50,200],\&quot;ρ\&quot;:700,\&quot;c\&quot;:1600}&quot;)">
+        <div><div class="mmat-n">წიფელი</div><div class="mmat-m">μ=50 · ρ=700 · c=1600</div></div>
+        <div class="mmat-l">0.2</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;სოჭი (Fir)\&quot;,\&quot;λ\&quot;:0.13,\&quot;μ\&quot;:[50,200],\&quot;ρ\&quot;:450,\&quot;c\&quot;:1600}&quot;)">
+        <div><div class="mmat-n">სოჭი (Fir)</div><div class="mmat-m">μ=50 · ρ=450 · c=1600</div></div>
+        <div class="mmat-l">0.13</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ლარქი\&quot;,\&quot;λ\&quot;:0.13,\&quot;μ\&quot;:[50,200],\&quot;ρ\&quot;:590,\&quot;c\&quot;:1600}&quot;)">
+        <div><div class="mmat-n">ლარქი</div><div class="mmat-m">μ=50 · ρ=590 · c=1600</div></div>
+        <div class="mmat-l">0.13</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;მუხა\&quot;,\&quot;λ\&quot;:0.19,\&quot;μ\&quot;:[50,200],\&quot;ρ\&quot;:700,\&quot;c\&quot;:1600}&quot;)">
+        <div><div class="mmat-n">მუხა</div><div class="mmat-m">μ=50 · ρ=700 · c=1600</div></div>
+        <div class="mmat-l">0.19</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ფიჭვი\&quot;,\&quot;λ\&quot;:0.13,\&quot;μ\&quot;:[50,200],\&quot;ρ\&quot;:500,\&quot;c\&quot;:1600}&quot;)">
+        <div><div class="mmat-n">ფიჭვი</div><div class="mmat-m">μ=50 · ρ=500 · c=1600</div></div>
+        <div class="mmat-l">0.13</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ნაძვი\&quot;,\&quot;λ\&quot;:0.13,\&quot;μ\&quot;:[50,200],\&quot;ρ\&quot;:450,\&quot;c\&quot;:1600}&quot;)">
+        <div><div class="mmat-n">ნაძვი</div><div class="mmat-m">μ=50 · ρ=450 · c=1600</div></div>
+        <div class="mmat-l">0.13</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;Western red cedar\&quot;,\&quot;λ\&quot;:0.1,\&quot;μ\&quot;:[50,200],\&quot;ρ\&quot;:400,\&quot;c\&quot;:1600}&quot;)">
+        <div><div class="mmat-n">Western red cedar</div><div class="mmat-m">μ=50 · ρ=400 · c=1600</div></div>
+        <div class="mmat-l">0.1</div></div><div class="mcat">დაფები / ფილები</div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;თივის დაფა\&quot;,\&quot;λ\&quot;:0.09,\&quot;μ\&quot;:[5,10],\&quot;ρ\&quot;:350,\&quot;c\&quot;:1700}&quot;)">
+        <div><div class="mmat-n">თივის დაფა</div><div class="mmat-m">μ=5 · ρ=350 · c=1700</div></div>
+        <div class="mmat-l">0.09</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;სამშ. ფილა\&quot;,\&quot;λ\&quot;:0.24,\&quot;μ\&quot;:[10,20],\&quot;ρ\&quot;:1150,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">სამშ. ფილა</div><div class="mmat-m">μ=10 · ρ=1150 · c=1000</div></div>
+        <div class="mmat-l">0.24</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;კალც-სილ. ფილა\&quot;,\&quot;λ\&quot;:0.18,\&quot;μ\&quot;:[10,20],\&quot;ρ\&quot;:875,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">კალც-სილ. ფილა</div><div class="mmat-m">μ=10 · ρ=875 · c=1000</div></div>
+        <div class="mmat-l">0.18</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ცემ-ბონდ. ნაწ. ფილა\&quot;,\&quot;λ\&quot;:0.23,\&quot;μ\&quot;:[30,50],\&quot;ρ\&quot;:1200,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">ცემ-ბონდ. ნაწ. ფილა</div><div class="mmat-m">μ=30 · ρ=1200 · c=1000</div></div>
+        <div class="mmat-l">0.23</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ნაწ. ფილა (chipboard)\&quot;,\&quot;λ\&quot;:0.1,\&quot;μ\&quot;:[50,150],\&quot;ρ\&quot;:600,\&quot;c\&quot;:1700}&quot;)">
+        <div><div class="mmat-n">ნაწ. ფილა (chipboard)</div><div class="mmat-m">μ=50 · ρ=600 · c=1700</div></div>
+        <div class="mmat-l">0.1</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;თიხის ფილა\&quot;,\&quot;λ\&quot;:0.18,\&quot;μ\&quot;:[5,10],\&quot;ρ\&quot;:1000,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">თიხის ფილა</div><div class="mmat-m">μ=5 · ρ=1000 · c=1000</div></div>
+        <div class="mmat-l">0.18</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;გიფსოფიბრის დაფა\&quot;,\&quot;λ\&quot;:0.36,\&quot;μ\&quot;:[10,20],\&quot;ρ\&quot;:1250,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">გიფსოფიბრის დაფა</div><div class="mmat-m">μ=10 · ρ=1250 · c=1000</div></div>
+        <div class="mmat-l">0.36</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;გიფსოკარტონი\&quot;,\&quot;λ\&quot;:0.25,\&quot;μ\&quot;:[10,20],\&quot;ρ\&quot;:900,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">გიფსოკარტონი</div><div class="mmat-m">μ=10 · ρ=900 · c=1000</div></div>
+        <div class="mmat-l">0.25</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;გიფს. ბოჭკ. ფილა\&quot;,\&quot;λ\&quot;:0.32,\&quot;μ\&quot;:[10,20],\&quot;ρ\&quot;:1150,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">გიფს. ბოჭკ. ფილა</div><div class="mmat-m">μ=10 · ρ=1150 · c=1000</div></div>
+        <div class="mmat-l">0.32</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ფანერი (Plywood)\&quot;,\&quot;λ\&quot;:0.13,\&quot;μ\&quot;:[150,300],\&quot;ρ\&quot;:500,\&quot;c\&quot;:1600}&quot;)">
+        <div><div class="mmat-n">ფანერი (Plywood)</div><div class="mmat-m">μ=150 · ρ=500 · c=1600</div></div>
+        <div class="mmat-l">0.13</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ლამინატი\&quot;,\&quot;λ\&quot;:0.17,\&quot;μ\&quot;:[100,200],\&quot;ρ\&quot;:800,\&quot;c\&quot;:1600}&quot;)">
+        <div><div class="mmat-n">ლამინატი</div><div class="mmat-m">μ=100 · ρ=800 · c=1600</div></div>
+        <div class="mmat-l">0.17</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;MDF 500\&quot;,\&quot;λ\&quot;:0.08,\&quot;μ\&quot;:[5,20],\&quot;ρ\&quot;:500,\&quot;c\&quot;:1700}&quot;)">
+        <div><div class="mmat-n">MDF 500</div><div class="mmat-m">μ=5 · ρ=500 · c=1700</div></div>
+        <div class="mmat-l">0.08</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;MDF 750\&quot;,\&quot;λ\&quot;:0.1,\&quot;μ\&quot;:[10,30],\&quot;ρ\&quot;:750,\&quot;c\&quot;:1700}&quot;)">
+        <div><div class="mmat-n">MDF 750</div><div class="mmat-m">μ=10 · ρ=750 · c=1700</div></div>
+        <div class="mmat-l">0.1</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;OSB\&quot;,\&quot;λ\&quot;:0.13,\&quot;μ\&quot;:[30,100],\&quot;ρ\&quot;:650,\&quot;c\&quot;:1700}&quot;)">
+        <div><div class="mmat-n">OSB</div><div class="mmat-m">μ=30 · ρ=650 · c=1700</div></div>
+        <div class="mmat-l">0.13</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;OSB-3\&quot;,\&quot;λ\&quot;:0.13,\&quot;μ\&quot;:[30,100],\&quot;ρ\&quot;:650,\&quot;c\&quot;:1700}&quot;)">
+        <div><div class="mmat-n">OSB-3</div><div class="mmat-m">μ=30 · ρ=650 · c=1700</div></div>
+        <div class="mmat-l">0.13</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;კერამ. ფილა\&quot;,\&quot;λ\&quot;:1,\&quot;μ\&quot;:[150,200],\&quot;ρ\&quot;:2000,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">კერამ. ფილა</div><div class="mmat-m">μ=150 · ρ=2000 · c=840</div></div>
+        <div class="mmat-l">1</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ხის მატყლის ფილა\&quot;,\&quot;λ\&quot;:0.09,\&quot;μ\&quot;:[2,5],\&quot;ρ\&quot;:500,\&quot;c\&quot;:1500}&quot;)">
+        <div><div class="mmat-n">ხის მატყლის ფილა</div><div class="mmat-m">μ=2 · ρ=500 · c=1500</div></div>
+        <div class="mmat-l">0.09</div></div><div class="mcat">სამშ. ფოლიო / ფირი</div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ალუმ. ფოლგა\&quot;,\&quot;λ\&quot;:160,\&quot;μ\&quot;:[300000,300000],\&quot;ρ\&quot;:2700,\&quot;c\&quot;:880}&quot;)">
+        <div><div class="mmat-n">ალუმ. ფოლგა</div><div class="mmat-m">μ=300000 · ρ=2700 · c=880</div></div>
+        <div class="mmat-l">160</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;სასუნთ. მემბრანა\&quot;,\&quot;λ\&quot;:0.2,\&quot;μ\&quot;:[1,5],\&quot;ρ\&quot;:200,\&quot;c\&quot;:1800}&quot;)">
+        <div><div class="mmat-n">სასუნთ. მემბრანა</div><div class="mmat-m">μ=1 · ρ=200 · c=1800</div></div>
+        <div class="mmat-l">0.2</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ბიტუმ. ლაქი\&quot;,\&quot;λ\&quot;:0.17,\&quot;μ\&quot;:[50000,50000],\&quot;ρ\&quot;:1050,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">ბიტუმ. ლაქი</div><div class="mmat-m">μ=50000 · ρ=1050 · c=1000</div></div>
+        <div class="mmat-l">0.17</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;EPDM ფოლგა\&quot;,\&quot;λ\&quot;:0.25,\&quot;μ\&quot;:[100000,100000],\&quot;ρ\&quot;:1150,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">EPDM ფოლგა</div><div class="mmat-m">μ=100000 · ρ=1150 · c=1000</div></div>
+        <div class="mmat-l">0.25</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;PP ფოლგა\&quot;,\&quot;λ\&quot;:0.22,\&quot;μ\&quot;:[100000,100000],\&quot;ρ\&quot;:910,\&quot;c\&quot;:1800}&quot;)">
+        <div><div class="mmat-n">PP ფოლგა</div><div class="mmat-m">μ=100000 · ρ=910 · c=1800</div></div>
+        <div class="mmat-l">0.22</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;PE ფოლგა\&quot;,\&quot;λ\&quot;:0.33,\&quot;μ\&quot;:[100000,100000],\&quot;ρ\&quot;:950,\&quot;c\&quot;:1800}&quot;)">
+        <div><div class="mmat-n">PE ფოლგა</div><div class="mmat-m">μ=100000 · ρ=950 · c=1800</div></div>
+        <div class="mmat-l">0.33</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ორთქ. ბარიერი\&quot;,\&quot;λ\&quot;:0.2,\&quot;μ\&quot;:[100000,100000],\&quot;ρ\&quot;:900,\&quot;c\&quot;:1800}&quot;)">
+        <div><div class="mmat-n">ორთქ. ბარიერი</div><div class="mmat-m">μ=100000 · ρ=900 · c=1800</div></div>
+        <div class="mmat-l">0.2</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ორთქ. შემანელ.\&quot;,\&quot;λ\&quot;:0.2,\&quot;μ\&quot;:[1000,10000],\&quot;ρ\&quot;:900,\&quot;c\&quot;:1800}&quot;)">
+        <div><div class="mmat-n">ორთქ. შემანელ.</div><div class="mmat-m">μ=1000 · ρ=900 · c=1800</div></div>
+        <div class="mmat-l">0.2</div></div><div class="mcat">საიზოლ. ბამბა / ბეჭდი</div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;აეროგელი\&quot;,\&quot;λ\&quot;:0.015,\&quot;μ\&quot;:[2,5],\&quot;ρ\&quot;:150,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">აეროგელი</div><div class="mmat-m">μ=2 · ρ=150 · c=1000</div></div>
+        <div class="mmat-l">0.015</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;მინის ბამბა 032\&quot;,\&quot;λ\&quot;:0.032,\&quot;μ\&quot;:[1,2],\&quot;ρ\&quot;:20,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">მინის ბამბა 032</div><div class="mmat-m">μ=1 · ρ=20 · c=840</div></div>
+        <div class="mmat-l">0.032</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;მინის ბამბა 035\&quot;,\&quot;λ\&quot;:0.035,\&quot;μ\&quot;:[1,2],\&quot;ρ\&quot;:25,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">მინის ბამბა 035</div><div class="mmat-m">μ=1 · ρ=25 · c=840</div></div>
+        <div class="mmat-l">0.035</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;მინის ბამბა 040\&quot;,\&quot;λ\&quot;:0.04,\&quot;μ\&quot;:[1,2],\&quot;ρ\&quot;:30,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">მინის ბამბა 040</div><div class="mmat-m">μ=1 · ρ=30 · c=840</div></div>
+        <div class="mmat-l">0.04</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;მინერ. ბამბა 032\&quot;,\&quot;λ\&quot;:0.032,\&quot;μ\&quot;:[1,2],\&quot;ρ\&quot;:30,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">მინერ. ბამბა 032</div><div class="mmat-m">μ=1 · ρ=30 · c=840</div></div>
+        <div class="mmat-l">0.032</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;მინერ. ბამბა 035\&quot;,\&quot;λ\&quot;:0.035,\&quot;μ\&quot;:[1,2],\&quot;ρ\&quot;:35,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">მინერ. ბამბა 035</div><div class="mmat-m">μ=1 · ρ=35 · c=840</div></div>
+        <div class="mmat-l">0.035</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;მინერ. ბამბა 040\&quot;,\&quot;λ\&quot;:0.04,\&quot;μ\&quot;:[1,2],\&quot;ρ\&quot;:40,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">მინერ. ბამბა 040</div><div class="mmat-m">μ=1 · ρ=40 · c=840</div></div>
+        <div class="mmat-l">0.04</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ფილცი\&quot;,\&quot;λ\&quot;:0.06,\&quot;μ\&quot;:[5,10],\&quot;ρ\&quot;:200,\&quot;c\&quot;:1300}&quot;)">
+        <div><div class="mmat-n">ფილცი</div><div class="mmat-m">μ=5 · ρ=200 · c=1300</div></div>
+        <div class="mmat-l">0.06</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;სელის საიზოლ.\&quot;,\&quot;λ\&quot;:0.04,\&quot;μ\&quot;:[1,3],\&quot;ρ\&quot;:25,\&quot;c\&quot;:1600}&quot;)">
+        <div><div class="mmat-n">სელის საიზოლ.</div><div class="mmat-m">μ=1 · ρ=25 · c=1600</div></div>
+        <div class="mmat-l">0.04</div></div><div class="mcat">საიზოლ. ფილები</div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;EPS (პოლ. ქაფი)\&quot;,\&quot;λ\&quot;:0.035,\&quot;μ\&quot;:[20,100],\&quot;ρ\&quot;:25,\&quot;c\&quot;:1450}&quot;)">
+        <div><div class="mmat-n">EPS (პოლ. ქაფი)</div><div class="mmat-m">μ=20 · ρ=25 · c=1450</div></div>
+        <div class="mmat-l">0.035</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;XPS (ექსტ. პოლ.)\&quot;,\&quot;λ\&quot;:0.03,\&quot;μ\&quot;:[80,250],\&quot;ρ\&quot;:35,\&quot;c\&quot;:1450}&quot;)">
+        <div><div class="mmat-n">XPS (ექსტ. პოლ.)</div><div class="mmat-m">μ=80 · ρ=35 · c=1450</div></div>
+        <div class="mmat-l">0.03</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;PUR / PIR ფილა\&quot;,\&quot;λ\&quot;:0.025,\&quot;μ\&quot;:[30,100],\&quot;ρ\&quot;:35,\&quot;c\&quot;:1400}&quot;)">
+        <div><div class="mmat-n">PUR / PIR ფილა</div><div class="mmat-m">μ=30 · ρ=35 · c=1400</div></div>
+        <div class="mmat-l">0.025</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ქაფ-შუშის ფილა\&quot;,\&quot;λ\&quot;:0.045,\&quot;μ\&quot;:[10000,10000],\&quot;ρ\&quot;:130,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">ქაფ-შუშის ფილა</div><div class="mmat-m">μ=10000 · ρ=130 · c=840</div></div>
+        <div class="mmat-l">0.045</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ხის ბოჭკ. ფილა\&quot;,\&quot;λ\&quot;:0.038,\&quot;μ\&quot;:[3,10],\&quot;ρ\&quot;:150,\&quot;c\&quot;:2100}&quot;)">
+        <div><div class="mmat-n">ხის ბოჭკ. ფილა</div><div class="mmat-m">μ=3 · ρ=150 · c=2100</div></div>
+        <div class="mmat-l">0.038</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;კანაფის საიზოლ. ფილა\&quot;,\&quot;λ\&quot;:0.04,\&quot;μ\&quot;:[1,3],\&quot;ρ\&quot;:40,\&quot;c\&quot;:1600}&quot;)">
+        <div><div class="mmat-n">კანაფის საიზოლ. ფილა</div><div class="mmat-m">μ=1 · ρ=40 · c=1600</div></div>
+        <div class="mmat-l">0.04</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;კორქის ფილა\&quot;,\&quot;λ\&quot;:0.04,\&quot;μ\&quot;:[5,20],\&quot;ρ\&quot;:120,\&quot;c\&quot;:1800}&quot;)">
+        <div><div class="mmat-n">კორქის ფილა</div><div class="mmat-m">μ=5 · ρ=120 · c=1800</div></div>
+        <div class="mmat-l">0.04</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ფენოლ. ქაფ-ფილა\&quot;,\&quot;λ\&quot;:0.022,\&quot;μ\&quot;:[30,100],\&quot;ρ\&quot;:40,\&quot;c\&quot;:1400}&quot;)">
+        <div><div class="mmat-n">ფენოლ. ქაფ-ფილა</div><div class="mmat-m">μ=30 · ρ=40 · c=1400</div></div>
+        <div class="mmat-l">0.022</div></div><div class="mcat">საიზოლ. ყრილი</div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ცელულოზი\&quot;,\&quot;λ\&quot;:0.04,\&quot;μ\&quot;:[1,2],\&quot;ρ\&quot;:50,\&quot;c\&quot;:1900}&quot;)">
+        <div><div class="mmat-n">ცელულოზი</div><div class="mmat-m">μ=1 · ρ=50 · c=1900</div></div>
+        <div class="mmat-l">0.04</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;პერლიტი\&quot;,\&quot;λ\&quot;:0.05,\&quot;μ\&quot;:[2,5],\&quot;ρ\&quot;:100,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">პერლიტი</div><div class="mmat-m">μ=2 · ρ=100 · c=1000</div></div>
+        <div class="mmat-l">0.05</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;EPS გრანულები\&quot;,\&quot;λ\&quot;:0.04,\&quot;μ\&quot;:[20,100],\&quot;ρ\&quot;:15,\&quot;c\&quot;:1450}&quot;)">
+        <div><div class="mmat-n">EPS გრანულები</div><div class="mmat-m">μ=20 · ρ=15 · c=1450</div></div>
+        <div class="mmat-l">0.04</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ხის ბოჭკო\&quot;,\&quot;λ\&quot;:0.04,\&quot;μ\&quot;:[1,3],\&quot;ρ\&quot;:50,\&quot;c\&quot;:2100}&quot;)">
+        <div><div class="mmat-n">ხის ბოჭკო</div><div class="mmat-m">μ=1 · ρ=50 · c=2100</div></div>
+        <div class="mmat-l">0.04</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ქაფ-შუშის ნაჭ.\&quot;,\&quot;λ\&quot;:0.09,\&quot;μ\&quot;:[1000,10000],\&quot;ρ\&quot;:150,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">ქაფ-შუშის ნაჭ.</div><div class="mmat-m">μ=1000 · ρ=150 · c=840</div></div>
+        <div class="mmat-l">0.09</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;გაფ. თ. ხრეში\&quot;,\&quot;λ\&quot;:0.16,\&quot;μ\&quot;:[1,3],\&quot;ρ\&quot;:500,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">გაფ. თ. ხრეში</div><div class="mmat-m">μ=1 · ρ=500 · c=840</div></div>
+        <div class="mmat-l">0.16</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;გაფ. ვერმიკ.\&quot;,\&quot;λ\&quot;:0.07,\&quot;μ\&quot;:[2,5],\&quot;ρ\&quot;:100,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">გაფ. ვერმიკ.</div><div class="mmat-m">μ=2 · ρ=100 · c=840</div></div>
+        <div class="mmat-l">0.07</div></div><div class="mcat">ქვით-ობა / ბლოკები</div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;აერობ. ბ. 350 kg/m³\&quot;,\&quot;λ\&quot;:0.09,\&quot;μ\&quot;:[5,10],\&quot;ρ\&quot;:350,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">აერობ. ბ. 350 kg/m³</div><div class="mmat-m">μ=5 · ρ=350 · c=1000</div></div>
+        <div class="mmat-l">0.09</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;აერობ. ბ. 400 kg/m³\&quot;,\&quot;λ\&quot;:0.1,\&quot;μ\&quot;:[5,10],\&quot;ρ\&quot;:400,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">აერობ. ბ. 400 kg/m³</div><div class="mmat-m">μ=5 · ρ=400 · c=1000</div></div>
+        <div class="mmat-l">0.1</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;აერობ. ბ. 500 kg/m³\&quot;,\&quot;λ\&quot;:0.13,\&quot;μ\&quot;:[5,10],\&quot;ρ\&quot;:500,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">აერობ. ბ. 500 kg/m³</div><div class="mmat-m">μ=5 · ρ=500 · c=1000</div></div>
+        <div class="mmat-l">0.13</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ქვიშ-კ. აგური\&quot;,\&quot;λ\&quot;:0.7,\&quot;μ\&quot;:[10,25],\&quot;ρ\&quot;:1700,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">ქვიშ-კ. აგური</div><div class="mmat-m">μ=10 · ρ=1700 · c=1000</div></div>
+        <div class="mmat-l">0.7</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ქვ-კ. 1400 kg/m³\&quot;,\&quot;λ\&quot;:0.56,\&quot;μ\&quot;:[10,25],\&quot;ρ\&quot;:1400,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">ქვ-კ. 1400 kg/m³</div><div class="mmat-m">μ=10 · ρ=1400 · c=1000</div></div>
+        <div class="mmat-l">0.56</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;სოლ. ა. 1000 kg/m³\&quot;,\&quot;λ\&quot;:0.35,\&quot;μ\&quot;:[5,15],\&quot;ρ\&quot;:1000,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">სოლ. ა. 1000 kg/m³</div><div class="mmat-m">μ=5 · ρ=1000 · c=1000</div></div>
+        <div class="mmat-l">0.35</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;სოლ. ა. 1200 kg/m³\&quot;,\&quot;λ\&quot;:0.44,\&quot;μ\&quot;:[5,15],\&quot;ρ\&quot;:1200,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">სოლ. ა. 1200 kg/m³</div><div class="mmat-m">μ=5 · ρ=1200 · c=1000</div></div>
+        <div class="mmat-l">0.44</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;სოლ. ა. 1600 kg/m³\&quot;,\&quot;λ\&quot;:0.56,\&quot;μ\&quot;:[5,15],\&quot;ρ\&quot;:1600,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">სოლ. ა. 1600 kg/m³</div><div class="mmat-m">μ=5 · ρ=1600 · c=1000</div></div>
+        <div class="mmat-l">0.56</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;სოლ. ა. 1800 kg/m³\&quot;,\&quot;λ\&quot;:0.62,\&quot;μ\&quot;:[5,15],\&quot;ρ\&quot;:1800,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">სოლ. ა. 1800 kg/m³</div><div class="mmat-m">μ=5 · ρ=1800 · c=1000</div></div>
+        <div class="mmat-l">0.62</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ნახვ. ა. 700 kg/m³\&quot;,\&quot;λ\&quot;:0.25,\&quot;μ\&quot;:[5,15],\&quot;ρ\&quot;:700,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">ნახვ. ა. 700 kg/m³</div><div class="mmat-m">μ=5 · ρ=700 · c=1000</div></div>
+        <div class="mmat-l">0.25</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ნახვ. ა. 800 kg/m³\&quot;,\&quot;λ\&quot;:0.29,\&quot;μ\&quot;:[5,15],\&quot;ρ\&quot;:800,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">ნახვ. ა. 800 kg/m³</div><div class="mmat-m">μ=5 · ρ=800 · c=1000</div></div>
+        <div class="mmat-l">0.29</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ნახვ. ა. 1000 kg/m³\&quot;,\&quot;λ\&quot;:0.35,\&quot;μ\&quot;:[5,15],\&quot;ρ\&quot;:1000,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">ნახვ. ა. 1000 kg/m³</div><div class="mmat-m">μ=5 · ρ=1000 · c=1000</div></div>
+        <div class="mmat-l">0.35</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ვ.ნახვ. 700 kg/m³\&quot;,\&quot;λ\&quot;:0.25,\&quot;μ\&quot;:[5,15],\&quot;ρ\&quot;:700,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">ვ.ნახვ. 700 kg/m³</div><div class="mmat-m">μ=5 · ρ=700 · c=1000</div></div>
+        <div class="mmat-l">0.25</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ვ.ნახვ. 1400 kg/m³\&quot;,\&quot;λ\&quot;:0.44,\&quot;μ\&quot;:[5,15],\&quot;ρ\&quot;:1400,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">ვ.ნახვ. 1400 kg/m³</div><div class="mmat-m">μ=5 · ρ=1400 · c=1000</div></div>
+        <div class="mmat-l">0.44</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ღ. ბლ. 500 kg/m³\&quot;,\&quot;λ\&quot;:0.18,\&quot;μ\&quot;:[5,15],\&quot;ρ\&quot;:500,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">ღ. ბლ. 500 kg/m³</div><div class="mmat-m">μ=5 · ρ=500 · c=1000</div></div>
+        <div class="mmat-l">0.18</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ღ. ბლ. 700 kg/m³\&quot;,\&quot;λ\&quot;:0.22,\&quot;μ\&quot;:[5,15],\&quot;ρ\&quot;:700,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">ღ. ბლ. 700 kg/m³</div><div class="mmat-m">μ=5 · ρ=700 · c=1000</div></div>
+        <div class="mmat-l">0.22</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ღ. ბლ. 1000 kg/m³\&quot;,\&quot;λ\&quot;:0.33,\&quot;μ\&quot;:[5,15],\&quot;ρ\&quot;:1000,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">ღ. ბლ. 1000 kg/m³</div><div class="mmat-m">μ=5 · ρ=1000 · c=1000</div></div>
+        <div class="mmat-l">0.33</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;სელ. ბ. 470 kg/m³\&quot;,\&quot;λ\&quot;:0.14,\&quot;μ\&quot;:[5,10],\&quot;ρ\&quot;:470,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">სელ. ბ. 470 kg/m³</div><div class="mmat-m">μ=5 · ρ=470 · c=1000</div></div>
+        <div class="mmat-l">0.14</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;სელ. ბ. 640 kg/m³\&quot;,\&quot;λ\&quot;:0.2,\&quot;μ\&quot;:[5,10],\&quot;ρ\&quot;:640,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">სელ. ბ. 640 kg/m³</div><div class="mmat-m">μ=5 · ρ=640 · c=1000</div></div>
+        <div class="mmat-l">0.2</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;სელ. ბ. 780 kg/m³\&quot;,\&quot;λ\&quot;:0.23,\&quot;μ\&quot;:[5,10],\&quot;ρ\&quot;:780,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">სელ. ბ. 780 kg/m³</div><div class="mmat-m">μ=5 · ρ=780 · c=1000</div></div>
+        <div class="mmat-l">0.23</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;თიხის აგური\&quot;,\&quot;λ\&quot;:0.44,\&quot;μ\&quot;:[5,15],\&quot;ρ\&quot;:1200,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">თიხის აგური</div><div class="mmat-m">μ=5 · ρ=1200 · c=840</div></div>
+        <div class="mmat-l">0.44</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ფოროვ. აგური\&quot;,\&quot;λ\&quot;:0.25,\&quot;μ\&quot;:[5,15],\&quot;ρ\&quot;:800,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">ფოროვ. აგური</div><div class="mmat-m">μ=5 · ρ=800 · c=840</div></div>
+        <div class="mmat-l">0.25</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;კირქვა\&quot;,\&quot;λ\&quot;:1.4,\&quot;μ\&quot;:[30,100],\&quot;ρ\&quot;:2000,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">კირქვა</div><div class="mmat-m">μ=30 · ρ=2000 · c=840</div></div>
+        <div class="mmat-l">1.4</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;აგური (ჩვ.)\&quot;,\&quot;λ\&quot;:0.6,\&quot;μ\&quot;:[10,20],\&quot;ρ\&quot;:1500,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">აგური (ჩვ.)</div><div class="mmat-m">μ=10 · ρ=1500 · c=840</div></div>
+        <div class="mmat-l">0.6</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ბაზალტი\&quot;,\&quot;λ\&quot;:3.5,\&quot;μ\&quot;:[10000,20000],\&quot;ρ\&quot;:2700,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">ბაზალტი</div><div class="mmat-m">μ=10000 · ρ=2700 · c=840</div></div>
+        <div class="mmat-l">3.5</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;გრანიტი\&quot;,\&quot;λ\&quot;:2.8,\&quot;μ\&quot;:[10000,20000],\&quot;ρ\&quot;:2600,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">გრანიტი</div><div class="mmat-m">μ=10000 · ρ=2600 · c=840</div></div>
+        <div class="mmat-l">2.8</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ქვიშაქვა\&quot;,\&quot;λ\&quot;:2.3,\&quot;μ\&quot;:[40,70],\&quot;ρ\&quot;:2200,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">ქვიშაქვა</div><div class="mmat-m">μ=40 · ρ=2200 · c=840</div></div>
+        <div class="mmat-l">2.3</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ფიქალი\&quot;,\&quot;λ\&quot;:2,\&quot;μ\&quot;:[1000,10000],\&quot;ρ\&quot;:2700,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">ფიქალი</div><div class="mmat-m">μ=1000 · ρ=2700 · c=840</div></div>
+        <div class="mmat-l">2</div></div><div class="mcat">შტუკ. / მოპ.</div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ცემ. შტუკ.\&quot;,\&quot;λ\&quot;:0.8,\&quot;μ\&quot;:[10,25],\&quot;ρ\&quot;:1800,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">ცემ. შტუკ.</div><div class="mmat-m">μ=10 · ρ=1800 · c=840</div></div>
+        <div class="mmat-l">0.8</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;თიხის შტუკ.\&quot;,\&quot;λ\&quot;:0.7,\&quot;μ\&quot;:[5,10],\&quot;ρ\&quot;:1600,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">თიხის შტუკ.</div><div class="mmat-m">μ=5 · ρ=1600 · c=1000</div></div>
+        <div class="mmat-l">0.7</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;გიფსის შტუკ.\&quot;,\&quot;λ\&quot;:0.43,\&quot;μ\&quot;:[10,20],\&quot;ρ\&quot;:1000,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">გიფსის შტუკ.</div><div class="mmat-m">μ=10 · ρ=1000 · c=1000</div></div>
+        <div class="mmat-l">0.43</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;საიზოლ. შტუკ.\&quot;,\&quot;λ\&quot;:0.19,\&quot;μ\&quot;:[5,10],\&quot;ρ\&quot;:600,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">საიზოლ. შტუკ.</div><div class="mmat-m">μ=5 · ρ=600 · c=1000</div></div>
+        <div class="mmat-l">0.19</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;მსუბ. შტუკ.\&quot;,\&quot;λ\&quot;:0.3,\&quot;μ\&quot;:[7,15],\&quot;ρ\&quot;:900,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">მსუბ. შტუკ.</div><div class="mmat-m">μ=7 · ρ=900 · c=1000</div></div>
+        <div class="mmat-l">0.3</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;კირ-ცემ. ყდ.\&quot;,\&quot;λ\&quot;:0.8,\&quot;μ\&quot;:[10,20],\&quot;ρ\&quot;:1600,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">კირ-ცემ. ყდ.</div><div class="mmat-m">μ=10 · ρ=1600 · c=1000</div></div>
+        <div class="mmat-l">0.8</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;კირის ყდ.\&quot;,\&quot;λ\&quot;:0.8,\&quot;μ\&quot;:[10,20],\&quot;ρ\&quot;:1600,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">კირის ყდ.</div><div class="mmat-m">μ=10 · ρ=1600 · c=1000</div></div>
+        <div class="mmat-l">0.8</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;კირ-გიფ. შტუკ.\&quot;,\&quot;λ\&quot;:0.7,\&quot;μ\&quot;:[7,15],\&quot;ρ\&quot;:1300,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">კირ-გიფ. შტუკ.</div><div class="mmat-m">μ=7 · ρ=1300 · c=1000</div></div>
+        <div class="mmat-l">0.7</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;სარეზ. შტუკ.\&quot;,\&quot;λ\&quot;:0.7,\&quot;μ\&quot;:[50,200],\&quot;ρ\&quot;:1800,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">სარეზ. შტუკ.</div><div class="mmat-m">μ=50 · ρ=1800 · c=1000</div></div>
+        <div class="mmat-l">0.7</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;წებოვ. (ადჰ.)\&quot;,\&quot;λ\&quot;:0.8,\&quot;μ\&quot;:[18,25],\&quot;ρ\&quot;:1800,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">წებოვ. (ადჰ.)</div><div class="mmat-m">μ=18 · ρ=1800 · c=1000</div></div>
+        <div class="mmat-l">0.8</div></div><div class="mcat">სხვადასხვა</div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ჰაერი\&quot;,\&quot;λ\&quot;:0.026,\&quot;μ\&quot;:[0.5,0.5],\&quot;ρ\&quot;:1.23,\&quot;c\&quot;:1006}&quot;)">
+        <div><div class="mmat-n">ჰაერი</div><div class="mmat-m">μ=0.5 · ρ=1.23 · c=1006</div></div>
+        <div class="mmat-l">0.026</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;მოუძ. ჰ. (უვ.)\&quot;,\&quot;λ\&quot;:0.026,\&quot;μ\&quot;:[0.5,0.5],\&quot;ρ\&quot;:1.23,\&quot;c\&quot;:1006}&quot;)">
+        <div><div class="mmat-n">მოუძ. ჰ. (უვ.)</div><div class="mmat-m">μ=0.5 · ρ=1.23 · c=1006</div></div>
+        <div class="mmat-l">0.026</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;სახ. კრამ. + ლელი\&quot;,\&quot;λ\&quot;:1,\&quot;μ\&quot;:[40,50],\&quot;ρ\&quot;:2000,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">სახ. კრამ. + ლელი</div><div class="mmat-m">μ=40 · ρ=2000 · c=840</div></div>
+        <div class="mmat-l">1</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ალუმინი\&quot;,\&quot;λ\&quot;:160,\&quot;μ\&quot;:[5000,5000],\&quot;ρ\&quot;:2700,\&quot;c\&quot;:880}&quot;)">
+        <div><div class="mmat-n">ალუმინი</div><div class="mmat-m">μ=5000 · ρ=2700 · c=880</div></div>
+        <div class="mmat-l">160</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;სპილენძი\&quot;,\&quot;λ\&quot;:380,\&quot;μ\&quot;:[5000,5000],\&quot;ρ\&quot;:8900,\&quot;c\&quot;:380}&quot;)">
+        <div><div class="mmat-n">სპილენძი</div><div class="mmat-m">μ=5000 · ρ=8900 · c=380</div></div>
+        <div class="mmat-l">380</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ფოლ. (უჟ. სხ.)\&quot;,\&quot;λ\&quot;:17,\&quot;μ\&quot;:[5000,5000],\&quot;ρ\&quot;:7900,\&quot;c\&quot;:460}&quot;)">
+        <div><div class="mmat-n">ფოლ. (უჟ. სხ.)</div><div class="mmat-m">μ=5000 · ρ=7900 · c=460</div></div>
+        <div class="mmat-l">17</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ფოლადი\&quot;,\&quot;λ\&quot;:50,\&quot;μ\&quot;:[5000,5000],\&quot;ρ\&quot;:7800,\&quot;c\&quot;:460}&quot;)">
+        <div><div class="mmat-n">ფოლადი</div><div class="mmat-m">μ=5000 · ρ=7800 · c=460</div></div>
+        <div class="mmat-l">50</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ხრეში\&quot;,\&quot;λ\&quot;:0.7,\&quot;μ\&quot;:[1,2],\&quot;ρ\&quot;:1700,\&quot;c\&quot;:840}&quot;)">
+        <div><div class="mmat-n">ხრეში</div><div class="mmat-m">μ=1 · ρ=1700 · c=840</div></div>
+        <div class="mmat-l">0.7</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ქვიშა (მშ.)\&quot;,\&quot;λ\&quot;:0.3,\&quot;μ\&quot;:[1,2],\&quot;ρ\&quot;:1500,\&quot;c\&quot;:800}&quot;)">
+        <div><div class="mmat-n">ქვიშა (მშ.)</div><div class="mmat-m">μ=1 · ρ=1500 · c=800</div></div>
+        <div class="mmat-l">0.3</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ქვიშა (მ-ტ.)\&quot;,\&quot;λ\&quot;:0.9,\&quot;μ\&quot;:[1,2],\&quot;ρ\&quot;:1900,\&quot;c\&quot;:800}&quot;)">
+        <div><div class="mmat-n">ქვიშა (მ-ტ.)</div><div class="mmat-m">μ=1 · ρ=1900 · c=800</div></div>
+        <div class="mmat-l">0.9</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;შუშა\&quot;,\&quot;λ\&quot;:1,\&quot;μ\&quot;:[10000,10000],\&quot;ρ\&quot;:2500,\&quot;c\&quot;:750}&quot;)">
+        <div><div class="mmat-n">შუშა</div><div class="mmat-m">μ=10000 · ρ=2500 · c=750</div></div>
+        <div class="mmat-l">1</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ე.შ. შუშ. ერთ.\&quot;,\&quot;λ\&quot;:0.5,\&quot;μ\&quot;:[10000,10000],\&quot;ρ\&quot;:2500,\&quot;c\&quot;:750}&quot;)">
+        <div><div class="mmat-n">ე.შ. შუშ. ერთ.</div><div class="mmat-m">μ=10000 · ρ=2500 · c=750</div></div>
+        <div class="mmat-l">0.5</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;ე.შ. შუშ. ორ.\&quot;,\&quot;λ\&quot;:0.5,\&quot;μ\&quot;:[10000,10000],\&quot;ρ\&quot;:2500,\&quot;c\&quot;:750}&quot;)">
+        <div><div class="mmat-n">ე.შ. შუშ. ორ.</div><div class="mmat-m">μ=10000 · ρ=2500 · c=750</div></div>
+        <div class="mmat-l">0.5</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;PVC\&quot;,\&quot;λ\&quot;:0.17,\&quot;μ\&quot;:[50000,100000],\&quot;ρ\&quot;:1390,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">PVC</div><div class="mmat-m">μ=50000 · ρ=1390 · c=1000</div></div>
+        <div class="mmat-l">0.17</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;EPS (მყ. პოლ.)\&quot;,\&quot;λ\&quot;:0.16,\&quot;μ\&quot;:[100,200],\&quot;ρ\&quot;:1050,\&quot;c\&quot;:1300}&quot;)">
+        <div><div class="mmat-n">EPS (მყ. პოლ.)</div><div class="mmat-m">μ=100 · ρ=1050 · c=1300</div></div>
+        <div class="mmat-l">0.16</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;PTFE\&quot;,\&quot;λ\&quot;:0.25,\&quot;μ\&quot;:[10000,100000],\&quot;ρ\&quot;:2200,\&quot;c\&quot;:1000}&quot;)">
+        <div><div class="mmat-n">PTFE</div><div class="mmat-m">μ=10000 · ρ=2200 · c=1000</div></div>
+        <div class="mmat-l">0.25</div></div><div class="mmat" onclick="pickMat(&quot;{\&quot;n\&quot;:\&quot;პოლიურ. (მყ.)\&quot;,\&quot;λ\&quot;:0.25,\&quot;μ\&quot;:[10000,100000],\&quot;ρ\&quot;:1200,\&quot;c\&quot;:1800}&quot;)">
+        <div><div class="mmat-n">პოლიურ. (მყ.)</div><div class="mmat-m">μ=10000 · ρ=1200 · c=1800</div></div>
+        <div class="mmat-l">0.25</div></div></div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════
+//  MATERIAL DATABASE (Georgian labels)
+// ════════════════════════════════════════════════════
+const DB={
+"ბეტონი":[
+  {n:"ანჰიდრიტის სახეობის ხსნარი",λ:1.2, μ:[15,35],   ρ:2100,c:1000},
+  {n:"ცემენტის სახეობის ხსნარი",   λ:1.4, μ:[10,20],   ρ:1900,c:840},
+  {n:"ბეტონი",                      λ:1.65,μ:[70,120],  ρ:2000,c:880},
+  {n:"ქაფბეტონი",                   λ:0.29,μ:[5,10],    ρ:700, c:840},
+  {n:"მასტიკის ასფალტი",            λ:0.70,μ:[50000,50000],ρ:2100,c:1000},
+  {n:"არმ. ბეტონი 1%",              λ:2.30,μ:[80,130],  ρ:2400,c:880},
+  {n:"არმ. ბეტონი 2%",              λ:2.50,μ:[80,130],  ρ:2400,c:880},
+],
+"ხე-ტყე":[
+  {n:"სხივი (Rafter)",              λ:0.13,μ:[50,200],  ρ:500, c:1600},
+  {n:"ჯვ. ლამინირ. ხე (CLT)",       λ:0.13,μ:[50,200],  ρ:500, c:1600},
+  {n:"წიფელი",                      λ:0.20,μ:[50,200],  ρ:700, c:1600},
+  {n:"სოჭი (Fir)",                  λ:0.13,μ:[50,200],  ρ:450, c:1600},
+  {n:"ლარქი",                       λ:0.13,μ:[50,200],  ρ:590, c:1600},
+  {n:"მუხა",                        λ:0.19,μ:[50,200],  ρ:700, c:1600},
+  {n:"ფიჭვი",                       λ:0.13,μ:[50,200],  ρ:500, c:1600},
+  {n:"ნაძვი",                       λ:0.13,μ:[50,200],  ρ:450, c:1600},
+  {n:"Western red cedar",           λ:0.10,μ:[50,200],  ρ:400, c:1600},
+],
+"დაფები / ფილები":[
+  {n:"თივის დაფა",                  λ:0.09,μ:[5,10],    ρ:350, c:1700},
+  {n:"სამშ. ფილა",                  λ:0.24,μ:[10,20],   ρ:1150,c:1000},
+  {n:"კალც-სილ. ფილა",              λ:0.18,μ:[10,20],   ρ:875, c:1000},
+  {n:"ცემ-ბონდ. ნაწ. ფილა",        λ:0.23,μ:[30,50],   ρ:1200,c:1000},
+  {n:"ნაწ. ფილა (chipboard)",       λ:0.10,μ:[50,150],  ρ:600, c:1700},
+  {n:"თიხის ფილა",                  λ:0.18,μ:[5,10],    ρ:1000,c:1000},
+  {n:"გიფსოფიბრის დაფა",            λ:0.36,μ:[10,20],   ρ:1250,c:1000},
+  {n:"გიფსოკარტონი",                λ:0.25,μ:[10,20],   ρ:900, c:1000},
+  {n:"გიფს. ბოჭკ. ფილა",           λ:0.32,μ:[10,20],   ρ:1150,c:1000},
+  {n:"ფანერი (Plywood)",            λ:0.13,μ:[150,300], ρ:500, c:1600},
+  {n:"ლამინატი",                    λ:0.17,μ:[100,200], ρ:800, c:1600},
+  {n:"MDF 500",                     λ:0.08,μ:[5,20],    ρ:500, c:1700},
+  {n:"MDF 750",                     λ:0.10,μ:[10,30],   ρ:750, c:1700},
+  {n:"OSB",                         λ:0.13,μ:[30,100],  ρ:650, c:1700},
+  {n:"OSB-3",                       λ:0.13,μ:[30,100],  ρ:650, c:1700},
+  {n:"კერამ. ფილა",                 λ:1.00,μ:[150,200], ρ:2000,c:840},
+  {n:"ხის მატყლის ფილა",            λ:0.09,μ:[2,5],     ρ:500, c:1500},
+],
+"სამშ. ფოლიო / ფირი":[
+  {n:"ალუმ. ფოლგა",                 λ:160, μ:[300000,300000],ρ:2700,c:880},
+  {n:"სასუნთ. მემბრანა",            λ:0.20,μ:[1,5],     ρ:200, c:1800},
+  {n:"ბიტუმ. ლაქი",                 λ:0.17,μ:[50000,50000],ρ:1050,c:1000},
+  {n:"EPDM ფოლგა",                  λ:0.25,μ:[100000,100000],ρ:1150,c:1000},
+  {n:"PP ფოლგა",                    λ:0.22,μ:[100000,100000],ρ:910, c:1800},
+  {n:"PE ფოლგა",                    λ:0.33,μ:[100000,100000],ρ:950, c:1800},
+  {n:"ორთქ. ბარიერი",               λ:0.20,μ:[100000,100000],ρ:900, c:1800},
+  {n:"ორთქ. შემანელ.",              λ:0.20,μ:[1000,10000],ρ:900,  c:1800},
+],
+"საიზოლ. ბამბა / ბეჭდი":[
+  {n:"აეროგელი",                    λ:0.015,μ:[2,5],    ρ:150, c:1000},
+  {n:"მინის ბამბა 032",             λ:0.032,μ:[1,2],    ρ:20,  c:840},
+  {n:"მინის ბამბა 035",             λ:0.035,μ:[1,2],    ρ:25,  c:840},
+  {n:"მინის ბამბა 040",             λ:0.040,μ:[1,2],    ρ:30,  c:840},
+  {n:"მინერ. ბამბა 032",            λ:0.032,μ:[1,2],    ρ:30,  c:840},
+  {n:"მინერ. ბამბა 035",            λ:0.035,μ:[1,2],    ρ:35,  c:840},
+  {n:"მინერ. ბამბა 040",            λ:0.040,μ:[1,2],    ρ:40,  c:840},
+  {n:"ფილცი",                       λ:0.06, μ:[5,10],   ρ:200, c:1300},
+  {n:"სელის საიზოლ.",               λ:0.04, μ:[1,3],    ρ:25,  c:1600},
+],
+"საიზოლ. ფილები":[
+  {n:"EPS (პოლ. ქაფი)",            λ:0.035,μ:[20,100], ρ:25,  c:1450},
+  {n:"XPS (ექსტ. პოლ.)",           λ:0.030,μ:[80,250], ρ:35,  c:1450},
+  {n:"PUR / PIR ფილა",             λ:0.025,μ:[30,100], ρ:35,  c:1400},
+  {n:"ქაფ-შუშის ფილა",             λ:0.045,μ:[10000,10000],ρ:130,c:840},
+  {n:"ხის ბოჭკ. ფილა",             λ:0.038,μ:[3,10],   ρ:150, c:2100},
+  {n:"კანაფის საიზოლ. ფილა",       λ:0.040,μ:[1,3],    ρ:40,  c:1600},
+  {n:"კორქის ფილა",                λ:0.040,μ:[5,20],   ρ:120, c:1800},
+  {n:"ფენოლ. ქაფ-ფილა",           λ:0.022,μ:[30,100], ρ:40,  c:1400},
+],
+"საიზოლ. ყრილი":[
+  {n:"ცელულოზი",                   λ:0.040,μ:[1,2],    ρ:50,  c:1900},
+  {n:"პერლიტი",                    λ:0.050,μ:[2,5],    ρ:100, c:1000},
+  {n:"EPS გრანულები",              λ:0.040,μ:[20,100], ρ:15,  c:1450},
+  {n:"ხის ბოჭკო",                  λ:0.040,μ:[1,3],    ρ:50,  c:2100},
+  {n:"ქაფ-შუშის ნაჭ.",             λ:0.090,μ:[1000,10000],ρ:150,c:840},
+  {n:"გაფ. თ. ხრეში",              λ:0.160,μ:[1,3],    ρ:500, c:840},
+  {n:"გაფ. ვერმიკ.",               λ:0.070,μ:[2,5],    ρ:100, c:840},
+],
+"ქვით-ობა / ბლოკები":[
+  {n:"აერობ. ბ. 350 kg/m³",        λ:0.09,μ:[5,10],    ρ:350, c:1000},
+  {n:"აერობ. ბ. 400 kg/m³",        λ:0.10,μ:[5,10],    ρ:400, c:1000},
+  {n:"აერობ. ბ. 500 kg/m³",        λ:0.13,μ:[5,10],    ρ:500, c:1000},
+  {n:"ქვიშ-კ. აგური",              λ:0.70,μ:[10,25],   ρ:1700,c:1000},
+  {n:"ქვ-კ. 1400 kg/m³",           λ:0.56,μ:[10,25],   ρ:1400,c:1000},
+  {n:"სოლ. ა. 1000 kg/m³",         λ:0.35,μ:[5,15],    ρ:1000,c:1000},
+  {n:"სოლ. ა. 1200 kg/m³",         λ:0.44,μ:[5,15],    ρ:1200,c:1000},
+  {n:"სოლ. ა. 1600 kg/m³",         λ:0.56,μ:[5,15],    ρ:1600,c:1000},
+  {n:"სოლ. ა. 1800 kg/m³",         λ:0.62,μ:[5,15],    ρ:1800,c:1000},
+  {n:"ნახვ. ა. 700 kg/m³",         λ:0.25,μ:[5,15],    ρ:700, c:1000},
+  {n:"ნახვ. ა. 800 kg/m³",         λ:0.29,μ:[5,15],    ρ:800, c:1000},
+  {n:"ნახვ. ა. 1000 kg/m³",        λ:0.35,μ:[5,15],    ρ:1000,c:1000},
+  {n:"ვ.ნახვ. 700 kg/m³",          λ:0.25,μ:[5,15],    ρ:700, c:1000},
+  {n:"ვ.ნახვ. 1400 kg/m³",         λ:0.44,μ:[5,15],    ρ:1400,c:1000},
+  {n:"ღ. ბლ. 500 kg/m³",           λ:0.18,μ:[5,15],    ρ:500, c:1000},
+  {n:"ღ. ბლ. 700 kg/m³",           λ:0.22,μ:[5,15],    ρ:700, c:1000},
+  {n:"ღ. ბლ. 1000 kg/m³",          λ:0.33,μ:[5,15],    ρ:1000,c:1000},
+  {n:"სელ. ბ. 470 kg/m³",          λ:0.14,μ:[5,10],    ρ:470, c:1000},
+  {n:"სელ. ბ. 640 kg/m³",          λ:0.20,μ:[5,10],    ρ:640, c:1000},
+  {n:"სელ. ბ. 780 kg/m³",          λ:0.23,μ:[5,10],    ρ:780, c:1000},
+  {n:"თიხის აგური",                λ:0.44,μ:[5,15],    ρ:1200,c:840},
+  {n:"ფოროვ. აგური",               λ:0.25,μ:[5,15],    ρ:800, c:840},
+  {n:"კირქვა",                     λ:1.40,μ:[30,100],  ρ:2000,c:840},
+  {n:"აგური (ჩვ.)",                λ:0.60,μ:[10,20],   ρ:1500,c:840},
+  {n:"ბაზალტი",                    λ:3.50,μ:[10000,20000],ρ:2700,c:840},
+  {n:"გრანიტი",                    λ:2.80,μ:[10000,20000],ρ:2600,c:840},
+  {n:"ქვიშაქვა",                   λ:2.30,μ:[40,70],   ρ:2200,c:840},
+  {n:"ფიქალი",                     λ:2.00,μ:[1000,10000],ρ:2700,c:840},
+],
+"შტუკ. / მოპ.":[
+  {n:"ცემ. შტუკ.",                 λ:0.80,μ:[10,25],   ρ:1800,c:840},
+  {n:"თიხის შტუკ.",                λ:0.70,μ:[5,10],    ρ:1600,c:1000},
+  {n:"გიფსის შტუკ.",               λ:0.43,μ:[10,20],   ρ:1000,c:1000},
+  {n:"საიზოლ. შტუკ.",              λ:0.19,μ:[5,10],    ρ:600, c:1000},
+  {n:"მსუბ. შტუკ.",                λ:0.30,μ:[7,15],    ρ:900, c:1000},
+  {n:"კირ-ცემ. ყდ.",               λ:0.80,μ:[10,20],   ρ:1600,c:1000},
+  {n:"კირის ყდ.",                  λ:0.80,μ:[10,20],   ρ:1600,c:1000},
+  {n:"კირ-გიფ. შტუკ.",             λ:0.70,μ:[7,15],    ρ:1300,c:1000},
+  {n:"სარეზ. შტუკ.",               λ:0.70,μ:[50,200],  ρ:1800,c:1000},
+  {n:"წებოვ. (ადჰ.)",              λ:0.80,μ:[18,25],   ρ:1800,c:1000},
+],
+"სხვადასხვა":[
+  {n:"ჰაერი",                      λ:0.026,μ:[0.5,0.5],ρ:1.23,c:1006},
+  {n:"მოუძ. ჰ. (უვ.)",             λ:0.026,μ:[0.5,0.5],ρ:1.23,c:1006},
+  {n:"სახ. კრამ. + ლელი",          λ:1.00,μ:[40,50],   ρ:2000,c:840},
+  {n:"ალუმინი",                    λ:160, μ:[5000,5000],ρ:2700,c:880},
+  {n:"სპილენძი",                   λ:380, μ:[5000,5000],ρ:8900,c:380},
+  {n:"ფოლ. (უჟ. სხ.)",             λ:17,  μ:[5000,5000],ρ:7900,c:460},
+  {n:"ფოლადი",                     λ:50,  μ:[5000,5000],ρ:7800,c:460},
+  {n:"ხრეში",                      λ:0.70,μ:[1,2],     ρ:1700,c:840},
+  {n:"ქვიშა (მშ.)",                λ:0.30,μ:[1,2],     ρ:1500,c:800},
+  {n:"ქვიშა (მ-ტ.)",               λ:0.90,μ:[1,2],     ρ:1900,c:800},
+  {n:"შუშა",                       λ:1.00,μ:[10000,10000],ρ:2500,c:750},
+  {n:"ე.შ. შუშ. ერთ.",             λ:0.50,μ:[10000,10000],ρ:2500,c:750},
+  {n:"ე.შ. შუშ. ორ.",              λ:0.50,μ:[10000,10000],ρ:2500,c:750},
+  {n:"PVC",                        λ:0.17,μ:[50000,100000],ρ:1390,c:1000},
+  {n:"EPS (მყ. პოლ.)",             λ:0.16,μ:[100,200], ρ:1050,c:1300},
+  {n:"PTFE",                       λ:0.25,μ:[10000,100000],ρ:2200,c:1000},
+  {n:"პოლიურ. (მყ.)",              λ:0.25,μ:[10000,100000],ρ:1200,c:1800},
+]};
+
+// ════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════
+let walls=[], wc=0, aid=null, modCb=null, condOpen=true;
+const Rsi=0.13, Rse=0.04;
+
+// ════════════════════════════════════════════════════
+//  PHYSICS
+// ════════════════════════════════════════════════════
+function sat(T){return 611.2*Math.exp(17.625*T/(243.04+T))}
+function dp(T,rh){const l=Math.log(Math.max(0.01,rh)/100),a=17.625,b=243.04;return b*(l+a*T/(b+T))/(a-l-a*T/(b+T))}
+function getCond(){return[+document.getElementById('ti').value||20,+document.getElementById('rhi').value||60,+document.getElementById('to').value||10,+document.getElementById('rho').value||50]}
+
+function compute(wall,Ti,RHi,To,RHo){
+  const lrs=wall.layers;
+  if(!lrs.length)return null;
+  const Rs=lrs.map(l=>(l.d/1000)/l.m.λ);
+  const Rt=Rsi+Rs.reduce((a,b)=>a+b,0)+Rse;
+  const U=1/Rt, dT=Ti-To;
+  const temps=[Ti-dT*Rsi/Rt];
+  let Ra=Rsi; Rs.forEach(r=>{Ra+=r;temps.push(Ti-dT*Ra/Rt)});
+  const pi=(RHi/100)*sat(Ti),po=(RHo/100)*sat(To);
+  const Sd=lrs.map(l=>l.m.μ[0]*(l.d/1000));
+  const SdT=Sd.reduce((a,b)=>a+b,0)||1e-9;
+  const vps=[pi]; let sa=0;
+  Sd.forEach(s=>{sa+=s;vps.push(pi-(pi-po)*sa/SdT)});
+  let cond=false;
+  for(let i=0;i<=lrs.length;i++)if(vps[i]>sat(temps[i]))cond=true;
+  const pts=[]; let cx=0,Ra2=Rsi,sa2=0;
+  pts.push({x:0,T:temps[0],vp:pi});
+  lrs.forEach((l,i)=>{
+    const steps=Math.max(4,Math.round(l.d/5));
+    for(let s=1;s<=steps;s++){const f=s/steps;pts.push({x:cx+f*l.d,T:Ti-dT*(Ra2+f*Rs[i])/Rt,vp:pi-(pi-po)*(sa2+f*Sd[i])/SdT})}
+    cx+=l.d;Ra2+=Rs[i];sa2+=Sd[i];
+  });
+  const totD=lrs.reduce((a,l)=>a+l.d,0);
+  const Tsi=temps[0],Tso=temps[temps.length-1],DPi=dp(Ti,RHi);
+  return{U,Rt,Rs,Sd,SdT,temps,vps,cond,pts,totD,Tsi,Tso,DPi,sfWarn:Tsi<DPi,Ti,To,RHi,RHo};
+}
+
+// ════════════════════════════════════════════════════
+//  WALL MANAGEMENT
+// ════════════════════════════════════════════════════
+function addWall(){
+  wc++;
+  walls.push({id:wc,name:`კედელი ${wc}`,open:true,_lc:3,
+    layers:[
+      {id:1,m:{n:"არმ. ბეტონი 1%",λ:2.30,μ:[80,130],ρ:2400,c:880},d:200,open:false},
+      {id:2,m:{n:"EPS (პოლ. ქაფი)",λ:0.035,μ:[20,100],ρ:25,c:1450},d:100,open:false},
+      {id:3,m:{n:"გიფსოკარტონი",λ:0.25,μ:[10,20],ρ:900,c:1000},d:12,open:false},
+    ]
+  });
+  aid=wc; renderAll();
+}
+function delWall(id){
+  if(!confirm('წაიშალოს ეს კედელი?'))return;
+  walls=walls.filter(w=>w.id!==id);
+  if(aid===id)aid=walls.length?walls[walls.length-1].id:null;
+  renderAll();
+}
+function selWall(id,e){
+  if(e.target.tagName==='INPUT'||e.target.tagName==='BUTTON')return;
+  const w=walls.find(w=>w.id===id);
+  if(aid===id){if(w)w.open=!w.open}
+  else{aid=id;if(w)w.open=true}
+  renderAll();
+}
+function addLayer(wid){
+  const w=walls.find(w=>w.id===wid);if(!w)return;
+  w._lc=(w._lc||0)+1;
+  w.layers.push({id:w._lc,m:{n:"მინერ. ბამბა 035",λ:0.035,μ:[1,2],ρ:35,c:840},d:100,open:true});
+  renderAll();
+}
+function delLayer(wid,lid){
+  const w=walls.find(w=>w.id===wid);if(!w)return;
+  w.layers=w.layers.filter(l=>l.id!==lid);renderAll();
+}
+function moveLayer(wid,lid,dir){
+  const w=walls.find(w=>w.id===wid);if(!w)return;
+  const i=w.layers.findIndex(l=>l.id===lid),j=i+dir;
+  if(j<0||j>=w.layers.length)return;
+  [w.layers[i],w.layers[j]]=[w.layers[j],w.layers[i]];renderAll();
+}
+function togLayer(wid,lid){
+  const w=walls.find(w=>w.id===wid);if(!w)return;
+  const l=w.layers.find(l=>l.id===lid);if(!l)return;
+  w.layers.forEach(x=>{if(x.id!==lid)x.open=false});
+  l.open=!l.open;renderAll();
+}
+function setD(wid,lid,v){const w=walls.find(w=>w.id===wid),l=w&&w.layers.find(l=>l.id===lid);if(l){l.d=+v||1;renderAll()}}
+function setLam(wid,lid,v){const w=walls.find(w=>w.id===wid),l=w&&w.layers.find(l=>l.id===lid);if(l){l.m.λ=+v||0.001;renderAll()}}
+function setMu(wid,lid,i,v){const w=walls.find(w=>w.id===wid),l=w&&w.layers.find(l=>l.id===lid);if(l){l.m.μ[i]=+v||0.1;renderAll()}}
+
+// ════════════════════════════════════════════════════
+//  RENDER SIDEBAR
+// ════════════════════════════════════════════════════
+function renderSidebar(){
+  const el=document.getElementById('walls-list');
+  if(!walls.length){el.innerHTML='<div style="padding:16px;text-align:center;font-size:10px;color:var(--t3)">კედელი ჯერ არ დამატებულა ↑</div>';return}
+  const cond=getCond();
+  el.innerHTML=walls.map((w,wi)=>{
+    const res=compute(w,...cond);
+    const U=res?res.U.toFixed(3):'—';
+    const act=w.id===aid;
+    const lHTML=w.layers.length?w.layers.map((l,li)=>layerHTML(w.id,l,li,w.layers.length)).join(''):'<div class="empty-layers">შრე არ არის</div>';
+    return`<div class="wcard" id="wc${w.id}">
+      <div class="wcard-h${act?' act':''}" onclick="selWall(${w.id},event)">
+        <span class="wchev${w.open?' op':''}" id="wchev${w.id}">▶</span>
+        <span class="wcard-num">${String(wi+1).padStart(2,'0')}</span>
+        <input class="wcard-name" value="${w.name.replace(/"/g,'&quot;')}" placeholder="კედლის სახ."
+          oninput="walls.find(x=>x.id===${w.id}).name=this.value;renderAnalysis()"
+          onclick="event.stopPropagation()">
+        <span class="wubadge${res&&res.U>1.5?' bad':''}">U=${U}</span>
+        <button class="btn-delw" onclick="event.stopPropagation();delWall(${w.id})">×</button>
+      </div>
+      <div class="wcard-body${w.open?'':' col'}" style="max-height:${w.open?'3000px':'0'}">
+        <div class="llist">${lHTML}</div>
+        <button class="btn-addl" onclick="addLayer(${w.id})">＋ შრის დამატება</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function layerHTML(wid,l,li,tot){
+  const R=((l.d/1000)/l.m.λ).toFixed(3);
+  return`<div class="litem">
+    <div class="litem-h" onclick="togLayer(${wid},${l.id})">
+      <div class="lnum">${li+1}</div>
+      <div class="linfo">
+        <div class="lname">${l.m.n}</div>
+        <div class="lmeta">d=${l.d}mm · λ=${l.m.λ} · R=${R}</div>
+      </div>
+      <div class="lacts" onclick="event.stopPropagation()">
+        <button class="blic" onclick="moveLayer(${wid},${l.id},-1)" ${li===0?'disabled':''}>↑</button>
+        <button class="blic" onclick="moveLayer(${wid},${l.id},1)" ${li===tot-1?'disabled':''}>↓</button>
+        <button class="blic del" onclick="delLayer(${wid},${l.id})">×</button>
+      </div>
+    </div>
+    <div class="ledit${l.open?' op':''}" id="le${wid}_${l.id}">
+      <button class="matbtn" onclick="openMod(${wid},${l.id})">${l.m.n}<em>λ=${l.m.λ} W/mK ›</em></button>
+      <div class="legrid">
+        <div class="fg"><label>სისქე (mm)</label><input class="fin" type="number" value="${l.d}" min="1" step="5" oninput="setD(${wid},${l.id},+this.value)"></div>
+        <div class="fg"><label>λ (W/mK)</label><input class="fin" type="number" value="${l.m.λ}" min="0.001" step="0.001" oninput="setLam(${wid},${l.id},+this.value)"></div>
+        <div class="fg"><label>μ min</label><input class="fin" type="number" value="${l.m.μ[0]}" min="0.1" step="1" oninput="setMu(${wid},${l.id},0,+this.value)"></div>
+        <div class="fg"><label>ρ (kg/m³)</label><input class="fin" type="number" value="${l.m.ρ}" min="1" step="10" oninput=""></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════
+//  RENDER ANALYSIS
+// ════════════════════════════════════════════════════
+function renderAnalysis(){
+  const an=document.getElementById('analysis'),ph=document.getElementById('ph');
+  if(!aid){ph.style.display='flex';an.style.display='none';return}
+  const wall=walls.find(w=>w.id===aid);
+  if(!wall){ph.style.display='flex';an.style.display='none';return}
+  const cond=getCond(),res=compute(wall,...cond);
+  if(!res){
+    ph.style.display='flex';an.style.display='none';
+    ph.querySelector('p').textContent='შრე არ არის. დაამატეთ მინ. ერთი შრე.';return;
+  }
+  ph.style.display='none';an.style.display='flex';
+  const{U,Rt,Rs,temps,cond:condensation,pts,totD,Tsi,Tso,DPi,sfWarn,Ti,To,RHi,RHo}=res;
+
+  let warns='';
+  if(condensation)warns+=`<div class="wbox cond">⚠️ <div><b>კონდენსაციის რისკი!</b> ორთქლის წნევა აღემატება ნაჯ. წნევას ერთ ან მეტ ინტ-ზე. განიხილეთ ორთქ. ბარიერი ან გაუუმჯობ. საიზოლ.</div></div>`;
+  if(sfWarn)warns+=`<div class="wbox mold">⚠️ შიდა ზედაპ. ტ. (${Tsi.toFixed(1)}°C) < ნამის წ-ლი (${DPi.toFixed(1)}°C) — <b>ობის საფრთხე!</b></div>`;
+
+  let rows=`<tr><td class="dim">Rsi — შიდა ზდ. წ-ა</td><td style="text-align:right">—</td><td class="tr">${Rsi.toFixed(2)}</td><td class="to">${Ti.toFixed(1)}</td><td class="tb">${temps[0].toFixed(2)}</td></tr>`;
+  wall.layers.forEach((l,i)=>{
+    rows+=`<tr><td>${l.m.n}</td><td style="text-align:right">${(l.d/10).toFixed(2)}</td><td class="tr">${Rs[i].toFixed(3)}</td><td class="to">${temps[i].toFixed(2)}</td><td class="tb">${temps[i+1].toFixed(2)}</td></tr>`;
+  });
+  rows+=`<tr><td class="dim">Rse — გარე ზდ. წ-ა</td><td style="text-align:right">—</td><td class="tr">${Rse.toFixed(2)}</td><td class="to">${temps[temps.length-1].toFixed(1)}</td><td class="tb">${To.toFixed(1)}</td></tr>`;
+  rows+=`<tr class="sum"><td>სულ</td><td style="text-align:right">${(totD/10).toFixed(2)}</td><td class="tr tg">${Rt.toFixed(3)}</td><td colspan="2" style="text-align:center;color:var(--ora);font-weight:700">U = ${U.toFixed(3)} W/m²K</td></tr>`;
+
+  const sfCls=sfWarn?'o r':'g';
+  an.innerHTML=`
+    <div class="an-hdr">
+      <span class="an-title">📐 ${wall.name}</span>
+      <span class="ubig ${U>1.5?'bad':'ok'}">U = ${U.toFixed(3)} W/m²K</span>
+    </div>
+    ${warns?`<div style="display:flex;flex-direction:column;gap:5px">${warns}</div>`:''}
+    <div class="sgrid">
+      <div class="scard"><div class="scard-l">R სულ</div><div class="scard-v g">${Rt.toFixed(3)}<span class="scard-u"> m²K/W</span></div></div>
+      <div class="scard"><div class="scard-l">U კოეფ.</div><div class="scard-v ${U>1.5?'o':'g'}">${U.toFixed(3)}<span class="scard-u"> W/m²K</span></div></div>
+      <div class="scard"><div class="scard-l">შ. ზდ. ტ.</div><div class="scard-v ${sfCls}">${Tsi.toFixed(1)}<span class="scard-u"> °C</span></div></div>
+      <div class="scard"><div class="scard-l">გ. ზდ. ტ.</div><div class="scard-v b">${Tso.toFixed(1)}<span class="scard-u"> °C</span></div></div>
+    </div>
+    <div class="chcard">
+      <div class="chhead">📈 ტემ. · ნამ. წ-ლი · ფარდ. ტენ. <span style="margin-left:auto;font-size:9px">შიდა → გარე</span></div>
+      <canvas id="chart"></canvas>
+      <div class="chleg">
+        <div class="leg-i"><div class="leg-ln" style="background:#1a2840"></div>ტემპ. t °C</div>
+        <div class="leg-i"><div class="leg-ln" style="background:#1f6fd4"></div>ნამის წ-ლი</div>
+        <div class="leg-i"><div class="leg-ln" style="background:#c05010"></div>ფარდ. ტენ. %</div>
+      </div>
+    </div>
+    <div class="rescard">
+      <div class="chhead">📋 შედეგების ცხრილი — ინტ-ის ტ-ები</div>
+      <table class="rt"><thead><tr><th>შრე / მასალა</th><th>d, სმ</th><th>R, m²K/W</th><th>T მაქს. °C</th><th>T მინ. °C</th></tr></thead><tbody>${rows}</tbody></table>
+    </div>
+  `;
+  requestAnimationFrame(()=>drawChart(res,wall));
+}
+
+// ════════════════════════════════════════════════════
+//  CHART
+// ════════════════════════════════════════════════════
+function drawChart(res,wall){
+  const cv=document.getElementById('chart');if(!cv)return;
+  const DPR=window.devicePixelRatio||1;
+  const W=cv.parentElement.clientWidth-2;
+  const H=Math.round(W*.52);
+  cv.width=W*DPR;cv.height=H*DPR;
+  cv.style.width=W+'px';cv.style.height=H+'px';
+  const g=cv.getContext('2d');g.scale(DPR,DPR);
+  const P={l:42,r:42,t:14,b:28};
+  const CW=W-P.l-P.r,CH=H-P.t-P.b;
+  const{pts,totD,Ti,To}=res;
+  const allT=pts.map(p=>p.T);
+  const allD=pts.map(p=>{const rh=Math.min(100,(p.vp/sat(p.T))*100);return dp(p.T,rh)});
+  const tMn=Math.min(To-3,...allT,...allD);
+  const tMx=Math.max(Ti+1,...allT);
+  const tR=Math.max(tMx-tMn,.1);
+  const xp=x=>P.l+(x/totD)*CW;
+  const yp=t=>P.t+CH-((t-tMn)/tR)*CH;
+  const bgc=['#f0f4fa','#fdf5ec','#f0f8f0','#f5f0fa','#faf0f5','#f0f5f8','#f5f8f0','#fafaf0'];
+  let cx=0;
+  wall.layers.forEach((l,i)=>{
+    g.fillStyle=bgc[i%bgc.length];
+    const x1=xp(cx),x2=xp(cx+l.d);
+    g.fillRect(x1,P.t,x2-x1,CH);
+    g.fillStyle='#9ab';g.font='bold 9px IBM Plex Mono,monospace';g.textAlign='center';
+    g.fillText(String(i+1),(x1+x2)/2,P.t+11);
+    cx+=l.d;
+  });
+  const tS=tR>25?5:tR>12?2:1;
+  const t0=Math.ceil(tMn/tS)*tS;
+  for(let t=t0;t<=tMx;t+=tS){
+    const y=yp(t);
+    g.strokeStyle='#dde6f2';g.lineWidth=.7;
+    g.beginPath();g.moveTo(P.l,y);g.lineTo(P.l+CW,y);g.stroke();
+    g.fillStyle='#7a96b8';g.font='9px IBM Plex Mono,monospace';g.textAlign='right';
+    g.fillText(t,P.l-3,y+3);
+  }
+  for(let r=0;r<=100;r+=20){
+    const y=P.t+CH-(r/100)*CH;
+    g.fillStyle='rgba(192,80,16,.7)';g.font='8px IBM Plex Mono,monospace';g.textAlign='left';
+    g.fillText(r+'%',P.l+CW+3,y+3);
+    g.strokeStyle='rgba(192,80,16,.07)';g.lineWidth=.5;
+    g.beginPath();g.moveTo(P.l,y);g.lineTo(P.l+CW,y);g.stroke();
+  }
+  g.strokeStyle='#c4d4e8';g.lineWidth=1;g.setLineDash([3,3]);
+  cx=0;wall.layers.slice(0,-1).forEach(l=>{cx+=l.d;const xv=xp(cx);g.beginPath();g.moveTo(xv,P.t);g.lineTo(xv,P.t+CH);g.stroke()});
+  g.setLineDash([]);
+  // Humidity
+  g.strokeStyle='#c05010';g.lineWidth=1.8;g.beginPath();
+  pts.forEach((p,i)=>{const rh=Math.min(100,(p.vp/sat(p.T))*100);const y=P.t+CH-(rh/100)*CH;i?g.lineTo(xp(p.x),y):g.moveTo(xp(p.x),y)});g.stroke();
+  // Dew point
+  g.strokeStyle='#1f6fd4';g.lineWidth=1.8;g.beginPath();
+  pts.forEach((p,i)=>{const rh=Math.min(100,(p.vp/sat(p.T))*100);const dpv=dp(p.T,rh);const y=yp(Math.max(tMn,Math.min(tMx,dpv)));i?g.lineTo(xp(p.x),y):g.moveTo(xp(p.x),y)});g.stroke();
+  // Temperature
+  g.strokeStyle='#1a2840';g.lineWidth=2.5;g.beginPath();
+  g.moveTo(P.l,yp(Ti));g.lineTo(P.l,yp(pts[0].T));
+  pts.forEach(p=>g.lineTo(xp(p.x),yp(p.T)));
+  g.lineTo(P.l+CW,yp(To));g.stroke();
+  // condensation dots
+  pts.forEach(p=>{if(p.vp>sat(p.T)){g.fillStyle='rgba(192,80,16,.8)';g.beginPath();g.arc(xp(p.x),yp(p.T),3,0,Math.PI*2);g.fill()}});
+  // axes
+  g.strokeStyle='#c4d4e8';g.lineWidth=1;
+  g.beginPath();g.moveTo(P.l,P.t);g.lineTo(P.l,P.t+CH);g.lineTo(P.l+CW,P.t+CH);g.stroke();
+  g.fillStyle='#7a96b8';g.font='9px IBM Plex Mono,monospace';g.textAlign='center';
+  [0,Math.round(totD/2),totD].forEach(mm=>g.fillText((mm/10).toFixed(0)+' სმ',xp(mm),P.t+CH+14));
+  g.fillText('სისქე, სმ',P.l+CW/2,H-2);
+  g.save();g.translate(10,P.t+CH/2);g.rotate(-Math.PI/2);g.fillText('t °C',0,0);g.restore();
+}
+
+// ════════════════════════════════════════════════════
+//  MODAL
+// ════════════════════════════════════════════════════
+function openMod(wid,lid){modCb={wid,lid};document.getElementById('msrch').value='';renderMod('');document.getElementById('moverlay').classList.add('op');setTimeout(()=>document.getElementById('msrch').focus(),80)}
+function closeMod(){document.getElementById('moverlay').classList.remove('op')}
+function renderMod(q){
+  let html='',cnt=0;
+  for(const[cat,mats]of Object.entries(DB)){
+    const f=q?mats.filter(m=>m.n.toLowerCase().includes(q)||cat.toLowerCase().includes(q)):mats;
+    if(!f.length)continue;
+    html+=`<div class="mcat">${cat}</div>`;
+    f.forEach(m=>{
+      html+=`<div class="mmat" onclick='pickMat(${JSON.stringify(JSON.stringify(m))})'>
+        <div><div class="mmat-n">${m.n}</div><div class="mmat-m">μ=${m.μ[0]} · ρ=${m.ρ} · c=${m.c}</div></div>
+        <div class="mmat-l">${m.λ}</div></div>`;cnt++;
+    });
+  }
+  document.getElementById('mbody').innerHTML=cnt?html:`<div class="mnone">„${q}" ვერ მოიძებნა</div>`;
+}
+function pickMat(js){
+  const m=JSON.parse(js);if(!modCb)return;
+  const w=walls.find(w=>w.id===modCb.wid),l=w&&w.layers.find(l=>l.id===modCb.lid);
+  if(l){Object.assign(l.m,m);renderAll()}
+  closeMod();
+}
+
+// ════════════════════════════════════════════════════
+//  MISC
+// ════════════════════════════════════════════════════
+function toggleCond(){
+  condOpen=!condOpen;
+  document.getElementById('cond-body').className='cond-body'+(condOpen?'':' closed');
+  document.getElementById('cond-arr').textContent=condOpen?'▾':'▸';
+}
+function renderAll(){renderSidebar();renderAnalysis()}
+function calcAll(){renderAll()}
+
+// ════════════════════════════════════════════════════
+//  EXPORT / IMPORT
+// ════════════════════════════════════════════════════
+function exportJSON(){
+  const cond=getCond();
+  const data={version:1,exported:new Date().toISOString(),
+    conditions:{ti:cond[0],rhi:cond[1],to:cond[2],rho:cond[3]},
+    walls:walls.map(w=>({id:w.id,name:w.name,layers:w.layers.map(l=>({id:l.id,d:l.d,m:{...l.m}}))}))
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`kedeli_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+function importJSON(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      if(d.version!==1)throw new Error('ვერსია შეუთავსებელია');
+      if(d.conditions){
+        document.getElementById('ti').value=d.conditions.ti||20;
+        document.getElementById('rhi').value=d.conditions.rhi||60;
+        document.getElementById('to').value=d.conditions.to||10;
+        document.getElementById('rho').value=d.conditions.rho||50;
+      }
+      walls=d.walls.map(w=>({...w,open:true,_lc:Math.max(...w.layers.map(l=>l.id),0),
+        layers:w.layers.map(l=>({...l,open:false,m:{...l.m}}))}));
+      wc=Math.max(...walls.map(w=>w.id),0);
+      aid=walls.length?walls[0].id:null;
+      renderAll();alert(`✅ ჩატვირთულია: ${walls.length} კედელი`);
+    }catch(err){alert('❌ შეცდომა: '+err.message)}
+  };
+  r.readAsText(f);inp.value='';
+}
+
+// ════════════════════════════════════════════════════
+//  PDF PRINT
+// ════════════════════════════════════════════════════
+function doPrint(){
+  const cv=document.getElementById('chart');
+  let img=null;
+  if(cv){
+    img=document.createElement('img');
+    img.src=cv.toDataURL('image/png');
+    img.style.cssText='width:100%;display:block';
+    img.id='_cpi';
+    cv.parentNode.insertBefore(img,cv.nextSibling);
+    cv.style.display='none';
+  }
+  window.print();
+  setTimeout(()=>{
+    if(cv)cv.style.display='block';
+    const old=document.getElementById('_cpi');
+    if(old)old.remove();
+  },1200);
+}
+
+// ════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════
+addWall();
+</script>
+
+
+</body></html>

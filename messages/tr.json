@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "title": "engineers.ge",
+    "description": "Mühendislik bilgileri ve çevrimiçi hesaplayıcılar"
+  },
+  "nav": {
+    "home": "Ana sayfa",
+    "calculators": "Hesaplayıcılar",
+    "about": "Hakkında"
+  },
+  "home": {
+    "hero": "Mühendislik bilgisi tek bir yerde",
+    "subhero": "Ücretsiz çevrimiçi hesaplayıcılar ve kaynaklar",
+    "calculators_title": "Hesaplayıcılar",
+    "calculators_empty": "Yakında..."
+  },
+  "share": {
+    "label": "Paylaş",
+    "copy": "Bağlantıyı kopyala",
+    "copied": "Kopyalandı"
+  },
+  "theme": {
+    "light": "Açık",
+    "dark": "Koyu",
+    "system": "Sistem"
+  },
+  "lang": {
+    "label": "Dil"
+  },
+  "admin": {
+    "login": "Giriş",
+    "username": "Kullanıcı",
+    "password": "Şifre",
+    "submit": "Giriş yap",
+    "error": "Geçersiz bilgiler",
+    "banners": "Bannerlar",
+    "stats": "İstatistik",
+    "logout": "Çıkış"
+  },
+  "loader": {
+    "loading": "Yükleniyor..."
+  }
+}

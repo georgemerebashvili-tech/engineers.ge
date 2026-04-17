@@ -1,0 +1,3597 @@
+<!DOCTYPE html>
+<!-- saved from url=(0328)file:///Users/macbookair/Library/Containers/net.whatsapp.WhatsApp/Data/tmp/documents/706E5E76-801C-4694-8EB6-7048CE3E9FB9/%E1%83%AE%E1%83%9B%E1%83%90%E1%83%A3%E1%83%A0%E1%83%93%E1%83%90%E1%83%9B%E1%83%AE%E1%83%A8%E1%83%9D%E1%83%91%E1%83%98%20%E1%83%A1%E1%83%94%E1%83%9A%E1%83%94%E1%83%A5%E1%83%A8%E1%83%94%E1%83%9C%E1%83%98.html -->
+<html lang="ka"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1a3a6b">
+<title>KAYA — ხმაურდამხშობის კალკულატორი — FINAL</title>
+<link href="./KAYA — ხმაურდამხშობის კალკულატორი — FINAL_files/css2" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f2f5fb;--surf:#fff;--surf2:#f7f9fd;--bdr:#dde6f2;--bdr2:#c4d4e8;
+  --navy:#1a3a6b;--blue:#1f6fd4;--blt:#e8f1fd;--bmd:#4a85d8;
+  --orange:#c05010;--olt:#fff5ea;--obd:#e8c080;
+  --green:#007040;--glt:#e8f6ee;--gbd:#80c8a0;
+  --red:#b81818;--rlt:#fef0f0;--rbd:#f0a0a0;
+  --amber:#7a5000;--alt:#fffbe8;--abd:#e8d080;
+  --txt:#1a2840;--txt2:#3d5470;--txt3:#7a96b8;
+  --mono:"IBM Plex Mono",monospace;--sans:"Plus Jakarta Sans",sans-serif;
+  --r:10px;
+}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:13px;line-height:1.55}
+input[type=number],input[type=text],select,textarea{
+  background:var(--surf2);border:1.5px solid var(--bdr);border-radius:6px;
+  padding:7px 10px;color:var(--txt);font-family:var(--mono);font-size:13px;
+  font-weight:500;outline:none;width:100%;transition:border-color .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(31,111,212,.1)}
+input::-webkit-inner-spin-button{opacity:.3}
+input[readonly]{background:var(--bg);color:var(--txt3);cursor:default}
+button{font-family:var(--sans);cursor:pointer}
+
+.wrap{max-width:1300px;margin:0 auto;padding:16px}
+.section-gap{margin-bottom:20px}
+.section-title{font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;
+  letter-spacing:1px;padding:8px 0 10px;border-bottom:1.5px solid var(--bdr);margin-bottom:14px}
+
+/* HEADER */
+.hdr{background:var(--navy);color:#fff;border-radius:12px;padding:14px 20px;
+  display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.hdr-logo{height:32px;background:#fff;border-radius:5px;padding:3px 9px}
+.hdr-sep{width:1px;height:38px;background:rgba(255,255,255,.2)}
+.hdr-title{font-size:15px;font-weight:600}
+.hdr-sub{font-size:10px;color:rgba(255,255,255,.6);margin-top:2px}
+.hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.chip{font-family:var(--mono);font-size:10px;background:rgba(255,255,255,.15);
+  padding:3px 10px;border-radius:10px;color:#fff}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;
+  border-radius:20px;font-size:11px;font-weight:600}
+.bok{background:var(--glt);border:1px solid var(--gbd);color:var(--green)}
+.bwarn{background:var(--alt);border:1px solid var(--abd);color:var(--amber)}
+.bfail{background:var(--rlt);border:1px solid var(--rbd);color:var(--red)}
+
+/* CLIENT FIELDS */
+.client-bar{background:var(--surf);border:1px solid var(--bdr);border-radius:10px;
+  padding:12px 16px;margin-bottom:16px;display:grid;
+  grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;align-items:end}
+.clbl{font-size:10px;color:var(--txt3);font-weight:600;margin-bottom:3px}
+
+/* PDF BTN */
+.pdf-btn{background:var(--blue);color:#fff;border:none;border-radius:8px;
+  padding:9px 20px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;
+  white-space:nowrap}
+.pdf-btn:hover{background:#144ea8}
+
+/* PANEL */
+.panel{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden}
+.phdr{background:linear-gradient(90deg,#edf2fb,var(--surf));padding:9px 14px;
+  font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;
+  letter-spacing:.9px;border-bottom:1px solid var(--bdr);
+  display:flex;justify-content:space-between;align-items:center}
+.pbody{padding:14px}
+
+/* GRID */
+.main-grid{display:grid;grid-template-columns:280px 1fr;gap:14px;margin-bottom:16px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.irow{margin-bottom:9px}
+.ilbl{font-size:11px;color:var(--txt2);font-weight:500;margin-bottom:3px;
+  display:flex;align-items:center;justify-content:space-between}
+.iunit{font-size:9px;color:var(--orange);background:var(--olt);border:1px solid var(--obd);
+  padding:1px 5px;border-radius:3px;font-family:var(--mono)}
+.sdiv{font-size:9.5px;font-weight:600;color:var(--txt3);text-transform:uppercase;
+  letter-spacing:.8px;padding:9px 0 4px;border-top:1px solid var(--bdr);margin-top:5px}
+.tog-row{display:flex;gap:5px;flex-wrap:wrap}
+.tog{padding:4px 11px;border-radius:12px;border:1px solid var(--bdr2);
+  font-size:11px;background:transparent;color:var(--txt3)}
+.tog.on{background:var(--blt);color:var(--blue);border-color:var(--bmd)}
+.srow{display:flex;align-items:center;gap:8px}
+.srow input[type=range]{flex:1}
+.sv{font-size:17px;font-weight:500;min-width:28px;font-family:var(--mono)}
+
+/* METRIC CARDS */
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
+.card{background:var(--surf2);border-radius:7px;padding:9px 11px;text-align:center}
+.card-l{font-size:9px;color:var(--txt3);margin-bottom:3px}
+.card-v{font-size:18px;font-weight:500;line-height:1.1}
+.card-u{font-size:9px;color:var(--txt3)}
+
+/* OCTAVE TABLE */
+.oct{width:100%;border-collapse:collapse;font-size:11.5px}
+.oct th{background:var(--surf2);padding:6px 4px;text-align:center;font-weight:500;
+  font-size:9.5px;color:var(--txt3);border-bottom:1px solid var(--bdr)}
+.oct td{padding:5px 4px;text-align:center;border-bottom:1px solid var(--bdr2)}
+.oct tr:last-child td{border:none}
+.rl{text-align:left!important;color:var(--txt2);font-size:10.5px;padding-left:4px!important}
+.vil{color:var(--blue);font-weight:600;font-family:var(--mono)}
+.vok{color:var(--green);font-weight:500}
+.vfail{color:var(--red)}
+.vmono{font-family:var(--mono)}
+
+/* LW INPUTS */
+.lwg{display:grid;grid-template-columns:repeat(8,1fr);gap:3px}
+.lwl{font-size:9px;color:var(--txt3);text-align:center;padding:2px 0}
+.lwi{font-size:11px!important;padding:5px 2px!important;text-align:center!important}
+.warnbox{background:var(--alt);border:1px solid var(--abd);border-radius:7px;
+  padding:8px 12px;font-size:11px;color:var(--amber);margin-top:8px}
+.warnbox .msg-line{margin:0 0 5px 0}
+.warnbox .msg-line:last-child{margin-bottom:0}
+.warnbox.nonstandard-alert{
+  background:#fff0f0;border:2px solid #d93025;color:#8b0000;
+  padding:12px 14px;font-size:14px;font-weight:700;line-height:1.6;
+  box-shadow:0 0 0 3px rgba(217,48,37,.08)}
+.warnbox.nonstandard-alert .msg-line{margin:0 0 8px 0}
+.warnbox.nonstandard-alert .msg-line:last-child{margin-bottom:0}
+.warnbox.nonstandard-alert .msg-line.hot{
+  font-size:18px;font-weight:800;letter-spacing:.1px;color:#b00020}
+.warnbox.nonstandard-alert b{font-weight:800}
+.infobox{background:var(--blt);border:1px solid var(--bdr2);border-radius:6px;
+  padding:7px 11px;font-size:10.5px;color:var(--txt2);margin-top:6px}
+
+/* DRAWS */
+.draw-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.std-details{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:16px;overflow:hidden}
+.std-details summary{list-style:none;cursor:pointer;padding:11px 14px;background:linear-gradient(90deg,#edf2fb,var(--surf));font-size:11px;font-weight:700;color:var(--navy);display:flex;align-items:center;justify-content:space-between}
+.std-details summary::-webkit-details-marker{display:none}
+.std-details summary::after{content:"▾";font-size:14px;color:var(--txt3)}
+.std-details[open] summary::after{content:"▴"}
+.std-body{padding:12px 14px}
+.std-pick{display:grid;grid-template-columns:1.2fr auto;gap:10px;align-items:end;margin-bottom:10px}
+.std-table-wrap{max-height:320px;overflow:auto;border:1px solid var(--bdr);border-radius:8px}
+.std-table{width:100%;border-collapse:collapse;font-size:11px;background:#fff}
+.std-table th,.std-table td{padding:7px 8px;border-bottom:1px solid var(--bdr2);text-align:center}
+.std-table th{position:sticky;top:0;background:var(--surf2);z-index:1;font-size:10px;color:var(--txt3)}
+.std-table td:first-child,.std-table th:first-child{text-align:left}
+.std-chip{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10px;font-weight:700;background:var(--blt);color:var(--blue);border:1px solid var(--bdr2)}
+.std-note{font-size:10.5px;color:var(--txt3);margin-top:8px}
+.std-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.std-btn{background:var(--blue);color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:11px;font-weight:600}
+.std-btn.secondary{background:#fff;color:var(--navy);border:1px solid var(--bdr2)}
+.draw-panel{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden}
+.draw-title{background:#1a2840;color:#fff;padding:8px 14px;font-size:10.5px;font-weight:600;letter-spacing:.4px}
+.draw-body{padding:10px;background:#fafcff}
+.draw-body svg{width:100%;height:auto;display:block}
+
+/* 3D */
+.view3d{border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;position:relative;
+  height:560px;cursor:grab;background:var(--surf2)}
+.view3d:active{cursor:grabbing}
+#c3d{display:block;width:100%;height:100%}
+.hint3d{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);
+  font-size:10px;color:var(--txt3);background:var(--surf);padding:3px 9px;
+  border-radius:10px;border:1px solid var(--bdr);pointer-events:none}
+
+/* RECO */
+.reco-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px}
+.rcard{background:var(--surf2);border:1px solid var(--bdr);border-radius:9px;padding:14px}
+.rtitle{font-size:12px;font-weight:600;color:var(--navy);margin-bottom:8px}
+.rtxt{font-size:11.5px;color:var(--txt2);line-height:1.7}
+.rtxt b{color:var(--navy);font-weight:600}
+.hi{color:var(--blue);font-weight:600}
+.disbox{background:#fff8f0;border:1px solid #e0c080;border-radius:8px;
+  padding:14px;font-size:11px;color:#7a5020;line-height:1.7;margin-top:12px}
+.copybar{background:var(--navy);color:rgba(255,255,255,.5);padding:8px 16px;
+  border-radius:7px;font-size:10px;text-align:center;margin-top:10px}
+.print-only{display:none!important}
+
+
+
+/* MOBILE APP REDESIGN */
+html{scroll-behavior:smooth}
+.mobile-nav{display:none}
+.std-table tr.selected-row td{background:var(--blt)!important;color:var(--navy);font-weight:700}
+.std-table tr.selected-row .std-chip{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+@media (max-width: 820px){
+  :root{--r:22px}
+  body{
+    background:linear-gradient(180deg,#eaf1fb 0%,#f7f9fd 18%,#eef4fb 100%);
+    padding-bottom:calc(92px + env(safe-area-inset-bottom,0px));
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    max-width:100%;
+    padding:12px 12px calc(92px + env(safe-area-inset-bottom,0px));
+  }
+  .section-gap{margin-bottom:14px}
+  .section-title{
+    margin:2px 4px 12px;
+    padding:0;
+    border:none;
+    font-size:14px;
+    font-weight:800;
+    color:var(--navy);
+    text-transform:none;
+    letter-spacing:.2px;
+  }
+  .hdr{
+    position:sticky;top:8px;z-index:40;
+    padding:16px 16px 14px;
+    border-radius:28px;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:12px;
+    box-shadow:0 18px 40px rgba(26,58,107,.18);
+    backdrop-filter:blur(14px);
+  }
+  .hdr-logo{height:36px;padding:4px 10px;border-radius:10px}
+  .hdr-sep{display:none}
+  .hdr-title{font-size:20px;font-weight:800;line-height:1.2}
+  .hdr-sub{font-size:11px;line-height:1.45;color:rgba(255,255,255,.76)}
+  .hdr-right{width:100%;margin-left:0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .chip,.badge{
+    justify-content:center;
+    min-height:42px;
+    padding:8px 12px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:700;
+  }
+  .pdf-btn{
+    grid-column:1/-1;
+    width:100%;justify-content:center;
+    min-height:48px;
+    border-radius:16px;
+    font-size:14px;
+    box-shadow:0 10px 24px rgba(31,111,212,.22);
+  }
+  .mobile-nav{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:8px;
+    position:sticky;top:140px;z-index:34;
+    margin:0 0 12px;
+    padding:8px;
+    background:rgba(255,255,255,.85);
+    border:1px solid rgba(196,212,232,.85);
+    border-radius:22px;
+    box-shadow:0 12px 30px rgba(23,49,88,.10);
+    backdrop-filter:blur(14px);
+  }
+  .mobile-nav a{
+    text-decoration:none;color:var(--txt2);
+    background:#fff;border:1px solid var(--bdr);
+    border-radius:16px;min-height:46px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;
+    padding:8px 6px;text-align:center;
+    box-shadow:0 6px 16px rgba(21,41,76,.05);
+  }
+  .mobile-nav a.active,.mobile-nav a:active{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .client-bar,.panel,.draw-panel,.std-details{
+    border:none;
+    border-radius:24px;
+    box-shadow:0 12px 28px rgba(25,50,90,.08);
+    overflow:hidden;
+  }
+  .client-bar{
+    grid-template-columns:1fr 1fr;
+    padding:14px;
+    gap:12px;
+    background:rgba(255,255,255,.92);
+  }
+  .clbl{font-size:11px;font-weight:800;margin-bottom:6px}
+  input[type=number],input[type=text],select,textarea{
+    min-height:48px;
+    padding:12px 14px;
+    border-radius:14px;
+    font-size:16px;
+    background:#f7fafe;
+  }
+  textarea{min-height:96px}
+  button{min-height:46px}
+  .phdr{
+    padding:14px 16px;
+    font-size:12px;
+    font-weight:800;
+    letter-spacing:.4px;
+    background:linear-gradient(180deg,#f9fbff,#eef4fb);
+  }
+  .pbody,.std-body{padding:16px}
+  .main-grid{grid-template-columns:1fr;gap:14px}
+  .main-grid>div:first-child{order:2}
+  .main-grid>div:last-child{order:1}
+  .row2,.row3{grid-template-columns:1fr;gap:10px}
+  .tog-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  .tog{min-height:46px;border-radius:16px;font-size:12px;font-weight:700;padding:10px 8px}
+  .sdiv{font-size:11px;padding:12px 0 6px;margin-top:8px}
+  .ilbl{font-size:12px;font-weight:700;margin-bottom:6px}
+  .iunit{font-size:10px;padding:2px 6px;border-radius:999px}
+  .infobox,.warnbox{
+    border-radius:16px;
+    padding:12px 14px;
+    font-size:12px;
+  }
+  .warnbox.nonstandard-alert{font-size:15px;border-radius:18px}
+  .warnbox.nonstandard-alert .msg-line.hot{font-size:19px}
+  .srow{gap:10px}
+  .sv{font-size:22px;min-width:34px}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+  .card{
+    border-radius:18px;
+    padding:13px 10px;
+    background:linear-gradient(180deg,#f8fbff,#eef4fb);
+    box-shadow:inset 0 0 0 1px rgba(221,230,242,.9);
+  }
+  .card-l{font-size:10px;font-weight:700;margin-bottom:6px}
+  .card-v{font-size:24px;font-weight:800}
+  .card-u{font-size:10px}
+  .oct{font-size:12px;min-width:780px}
+  .oct th,.oct td{padding:9px 8px}
+  .rl{font-size:11px}
+  .lwg{
+    grid-template-columns:repeat(8,minmax(56px,1fr));
+    overflow-x:auto;
+    padding-bottom:2px;
+  }
+  .lwg::-webkit-scrollbar,.std-table-wrap::-webkit-scrollbar{height:6px;width:6px}
+  .lwg::-webkit-scrollbar-thumb,.std-table-wrap::-webkit-scrollbar-thumb{background:#c7d7ec;border-radius:999px}
+  .lwl{font-size:10px}
+  .lwi{font-size:13px!important;padding:10px 6px!important;border-radius:12px!important}
+  .std-details summary{
+    padding:16px 16px;
+    font-size:14px;
+    font-weight:800;
+    background:linear-gradient(180deg,#f9fbff,#eef4fb);
+  }
+  .std-pick{grid-template-columns:1fr;gap:12px}
+  .std-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .std-btn{min-height:48px;border-radius:16px;font-size:13px;font-weight:800;padding:12px}
+  .std-table-wrap{max-height:none;border:none;background:#f8fbff;padding:0;border-radius:18px}
+  .std-table{font-size:12px;min-width:760px;background:#fff;border-radius:18px;overflow:hidden}
+  .std-table th,.std-table td{padding:10px 10px}
+  #model-code{font-size:11px!important;line-height:1.4;margin-left:8px;text-align:right;word-break:break-word}
+  #rpm-res{border-radius:16px;font-size:12px;padding:12px 14px}
+  #both-panel .oct{min-width:640px}
+  .draw-grid{grid-template-columns:1fr;gap:12px}
+  .draw-title{padding:12px 14px;font-size:12px;font-weight:800}
+  .draw-body{padding:8px;background:#f8fbff}
+  .draw-body svg{height:min(52svh,420px);min-height:280px;border-radius:18px;background:#fff}
+  .view3d{height:min(78svh,760px);min-height:420px;border-radius:28px}
+  .hint3d{font-size:11px;padding:6px 12px;border-radius:999px;bottom:12px}
+  #sim-canvas{height:min(44svh,380px)!important}
+}
+
+@media (max-width: 520px){
+  .wrap{padding-left:10px;padding-right:10px}
+  .client-bar,.cards,.std-actions{grid-template-columns:1fr}
+  .hdr-right{grid-template-columns:1fr}
+  .mobile-nav{top:186px}
+  .card-v{font-size:22px}
+  .view3d{height:min(70svh,620px);min-height:360px}
+}
+
+/* PRINT */
+@media print{
+  /* ── base ─────────────────────────────────────────────── */
+  *{margin:0;padding:0}
+  body{background:#fff;font-size:10px;-webkit-print-color-adjust:exact;print-color-adjust:exact;line-height:1.4}
+
+  /* ── hide screen-only elements ───────────────────────────── */
+  .no-print{display:none!important}
+  .view3d-section{display:none!important}
+  .std-details{display:none!important}          /* სტანდ.ცხრილი — არ ბეჭდება */
+  .infobox{display:none!important}              /* ახსნა-განმარტება — არ ბეჭდება */
+  .sdiv{display:none!important}                 /* input section dividers */
+  .srow{display:none!important}                 /* target slider */
+  .lwg{display:none!important}                  /* Lwi octave inputs */
+  .lwl{display:none!important}
+  .tog-row{display:none!important}              /* system / RPM toggles */
+  #rpm-inp{display:none!important}
+  #rpm-info{display:none!important}
+  #cl-note{display:none!important}
+  .irow:has(#Qe){display:none!important}
+  .pdf-btn{display:none!important}
+  .mobile-nav{display:none!important}
+  .section-title.no-print{display:none!important}
+
+  /* ── show print-only ─────────────────────────────────────── */
+  .print-only{display:block!important}
+  .print-model-grid{display:grid!important;grid-template-columns:1fr 1fr;gap:6px;align-items:stretch}
+  .print-model-grid{display:grid!important;grid-template-columns:1fr 1fr;
+    grid-template-rows:auto auto;gap:5px;
+    break-inside:avoid;page-break-inside:avoid}
+  .print-model-card{background:#fff;border:1px solid var(--bdr);border-radius:4px;padding:4px;
+    break-inside:avoid;page-break-inside:avoid;display:flex;flex-direction:column}
+  .print-model-card img{width:100%;max-height:11cm;height:11cm;
+    object-fit:contain;display:block;
+    background:#f7f9fd;border:1px solid var(--bdr);border-radius:3px}
+  .print-model-label{font-size:8px;font-weight:600;color:var(--txt2);margin-bottom:2px;text-align:center}
+
+  /* ── layout ──────────────────────────────────────────────── */
+  .wrap{padding:6mm;max-width:100%}
+  .section-gap{margin-bottom:6px!important}
+  .hdr{border-radius:4px;margin-bottom:6px;padding:8px 12px;print-color-adjust:exact}
+  .client-bar{border-radius:4px;margin-bottom:6px;padding:6px 10px;
+    grid-template-columns:1fr 1fr 1fr 1fr;gap:6px}
+  .main-grid{grid-template-columns:220px 1fr;gap:6px;margin-bottom:6px}
+  .panel{border-radius:4px;margin-bottom:0}
+  .phdr{padding:5px 10px;font-size:9px}
+  .pbody{padding:8px}
+  .cards{gap:4px;margin-bottom:8px;grid-template-columns:repeat(3,1fr)}
+  .card{padding:6px 8px;border-radius:4px}
+  .card-v{font-size:14px}
+  .card-l,.card-u{font-size:8px}
+  .irow{margin-bottom:4px}
+  .ilbl{font-size:10px;margin-bottom:2px}
+  input[type=number],input[type=text],input[readonly]{
+    border:none!important;background:transparent!important;
+    padding:0!important;font-size:10px;font-weight:600;height:auto}
+  textarea{display:none!important}
+  select{border:none!important;background:transparent!important;
+    padding:0!important;font-size:10px;-webkit-appearance:none}
+  /* ── ნახაზები: 4 სურათი 1 გვერდზე 2x2 ─── */
+  .draw-grid{
+    gap:4px;margin-bottom:4px;
+    grid-template-columns:1fr 1fr;
+    grid-template-rows:auto auto;
+    break-inside:avoid;
+    page-break-inside:avoid;
+  }
+  .draw-panel{border-radius:3px;break-inside:avoid;page-break-inside:avoid}
+  .draw-title{padding:3px 8px;font-size:8px;letter-spacing:0}
+  .draw-body{padding:3px;background:#fff}
+  .draw-body svg{height:9.2cm;width:100%;display:block}
+  .oct{font-size:10px}
+  .oct th,.oct td{padding:4px 3px}
+  .panel,.draw-panel{break-inside:avoid}
+  .page-break{page-break-before:always;padding-top:6px}
+  #both-panel{display:none!important}           /* ორივე panel ბეჭდვაში არ ჩნდება */
+  #rpm-res{display:none!important}
+  .warnbox:empty{display:none!important}
+  .section-title{font-size:10px;padding:4px 0 5px;margin-bottom:5px;letter-spacing:0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HEADER -->
+<div class="hdr no-print" id="top-section">
+  <img class="hdr-logo" src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAA1AJgDASIAAhEBAxEB/8QAHAABAAIDAQEBAAAAAAAAAAAAAAUHAQQGCAID/8QAQRAAAAYAAgYGBgcGBwAAAAAAAAECAwQFBhEHEhUhMUEIE1FVlNEUIjZxgbIjMmF0kbHBFiQ0U3OzM0JSVHWTof/EABsBAAICAwEAAAAAAAAAAAAAAAACAQMEBQYH/8QALREAAgIAAwYEBgMAAAAAAAAAAQIAAwQRMQUSEyEyQRRxgZEiNEJRUqFDYbH/2gAMAwEAAhEDEQA/AKi2HS9z1/hkeQxsSl7nr/DI8hIiVw1hu6xJJdjUsFyY60jXWlHIs8sx6C1dSjNgMp5ottzndVjn5zmdiUvc9f4ZHkM7Epe56/wyPIS9lCk1056DMaNqQyo0OIPiky5DoK/AGLp1Sm1j00g4akmsnTLItUue/kFZaEGbAR1bEOSFJ5f2Zw+xKXuev8MjyGdiUvc9f4ZHkJHq1dd1Rb1a2ru7c8h9SmHYsl2M+jUdaUaFp7DLcYbhV/iPaV8e3UscvMyM2JS9z1/hkeQbEpe56/wyPISCSNSiSkjMzPIiITttg3FFTWbSsaWVGibvpVpyTv4CGSlcswOcZXvYHInl5zktiUvc9f4ZHkGxKXuev8MjyG+P2ZjPOx3n0IM22SI3FdmZ5F/6G4NY+ke0UX2nRj7yK2JS9z1/hkeQxsSl7nr/AAyPITtLU2V1NKDVxHJckyMybbLMzIh9XlLaUcsolvBehvmnWJDqcjy7QvDpB3chnGFl5XezOXrIHYlL3PX+GR5BsOl7nr/DI8h0eH8PXd+443TVsiapoiNZNJz1SPtGpZQZdbNdhTmFsSGjycbVxSYAlJOQAhxLgMyxy9ZD7Epe56/wyPINiUvc9f4ZHkJWTGejE0byDT1qCcR9qc8sx+IYU1nRRFN1o1Y+5mhsSl7nr/DI8g2HS9z1/hkeQ61zBmKW6c7ddHMTA6vrevNHq6nb7hBEFVKW6QDGay9Ooke8j9h0vc9f4ZHkAkADcGv8R7ROPb+R94F6dDn2vuPuRfOQosXp0Od2MLj7kXzkMTanyjzN2T84kl8O6KnMT6Vry/vGlN07E9ZoQosuvMj/ACEFp70pnNW5hHDJnFrI30T60eqbhp3apdiR319pri1mlRnDaY6UVbTpsS3lFkeufMvsIxwnSdwAmtsU4wqGiODMP95JBbkLPgr3GNZhmLYhPEjll8I7TbYpVTDP4Y5kH4vvKTg/x8fP+cj8yG/jH2ttvvjvzGNCB/Hxv6qPmIb+Mfay2++O/MY3/wBfpOc/j9Z0mgzDJ4o0jV8RxvWjR1ekSN27VTvyP3nkQ9TXcqnxzExNgls0qeiNE0suxRpzSZe48hwfRTw43U4OmYmmGhl2eo0NLXuJLaefxP8AIS2jvBP7NY9mYlcxbElnP1/SGiWXrGo8y58jHNY+5bb2OfRp5zqdm0tTQoy69fKeTrOG/XWMiBJSaHo7qm1kfIyPISdJ7N3uf8pr+4QsXpUYX2NjlNxHb1YtojXPItxOFuV+O4xXVJ7OXv8ATa/uEN9VcLqA47znrqDh8Q1f2mthm5m4fvIlxXuG3IjOEtOR8S5kfvHpDSbUQ9LWi+HiuibJdpFRmbafrH/rbP8AMh5dLgLx6It3OZxbMoicNUJ9g3jbPgSyPiQxtpVFVGITqX/Jk7MtBJw79Lfozs64omhXQ6cl5KNvWCc9XmbhluL3JHmKwlyJ816bKdU6+8s1uLUeZmZ8RZXSavJ9lpPm10hw/Rq8ktsNlwLNJGZ+/eKu5B9n0kJxW6m5mJtK4F+CnSnISbxZ9Sp+4I+ZQ+9H1C7ibGVbStJMyfeLrDLkgt6j/AfGLPqVP/Ho+ZQuroiYaQTlji6Wkkttl6OwpXAuaj/T4hsVeKMMW7xMLh/EYoJ27+UuZywo5VnJ0d5I1kVpGbfLqz9XL3jxZjOkfw5imwpZBGSorykEZ80/5T+JD0/CwQ4xpZXjo8Ww1KcdPWY1i/wzLLV49g4fpdYYS1YV+LIiCNqSnqH1J4axb0n8SGo2balNwQHMMP3N1tWp76DYRlun9SgMwAB02YE5XmZkWJoKx5AwFezp8+M7IRIj9Wkm+JHrEYrsYy3Cq2pbkKNoZbTc1NgsTUSZxtbNXmLbK4joU23KkKdQk+JZmLYwzpmql6Ov2VxZXPTjJo2DcSeeaMvVP3kKOIMhXbha7VCt20ltOMsqdmTvrNg1sNWXWsaxsIe1ka3HVJWZfHIfvdS2Z9/LmkRpZfkqcy56pqzGgGQu3RKN4y5tIelaon6NYWEMMMSYqWibQ4tXq5oSX2dpio2rGe04hxEx8lIUSi+kPiQ1eQCqrDV1KVUS+7F23MGY6S59JulGhxro5iVMmJITcRibWl0y9XXIslb+w94qiunNx6mxiLSZqlIQSD7MlEf6CPyGeQKcMlK7i6SLsTZc2+2swXAd1oRxhBwRjBVxYMuOtHHU3qt8czHDDGW8WW1rahRtDK6rWqcOuonTaUr+NijHlnew21tsSlpUhK+JZJIv0HMhkMkJrQIoUaCRZY1jF27yQu5zc1MEm0mXURUsqz5mRmf6i1laVKSs0Nlg+gjyGpy2CbceUWRZqP1zzFM5DApuw1doAbQS2nFWUlimp5TZ9Pnf72R/2GLhnaVqO80PpwnexpLli3HJCHiLMtdJ+of4ZCleAZCbsNXaQT2hTirKgQDryggDIBfymNkZkAAEmMg+IACEAAAhBjBgAmQZkuAAAiEAAAhAAAJMAAAkQAACEAAAhP/Z" alt="KAYA">
+  <div class="hdr-sep"></div>
+  <div>
+    <div class="hdr-title">ხმაურდამხშობის კალკულატორი — FINAL</div>
+    <div class="hdr-sub">50მმ ქვაბამბა 100kg/m³ · G4 ფილტრი · 0.8მმ გალვ. ფოლადი · სტანდარტული კატალოგური მოდელები</div>
+  </div>
+  <div class="hdr-right">
+    <span class="chip" id="dim-chip">SSRQ H40W60 · 600×400×930</span>
+    <span class="badge bok" id="st-badge">✓ კარგი</span>
+    <button class="pdf-btn" onclick="exportPDF()">⬇ PDF ექსპორტი</button>
+  </div>
+</div>
+
+<div class="mobile-nav no-print">
+  <a href="file:///Users/macbookair/Library/Containers/net.whatsapp.WhatsApp/Data/tmp/documents/706E5E76-801C-4694-8EB6-7048CE3E9FB9/%E1%83%AE%E1%83%9B%E1%83%90%E1%83%A3%E1%83%A0%E1%83%93%E1%83%90%E1%83%9B%E1%83%AE%E1%83%A8%E1%83%9D%E1%83%91%E1%83%98%20%E1%83%A1%E1%83%94%E1%83%9A%E1%83%94%E1%83%A5%E1%83%A8%E1%83%94%E1%83%9C%E1%83%98.html#calc-section" class="active">კალკულაცია</a>
+  <a href="file:///Users/macbookair/Library/Containers/net.whatsapp.WhatsApp/Data/tmp/documents/706E5E76-801C-4694-8EB6-7048CE3E9FB9/%E1%83%AE%E1%83%9B%E1%83%90%E1%83%A3%E1%83%A0%E1%83%93%E1%83%90%E1%83%9B%E1%83%AE%E1%83%A8%E1%83%9D%E1%83%91%E1%83%98%20%E1%83%A1%E1%83%94%E1%83%9A%E1%83%94%E1%83%A5%E1%83%A8%E1%83%94%E1%83%9C%E1%83%98.html#std-details">სტანდარტები</a>
+  <a href="file:///Users/macbookair/Library/Containers/net.whatsapp.WhatsApp/Data/tmp/documents/706E5E76-801C-4694-8EB6-7048CE3E9FB9/%E1%83%AE%E1%83%9B%E1%83%90%E1%83%A3%E1%83%A0%E1%83%93%E1%83%90%E1%83%9B%E1%83%AE%E1%83%A8%E1%83%9D%E1%83%91%E1%83%98%20%E1%83%A1%E1%83%94%E1%83%9A%E1%83%94%E1%83%A5%E1%83%A8%E1%83%94%E1%83%9C%E1%83%98.html#drawings-section">ნახაზები</a>
+  <a href="file:///Users/macbookair/Library/Containers/net.whatsapp.WhatsApp/Data/tmp/documents/706E5E76-801C-4694-8EB6-7048CE3E9FB9/%E1%83%AE%E1%83%9B%E1%83%90%E1%83%A3%E1%83%A0%E1%83%93%E1%83%90%E1%83%9B%E1%83%AE%E1%83%A8%E1%83%9D%E1%83%91%E1%83%98%20%E1%83%A1%E1%83%94%E1%83%9A%E1%83%94%E1%83%A5%E1%83%A8%E1%83%94%E1%83%9C%E1%83%98.html#model-section">3D</a>
+</div>
+
+<!-- CLIENT INFO -->
+<div class="client-bar section-gap">
+  <div>
+    <div class="clbl">დამკვეთის დასახელება</div>
+    <input type="text" id="cl-name" placeholder="კლიენტის სახელი...">
+  </div>
+  <div>
+    <div class="clbl">ინვოისის ნომერი</div>
+    <input type="text" id="cl-inv" placeholder="INV-2026-001">
+  </div>
+  <div>
+    <div class="clbl">დამკვეთის სკ / ID</div>
+    <input type="text" id="cl-tax" placeholder="123456789">
+  </div>
+  <div>
+    <div class="clbl">თარიღი</div>
+    <input type="text" id="cl-date" readonly="">
+  </div>
+
+</div>
+
+<details class="std-details section-gap" id="std-details">
+  <summary>სტანდარტული ზომები</summary>
+  <div class="std-body">
+    <div class="std-pick">
+      <div>
+        <div class="clbl">სტანდარტული მოდელის არჩევა</div>
+        <select id="std-model-select" onchange="selectStandardByIndex(this.value)"><option value="">— აირჩიე სტანდარტული მოდელი —</option><option value="0">SSRQ H20W30 · 200×300×930მმ</option><option value="1">SSRQ H20W35 · 200×350×930მმ</option><option value="2">SSRQ H20W40 · 200×400×930მმ</option><option value="3">SSRQ H20W45 · 200×450×930მმ</option><option value="4">SSRQ H20W50 · 200×500×930მმ</option><option value="5">SSRQ H20W55 · 200×550×930მმ</option><option value="6">SSRQ H20W60 · 200×600×930მმ</option><option value="7">SSRQ H25W30 · 250×300×930მმ</option><option value="8">SSRQ H25W35 · 250×350×930მმ</option><option value="9">SSRQ H25W40 · 250×400×930მმ</option><option value="10">SSRQ H25W45 · 250×450×930მმ</option><option value="11">SSRQ H25W50 · 250×500×930მმ</option><option value="12">SSRQ H25W55 · 250×550×930მმ</option><option value="13">SSRQ H25W60 · 250×600×930მმ</option><option value="14">SSRQ H30W30 · 300×300×930მმ</option><option value="15">SSRQ H30W35 · 300×350×930მმ</option><option value="16">SSRQ H30W40 · 300×400×930მმ</option><option value="17">SSRQ H30W45 · 300×450×930მმ</option><option value="18">SSRQ H30W50 · 300×500×930მმ</option><option value="19">SSRQ H30W55 · 300×550×930მმ</option><option value="20">SSRQ H30W60 · 300×600×930მმ</option><option value="21">SSRQ H30W65 · 300×650×930მმ</option><option value="22">SSRQ H30W70 · 300×700×930მმ</option><option value="23">SSRQ H30W75 · 300×750×930მმ</option><option value="24">SSRQ H30W80 · 300×800×930მმ</option><option value="25">SSRQ H30W85 · 300×850×930მმ</option><option value="26">SSRQ H30W90 · 300×900×930მმ</option><option value="27">SSRQ H30W95 · 300×950×930მმ</option><option value="28">SSRQ H30W100 · 300×1000×930მმ</option><option value="29">SSRQ H30W105 · 300×1050×930მმ</option><option value="30">SSRQ H30W110 · 300×1100×930მმ</option><option value="31">SSRQ H30W120 · 300×1200×930მმ</option><option value="32">SSRQ H35W35 · 350×350×930მმ</option><option value="33">SSRQ H35W40 · 350×400×930მმ</option><option value="34">SSRQ H35W45 · 350×450×930მმ</option><option value="35">SSRQ H35W50 · 350×500×930მმ</option><option value="36">SSRQ H35W55 · 350×550×930მმ</option><option value="37">SSRQ H35W60 · 350×600×930მმ</option><option value="38">SSRQ H35W65 · 350×650×930მმ</option><option value="39">SSRQ H35W70 · 350×700×930მმ</option><option value="40">SSRQ H35W75 · 350×750×930მმ</option><option value="41">SSRQ H35W80 · 350×800×930მმ</option><option value="42">SSRQ H35W85 · 350×850×930მმ</option><option value="43">SSRQ H35W90 · 350×900×930მმ</option><option value="44">SSRQ H35W95 · 350×950×930მმ</option><option value="45">SSRQ H35W100 · 350×1000×930მმ</option><option value="46">SSRQ H35W105 · 350×1050×930მმ</option><option value="47">SSRQ H35W110 · 350×1100×930მმ</option><option value="48">SSRQ H35W120 · 350×1200×930მმ</option><option value="49">SSRQ H40W40 · 400×400×930მმ</option><option value="50">SSRQ H40W45 · 400×450×930მმ</option><option value="51">SSRQ H40W50 · 400×500×930მმ</option><option value="52">SSRQ H40W55 · 400×550×930მმ</option><option value="53">SSRQ H40W60 · 400×600×930მმ</option><option value="54">SSRQ H40W65 · 400×650×930მმ</option><option value="55">SSRQ H40W70 · 400×700×930მმ</option><option value="56">SSRQ H40W75 · 400×750×930მმ</option><option value="57">SSRQ H40W80 · 400×800×930მმ</option><option value="58">SSRQ H40W85 · 400×850×930მმ</option><option value="59">SSRQ H40W90 · 400×900×930მმ</option><option value="60">SSRQ H40W95 · 400×950×930მმ</option><option value="61">SSRQ H40W100 · 400×1000×930მმ</option><option value="62">SSRQ H40W105 · 400×1050×930მმ</option><option value="63">SSRQ H40W110 · 400×1100×930მმ</option><option value="64">SSRQ H40W120 · 400×1200×930მმ</option><option value="65">SSRQ H45W45 · 450×450×930მმ</option><option value="66">SSRQ H45W50 · 450×500×930მმ</option><option value="67">SSRQ H45W55 · 450×550×930მმ</option><option value="68">SSRQ H45W60 · 450×600×930მმ</option><option value="69">SSRQ H45W65 · 450×650×930მმ</option><option value="70">SSRQ H45W70 · 450×700×930მმ</option><option value="71">SSRQ H45W75 · 450×750×930მმ</option><option value="72">SSRQ H45W80 · 450×800×930მმ</option><option value="73">SSRQ H45W85 · 450×850×930მმ</option><option value="74">SSRQ H45W90 · 450×900×930მმ</option><option value="75">SSRQ H45W95 · 450×950×930მმ</option><option value="76">SSRQ H45W100 · 450×1000×930მმ</option><option value="77">SSRQ H45W105 · 450×1050×930მმ</option><option value="78">SSRQ H45W110 · 450×1100×930მმ</option><option value="79">SSRQ H45W115 · 450×1150×930მმ</option><option value="80">SSRQ H45W120 · 450×1200×930მმ</option><option value="81">SSRQ H45W125 · 450×1250×930მმ</option><option value="82">SSRQ H45W130 · 450×1300×930მმ</option><option value="83">SSRQ H45W135 · 450×1350×930მმ</option><option value="84">SSRQ H45W140 · 450×1400×930მმ</option><option value="85">SSRQ H50W50 · 500×500×930მმ</option><option value="86">SSRQ H50W55 · 500×550×930მმ</option><option value="87">SSRQ H50W60 · 500×600×930მმ</option><option value="88">SSRQ H50W65 · 500×650×930მმ</option><option value="89">SSRQ H50W70 · 500×700×930მმ</option><option value="90">SSRQ H50W75 · 500×750×930მმ</option><option value="91">SSRQ H50W80 · 500×800×930მმ</option><option value="92">SSRQ H50W85 · 500×850×930მმ</option><option value="93">SSRQ H50W90 · 500×900×930მმ</option><option value="94">SSRQ H50W95 · 500×950×930მმ</option><option value="95">SSRQ H50W100 · 500×1000×930მმ</option><option value="96">SSRQ H50W105 · 500×1050×930მმ</option><option value="97">SSRQ H50W110 · 500×1100×930მმ</option><option value="98">SSRQ H50W115 · 500×1150×930მმ</option><option value="99">SSRQ H50W120 · 500×1200×930მმ</option><option value="100">SSRQ H50W125 · 500×1250×930მმ</option><option value="101">SSRQ H50W130 · 500×1300×930მმ</option><option value="102">SSRQ H50W135 · 500×1350×930მმ</option><option value="103">SSRQ H50W140 · 500×1400×930მმ</option><option value="104">SSRQ H50W145 · 500×1450×930მმ</option><option value="105">SSRQ H50W150 · 500×1500×930მმ</option><option value="106">SSRQ H50W155 · 500×1550×930მმ</option><option value="107">SSRQ H50W160 · 500×1600×930მმ</option><option value="108">SSRQ H55W55 · 550×550×1180მმ</option><option value="109">SSRQ H55W60 · 550×600×1180მმ</option><option value="110">SSRQ H55W65 · 550×650×1180მმ</option><option value="111">SSRQ H55W70 · 550×700×1180მმ</option><option value="112">SSRQ H55W75 · 550×750×1180მმ</option><option value="113">SSRQ H55W80 · 550×800×1180მმ</option><option value="114">SSRQ H55W85 · 550×850×1180მმ</option><option value="115">SSRQ H55W90 · 550×900×1180მმ</option><option value="116">SSRQ H55W95 · 550×950×1180მმ</option><option value="117">SSRQ H55W100 · 550×1000×1180მმ</option><option value="118">SSRQ H55W105 · 550×1050×1180მმ</option><option value="119">SSRQ H55W110 · 550×1100×1180მმ</option><option value="120">SSRQ H55W115 · 550×1150×1180მმ</option><option value="121">SSRQ H55W120 · 550×1200×1180მმ</option><option value="122">SSRQ H55W125 · 550×1250×1180მმ</option><option value="123">SSRQ H55W130 · 550×1300×1180მმ</option><option value="124">SSRQ H55W135 · 550×1350×1180მმ</option><option value="125">SSRQ H55W140 · 550×1400×1180მმ</option><option value="126">SSRQ H55W145 · 550×1450×1180მმ</option><option value="127">SSRQ H55W150 · 550×1500×1180მმ</option><option value="128">SSRQ H55W155 · 550×1550×1180მმ</option><option value="129">SSRQ H55W160 · 550×1600×1180მმ</option><option value="130">SSRQ H60W60 · 600×600×1180მმ</option><option value="131">SSRQ H60W65 · 600×650×1180მმ</option><option value="132">SSRQ H60W70 · 600×700×1180მმ</option><option value="133">SSRQ H60W75 · 600×750×1180მმ</option><option value="134">SSRQ H60W80 · 600×800×1180მმ</option><option value="135">SSRQ H60W85 · 600×850×1180მმ</option><option value="136">SSRQ H60W90 · 600×900×1180მმ</option><option value="137">SSRQ H60W95 · 600×950×1180მმ</option><option value="138">SSRQ H60W100 · 600×1000×1180მმ</option><option value="139">SSRQ H60W105 · 600×1050×1180მმ</option><option value="140">SSRQ H60W110 · 600×1100×1180მმ</option><option value="141">SSRQ H60W115 · 600×1150×1180მმ</option><option value="142">SSRQ H60W120 · 600×1200×1180მმ</option><option value="143">SSRQ H60W125 · 600×1250×1180მმ</option><option value="144">SSRQ H60W130 · 600×1300×1180მმ</option><option value="145">SSRQ H60W135 · 600×1350×1180მმ</option><option value="146">SSRQ H60W140 · 600×1400×1180მმ</option><option value="147">SSRQ H60W145 · 600×1450×1180მმ</option><option value="148">SSRQ H60W150 · 600×1500×1180მმ</option><option value="149">SSRQ H60W155 · 600×1550×1180მმ</option><option value="150">SSRQ H60W160 · 600×1600×1180მმ</option><option value="151">SSRQ H70W70 · 700×700×1180მმ</option><option value="152">SSRQ H70W80 · 700×800×1180მმ</option><option value="153">SSRQ H70W90 · 700×900×1180მმ</option><option value="154">SSRQ H70W100 · 700×1000×1180მმ</option><option value="155">SSRQ H70W110 · 700×1100×1180მმ</option><option value="156">SSRQ H70W120 · 700×1200×1180მმ</option><option value="157">SSRQ H70W130 · 700×1300×1180მმ</option><option value="158">SSRQ H70W140 · 700×1400×1180მმ</option><option value="159">SSRQ H70W150 · 700×1500×1180მმ</option><option value="160">SSRQ H70W160 · 700×1600×1180მმ</option><option value="161">SSRQ H80W80 · 800×800×1180მმ</option><option value="162">SSRQ H80W90 · 800×900×1180მმ</option><option value="163">SSRQ H80W100 · 800×1000×1180მმ</option><option value="164">SSRQ H80W110 · 800×1100×1180მმ</option><option value="165">SSRQ H80W120 · 800×1200×1180მმ</option><option value="166">SSRQ H80W130 · 800×1300×1180მმ</option><option value="167">SSRQ H80W140 · 800×1400×1180მმ</option><option value="168">SSRQ H80W150 · 800×1500×1180მმ</option><option value="169">SSRQ H80W160 · 800×1600×1180მმ</option><option value="170">SSRQ H90W90 · 900×900×1180მმ</option><option value="171">SSRQ H90W100 · 900×1000×1180მმ</option><option value="172">SSRQ H90W110 · 900×1100×1180მმ</option><option value="173">SSRQ H90W120 · 900×1200×1180მმ</option><option value="174">SSRQ H90W130 · 900×1300×1180მმ</option><option value="175">SSRQ H90W140 · 900×1400×1180მმ</option><option value="176">SSRQ H90W150 · 900×1500×1180მმ</option><option value="177">SSRQ H90W160 · 900×1600×1180მმ</option><option value="178">SSRQ H100W100 · 1000×1000×1180მმ</option><option value="179">SSRQ H100W110 · 1000×1100×1180მმ</option><option value="180">SSRQ H100W120 · 1000×1200×1180მმ</option><option value="181">SSRQ H100W130 · 1000×1300×1180მმ</option><option value="182">SSRQ H100W140 · 1000×1400×1180მმ</option><option value="183">SSRQ H100W150 · 1000×1500×1180მმ</option><option value="184">SSRQ H100W160 · 1000×1600×1180მმ</option></select>
+      </div>
+      <div class="std-actions">
+        <button class="std-btn" type="button" onclick="applySelectedStandardModel()">მონიშნული მოდელის ჩასმა</button>
+        <button class="std-btn secondary" type="button" onclick="clearStandardSelection()">გასუფთავება</button>
+      </div>
+    </div>
+    <div class="infobox">ამ სექციაში შეგიძლია კატალოგური მოდელი პირდაპირ აირჩიო. არჩევის შემდეგ სიგანე/სიმაღლე ავტომატურად ჩაისმება მთავარ კალკულატორში. ქვემოთ მოცემულ ცხრილში Q გამოთვლილია <b>v=5.0 მ/წმ</b> split velocity-ზე, ხოლო ხმის დახშობა — <b>500 Hz</b>-ზე მიმდინარე target-ის მიხედვით.</div>
+    <div class="std-table-wrap">
+      <table class="std-table">
+        <thead>
+          <tr>
+            <th>მოდელი</th>
+            <th>L<br>მმ</th>
+            <th>W<br>მმ</th>
+            <th>H<br>მმ</th>
+            <th>ტიხრები</th>
+            <th>v<br>მ/წმ</th>
+            <th>Q<br>მ³/სთ</th>
+            <th>IL@500<br>dB</th>
+          </tr>
+        </thead>
+        <tbody id="std-model-tbody"><tr data-idx="0" onclick="selectStandardByIndex(0)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H20W30</span></td>
+      <td>930</td>
+      <td>300</td>
+      <td>200</td>
+      <td>1</td>
+      <td>5.0</td>
+      <td>819</td>
+      <td>19.3</td>
+    </tr><tr data-idx="1" onclick="selectStandardByIndex(1)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H20W35</span></td>
+      <td>930</td>
+      <td>350</td>
+      <td>200</td>
+      <td>1</td>
+      <td>5.0</td>
+      <td>999</td>
+      <td>16.5</td>
+    </tr><tr data-idx="2" onclick="selectStandardByIndex(2)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H20W40</span></td>
+      <td>930</td>
+      <td>400</td>
+      <td>200</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>917</td>
+      <td>24.4</td>
+    </tr><tr data-idx="3" onclick="selectStandardByIndex(3)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H20W45</span></td>
+      <td>930</td>
+      <td>450</td>
+      <td>200</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>1097</td>
+      <td>21.1</td>
+    </tr><tr data-idx="4" onclick="selectStandardByIndex(4)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H20W50</span></td>
+      <td>930</td>
+      <td>500</td>
+      <td>200</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>1277</td>
+      <td>18.7</td>
+    </tr><tr data-idx="5" onclick="selectStandardByIndex(5)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H20W55</span></td>
+      <td>930</td>
+      <td>550</td>
+      <td>200</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>1196</td>
+      <td>24.8</td>
+    </tr><tr data-idx="6" onclick="selectStandardByIndex(6)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H20W60</span></td>
+      <td>930</td>
+      <td>600</td>
+      <td>200</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>1376</td>
+      <td>22.2</td>
+    </tr><tr data-idx="7" onclick="selectStandardByIndex(7)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H25W30</span></td>
+      <td>930</td>
+      <td>300</td>
+      <td>250</td>
+      <td>1</td>
+      <td>5.0</td>
+      <td>1023</td>
+      <td>19.3</td>
+    </tr><tr data-idx="8" onclick="selectStandardByIndex(8)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H25W35</span></td>
+      <td>930</td>
+      <td>350</td>
+      <td>250</td>
+      <td>1</td>
+      <td>5.0</td>
+      <td>1248</td>
+      <td>16.5</td>
+    </tr><tr data-idx="9" onclick="selectStandardByIndex(9)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H25W40</span></td>
+      <td>930</td>
+      <td>400</td>
+      <td>250</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>1147</td>
+      <td>24.4</td>
+    </tr><tr data-idx="10" onclick="selectStandardByIndex(10)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H25W45</span></td>
+      <td>930</td>
+      <td>450</td>
+      <td>250</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>1372</td>
+      <td>21.1</td>
+    </tr><tr data-idx="11" onclick="selectStandardByIndex(11)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H25W50</span></td>
+      <td>930</td>
+      <td>500</td>
+      <td>250</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>1597</td>
+      <td>18.7</td>
+    </tr><tr data-idx="12" onclick="selectStandardByIndex(12)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H25W55</span></td>
+      <td>930</td>
+      <td>550</td>
+      <td>250</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>1495</td>
+      <td>24.8</td>
+    </tr><tr data-idx="13" onclick="selectStandardByIndex(13)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H25W60</span></td>
+      <td>930</td>
+      <td>600</td>
+      <td>250</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>1720</td>
+      <td>22.2</td>
+    </tr><tr data-idx="14" onclick="selectStandardByIndex(14)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W30</span></td>
+      <td>930</td>
+      <td>300</td>
+      <td>300</td>
+      <td>1</td>
+      <td>5.0</td>
+      <td>1228</td>
+      <td>19.3</td>
+    </tr><tr data-idx="15" onclick="selectStandardByIndex(15)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W35</span></td>
+      <td>930</td>
+      <td>350</td>
+      <td>300</td>
+      <td>1</td>
+      <td>5.0</td>
+      <td>1498</td>
+      <td>16.5</td>
+    </tr><tr data-idx="16" onclick="selectStandardByIndex(16)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W40</span></td>
+      <td>930</td>
+      <td>400</td>
+      <td>300</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>1376</td>
+      <td>24.4</td>
+    </tr><tr data-idx="17" onclick="selectStandardByIndex(17)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W45</span></td>
+      <td>930</td>
+      <td>450</td>
+      <td>300</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>1646</td>
+      <td>21.1</td>
+    </tr><tr data-idx="18" onclick="selectStandardByIndex(18)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W50</span></td>
+      <td>930</td>
+      <td>500</td>
+      <td>300</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>1916</td>
+      <td>18.7</td>
+    </tr><tr data-idx="19" onclick="selectStandardByIndex(19)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W55</span></td>
+      <td>930</td>
+      <td>550</td>
+      <td>300</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>1794</td>
+      <td>24.8</td>
+    </tr><tr data-idx="20" onclick="selectStandardByIndex(20)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W60</span></td>
+      <td>930</td>
+      <td>600</td>
+      <td>300</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>2064</td>
+      <td>22.2</td>
+    </tr><tr data-idx="21" onclick="selectStandardByIndex(21)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W65</span></td>
+      <td>930</td>
+      <td>650</td>
+      <td>300</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>2334</td>
+      <td>20.1</td>
+    </tr><tr data-idx="22" onclick="selectStandardByIndex(22)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W70</span></td>
+      <td>930</td>
+      <td>700</td>
+      <td>300</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>2212</td>
+      <td>25.1</td>
+    </tr><tr data-idx="23" onclick="selectStandardByIndex(23)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W75</span></td>
+      <td>930</td>
+      <td>750</td>
+      <td>300</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>2482</td>
+      <td>22.9</td>
+    </tr><tr data-idx="24" onclick="selectStandardByIndex(24)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W80</span></td>
+      <td>930</td>
+      <td>800</td>
+      <td>300</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>2752</td>
+      <td>21.1</td>
+    </tr><tr data-idx="25" onclick="selectStandardByIndex(25)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W85</span></td>
+      <td>930</td>
+      <td>850</td>
+      <td>300</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>2630</td>
+      <td>25.3</td>
+    </tr><tr data-idx="26" onclick="selectStandardByIndex(26)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W90</span></td>
+      <td>930</td>
+      <td>900</td>
+      <td>300</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>2900</td>
+      <td>23.4</td>
+    </tr><tr data-idx="27" onclick="selectStandardByIndex(27)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W95</span></td>
+      <td>930</td>
+      <td>950</td>
+      <td>300</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>3170</td>
+      <td>21.8</td>
+    </tr><tr data-idx="28" onclick="selectStandardByIndex(28)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W100</span></td>
+      <td>930</td>
+      <td>1000</td>
+      <td>300</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>3440</td>
+      <td>20.4</td>
+    </tr><tr data-idx="29" onclick="selectStandardByIndex(29)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W105</span></td>
+      <td>930</td>
+      <td>1050</td>
+      <td>300</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>3318</td>
+      <td>23.7</td>
+    </tr><tr data-idx="30" onclick="selectStandardByIndex(30)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W110</span></td>
+      <td>930</td>
+      <td>1100</td>
+      <td>300</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>3588</td>
+      <td>22.3</td>
+    </tr><tr data-idx="31" onclick="selectStandardByIndex(31)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H30W120</span></td>
+      <td>930</td>
+      <td>1200</td>
+      <td>300</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>3736</td>
+      <td>24</td>
+    </tr><tr data-idx="32" onclick="selectStandardByIndex(32)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W35</span></td>
+      <td>930</td>
+      <td>350</td>
+      <td>350</td>
+      <td>1</td>
+      <td>5.0</td>
+      <td>1748</td>
+      <td>16.5</td>
+    </tr><tr data-idx="33" onclick="selectStandardByIndex(33)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W40</span></td>
+      <td>930</td>
+      <td>400</td>
+      <td>350</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>1605</td>
+      <td>24.4</td>
+    </tr><tr data-idx="34" onclick="selectStandardByIndex(34)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W45</span></td>
+      <td>930</td>
+      <td>450</td>
+      <td>350</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>1920</td>
+      <td>21.1</td>
+    </tr><tr data-idx="35" onclick="selectStandardByIndex(35)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W50</span></td>
+      <td>930</td>
+      <td>500</td>
+      <td>350</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>2235</td>
+      <td>18.7</td>
+    </tr><tr data-idx="36" onclick="selectStandardByIndex(36)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W55</span></td>
+      <td>930</td>
+      <td>550</td>
+      <td>350</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>2093</td>
+      <td>24.8</td>
+    </tr><tr data-idx="37" onclick="selectStandardByIndex(37)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W60</span></td>
+      <td>930</td>
+      <td>600</td>
+      <td>350</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>2408</td>
+      <td>22.2</td>
+    </tr><tr data-idx="38" onclick="selectStandardByIndex(38)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W65</span></td>
+      <td>930</td>
+      <td>650</td>
+      <td>350</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>2723</td>
+      <td>20.1</td>
+    </tr><tr data-idx="39" onclick="selectStandardByIndex(39)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W70</span></td>
+      <td>930</td>
+      <td>700</td>
+      <td>350</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>2580</td>
+      <td>25.1</td>
+    </tr><tr data-idx="40" onclick="selectStandardByIndex(40)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W75</span></td>
+      <td>930</td>
+      <td>750</td>
+      <td>350</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>2895</td>
+      <td>22.9</td>
+    </tr><tr data-idx="41" onclick="selectStandardByIndex(41)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W80</span></td>
+      <td>930</td>
+      <td>800</td>
+      <td>350</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>3210</td>
+      <td>21.1</td>
+    </tr><tr data-idx="42" onclick="selectStandardByIndex(42)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W85</span></td>
+      <td>930</td>
+      <td>850</td>
+      <td>350</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>3068</td>
+      <td>25.3</td>
+    </tr><tr data-idx="43" onclick="selectStandardByIndex(43)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W90</span></td>
+      <td>930</td>
+      <td>900</td>
+      <td>350</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>3383</td>
+      <td>23.4</td>
+    </tr><tr data-idx="44" onclick="selectStandardByIndex(44)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W95</span></td>
+      <td>930</td>
+      <td>950</td>
+      <td>350</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>3698</td>
+      <td>21.8</td>
+    </tr><tr data-idx="45" onclick="selectStandardByIndex(45)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W100</span></td>
+      <td>930</td>
+      <td>1000</td>
+      <td>350</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>4013</td>
+      <td>20.4</td>
+    </tr><tr data-idx="46" onclick="selectStandardByIndex(46)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W105</span></td>
+      <td>930</td>
+      <td>1050</td>
+      <td>350</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>3871</td>
+      <td>23.7</td>
+    </tr><tr data-idx="47" onclick="selectStandardByIndex(47)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W110</span></td>
+      <td>930</td>
+      <td>1100</td>
+      <td>350</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>4186</td>
+      <td>22.3</td>
+    </tr><tr data-idx="48" onclick="selectStandardByIndex(48)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H35W120</span></td>
+      <td>930</td>
+      <td>1200</td>
+      <td>350</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>4358</td>
+      <td>24</td>
+    </tr><tr data-idx="49" onclick="selectStandardByIndex(49)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H40W40</span></td>
+      <td>930</td>
+      <td>400</td>
+      <td>400</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>1835</td>
+      <td>24.4</td>
+    </tr><tr data-idx="50" onclick="selectStandardByIndex(50)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H40W45</span></td>
+      <td>930</td>
+      <td>450</td>
+      <td>400</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>2195</td>
+      <td>21.1</td>
+    </tr><tr data-idx="51" onclick="selectStandardByIndex(51)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H40W50</span></td>
+      <td>930</td>
+      <td>500</td>
+      <td>400</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>2555</td>
+      <td>18.7</td>
+    </tr><tr data-idx="52" onclick="selectStandardByIndex(52)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H40W55</span></td>
+      <td>930</td>
+      <td>550</td>
+      <td>400</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>2392</td>
+      <td>24.8</td>
+    </tr><tr data-idx="53" onclick="selectStandardByIndex(53)" style="cursor:pointer" class="selected-row">
+      <td><span class="std-chip">SSRQ H40W60</span></td>
+      <td>930</td>
+      <td>600</td>
+      <td>400</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>2752</td>
+      <td>22.2</td>
+    </tr><tr data-idx="54" onclick="selectStandardByIndex(54)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H40W65</span></td>
+      <td>930</td>
+      <td>650</td>
+      <td>400</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>3112</td>
+      <td>20.1</td>
+    </tr><tr data-idx="55" onclick="selectStandardByIndex(55)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H40W70</span></td>
+      <td>930</td>
+      <td>700</td>
+      <td>400</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>2949</td>
+      <td>25.1</td>
+    </tr><tr data-idx="56" onclick="selectStandardByIndex(56)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H40W75</span></td>
+      <td>930</td>
+      <td>750</td>
+      <td>400</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>3309</td>
+      <td>22.9</td>
+    </tr><tr data-idx="57" onclick="selectStandardByIndex(57)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H40W80</span></td>
+      <td>930</td>
+      <td>800</td>
+      <td>400</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>3669</td>
+      <td>21.1</td>
+    </tr><tr data-idx="58" onclick="selectStandardByIndex(58)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H40W85</span></td>
+      <td>930</td>
+      <td>850</td>
+      <td>400</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>3506</td>
+      <td>25.3</td>
+    </tr><tr data-idx="59" onclick="selectStandardByIndex(59)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H40W90</span></td>
+      <td>930</td>
+      <td>900</td>
+      <td>400</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>3866</td>
+      <td>23.4</td>
+    </tr><tr data-idx="60" onclick="selectStandardByIndex(60)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H40W95</span></td>
+      <td>930</td>
+      <td>950</td>
+      <td>400</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>4226</td>
+      <td>21.8</td>
+    </tr><tr data-idx="61" onclick="selectStandardByIndex(61)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H40W100</span></td>
+      <td>930</td>
+      <td>1000</td>
+      <td>400</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>4586</td>
+      <td>20.4</td>
+    </tr><tr data-idx="62" onclick="selectStandardByIndex(62)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H40W105</span></td>
+      <td>930</td>
+      <td>1050</td>
+      <td>400</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>4424</td>
+      <td>23.7</td>
+    </tr><tr data-idx="63" onclick="selectStandardByIndex(63)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H40W110</span></td>
+      <td>930</td>
+      <td>1100</td>
+      <td>400</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>4784</td>
+      <td>22.3</td>
+    </tr><tr data-idx="64" onclick="selectStandardByIndex(64)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H40W120</span></td>
+      <td>930</td>
+      <td>1200</td>
+      <td>400</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>4981</td>
+      <td>24</td>
+    </tr><tr data-idx="65" onclick="selectStandardByIndex(65)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W45</span></td>
+      <td>930</td>
+      <td>450</td>
+      <td>450</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>2469</td>
+      <td>21.1</td>
+    </tr><tr data-idx="66" onclick="selectStandardByIndex(66)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W50</span></td>
+      <td>930</td>
+      <td>500</td>
+      <td>450</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>2874</td>
+      <td>18.7</td>
+    </tr><tr data-idx="67" onclick="selectStandardByIndex(67)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W55</span></td>
+      <td>930</td>
+      <td>550</td>
+      <td>450</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>2691</td>
+      <td>24.8</td>
+    </tr><tr data-idx="68" onclick="selectStandardByIndex(68)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W60</span></td>
+      <td>930</td>
+      <td>600</td>
+      <td>450</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>3096</td>
+      <td>22.2</td>
+    </tr><tr data-idx="69" onclick="selectStandardByIndex(69)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W65</span></td>
+      <td>930</td>
+      <td>650</td>
+      <td>450</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>3501</td>
+      <td>20.1</td>
+    </tr><tr data-idx="70" onclick="selectStandardByIndex(70)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W70</span></td>
+      <td>930</td>
+      <td>700</td>
+      <td>450</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>3318</td>
+      <td>25.1</td>
+    </tr><tr data-idx="71" onclick="selectStandardByIndex(71)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W75</span></td>
+      <td>930</td>
+      <td>750</td>
+      <td>450</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>3723</td>
+      <td>22.9</td>
+    </tr><tr data-idx="72" onclick="selectStandardByIndex(72)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W80</span></td>
+      <td>930</td>
+      <td>800</td>
+      <td>450</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>4128</td>
+      <td>21.1</td>
+    </tr><tr data-idx="73" onclick="selectStandardByIndex(73)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W85</span></td>
+      <td>930</td>
+      <td>850</td>
+      <td>450</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>3945</td>
+      <td>25.3</td>
+    </tr><tr data-idx="74" onclick="selectStandardByIndex(74)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W90</span></td>
+      <td>930</td>
+      <td>900</td>
+      <td>450</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>4350</td>
+      <td>23.4</td>
+    </tr><tr data-idx="75" onclick="selectStandardByIndex(75)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W95</span></td>
+      <td>930</td>
+      <td>950</td>
+      <td>450</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>4755</td>
+      <td>21.8</td>
+    </tr><tr data-idx="76" onclick="selectStandardByIndex(76)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W100</span></td>
+      <td>930</td>
+      <td>1000</td>
+      <td>450</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>5160</td>
+      <td>20.4</td>
+    </tr><tr data-idx="77" onclick="selectStandardByIndex(77)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W105</span></td>
+      <td>930</td>
+      <td>1050</td>
+      <td>450</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>4977</td>
+      <td>23.7</td>
+    </tr><tr data-idx="78" onclick="selectStandardByIndex(78)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W110</span></td>
+      <td>930</td>
+      <td>1100</td>
+      <td>450</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>5382</td>
+      <td>22.3</td>
+    </tr><tr data-idx="79" onclick="selectStandardByIndex(79)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W115</span></td>
+      <td>930</td>
+      <td>1150</td>
+      <td>450</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>5787</td>
+      <td>21</td>
+    </tr><tr data-idx="80" onclick="selectStandardByIndex(80)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W120</span></td>
+      <td>930</td>
+      <td>1200</td>
+      <td>450</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>5604</td>
+      <td>24</td>
+    </tr><tr data-idx="81" onclick="selectStandardByIndex(81)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W125</span></td>
+      <td>930</td>
+      <td>1250</td>
+      <td>450</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>6009</td>
+      <td>22.7</td>
+    </tr><tr data-idx="82" onclick="selectStandardByIndex(82)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W130</span></td>
+      <td>930</td>
+      <td>1300</td>
+      <td>450</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>6414</td>
+      <td>21.6</td>
+    </tr><tr data-idx="83" onclick="selectStandardByIndex(83)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W135</span></td>
+      <td>930</td>
+      <td>1350</td>
+      <td>450</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>6819</td>
+      <td>20.5</td>
+    </tr><tr data-idx="84" onclick="selectStandardByIndex(84)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H45W140</span></td>
+      <td>930</td>
+      <td>1400</td>
+      <td>450</td>
+      <td>8</td>
+      <td>5.0</td>
+      <td>6636</td>
+      <td>23.1</td>
+    </tr><tr data-idx="85" onclick="selectStandardByIndex(85)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W50</span></td>
+      <td>930</td>
+      <td>500</td>
+      <td>500</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>3193</td>
+      <td>18.7</td>
+    </tr><tr data-idx="86" onclick="selectStandardByIndex(86)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W55</span></td>
+      <td>930</td>
+      <td>550</td>
+      <td>500</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>2990</td>
+      <td>24.8</td>
+    </tr><tr data-idx="87" onclick="selectStandardByIndex(87)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W60</span></td>
+      <td>930</td>
+      <td>600</td>
+      <td>500</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>3440</td>
+      <td>22.2</td>
+    </tr><tr data-idx="88" onclick="selectStandardByIndex(88)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W65</span></td>
+      <td>930</td>
+      <td>650</td>
+      <td>500</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>3890</td>
+      <td>20.1</td>
+    </tr><tr data-idx="89" onclick="selectStandardByIndex(89)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W70</span></td>
+      <td>930</td>
+      <td>700</td>
+      <td>500</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>3686</td>
+      <td>25.1</td>
+    </tr><tr data-idx="90" onclick="selectStandardByIndex(90)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W75</span></td>
+      <td>930</td>
+      <td>750</td>
+      <td>500</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>4136</td>
+      <td>22.9</td>
+    </tr><tr data-idx="91" onclick="selectStandardByIndex(91)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W80</span></td>
+      <td>930</td>
+      <td>800</td>
+      <td>500</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>4586</td>
+      <td>21.1</td>
+    </tr><tr data-idx="92" onclick="selectStandardByIndex(92)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W85</span></td>
+      <td>930</td>
+      <td>850</td>
+      <td>500</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>4383</td>
+      <td>25.3</td>
+    </tr><tr data-idx="93" onclick="selectStandardByIndex(93)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W90</span></td>
+      <td>930</td>
+      <td>900</td>
+      <td>500</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>4833</td>
+      <td>23.4</td>
+    </tr><tr data-idx="94" onclick="selectStandardByIndex(94)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W95</span></td>
+      <td>930</td>
+      <td>950</td>
+      <td>500</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>5283</td>
+      <td>21.8</td>
+    </tr><tr data-idx="95" onclick="selectStandardByIndex(95)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W100</span></td>
+      <td>930</td>
+      <td>1000</td>
+      <td>500</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>5733</td>
+      <td>20.4</td>
+    </tr><tr data-idx="96" onclick="selectStandardByIndex(96)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W105</span></td>
+      <td>930</td>
+      <td>1050</td>
+      <td>500</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>5530</td>
+      <td>23.7</td>
+    </tr><tr data-idx="97" onclick="selectStandardByIndex(97)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W110</span></td>
+      <td>930</td>
+      <td>1100</td>
+      <td>500</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>5980</td>
+      <td>22.3</td>
+    </tr><tr data-idx="98" onclick="selectStandardByIndex(98)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W115</span></td>
+      <td>930</td>
+      <td>1150</td>
+      <td>500</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>6430</td>
+      <td>21</td>
+    </tr><tr data-idx="99" onclick="selectStandardByIndex(99)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W120</span></td>
+      <td>930</td>
+      <td>1200</td>
+      <td>500</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>6226</td>
+      <td>24</td>
+    </tr><tr data-idx="100" onclick="selectStandardByIndex(100)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W125</span></td>
+      <td>930</td>
+      <td>1250</td>
+      <td>500</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>6676</td>
+      <td>22.7</td>
+    </tr><tr data-idx="101" onclick="selectStandardByIndex(101)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W130</span></td>
+      <td>930</td>
+      <td>1300</td>
+      <td>500</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>7126</td>
+      <td>21.6</td>
+    </tr><tr data-idx="102" onclick="selectStandardByIndex(102)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W135</span></td>
+      <td>930</td>
+      <td>1350</td>
+      <td>500</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>7576</td>
+      <td>20.5</td>
+    </tr><tr data-idx="103" onclick="selectStandardByIndex(103)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W140</span></td>
+      <td>930</td>
+      <td>1400</td>
+      <td>500</td>
+      <td>8</td>
+      <td>5.0</td>
+      <td>7373</td>
+      <td>23.1</td>
+    </tr><tr data-idx="104" onclick="selectStandardByIndex(104)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W145</span></td>
+      <td>930</td>
+      <td>1450</td>
+      <td>500</td>
+      <td>8</td>
+      <td>5.0</td>
+      <td>7823</td>
+      <td>22</td>
+    </tr><tr data-idx="105" onclick="selectStandardByIndex(105)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W150</span></td>
+      <td>930</td>
+      <td>1500</td>
+      <td>500</td>
+      <td>8</td>
+      <td>5.0</td>
+      <td>8273</td>
+      <td>21</td>
+    </tr><tr data-idx="106" onclick="selectStandardByIndex(106)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W155</span></td>
+      <td>930</td>
+      <td>1550</td>
+      <td>500</td>
+      <td>8</td>
+      <td>5.0</td>
+      <td>8723</td>
+      <td>20.2</td>
+    </tr><tr data-idx="107" onclick="selectStandardByIndex(107)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H50W160</span></td>
+      <td>930</td>
+      <td>1600</td>
+      <td>500</td>
+      <td>9</td>
+      <td>5.0</td>
+      <td>8519</td>
+      <td>22.4</td>
+    </tr><tr data-idx="108" onclick="selectStandardByIndex(108)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W55</span></td>
+      <td>1180</td>
+      <td>550</td>
+      <td>550</td>
+      <td>2</td>
+      <td>5.0</td>
+      <td>4008</td>
+      <td>21.4</td>
+    </tr><tr data-idx="109" onclick="selectStandardByIndex(109)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W60</span></td>
+      <td>1180</td>
+      <td>600</td>
+      <td>550</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>3784</td>
+      <td>28.1</td>
+    </tr><tr data-idx="110" onclick="selectStandardByIndex(110)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W65</span></td>
+      <td>1180</td>
+      <td>650</td>
+      <td>550</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>4279</td>
+      <td>25.5</td>
+    </tr><tr data-idx="111" onclick="selectStandardByIndex(111)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W70</span></td>
+      <td>1180</td>
+      <td>700</td>
+      <td>550</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>4774</td>
+      <td>23.4</td>
+    </tr><tr data-idx="112" onclick="selectStandardByIndex(112)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W75</span></td>
+      <td>1180</td>
+      <td>750</td>
+      <td>550</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>5269</td>
+      <td>21.6</td>
+    </tr><tr data-idx="113" onclick="selectStandardByIndex(113)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W80</span></td>
+      <td>1180</td>
+      <td>800</td>
+      <td>550</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>5764</td>
+      <td>20.1</td>
+    </tr><tr data-idx="114" onclick="selectStandardByIndex(114)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W85</span></td>
+      <td>1180</td>
+      <td>850</td>
+      <td>550</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>5540</td>
+      <td>24.8</td>
+    </tr><tr data-idx="115" onclick="selectStandardByIndex(115)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W90</span></td>
+      <td>1180</td>
+      <td>900</td>
+      <td>550</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>6035</td>
+      <td>23.2</td>
+    </tr><tr data-idx="116" onclick="selectStandardByIndex(116)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W95</span></td>
+      <td>1180</td>
+      <td>950</td>
+      <td>550</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>6530</td>
+      <td>21.7</td>
+    </tr><tr data-idx="117" onclick="selectStandardByIndex(117)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W100</span></td>
+      <td>1180</td>
+      <td>1000</td>
+      <td>550</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>7025</td>
+      <td>20.5</td>
+    </tr><tr data-idx="118" onclick="selectStandardByIndex(118)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W105</span></td>
+      <td>1180</td>
+      <td>1050</td>
+      <td>550</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>6801</td>
+      <td>24.4</td>
+    </tr><tr data-idx="119" onclick="selectStandardByIndex(119)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W110</span></td>
+      <td>1180</td>
+      <td>1100</td>
+      <td>550</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>7296</td>
+      <td>23</td>
+    </tr><tr data-idx="120" onclick="selectStandardByIndex(120)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W115</span></td>
+      <td>1180</td>
+      <td>1150</td>
+      <td>550</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>7791</td>
+      <td>21.8</td>
+    </tr><tr data-idx="121" onclick="selectStandardByIndex(121)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W120</span></td>
+      <td>1180</td>
+      <td>1200</td>
+      <td>550</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>8286</td>
+      <td>20.8</td>
+    </tr><tr data-idx="122" onclick="selectStandardByIndex(122)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W125</span></td>
+      <td>1180</td>
+      <td>1250</td>
+      <td>550</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>8063</td>
+      <td>24</td>
+    </tr><tr data-idx="123" onclick="selectStandardByIndex(123)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W130</span></td>
+      <td>1180</td>
+      <td>1300</td>
+      <td>550</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>8558</td>
+      <td>22.9</td>
+    </tr><tr data-idx="124" onclick="selectStandardByIndex(124)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W135</span></td>
+      <td>1180</td>
+      <td>1350</td>
+      <td>550</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>9053</td>
+      <td>21.9</td>
+    </tr><tr data-idx="125" onclick="selectStandardByIndex(125)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W140</span></td>
+      <td>1180</td>
+      <td>1400</td>
+      <td>550</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>9548</td>
+      <td>21</td>
+    </tr><tr data-idx="126" onclick="selectStandardByIndex(126)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W145</span></td>
+      <td>1180</td>
+      <td>1450</td>
+      <td>550</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>10043</td>
+      <td>20.2</td>
+    </tr><tr data-idx="127" onclick="selectStandardByIndex(127)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W150</span></td>
+      <td>1180</td>
+      <td>1500</td>
+      <td>550</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>9819</td>
+      <td>22.9</td>
+    </tr><tr data-idx="128" onclick="selectStandardByIndex(128)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W155</span></td>
+      <td>1180</td>
+      <td>1550</td>
+      <td>550</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>10314</td>
+      <td>22</td>
+    </tr><tr data-idx="129" onclick="selectStandardByIndex(129)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H55W160</span></td>
+      <td>1180</td>
+      <td>1600</td>
+      <td>550</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>10809</td>
+      <td>21.2</td>
+    </tr><tr data-idx="130" onclick="selectStandardByIndex(130)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W60</span></td>
+      <td>1180</td>
+      <td>600</td>
+      <td>600</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>4128</td>
+      <td>28.1</td>
+    </tr><tr data-idx="131" onclick="selectStandardByIndex(131)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W65</span></td>
+      <td>1180</td>
+      <td>650</td>
+      <td>600</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>4668</td>
+      <td>25.5</td>
+    </tr><tr data-idx="132" onclick="selectStandardByIndex(132)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W70</span></td>
+      <td>1180</td>
+      <td>700</td>
+      <td>600</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>5208</td>
+      <td>23.4</td>
+    </tr><tr data-idx="133" onclick="selectStandardByIndex(133)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W75</span></td>
+      <td>1180</td>
+      <td>750</td>
+      <td>600</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>5748</td>
+      <td>21.6</td>
+    </tr><tr data-idx="134" onclick="selectStandardByIndex(134)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W80</span></td>
+      <td>1180</td>
+      <td>800</td>
+      <td>600</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>6288</td>
+      <td>20.1</td>
+    </tr><tr data-idx="135" onclick="selectStandardByIndex(135)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W85</span></td>
+      <td>1180</td>
+      <td>850</td>
+      <td>600</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>6044</td>
+      <td>24.8</td>
+    </tr><tr data-idx="136" onclick="selectStandardByIndex(136)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W90</span></td>
+      <td>1180</td>
+      <td>900</td>
+      <td>600</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>6584</td>
+      <td>23.2</td>
+    </tr><tr data-idx="137" onclick="selectStandardByIndex(137)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W95</span></td>
+      <td>1180</td>
+      <td>950</td>
+      <td>600</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>7124</td>
+      <td>21.7</td>
+    </tr><tr data-idx="138" onclick="selectStandardByIndex(138)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W100</span></td>
+      <td>1180</td>
+      <td>1000</td>
+      <td>600</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>7664</td>
+      <td>20.5</td>
+    </tr><tr data-idx="139" onclick="selectStandardByIndex(139)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W105</span></td>
+      <td>1180</td>
+      <td>1050</td>
+      <td>600</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>7420</td>
+      <td>24.4</td>
+    </tr><tr data-idx="140" onclick="selectStandardByIndex(140)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W110</span></td>
+      <td>1180</td>
+      <td>1100</td>
+      <td>600</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>7960</td>
+      <td>23</td>
+    </tr><tr data-idx="141" onclick="selectStandardByIndex(141)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W115</span></td>
+      <td>1180</td>
+      <td>1150</td>
+      <td>600</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>8500</td>
+      <td>21.8</td>
+    </tr><tr data-idx="142" onclick="selectStandardByIndex(142)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W120</span></td>
+      <td>1180</td>
+      <td>1200</td>
+      <td>600</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>9040</td>
+      <td>20.8</td>
+    </tr><tr data-idx="143" onclick="selectStandardByIndex(143)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W125</span></td>
+      <td>1180</td>
+      <td>1250</td>
+      <td>600</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>8796</td>
+      <td>24</td>
+    </tr><tr data-idx="144" onclick="selectStandardByIndex(144)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W130</span></td>
+      <td>1180</td>
+      <td>1300</td>
+      <td>600</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>9336</td>
+      <td>22.9</td>
+    </tr><tr data-idx="145" onclick="selectStandardByIndex(145)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W135</span></td>
+      <td>1180</td>
+      <td>1350</td>
+      <td>600</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>9876</td>
+      <td>21.9</td>
+    </tr><tr data-idx="146" onclick="selectStandardByIndex(146)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W140</span></td>
+      <td>1180</td>
+      <td>1400</td>
+      <td>600</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>10416</td>
+      <td>21</td>
+    </tr><tr data-idx="147" onclick="selectStandardByIndex(147)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W145</span></td>
+      <td>1180</td>
+      <td>1450</td>
+      <td>600</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>10956</td>
+      <td>20.2</td>
+    </tr><tr data-idx="148" onclick="selectStandardByIndex(148)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W150</span></td>
+      <td>1180</td>
+      <td>1500</td>
+      <td>600</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>10711</td>
+      <td>22.9</td>
+    </tr><tr data-idx="149" onclick="selectStandardByIndex(149)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W155</span></td>
+      <td>1180</td>
+      <td>1550</td>
+      <td>600</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>11251</td>
+      <td>22</td>
+    </tr><tr data-idx="150" onclick="selectStandardByIndex(150)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H60W160</span></td>
+      <td>1180</td>
+      <td>1600</td>
+      <td>600</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>11791</td>
+      <td>21.2</td>
+    </tr><tr data-idx="151" onclick="selectStandardByIndex(151)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H70W70</span></td>
+      <td>1180</td>
+      <td>700</td>
+      <td>700</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>6076</td>
+      <td>23.4</td>
+    </tr><tr data-idx="152" onclick="selectStandardByIndex(152)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H70W80</span></td>
+      <td>1180</td>
+      <td>800</td>
+      <td>700</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>7336</td>
+      <td>20.1</td>
+    </tr><tr data-idx="153" onclick="selectStandardByIndex(153)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H70W90</span></td>
+      <td>1180</td>
+      <td>900</td>
+      <td>700</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>7681</td>
+      <td>23.2</td>
+    </tr><tr data-idx="154" onclick="selectStandardByIndex(154)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H70W100</span></td>
+      <td>1180</td>
+      <td>1000</td>
+      <td>700</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>8941</td>
+      <td>20.5</td>
+    </tr><tr data-idx="155" onclick="selectStandardByIndex(155)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H70W110</span></td>
+      <td>1180</td>
+      <td>1100</td>
+      <td>700</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>9286</td>
+      <td>23</td>
+    </tr><tr data-idx="156" onclick="selectStandardByIndex(156)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H70W120</span></td>
+      <td>1180</td>
+      <td>1200</td>
+      <td>700</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>10546</td>
+      <td>20.8</td>
+    </tr><tr data-idx="157" onclick="selectStandardByIndex(157)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H70W130</span></td>
+      <td>1180</td>
+      <td>1300</td>
+      <td>700</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>10891</td>
+      <td>22.9</td>
+    </tr><tr data-idx="158" onclick="selectStandardByIndex(158)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H70W140</span></td>
+      <td>1180</td>
+      <td>1400</td>
+      <td>700</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>12151</td>
+      <td>21</td>
+    </tr><tr data-idx="159" onclick="selectStandardByIndex(159)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H70W150</span></td>
+      <td>1180</td>
+      <td>1500</td>
+      <td>700</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>12497</td>
+      <td>22.9</td>
+    </tr><tr data-idx="160" onclick="selectStandardByIndex(160)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H70W160</span></td>
+      <td>1180</td>
+      <td>1600</td>
+      <td>700</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>13757</td>
+      <td>21.2</td>
+    </tr><tr data-idx="161" onclick="selectStandardByIndex(161)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H80W80</span></td>
+      <td>1180</td>
+      <td>800</td>
+      <td>800</td>
+      <td>3</td>
+      <td>5.0</td>
+      <td>8384</td>
+      <td>20.1</td>
+    </tr><tr data-idx="162" onclick="selectStandardByIndex(162)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H80W90</span></td>
+      <td>1180</td>
+      <td>900</td>
+      <td>800</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>8778</td>
+      <td>23.2</td>
+    </tr><tr data-idx="163" onclick="selectStandardByIndex(163)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H80W100</span></td>
+      <td>1180</td>
+      <td>1000</td>
+      <td>800</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>10218</td>
+      <td>20.5</td>
+    </tr><tr data-idx="164" onclick="selectStandardByIndex(164)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H80W110</span></td>
+      <td>1180</td>
+      <td>1100</td>
+      <td>800</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>10613</td>
+      <td>23</td>
+    </tr><tr data-idx="165" onclick="selectStandardByIndex(165)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H80W120</span></td>
+      <td>1180</td>
+      <td>1200</td>
+      <td>800</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>12053</td>
+      <td>20.8</td>
+    </tr><tr data-idx="166" onclick="selectStandardByIndex(166)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H80W130</span></td>
+      <td>1180</td>
+      <td>1300</td>
+      <td>800</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>12447</td>
+      <td>22.9</td>
+    </tr><tr data-idx="167" onclick="selectStandardByIndex(167)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H80W140</span></td>
+      <td>1180</td>
+      <td>1400</td>
+      <td>800</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>13887</td>
+      <td>21</td>
+    </tr><tr data-idx="168" onclick="selectStandardByIndex(168)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H80W150</span></td>
+      <td>1180</td>
+      <td>1500</td>
+      <td>800</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>14282</td>
+      <td>22.9</td>
+    </tr><tr data-idx="169" onclick="selectStandardByIndex(169)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H80W160</span></td>
+      <td>1180</td>
+      <td>1600</td>
+      <td>800</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>15722</td>
+      <td>21.2</td>
+    </tr><tr data-idx="170" onclick="selectStandardByIndex(170)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H90W90</span></td>
+      <td>1180</td>
+      <td>900</td>
+      <td>900</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>9876</td>
+      <td>23.2</td>
+    </tr><tr data-idx="171" onclick="selectStandardByIndex(171)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H90W100</span></td>
+      <td>1180</td>
+      <td>1000</td>
+      <td>900</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>11496</td>
+      <td>20.5</td>
+    </tr><tr data-idx="172" onclick="selectStandardByIndex(172)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H90W110</span></td>
+      <td>1180</td>
+      <td>1100</td>
+      <td>900</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>11939</td>
+      <td>23</td>
+    </tr><tr data-idx="173" onclick="selectStandardByIndex(173)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H90W120</span></td>
+      <td>1180</td>
+      <td>1200</td>
+      <td>900</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>13559</td>
+      <td>20.8</td>
+    </tr><tr data-idx="174" onclick="selectStandardByIndex(174)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H90W130</span></td>
+      <td>1180</td>
+      <td>1300</td>
+      <td>900</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>14003</td>
+      <td>22.9</td>
+    </tr><tr data-idx="175" onclick="selectStandardByIndex(175)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H90W140</span></td>
+      <td>1180</td>
+      <td>1400</td>
+      <td>900</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>15623</td>
+      <td>21</td>
+    </tr><tr data-idx="176" onclick="selectStandardByIndex(176)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H90W150</span></td>
+      <td>1180</td>
+      <td>1500</td>
+      <td>900</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>16067</td>
+      <td>22.9</td>
+    </tr><tr data-idx="177" onclick="selectStandardByIndex(177)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H90W160</span></td>
+      <td>1180</td>
+      <td>1600</td>
+      <td>900</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>17687</td>
+      <td>21.2</td>
+    </tr><tr data-idx="178" onclick="selectStandardByIndex(178)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H100W100</span></td>
+      <td>1180</td>
+      <td>1000</td>
+      <td>1000</td>
+      <td>4</td>
+      <td>5.0</td>
+      <td>12773</td>
+      <td>20.5</td>
+    </tr><tr data-idx="179" onclick="selectStandardByIndex(179)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H100W110</span></td>
+      <td>1180</td>
+      <td>1100</td>
+      <td>1000</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>13266</td>
+      <td>23</td>
+    </tr><tr data-idx="180" onclick="selectStandardByIndex(180)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H100W120</span></td>
+      <td>1180</td>
+      <td>1200</td>
+      <td>1000</td>
+      <td>5</td>
+      <td>5.0</td>
+      <td>15066</td>
+      <td>20.8</td>
+    </tr><tr data-idx="181" onclick="selectStandardByIndex(181)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H100W130</span></td>
+      <td>1180</td>
+      <td>1300</td>
+      <td>1000</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>15559</td>
+      <td>22.9</td>
+    </tr><tr data-idx="182" onclick="selectStandardByIndex(182)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H100W140</span></td>
+      <td>1180</td>
+      <td>1400</td>
+      <td>1000</td>
+      <td>6</td>
+      <td>5.0</td>
+      <td>17359</td>
+      <td>21</td>
+    </tr><tr data-idx="183" onclick="selectStandardByIndex(183)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H100W150</span></td>
+      <td>1180</td>
+      <td>1500</td>
+      <td>1000</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>17852</td>
+      <td>22.9</td>
+    </tr><tr data-idx="184" onclick="selectStandardByIndex(184)" style="cursor:pointer">
+      <td><span class="std-chip">SSRQ H100W160</span></td>
+      <td>1180</td>
+      <td>1600</td>
+      <td>1000</td>
+      <td>7</td>
+      <td>5.0</td>
+      <td>19652</td>
+      <td>21.2</td>
+    </tr></tbody>
+      </table>
+    </div>
+    <div class="std-note">თუ ხელით შეყვანილი ზომა კატალოგში არ არის, ზედა შედეგში დარჩება მონიშვნა „არასტანდარტული“ და რეკომენდებული უახლოესი სტანდარტული მოდელი.</div>
+  </div>
+</details>
+
+<!-- ══════════════ CALCULATOR ══════════════ -->
+<div class="section-title" id="calc-section">📊 კალკულატორი</div>
+<div class="main-grid section-gap">
+
+  <!-- INPUTS -->
+  <div class="panel">
+    <div class="phdr">შეყვანა</div>
+    <div class="pbody">
+      <div class="irow">
+        <div class="ilbl">სისტემა</div>
+        <div class="tog-row">
+          <button class="tog on" id="sys-s" onclick="setSys(&#39;s&#39;,this)">↑ მიწოდება</button>
+          <button class="tog" id="sys-e" onclick="setSys(&#39;e&#39;,this)">↓ გამოდინება</button>
+          <button class="tog" id="sys-b" onclick="setSys(&#39;b&#39;,this)">ორივე</button>
+        </div>
+      </div>
+      <div class="sdiv">სამილე განივი კვეთა</div>
+      <div class="row2">
+        <div class="irow"><div class="ilbl">სიგანე W <span class="iunit">მმ</span></div>
+          <input type="number" id="W" value="600" min="150" max="3000" step="50" oninput="calc()"></div>
+        <div class="irow"><div class="ilbl">სიმაღლე H <span class="iunit">მმ</span></div>
+          <input type="number" id="H" value="400" min="150" max="3000" step="50" oninput="calc()"></div>
+      </div>
+      <div class="infobox">შეგიძლია ხელით მიუთითო ნებისმიერი ზომა. თუ ზომა კატალოგში არ არის, შედეგში მონიშნდება როგორც <b>არასტანდარტული</b> და გამოვა უახლოესი რეკომენდებული სტანდარტული მოდელი.</div>
+      <div class="sdiv">ჰაერის ხარჯი</div>
+      <div class="irow"><div class="ilbl">Q_s მიწოდება <span class="iunit">მ³/სთ</span></div>
+        <input type="number" id="Qs" value="2500" min="100" max="100000" step="100" oninput="calc()"></div>
+      <div id="qe-row" class="irow" style="display:none">
+        <div class="ilbl">Q_e გამოდინება <span class="iunit">მ³/სთ</span></div>
+        <input type="number" id="Qe" value="2200" min="100" max="100000" step="100" oninput="calc()"></div>
+      <div class="sdiv">სამიზნე IL (ხმის შემც.) @ 500ჰც <span title="Insertion Loss — ხმაურდამხშობის შემდეგ ხმის შემცირება dB-ში. 500ჰც — ადამიანის სმენის კრიტიკური სიხშირე." style="cursor:help;color:var(--blue)">ℹ</span></div>
+      <div class="irow">
+        <div class="srow">
+          <input type="range" id="target" min="5" max="40" value="20" step="1" oninput="document.getElementById(&#39;tv&#39;).textContent=this.value;calc()">
+          <span class="sv" id="tv">20</span><span class="iunit">dB</span>
+        </div>
+        <div class="infobox">IL=Insertion Loss: ვენტ. 70dB → IL=25dB → გამავალი 45dB</div>
+      </div>
+      <div class="sdiv">L_wi ვენტ. ხმაური (სურვ.)</div>
+      <div class="lwg"><div class="lwl">63</div><div class="lwl">125</div><div class="lwl">250</div><div class="lwl">500</div><div class="lwl">1k</div><div class="lwl">2k</div><div class="lwl">4k</div><div class="lwl">8k</div></div>
+      <div class="lwg" style="margin-top:3px">
+        <input type="number" id="lw0" class="lwi" placeholder="—" min="0" max="130" oninput="calc()">
+        <input type="number" id="lw1" class="lwi" placeholder="—" min="0" max="130" oninput="calc()">
+        <input type="number" id="lw2" class="lwi" placeholder="—" min="0" max="130" oninput="calc()">
+        <input type="number" id="lw3" class="lwi" placeholder="—" min="0" max="130" oninput="calc()">
+        <input type="number" id="lw4" class="lwi" placeholder="—" min="0" max="130" oninput="calc()">
+        <input type="number" id="lw5" class="lwi" placeholder="—" min="0" max="130" oninput="calc()">
+        <input type="number" id="lw6" class="lwi" placeholder="—" min="0" max="130" oninput="calc()">
+        <input type="number" id="lw7" class="lwi" placeholder="—" min="0" max="130" oninput="calc()">
+      </div>
+      <div class="sdiv">RPM / ვენტ. სიხშირე</div>
+      <div class="tog-row" style="margin-bottom:7px">
+        <button class="tog on" id="rpm-a" onclick="setRpm(&#39;auto&#39;)">ავტო</button>
+        <button class="tog" id="rpm-m" onclick="setRpm(&#39;manual&#39;)">ხელით</button>
+      </div>
+      <div id="rpm-inp" style="display:none">
+        <div class="row2">
+          <div class="irow"><div class="ilbl">RPM</div><input type="number" id="rpm" value="1450" min="300" max="8000" step="50" oninput="calc()"></div>
+          <div class="irow"><div class="ilbl">ფარფლები</div><input type="number" id="blades" value="6" min="2" max="20" oninput="calc()"></div>
+        </div>
+      </div>
+      <div id="rpm-info" style="font-size:10px;color:var(--txt3)">RPM → ბგ. ძირ. სიხშირე</div>
+      <div class="sdiv">შენიშვნა</div>
+      <textarea id="cl-note" rows="2" style="font-family:var(--sans);font-size:12px;resize:vertical" placeholder="სპეციფიკური მოთხ., პროექტი..."></textarea>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div>
+    <div class="panel" style="margin-bottom:12px">
+      <div class="phdr"><span>შედეგები</span><span id="model-code" style="font-family:var(--mono);color:var(--blue);font-size:10px">SSRQ H40W60 · SIL-S-600x400-L930-B3-P96-MW50-100KG</span></div>
+      <div class="pbody">
+        <div class="cards">
+          <div class="card"><div class="card-l">ტიხრები</div><div class="card-v" id="m-n" style="color:var(--navy)">3</div><div class="card-u">ც</div></div>
+          <div class="card"><div class="card-l">ხვრელი a</div><div class="card-v" id="m-a">96</div><div class="card-u">მმ</div></div>
+          <div class="card"><div class="card-l">ΔP წნევა</div><div class="card-v" id="m-dp">33</div><div class="card-u">Pa</div></div>
+          <div class="card"><div class="card-l">v ხვ. სიჩქ.</div><div class="card-v" id="m-vel" style="color: var(--green);">4.5</div><div class="card-u">მ/წმ</div></div>
+          <div class="card" style="background:var(--blt)"><div class="card-l">IL @ 500ჰც <span title="ხმის შემცირება 500ჰც-ზე" style="cursor:help">ℹ</span></div><div class="card-v" id="m-il" style="color:var(--blue)">22</div><div class="card-u">dB</div></div>
+          <div class="card" style="background:var(--glt)"><div class="card-l">სავარ. წონა</div><div class="card-v" id="m-w" style="color:var(--green)">40</div><div class="card-u">კგ</div></div>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="oct">
+            <thead><tr><th class="rl">—</th><th>63</th><th>125</th><th>250</th><th>500</th><th>1k</th><th>2k</th><th>4k</th><th>8k</th><th>dB(A)</th></tr></thead>
+            <tbody>
+              <tr><td class="rl">L_wi შემ.</td><td id="tw0">91</td><td id="tw1">92</td><td id="tw2">93</td><td id="tw3">93</td><td id="tw4">93</td><td id="tw5">93</td><td id="tw6">92</td><td id="tw7">91</td><td id="twA">99</td></tr>
+              <tr style="background:var(--blt)"><td class="rl" style="color:var(--blue)">IL ხმ.შემც.</td><td id="ti0" class="vil">5</td><td id="ti1" class="vil">8</td><td id="ti2" class="vil">14</td><td id="ti3" class="vil">22</td><td id="ti4" class="vil">27</td><td id="ti5" class="vil">25</td><td id="ti6" class="vil">20</td><td id="ti7" class="vil">12</td><td id="tiA" class="vil">30</td></tr>
+              <tr style="opacity:.78"><td class="rl" style="color:var(--amber);font-size:10px">L_regen <span title="Self-noise სილენსერში. მნიშვნელ. v&gt;8მ/წმ-ზე." style="cursor:help">ℹ</span></td><td id="tr0" class="vmono" style="color:var(--amber)">7</td><td id="tr1" class="vmono" style="color:var(--amber)">15</td><td id="tr2" class="vmono" style="color:var(--amber)">23</td><td id="tr3" class="vmono" style="color:var(--amber)">29</td><td id="tr4" class="vmono" style="color:var(--amber)">27</td><td id="tr5" class="vmono" style="color:var(--amber)">23</td><td id="tr6" class="vmono" style="color:var(--amber)">17</td><td id="tr7" class="vmono" style="color:var(--amber)">9</td><td id="trA" class="vmono" style="color:var(--amber)">31</td></tr>
+              <tr><td class="rl">L_wo გამ. <small style="color:var(--txt3)">(+regen)</small></td><td id="to0" class="vfail vmono">86</td><td id="to1" class="vfail vmono">84</td><td id="to2" class="vfail vmono">80</td><td id="to3" class="vfail vmono">71</td><td id="to4" class="vfail vmono">66</td><td id="to5" class="vfail vmono">68</td><td id="to6" class="vfail vmono">72</td><td id="to7" class="vfail vmono">79</td><td id="toA">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="rpm-res" style="display:none;background:var(--blt);border:1px solid var(--bdr2);border-radius:7px;padding:9px 12px;font-size:11.5px;margin-top:8px"></div>
+        <div id="warn" class="warnbox" style=""><div class="msg-line">ℹ არჩეული სტანდარტული მოდელი: <b>SSRQ H40W60</b> (400×600×930მმ)</div><div class="msg-line">ℹ Lwi არ არის — გამ. სავ. სპ. (Eck ±10dB). გამოიყ. გაზომ. მონ.</div></div>
+        <div class="sdiv">გაბარიტული ზომები</div>
+        <div class="row3" style="gap:6px;margin-top:6px">
+          <div class="card"><div class="card-l">W სრული</div><div class="card-v" id="dim-W" style="font-size:14px">600</div><div class="card-u">მმ</div></div>
+          <div class="card"><div class="card-l">H სრული</div><div class="card-v" id="dim-H" style="font-size:14px">400</div><div class="card-u">მმ</div></div>
+          <div class="card"><div class="card-l">L სიგრძე</div><div class="card-v" id="dim-L" style="font-size:14px">930</div><div class="card-u">მმ</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="panel" id="both-panel" style="display:none">
+      <div class="phdr">ორივე მხარე</div>
+      <div class="pbody">
+        <table class="oct"><thead><tr><th class="rl">მხარე</th><th>Q მ³/სთ</th><th>v მ/წმ</th><th>ΔP Pa</th><th>IL@500</th><th>IL@1k</th><th>სტ.</th></tr></thead>
+          <tbody>
+            <tr><td class="rl">↑ მიწ.</td><td class="vmono" id="bs-q">—</td><td id="bs-v">—</td><td class="vmono" id="bs-dp">—</td><td class="vil" id="bs-i5">—</td><td class="vil" id="bs-i1k">—</td><td id="bs-st">—</td></tr>
+            <tr><td class="rl">↓ გამ.</td><td class="vmono" id="be-q">—</td><td id="be-v">—</td><td class="vmono" id="be-dp">—</td><td class="vil" id="be-i5">—</td><td class="vil" id="be-i1k">—</td><td id="be-st">—</td></tr>
+          </tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════ SIMULATION ══════════════ -->
+<div class="section-title no-print">🎯 ჰაერნაკადის სიმულაცია — SPL კვეთი</div>
+<div class="section-gap no-print">
+  <div class="panel">
+    <div class="phdr">
+      <span>ხმაურდამხშობი TOP VIEW — ჰაერნაკადი + ხმაური (RAYNOISE სტილი)</span>
+      <button id="sim-btn" onclick="toggleSim()" style="background:var(--blue);color:#fff;border:none;border-radius:7px;padding:6px 18px;font-size:12px;font-weight:600;cursor:pointer">▶ Start</button>
+    </div>
+    <div style="background:#f0f4f8;border-radius:0 0 var(--r) var(--r);overflow:hidden;border-top:1px solid var(--bdr)">
+      <canvas id="sim-canvas" height="300" style="width:100%;display:block" width="1266"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ DRAWINGS ══════════════ -->
+<div class="section-title" id="drawings-section">📐 ტექნიკური ნახაზები</div>
+<div class="draw-grid section-gap" style="page-break-inside:avoid;break-inside:avoid">
+  <div class="draw-panel">
+    <div class="draw-title">წინა ხედი — Front View (W × H)</div>
+    <div class="draw-body"><svg id="svg-front" viewBox="0 0 340 240"><defs><pattern id="h" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="4" stroke="#666" stroke-width="0.8"></line></pattern>
+<pattern id="d" patternUnits="userSpaceOnUse" width="5" height="5"><circle cx="2.5" cy="2.5" r="1" fill="#d4a050"></circle></pattern></defs><rect x="78.98" y="51.32" width="182.04" height="121.36" fill="#fff" stroke="#1a2840" stroke-width="1.5"></rect><rect x="78.98" y="51.32" width="182.04" height="2.4" fill="url(#h)"></rect><rect x="78.98" y="170.28" width="182.04" height="2.4" fill="url(#h)"></rect><rect x="78.98" y="51.32" width="2.4" height="121.36" fill="url(#h)"></rect><rect x="258.62" y="51.32" width="2.4" height="121.36" fill="url(#h)"></rect><rect x="81.38000000000001" y="53.72" width="177.23999999999998" height="116.56" fill="#e8f4ff"></rect><rect x="107.96987000000001" y="51.32" width="1.2" height="121.36" fill="#556"></rect><rect x="109.16987000000002" y="51.32" width="3.034" height="121.36" fill="#68c0e0" opacity=".8"></rect><rect x="112.20387000000002" y="51.32" width="15.17" height="121.36" fill="url(#d)"></rect><rect x="127.37387000000003" y="51.32" width="3.034" height="121.36" fill="#68c0e0" opacity=".8"></rect><rect x="128.79671000000002" y="51.32" width="1.2" height="121.36" fill="#556"></rect><rect x="158.98658" y="51.32" width="1.2" height="121.36" fill="#556"></rect><rect x="160.18658" y="51.32" width="3.034" height="121.36" fill="#68c0e0" opacity=".8"></rect><rect x="163.22057999999998" y="51.32" width="15.17" height="121.36" fill="url(#d)"></rect><rect x="178.39057999999997" y="51.32" width="3.034" height="121.36" fill="#68c0e0" opacity=".8"></rect><rect x="179.81342" y="51.32" width="1.2" height="121.36" fill="#556"></rect><rect x="210.00329" y="51.32" width="1.2" height="121.36" fill="#556"></rect><rect x="211.20328999999998" y="51.32" width="3.034" height="121.36" fill="#68c0e0" opacity=".8"></rect><rect x="214.23728999999997" y="51.32" width="15.17" height="121.36" fill="url(#d)"></rect><rect x="229.40728999999996" y="51.32" width="3.034" height="121.36" fill="#68c0e0" opacity=".8"></rect><rect x="230.83013" y="51.32" width="1.2" height="121.36" fill="#556"></rect><line x1="93.474935" y1="104" x2="93.474935" y2="114" stroke="#1a3a6b" stroke-width="1"></line><polygon points="93.474935,121 90.474935,114 96.474935,114" fill="#1a3a6b"></polygon><line x1="144.491645" y1="104" x2="144.491645" y2="114" stroke="#1a3a6b" stroke-width="1"></line><polygon points="144.491645,121 141.491645,114 147.491645,114" fill="#1a3a6b"></polygon><line x1="195.508355" y1="104" x2="195.508355" y2="114" stroke="#1a3a6b" stroke-width="1"></line><polygon points="195.508355,121 192.508355,114 198.508355,114" fill="#1a3a6b"></polygon><line x1="246.52506500000004" y1="104" x2="246.52506500000004" y2="114" stroke="#1a3a6b" stroke-width="1"></line><polygon points="246.52506500000004,121 243.52506500000004,114 249.52506500000004,114" fill="#1a3a6b"></polygon><line x1="78.98" y1="188.68" x2="261.02" y2="188.68" stroke="#1a3a6b" stroke-width="0.8"></line>
+<polygon points="83.98,191.68 83.98,185.68 78.98,188.68" fill="#1a3a6b"></polygon>
+<polygon points="256.02,191.68 256.02,185.68 261.02,188.68" fill="#1a3a6b"></polygon>
+<text x="170" y="198.68" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#1a3a6b" font-family="IBM Plex Mono,monospace">W=600მმ</text><line x1="56.980000000000004" y1="51.32" x2="56.980000000000004" y2="172.68" stroke="#1a3a6b" stroke-width="0.8"></line>
+<polygon points="53.980000000000004,56.32 59.980000000000004,56.32 56.980000000000004,51.32" fill="#1a3a6b"></polygon>
+<polygon points="53.980000000000004,167.68 59.980000000000004,167.68 56.980000000000004,172.68" fill="#1a3a6b"></polygon>
+<text x="46.980000000000004" y="112" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#1a3a6b" font-family="IBM Plex Mono,monospace">H=400მმ</text></svg></div>
+  </div>
+  <div class="draw-panel">
+    <div class="draw-title">ზედა ხედი — Top View (W × L)</div>
+    <div class="draw-body"><svg id="svg-top" viewBox="0 0 340 240"><defs><pattern id="d2" patternUnits="userSpaceOnUse" width="5" height="5"><circle cx="2.5" cy="2.5" r="1" fill="#d4a050"></circle></pattern></defs><rect x="64.6" y="49.599999999999994" width="210.8" height="124.80000000000001" fill="#fff" stroke="#1a2840" stroke-width="1.5"></rect><rect x="64.6" y="49.599999999999994" width="6.800000000000001" height="124.80000000000001" fill="#c0c8d8" opacity=".7"></rect><rect x="268.59999999999997" y="49.599999999999994" width="6.800000000000001" height="124.80000000000001" fill="#c0c8d8" opacity=".7"></rect><text x="170" y="41.599999999999994" text-anchor="middle" font-size="9" fill="#1a3a6b" font-family="IBM Plex Mono,monospace">→ ჰაერის ნაკადი →</text><rect x="71.39999999999999" y="69.4744" width="197.20000000000002" height="15.1008" fill="url(#d2)" stroke="#b0882a" stroke-width="0.4"></rect><rect x="71.39999999999999" y="104.4496" width="197.20000000000002" height="15.1008" fill="url(#d2)" stroke="#b0882a" stroke-width="0.4"></rect><rect x="71.39999999999999" y="139.4248" width="197.20000000000002" height="15.1008" fill="url(#d2)" stroke="#b0882a" stroke-width="0.4"></rect><line x1="64.6" y1="112" x2="275.4" y2="112" stroke="#dde6f2" stroke-width="0.5" stroke-dasharray="5,3"></line><line x1="64.6" y1="190.4" x2="275.4" y2="190.4" stroke="#1a3a6b" stroke-width="0.8"></line>
+<polygon points="69.6,193.4 69.6,187.4 64.6,190.4" fill="#1a3a6b"></polygon>
+<polygon points="270.4,193.4 270.4,187.4 275.4,190.4" fill="#1a3a6b"></polygon>
+<text x="170" y="200.4" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#1a3a6b" font-family="IBM Plex Mono,monospace">L=930მმ (ფლ.990მმ)</text><line x1="42.599999999999994" y1="49.599999999999994" x2="42.599999999999994" y2="174.4" stroke="#1a3a6b" stroke-width="0.8"></line>
+<polygon points="39.599999999999994,54.599999999999994 45.599999999999994,54.599999999999994 42.599999999999994,49.599999999999994" fill="#1a3a6b"></polygon>
+<polygon points="39.599999999999994,169.4 45.599999999999994,169.4 42.599999999999994,174.4" fill="#1a3a6b"></polygon>
+<text x="32.599999999999994" y="112" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#1a3a6b" font-family="IBM Plex Mono,monospace">W=600მმ</text><text x="68" y="112" text-anchor="middle" font-size="7" fill="#505870" font-family="IBM Plex Mono,monospace" transform="rotate(-90,68,112)">ფლ.30</text></svg></div>
+  </div>
+  <div class="draw-panel">
+    <div class="draw-title">გვერდი — Side View (H × L)</div>
+    <div class="draw-body"><svg id="svg-side" viewBox="0 0 340 240"><rect x="64.6" y="58" width="210.8" height="108" fill="#e8f4ff" stroke="#1a2840" stroke-width="1.5"></rect><rect x="64.6" y="58" width="6.800000000000001" height="108" fill="#c0c8d8" opacity=".8" stroke="#9099b0" stroke-width="0.5"></rect><rect x="268.59999999999997" y="58" width="6.800000000000001" height="108" fill="#c0c8d8" opacity=".8" stroke="#9099b0" stroke-width="0.5"></rect><line x1="64.6" y1="112" x2="275.4" y2="112" stroke="#dde6f2" stroke-width="0.5" stroke-dasharray="5,3"></line><line x1="170" y1="58" x2="170" y2="166" stroke="#dde6f2" stroke-width="0.5" stroke-dasharray="5,3"></line><text x="170" y="50" text-anchor="middle" font-size="9" fill="#1a3a6b" font-family="IBM Plex Mono,monospace">→ ჰაერის ნაკადი →</text><line x1="64.6" y1="182" x2="275.4" y2="182" stroke="#1a3a6b" stroke-width="0.8"></line>
+<polygon points="69.6,185 69.6,179 64.6,182" fill="#1a3a6b"></polygon>
+<polygon points="270.4,185 270.4,179 275.4,182" fill="#1a3a6b"></polygon>
+<text x="170" y="192" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#1a3a6b" font-family="IBM Plex Mono,monospace">L=930მმ (სულ 990მმ)</text><line x1="42.599999999999994" y1="58" x2="42.599999999999994" y2="166" stroke="#1a3a6b" stroke-width="0.8"></line>
+<polygon points="39.599999999999994,63 45.599999999999994,63 42.599999999999994,58" fill="#1a3a6b"></polygon>
+<polygon points="39.599999999999994,161 45.599999999999994,161 42.599999999999994,166" fill="#1a3a6b"></polygon>
+<text x="32.599999999999994" y="112" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#1a3a6b" font-family="IBM Plex Mono,monospace">H=400მმ</text><text x="68" y="112" text-anchor="middle" font-size="7" fill="#505870" font-family="IBM Plex Mono,monospace" transform="rotate(-90,68,112)">ფლ.30</text></svg></div>
+  </div>
+  <div class="draw-panel">
+    <div class="draw-title">განივი კვეთი — Cross Section</div>
+    <div class="draw-body">
+      <svg id="svg-xsec" viewBox="0 0 340 240"><defs><pattern id="hx" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="4" stroke="#666" stroke-width="0.8"></line></pattern>
+<pattern id="dx" patternUnits="userSpaceOnUse" width="5" height="5"><circle cx="2.5" cy="2.5" r="1" fill="#d4a050"></circle></pattern></defs><rect x="78.98" y="51.32" width="182.04" height="121.36" fill="white" stroke="#1a2840" stroke-width="1.5"></rect><rect x="78.98" y="51.32" width="3" height="121.36" fill="url(#hx)"></rect><rect x="258.02" y="51.32" width="3" height="121.36" fill="url(#hx)"></rect><rect x="78.98" y="51.32" width="182.04" height="3" fill="url(#hx)"></rect><rect x="78.98" y="169.68" width="182.04" height="3" fill="url(#hx)"></rect><rect x="81.98" y="54.32" width="176.04" height="115.36" fill="#daeeff"></rect><rect x="107.96987000000001" y="51.32" width="1.5" height="121.36" fill="#556"></rect><rect x="109.46987000000001" y="51.32" width="3.034" height="121.36" fill="#68c0e0" opacity=".8"></rect><rect x="112.50387000000002" y="51.32" width="15.17" height="121.36" fill="url(#dx)"></rect><rect x="127.67387000000002" y="51.32" width="3.034" height="121.36" fill="#68c0e0" opacity=".8"></rect><rect x="128.49671" y="51.32" width="1.5" height="121.36" fill="#556"></rect><rect x="158.98658" y="51.32" width="1.5" height="121.36" fill="#556"></rect><rect x="160.48658" y="51.32" width="3.034" height="121.36" fill="#68c0e0" opacity=".8"></rect><rect x="163.52058" y="51.32" width="15.17" height="121.36" fill="url(#dx)"></rect><rect x="178.69057999999998" y="51.32" width="3.034" height="121.36" fill="#68c0e0" opacity=".8"></rect><rect x="179.51342" y="51.32" width="1.5" height="121.36" fill="#556"></rect><rect x="210.00329" y="51.32" width="1.5" height="121.36" fill="#556"></rect><rect x="211.50329" y="51.32" width="3.034" height="121.36" fill="#68c0e0" opacity=".8"></rect><rect x="214.53728999999998" y="51.32" width="15.17" height="121.36" fill="url(#dx)"></rect><rect x="229.70728999999997" y="51.32" width="3.034" height="121.36" fill="#68c0e0" opacity=".8"></rect><rect x="230.53012999999999" y="51.32" width="1.5" height="121.36" fill="#556"></rect><line x1="93.474935" y1="105" x2="93.474935" y2="113" stroke="#1a3a6b" stroke-width="1"></line><polygon points="93.474935,120 90.474935,113 96.474935,113" fill="#1a3a6b"></polygon><line x1="144.491645" y1="105" x2="144.491645" y2="113" stroke="#1a3a6b" stroke-width="1"></line><polygon points="144.491645,120 141.491645,113 147.491645,113" fill="#1a3a6b"></polygon><line x1="195.508355" y1="105" x2="195.508355" y2="113" stroke="#1a3a6b" stroke-width="1"></line><polygon points="195.508355,120 192.508355,113 198.508355,113" fill="#1a3a6b"></polygon><line x1="246.52506500000004" y1="105" x2="246.52506500000004" y2="113" stroke="#1a3a6b" stroke-width="1"></line><polygon points="246.52506500000004,120 243.52506500000004,113 249.52506500000004,113" fill="#1a3a6b"></polygon><line x1="78.98" y1="188.68" x2="261.02" y2="188.68" stroke="#1a3a6b" stroke-width="0.8"></line>
+<polygon points="83.98,191.68 83.98,185.68 78.98,188.68" fill="#1a3a6b"></polygon>
+<polygon points="256.02,191.68 256.02,185.68 261.02,188.68" fill="#1a3a6b"></polygon>
+<text x="170" y="198.68" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#1a3a6b" font-family="IBM Plex Mono,monospace">W=600მმ</text><line x1="56.980000000000004" y1="51.32" x2="56.980000000000004" y2="172.68" stroke="#1a3a6b" stroke-width="0.8"></line>
+<polygon points="53.980000000000004,56.32 59.980000000000004,56.32 56.980000000000004,51.32" fill="#1a3a6b"></polygon>
+<polygon points="53.980000000000004,167.68 59.980000000000004,167.68 56.980000000000004,172.68" fill="#1a3a6b"></polygon>
+<text x="46.980000000000004" y="112" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#1a3a6b" font-family="IBM Plex Mono,monospace">H=400მმ</text><line x1="78.98" y1="200.68" x2="107.96987000000001" y2="200.68" stroke="#1a3a6b" stroke-width="0.8"></line>
+<polygon points="83.98,203.68 83.98,197.68 78.98,200.68" fill="#1a3a6b"></polygon>
+<polygon points="102.96987000000001,203.68 102.96987000000001,197.68 107.96987000000001,200.68" fill="#1a3a6b"></polygon>
+<text x="93.47493500000002" y="210.68" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#1a3a6b" font-family="IBM Plex Mono,monospace">a=96მმ</text></svg>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;padding:4px 2px;font-size:10px;color:var(--txt3)">
+        <span style="display:flex;align-items:center;gap:3px"><span style="width:11px;height:11px;background:#556;display:inline-block;border-radius:1px"></span>ფოლადი 0.8მმ</span>
+        <span style="display:flex;align-items:center;gap:3px"><span style="width:11px;height:11px;background:#e8b860;display:inline-block;border-radius:1px"></span>ქვაბამბა 50მმ</span>
+        <span style="display:flex;align-items:center;gap:3px"><span style="width:11px;height:11px;background:#68c0e0;display:inline-block;border-radius:1px"></span>G4 ფილტრი 10მმ</span>
+        <span style="display:flex;align-items:center;gap:3px"><span style="width:11px;height:11px;background:#daeeff;border:1px solid #8ab0c8;display:inline-block;border-radius:1px"></span>ჰაერი</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ 3D VIEW ══════════════ -->
+<div class="section-title view3d-section no-print" id="model-section">🧊 3D ხედი</div>
+<div class="section-gap view3d-section no-print">
+  <div class="view3d">
+    <canvas id="c3d" width="1266" height="558" style="width: 1266px; height: 558px;"></canvas>
+    <div style="position:absolute;top:10px;left:10px;display:flex;gap:6px;z-index:10">
+      <button id="rot-btn" onclick="toggleRot()" style="background:rgba(26,42,64,.82);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:7px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer">⏸ Stop</button>
+      <button onclick="zoom3d(1)" style="background:rgba(26,42,64,.82);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:7px;padding:6px 13px;font-size:15px;font-weight:600;cursor:pointer">＋</button>
+      <button onclick="zoom3d(-1)" style="background:rgba(26,42,64,.82);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:7px;padding:6px 13px;font-size:15px;font-weight:600;cursor:pointer">－</button>
+    </div>
+    <div class="hint3d">🖱 drag · scroll to zoom · numbered faces</div>
+  </div>
+</div>
+
+<!-- ══════════════ PRINT MODEL VIEWS ══════════════ -->
+<div class="section-title print-only" style="page-break-before:always">🧊 მოდელის ხედები</div>
+<div class="section-gap print-only">
+  <div class="print-model-grid">
+    <div class="print-model-card">
+      <div class="print-model-label">იზომეტრიული ხედი 01</div>
+      <img id="print-view-1" alt="Model view 1">
+    </div>
+    <div class="print-model-card">
+      <div class="print-model-label">იზომეტრიული ხედი 02</div>
+      <img id="print-view-2" alt="Model view 2">
+    </div>
+    <div class="print-model-card">
+      <div class="print-model-label">იზომეტრიული ხედი 03</div>
+      <img id="print-view-3" alt="Model view 3">
+    </div>
+    <div class="print-model-card">
+      <div class="print-model-label">იზომეტრიული ხედი 04</div>
+      <img id="print-view-4" alt="Model view 4">
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ DISCLAIMER ══════════════ -->
+<div style="padding:14px 0">
+  <div style="background:#fff8f0;border:1px solid #e0c080;border-radius:8px;padding:14px;font-size:11px;color:#7a5020;line-height:1.7">
+    <b>⚠️ პროფესიული განმარტება / სამართლებრივი შენიშვნა</b><br>
+    ეს კალკულატორი განკუთვნილია <b>საინჟინრო პირველადი შეფასებისთვის</b> VDI 2081, EN ISO 7235 და ASHRAE HVAC Applications სტანდარტების ემპირიული ფორმულების საფუძველზე.
+    გამოთვლები შეიძლება განსხვავდებოდეს ლაბორატორიული გამოცდის შედეგებისგან ±15%-ის ფარგლებში.
+    <b>საბოლოო გადაწყვეტილება უნდა მიიღოს სერტიფიცირებულმა ინჟინერმა</b> სრული პროექტის შეფასების შემდეგ.
+    KAYA პასუხისმგებლობას არ იღებს ამ კალკულატორის არასწორი გამოყენებით გამოწვეულ შედეგებზე.
+  </div>
+  <div style="background:var(--navy);color:rgba(255,255,255,.5);padding:8px 16px;border-radius:7px;font-size:10px;text-align:center;margin-top:10px">
+    © KAYA HVAC Engineering · ხმაურდამხშობის სელექცია · ყველა უფლება დაცულია · EN ISO 7235 | VDI 2081 | ASHRAE
+  </div>
+</div>
+
+
+
+<!-- hidden engineering values used by scripts -->
+<div aria-hidden="true" style="display:none">
+  <span id="m-vface">2.9</span>
+  <span id="m-oar">64</span>
+  <span id="m-regen">31</span>
+  <span id="r-dist">300–500</span>
+  <span id="r-dh">154</span>
+</div>
+
+</div><!-- /wrap -->
+
+<script src="./KAYA — ხმაურდამხშობის კალკულატორი — FINAL_files/three.min.js"></script>
+<script>
+// ══════════════════════════════════════════════════════════════════
+// KAYA Duct Silencer — Engineering Calculation Engine v3.0
+// References: VDI 2081, EN ISO 7235, ASHRAE HVAC App. Ch.48
+// ══════════════════════════════════════════════════════════════════
+
+// ── ACOUSTIC / PHYSICAL CONSTANTS ──────────────────────────────────
+/* =====================================================================
+   KAYA Duct Silencer — Engineering Calculation Engine v4.0
+   References: VDI 2081 | EN ISO 7235 | ASHRAE HVAC App. Ch.48
+   Idelchik: "Handbook of Hydraulic Resistance"
+   PRELIMINARY ENGINEERING SELECTION TOOL — not laboratory-certified.
+   ===================================================================== */
+
+/* ========================= PHYSICAL & GEOMETRY CONSTANTS ========================= */
+
+const FREQS = [63,125,250,500,1000,2000,4000,8000]; // octave band centres [Hz]
+
+// A-weighting corrections [dB] per octave band — IEC 61672-1
+const A_WEIGHT = [-26.2,-16.1,-8.6,-3.2,0.0,1.2,1.0,-1.1];
+
+// IL Reference: 50mm rockwool 100kg/m³, gap=100mm, L=1.2m [dB/band]
+// Source: VDI 2081 Pt1 Table 4, EN ISO 7235 splitter silencer data
+// ⚠ Empirical approximation — use certified data for final design
+const IL_REF_AT_100MM = [6.6,10.2,16.8,27.6,33.0,30.6,24.6,15.0];
+
+// Gap scaling exponent: IL ∝ (100/gap)^p(f)
+// Lower at low freq (wavelength >> gap) → higher at high freq (wavelength ≈ gap)
+const IL_GAP_EXPONENT = [0.60,0.65,0.75,0.80,0.85,0.85,0.85,0.80];
+
+// IL velocity degradation [dB per m/s above 5m/s threshold]
+// High split velocity → turbulence → effective IL erodes per band
+const IL_VEL_DEGRADATION  = [0.10,0.15,0.20,0.30,0.35,0.35,0.30,0.20];
+const IL_VEL_THRESHOLD_MS = 5.0; // m/s — below this, velocity effect negligible
+
+// Regenerated self-noise at v_split=10m/s [dB/band] — VDI 2081 Bild 11
+// Turbulence noise generated inside silencer passages, mid/high freq biased
+const REGEN_REF_AT_10MS = [28,36,44,50,48,44,38,30];
+
+// Estimated fan noise spectrum shape (relative) — ASHRAE 2019 Ch.48
+// Used ONLY when measured Lwi not available. Accuracy: ±10 dB typical
+const FAN_SPECTRUM_SHAPE = [0.55,0.70,0.85,1.00,0.95,0.85,0.70,0.55];
+
+// Silencer construction constants [mm]
+const BAFFLE_THICKNESS_MM   = 72.6; // 0.8+10+50+10+0.8 (steel+G4+wool+G4+steel)
+const CASING_STEEL_MM       = 0.8;
+const MINERAL_WOOL_THICK_MM = 50.0;
+let SILENCER_LENGTH_MM      = 1200;
+const FLANGE_WIDTH_MM       = 30;
+
+const STANDARD_MODELS = [{"code":"SSRQ H20W30","H_mm":200,"W_mm":300,"L_mm":930},{"code":"SSRQ H20W35","H_mm":200,"W_mm":350,"L_mm":930},{"code":"SSRQ H20W40","H_mm":200,"W_mm":400,"L_mm":930},{"code":"SSRQ H20W45","H_mm":200,"W_mm":450,"L_mm":930},{"code":"SSRQ H20W50","H_mm":200,"W_mm":500,"L_mm":930},{"code":"SSRQ H20W55","H_mm":200,"W_mm":550,"L_mm":930},{"code":"SSRQ H20W60","H_mm":200,"W_mm":600,"L_mm":930},{"code":"SSRQ H25W30","H_mm":250,"W_mm":300,"L_mm":930},{"code":"SSRQ H25W35","H_mm":250,"W_mm":350,"L_mm":930},{"code":"SSRQ H25W40","H_mm":250,"W_mm":400,"L_mm":930},{"code":"SSRQ H25W45","H_mm":250,"W_mm":450,"L_mm":930},{"code":"SSRQ H25W50","H_mm":250,"W_mm":500,"L_mm":930},{"code":"SSRQ H25W55","H_mm":250,"W_mm":550,"L_mm":930},{"code":"SSRQ H25W60","H_mm":250,"W_mm":600,"L_mm":930},{"code":"SSRQ H30W30","H_mm":300,"W_mm":300,"L_mm":930},{"code":"SSRQ H30W35","H_mm":300,"W_mm":350,"L_mm":930},{"code":"SSRQ H30W40","H_mm":300,"W_mm":400,"L_mm":930},{"code":"SSRQ H30W45","H_mm":300,"W_mm":450,"L_mm":930},{"code":"SSRQ H30W50","H_mm":300,"W_mm":500,"L_mm":930},{"code":"SSRQ H30W55","H_mm":300,"W_mm":550,"L_mm":930},{"code":"SSRQ H30W60","H_mm":300,"W_mm":600,"L_mm":930},{"code":"SSRQ H30W65","H_mm":300,"W_mm":650,"L_mm":930},{"code":"SSRQ H30W70","H_mm":300,"W_mm":700,"L_mm":930},{"code":"SSRQ H30W75","H_mm":300,"W_mm":750,"L_mm":930},{"code":"SSRQ H30W80","H_mm":300,"W_mm":800,"L_mm":930},{"code":"SSRQ H30W85","H_mm":300,"W_mm":850,"L_mm":930},{"code":"SSRQ H30W90","H_mm":300,"W_mm":900,"L_mm":930},{"code":"SSRQ H30W95","H_mm":300,"W_mm":950,"L_mm":930},{"code":"SSRQ H30W100","H_mm":300,"W_mm":1000,"L_mm":930},{"code":"SSRQ H30W105","H_mm":300,"W_mm":1050,"L_mm":930},{"code":"SSRQ H30W110","H_mm":300,"W_mm":1100,"L_mm":930},{"code":"SSRQ H30W120","H_mm":300,"W_mm":1200,"L_mm":930},{"code":"SSRQ H35W35","H_mm":350,"W_mm":350,"L_mm":930},{"code":"SSRQ H35W40","H_mm":350,"W_mm":400,"L_mm":930},{"code":"SSRQ H35W45","H_mm":350,"W_mm":450,"L_mm":930},{"code":"SSRQ H35W50","H_mm":350,"W_mm":500,"L_mm":930},{"code":"SSRQ H35W55","H_mm":350,"W_mm":550,"L_mm":930},{"code":"SSRQ H35W60","H_mm":350,"W_mm":600,"L_mm":930},{"code":"SSRQ H35W65","H_mm":350,"W_mm":650,"L_mm":930},{"code":"SSRQ H35W70","H_mm":350,"W_mm":700,"L_mm":930},{"code":"SSRQ H35W75","H_mm":350,"W_mm":750,"L_mm":930},{"code":"SSRQ H35W80","H_mm":350,"W_mm":800,"L_mm":930},{"code":"SSRQ H35W85","H_mm":350,"W_mm":850,"L_mm":930},{"code":"SSRQ H35W90","H_mm":350,"W_mm":900,"L_mm":930},{"code":"SSRQ H35W95","H_mm":350,"W_mm":950,"L_mm":930},{"code":"SSRQ H35W100","H_mm":350,"W_mm":1000,"L_mm":930},{"code":"SSRQ H35W105","H_mm":350,"W_mm":1050,"L_mm":930},{"code":"SSRQ H35W110","H_mm":350,"W_mm":1100,"L_mm":930},{"code":"SSRQ H35W120","H_mm":350,"W_mm":1200,"L_mm":930},{"code":"SSRQ H40W40","H_mm":400,"W_mm":400,"L_mm":930},{"code":"SSRQ H40W45","H_mm":400,"W_mm":450,"L_mm":930},{"code":"SSRQ H40W50","H_mm":400,"W_mm":500,"L_mm":930},{"code":"SSRQ H40W55","H_mm":400,"W_mm":550,"L_mm":930},{"code":"SSRQ H40W60","H_mm":400,"W_mm":600,"L_mm":930},{"code":"SSRQ H40W65","H_mm":400,"W_mm":650,"L_mm":930},{"code":"SSRQ H40W70","H_mm":400,"W_mm":700,"L_mm":930},{"code":"SSRQ H40W75","H_mm":400,"W_mm":750,"L_mm":930},{"code":"SSRQ H40W80","H_mm":400,"W_mm":800,"L_mm":930},{"code":"SSRQ H40W85","H_mm":400,"W_mm":850,"L_mm":930},{"code":"SSRQ H40W90","H_mm":400,"W_mm":900,"L_mm":930},{"code":"SSRQ H40W95","H_mm":400,"W_mm":950,"L_mm":930},{"code":"SSRQ H40W100","H_mm":400,"W_mm":1000,"L_mm":930},{"code":"SSRQ H40W105","H_mm":400,"W_mm":1050,"L_mm":930},{"code":"SSRQ H40W110","H_mm":400,"W_mm":1100,"L_mm":930},{"code":"SSRQ H40W120","H_mm":400,"W_mm":1200,"L_mm":930},{"code":"SSRQ H45W45","H_mm":450,"W_mm":450,"L_mm":930},{"code":"SSRQ H45W50","H_mm":450,"W_mm":500,"L_mm":930},{"code":"SSRQ H45W55","H_mm":450,"W_mm":550,"L_mm":930},{"code":"SSRQ H45W60","H_mm":450,"W_mm":600,"L_mm":930},{"code":"SSRQ H45W65","H_mm":450,"W_mm":650,"L_mm":930},{"code":"SSRQ H45W70","H_mm":450,"W_mm":700,"L_mm":930},{"code":"SSRQ H45W75","H_mm":450,"W_mm":750,"L_mm":930},{"code":"SSRQ H45W80","H_mm":450,"W_mm":800,"L_mm":930},{"code":"SSRQ H45W85","H_mm":450,"W_mm":850,"L_mm":930},{"code":"SSRQ H45W90","H_mm":450,"W_mm":900,"L_mm":930},{"code":"SSRQ H45W95","H_mm":450,"W_mm":950,"L_mm":930},{"code":"SSRQ H45W100","H_mm":450,"W_mm":1000,"L_mm":930},{"code":"SSRQ H45W105","H_mm":450,"W_mm":1050,"L_mm":930},{"code":"SSRQ H45W110","H_mm":450,"W_mm":1100,"L_mm":930},{"code":"SSRQ H45W115","H_mm":450,"W_mm":1150,"L_mm":930},{"code":"SSRQ H45W120","H_mm":450,"W_mm":1200,"L_mm":930},{"code":"SSRQ H45W125","H_mm":450,"W_mm":1250,"L_mm":930},{"code":"SSRQ H45W130","H_mm":450,"W_mm":1300,"L_mm":930},{"code":"SSRQ H45W135","H_mm":450,"W_mm":1350,"L_mm":930},{"code":"SSRQ H45W140","H_mm":450,"W_mm":1400,"L_mm":930},{"code":"SSRQ H50W50","H_mm":500,"W_mm":500,"L_mm":930},{"code":"SSRQ H50W55","H_mm":500,"W_mm":550,"L_mm":930},{"code":"SSRQ H50W60","H_mm":500,"W_mm":600,"L_mm":930},{"code":"SSRQ H50W65","H_mm":500,"W_mm":650,"L_mm":930},{"code":"SSRQ H50W70","H_mm":500,"W_mm":700,"L_mm":930},{"code":"SSRQ H50W75","H_mm":500,"W_mm":750,"L_mm":930},{"code":"SSRQ H50W80","H_mm":500,"W_mm":800,"L_mm":930},{"code":"SSRQ H50W85","H_mm":500,"W_mm":850,"L_mm":930},{"code":"SSRQ H50W90","H_mm":500,"W_mm":900,"L_mm":930},{"code":"SSRQ H50W95","H_mm":500,"W_mm":950,"L_mm":930},{"code":"SSRQ H50W100","H_mm":500,"W_mm":1000,"L_mm":930},{"code":"SSRQ H50W105","H_mm":500,"W_mm":1050,"L_mm":930},{"code":"SSRQ H50W110","H_mm":500,"W_mm":1100,"L_mm":930},{"code":"SSRQ H50W115","H_mm":500,"W_mm":1150,"L_mm":930},{"code":"SSRQ H50W120","H_mm":500,"W_mm":1200,"L_mm":930},{"code":"SSRQ H50W125","H_mm":500,"W_mm":1250,"L_mm":930},{"code":"SSRQ H50W130","H_mm":500,"W_mm":1300,"L_mm":930},{"code":"SSRQ H50W135","H_mm":500,"W_mm":1350,"L_mm":930},{"code":"SSRQ H50W140","H_mm":500,"W_mm":1400,"L_mm":930},{"code":"SSRQ H50W145","H_mm":500,"W_mm":1450,"L_mm":930},{"code":"SSRQ H50W150","H_mm":500,"W_mm":1500,"L_mm":930},{"code":"SSRQ H50W155","H_mm":500,"W_mm":1550,"L_mm":930},{"code":"SSRQ H50W160","H_mm":500,"W_mm":1600,"L_mm":930},{"code":"SSRQ H55W55","H_mm":550,"W_mm":550,"L_mm":1180},{"code":"SSRQ H55W60","H_mm":550,"W_mm":600,"L_mm":1180},{"code":"SSRQ H55W65","H_mm":550,"W_mm":650,"L_mm":1180},{"code":"SSRQ H55W70","H_mm":550,"W_mm":700,"L_mm":1180},{"code":"SSRQ H55W75","H_mm":550,"W_mm":750,"L_mm":1180},{"code":"SSRQ H55W80","H_mm":550,"W_mm":800,"L_mm":1180},{"code":"SSRQ H55W85","H_mm":550,"W_mm":850,"L_mm":1180},{"code":"SSRQ H55W90","H_mm":550,"W_mm":900,"L_mm":1180},{"code":"SSRQ H55W95","H_mm":550,"W_mm":950,"L_mm":1180},{"code":"SSRQ H55W100","H_mm":550,"W_mm":1000,"L_mm":1180},{"code":"SSRQ H55W105","H_mm":550,"W_mm":1050,"L_mm":1180},{"code":"SSRQ H55W110","H_mm":550,"W_mm":1100,"L_mm":1180},{"code":"SSRQ H55W115","H_mm":550,"W_mm":1150,"L_mm":1180},{"code":"SSRQ H55W120","H_mm":550,"W_mm":1200,"L_mm":1180},{"code":"SSRQ H55W125","H_mm":550,"W_mm":1250,"L_mm":1180},{"code":"SSRQ H55W130","H_mm":550,"W_mm":1300,"L_mm":1180},{"code":"SSRQ H55W135","H_mm":550,"W_mm":1350,"L_mm":1180},{"code":"SSRQ H55W140","H_mm":550,"W_mm":1400,"L_mm":1180},{"code":"SSRQ H55W145","H_mm":550,"W_mm":1450,"L_mm":1180},{"code":"SSRQ H55W150","H_mm":550,"W_mm":1500,"L_mm":1180},{"code":"SSRQ H55W155","H_mm":550,"W_mm":1550,"L_mm":1180},{"code":"SSRQ H55W160","H_mm":550,"W_mm":1600,"L_mm":1180},{"code":"SSRQ H60W60","H_mm":600,"W_mm":600,"L_mm":1180},{"code":"SSRQ H60W65","H_mm":600,"W_mm":650,"L_mm":1180},{"code":"SSRQ H60W70","H_mm":600,"W_mm":700,"L_mm":1180},{"code":"SSRQ H60W75","H_mm":600,"W_mm":750,"L_mm":1180},{"code":"SSRQ H60W80","H_mm":600,"W_mm":800,"L_mm":1180},{"code":"SSRQ H60W85","H_mm":600,"W_mm":850,"L_mm":1180},{"code":"SSRQ H60W90","H_mm":600,"W_mm":900,"L_mm":1180},{"code":"SSRQ H60W95","H_mm":600,"W_mm":950,"L_mm":1180},{"code":"SSRQ H60W100","H_mm":600,"W_mm":1000,"L_mm":1180},{"code":"SSRQ H60W105","H_mm":600,"W_mm":1050,"L_mm":1180},{"code":"SSRQ H60W110","H_mm":600,"W_mm":1100,"L_mm":1180},{"code":"SSRQ H60W115","H_mm":600,"W_mm":1150,"L_mm":1180},{"code":"SSRQ H60W120","H_mm":600,"W_mm":1200,"L_mm":1180},{"code":"SSRQ H60W125","H_mm":600,"W_mm":1250,"L_mm":1180},{"code":"SSRQ H60W130","H_mm":600,"W_mm":1300,"L_mm":1180},{"code":"SSRQ H60W135","H_mm":600,"W_mm":1350,"L_mm":1180},{"code":"SSRQ H60W140","H_mm":600,"W_mm":1400,"L_mm":1180},{"code":"SSRQ H60W145","H_mm":600,"W_mm":1450,"L_mm":1180},{"code":"SSRQ H60W150","H_mm":600,"W_mm":1500,"L_mm":1180},{"code":"SSRQ H60W155","H_mm":600,"W_mm":1550,"L_mm":1180},{"code":"SSRQ H60W160","H_mm":600,"W_mm":1600,"L_mm":1180},{"code":"SSRQ H70W70","H_mm":700,"W_mm":700,"L_mm":1180},{"code":"SSRQ H70W80","H_mm":700,"W_mm":800,"L_mm":1180},{"code":"SSRQ H70W90","H_mm":700,"W_mm":900,"L_mm":1180},{"code":"SSRQ H70W100","H_mm":700,"W_mm":1000,"L_mm":1180},{"code":"SSRQ H70W110","H_mm":700,"W_mm":1100,"L_mm":1180},{"code":"SSRQ H70W120","H_mm":700,"W_mm":1200,"L_mm":1180},{"code":"SSRQ H70W130","H_mm":700,"W_mm":1300,"L_mm":1180},{"code":"SSRQ H70W140","H_mm":700,"W_mm":1400,"L_mm":1180},{"code":"SSRQ H70W150","H_mm":700,"W_mm":1500,"L_mm":1180},{"code":"SSRQ H70W160","H_mm":700,"W_mm":1600,"L_mm":1180},{"code":"SSRQ H80W80","H_mm":800,"W_mm":800,"L_mm":1180},{"code":"SSRQ H80W90","H_mm":800,"W_mm":900,"L_mm":1180},{"code":"SSRQ H80W100","H_mm":800,"W_mm":1000,"L_mm":1180},{"code":"SSRQ H80W110","H_mm":800,"W_mm":1100,"L_mm":1180},{"code":"SSRQ H80W120","H_mm":800,"W_mm":1200,"L_mm":1180},{"code":"SSRQ H80W130","H_mm":800,"W_mm":1300,"L_mm":1180},{"code":"SSRQ H80W140","H_mm":800,"W_mm":1400,"L_mm":1180},{"code":"SSRQ H80W150","H_mm":800,"W_mm":1500,"L_mm":1180},{"code":"SSRQ H80W160","H_mm":800,"W_mm":1600,"L_mm":1180},{"code":"SSRQ H90W90","H_mm":900,"W_mm":900,"L_mm":1180},{"code":"SSRQ H90W100","H_mm":900,"W_mm":1000,"L_mm":1180},{"code":"SSRQ H90W110","H_mm":900,"W_mm":1100,"L_mm":1180},{"code":"SSRQ H90W120","H_mm":900,"W_mm":1200,"L_mm":1180},{"code":"SSRQ H90W130","H_mm":900,"W_mm":1300,"L_mm":1180},{"code":"SSRQ H90W140","H_mm":900,"W_mm":1400,"L_mm":1180},{"code":"SSRQ H90W150","H_mm":900,"W_mm":1500,"L_mm":1180},{"code":"SSRQ H90W160","H_mm":900,"W_mm":1600,"L_mm":1180},{"code":"SSRQ H100W100","H_mm":1000,"W_mm":1000,"L_mm":1180},{"code":"SSRQ H100W110","H_mm":1000,"W_mm":1100,"L_mm":1180},{"code":"SSRQ H100W120","H_mm":1000,"W_mm":1200,"L_mm":1180},{"code":"SSRQ H100W130","H_mm":1000,"W_mm":1300,"L_mm":1180},{"code":"SSRQ H100W140","H_mm":1000,"W_mm":1400,"L_mm":1180},{"code":"SSRQ H100W150","H_mm":1000,"W_mm":1500,"L_mm":1180},{"code":"SSRQ H100W160","H_mm":1000,"W_mm":1600,"L_mm":1180}];
+let currentStdModel = null;
+
+function normalizeDims(W_mm,H_mm){
+  return {
+    W_mm: Math.max(+W_mm||0,+H_mm||0),
+    H_mm: Math.min(+W_mm||0,+H_mm||0)
+  };
+}
+
+function selectStandardModel(W_mm,H_mm){
+  const req = normalizeDims(W_mm,H_mm);
+  const exact = STANDARD_MODELS.find(m => m.W_mm===req.W_mm && m.H_mm===req.H_mm);
+  if(exact) return {...exact, snapped:false, requested:req, isStandard:true};
+
+  const larger = STANDARD_MODELS
+    .filter(m => m.W_mm>=req.W_mm && m.H_mm>=req.H_mm)
+    .sort((a,b)=>
+      (a.W_mm*a.H_mm)-(b.W_mm*b.H_mm) ||
+      a.W_mm-b.W_mm ||
+      a.H_mm-b.H_mm
+    );
+
+  if(larger.length) return {...larger[0], snapped:true, requested:req, isStandard:false};
+
+  const sortedAll=[...STANDARD_MODELS].sort((a,b)=>
+    (a.W_mm*a.H_mm)-(b.W_mm*b.H_mm) ||
+    a.W_mm-b.W_mm ||
+    a.H_mm-b.H_mm
+  );
+  const fallback = sortedAll[sortedAll.length-1];
+  return {...fallback, snapped:true, requested:req, overflow:true, isStandard:false};
+}
+
+function getMinBafflesForTargetAtVelocity(W_mm,H_mm,target_IL_500Hz,designVelocityMs=5){
+  let best=null;
+  for(let n=1;n<=20;n++){
+    const geo=calcGeometry(W_mm,H_mm,n);
+    if(geo.gap_mm<MIN_GAP_WIDTH_MM) break;
+    const il500 = calcILAtBand(geo.gap_mm,designVelocityMs,3);
+    best={n,geo,il500};
+    if(il500>=target_IL_500Hz) return best;
+  }
+  return best;
+}
+
+function calcFlowAtSplitVelocity(geo,splitVelocityMs=5){
+  return Math.round(geo.free_area_m2 * splitVelocityMs * 3600);
+}
+
+function populateStandardDropdown(){
+  const sel=g("std-model-select");
+  if(!sel) return;
+  const current = sel.value;
+  sel.innerHTML = '<option value="">— აირჩიე სტანდარტული მოდელი —</option>' + STANDARD_MODELS.map((m,idx)=>
+    `<option value="${idx}">${m.code} · ${m.H_mm}×${m.W_mm}×${m.L_mm}მმ</option>`
+  ).join("");
+  if(current) sel.value = current;
+}
+
+function renderStandardModelTable(){
+  const tbody=g("std-model-tbody");
+  if(!tbody) return;
+  const target = (+g("target")?.value)||20;
+  const rows = STANDARD_MODELS.map((m,idx)=>{
+    // Fix: temporarily set SILENCER_LENGTH_MM to each model's own length
+    const savedL = SILENCER_LENGTH_MM;
+    SILENCER_LENGTH_MM = m.L_mm;
+    const sizing = getMinBafflesForTargetAtVelocity(m.W_mm,m.H_mm,target,5);
+    SILENCER_LENGTH_MM = savedL;
+    if(!sizing) return '';
+    const q = calcFlowAtSplitVelocity(sizing.geo,5);
+    const il = Math.round(sizing.il500*10)/10;
+    return `<tr data-idx="${idx}" onclick="selectStandardByIndex(${idx})" style="cursor:pointer">
+      <td><span class="std-chip">${m.code}</span></td>
+      <td>${m.L_mm}</td>
+      <td>${m.W_mm}</td>
+      <td>${m.H_mm}</td>
+      <td>${sizing.n}</td>
+      <td>5.0</td>
+      <td>${q}</td>
+      <td>${il}</td>
+    </tr>`;
+  }).join("");
+  tbody.innerHTML = rows;
+  highlightSelectedStandardRow();
+}
+
+function highlightSelectedStandardRow(){
+  const sel=g("std-model-select");
+  const idx = sel && sel.value!=='' ? String(sel.value) : null;
+  document.querySelectorAll("#std-model-tbody tr").forEach(tr=>{
+    tr.classList.toggle("selected-row", idx!==null && tr.dataset.idx===idx);
+  });
+}
+
+function selectStandardByIndex(idx){
+  const sel=g("std-model-select");
+  if(!sel) return;
+  if(idx===undefined || idx===null || idx===''){
+    sel.value='';
+  }else{
+    sel.value=String(idx);
+    try{ sel.focus(); }catch(e){}
+  }
+  highlightSelectedStandardRow();
+}
+
+function applySelectedStandardModel(){
+  const sel=g("std-model-select");
+  if(!sel || sel.value==='') return;
+  const idx=+sel.value;
+  const model=STANDARD_MODELS[idx];
+  if(!model) return;
+  // Set W and H
+  if(g("W")) g("W").value = model.W_mm;
+  if(g("H")) g("H").value = model.H_mm;
+  // Compute the Q shown in the table (at v_split = 5 m/s) and set Qs
+  const savedL = SILENCER_LENGTH_MM;
+  SILENCER_LENGTH_MM = model.L_mm;
+  const target = (+g("target")?.value)||20;
+  const sizing = getMinBafflesForTargetAtVelocity(model.W_mm, model.H_mm, target, 5);
+  SILENCER_LENGTH_MM = savedL;
+  if(sizing){
+    const q = calcFlowAtSplitVelocity(sizing.geo, 5);
+    if(g("Qs")) g("Qs").value = q;
+  }
+  calc();
+  const details=g("std-details");
+  if(details) details.open=false;
+  try{ sel.blur(); }catch(e){}
+}
+
+function clearStandardSelection(){
+  const sel=g("std-model-select");
+  if(sel) sel.value='';
+  highlightSelectedStandardRow();
+}
+
+
+// Material densities
+const DENSITY_STEEL_KGM3  = 7850; // [kg/m³]
+const DENSITY_MINERAL_WOOL= 100;  // [kg/m³]
+const G4_SURFACE_MASS_KGM2= 1.5;  // [kg/m²]
+const REINFORCEMENT_FACTOR= 0.08; // 8% of steel mass for stiffeners/rivets
+
+const AIR_DENSITY_KGM3 = 1.20; // standard air ~20°C [kg/m³]
+
+// Engineering limits for warnings
+const DESIGN_MAX_SPLIT_VEL_MS   = 6.0;
+const SPLIT_VEL_WARNING_MS  = 6.0;
+const SPLIT_VEL_CRITICAL_MS = 8.0;
+const MIN_GAP_WIDTH_MM      = 80;
+const MAX_PRESSURE_DROP_PA  = 400;
+const WARNING_PRESSURE_PA   = 250;
+
+let curSys="s",rpmMode="auto",autoRot=true;
+let sc3,ca3,re3,grp3,rotX=0.46,rotY=-0.92,drag=false,pmx=0,pmy=0;
+
+/* ========================= STEP 0 — INPUT COLLECTION ========================= */
+function getInputs(){
+  return {
+    W_mm:     +document.getElementById("W").value||600,
+    H_mm:     +document.getElementById("H").value||400,
+    Q_s:      +document.getElementById("Qs").value||2500,
+    Q_e:      +document.getElementById("Qe").value||2200,
+    target500:+document.getElementById("target").value||20,
+    rpm:      +document.getElementById("rpm").value||1450,
+    blades:   +document.getElementById("blades").value||6,
+    lwi:[0,1,2,3,4,5,6,7].map(i=>{
+      const val=document.getElementById("lw"+i).value;
+      return val===""?null:+val;
+    })
+  };
+}
+
+/* ========================= STEP 1 — GEOMETRY ========================= */
+/**
+ * Clear passage width (gap):
+ *   gap = (W − n × BAFFLE_THICKNESS) / (n+1)    [mm]
+ * Open area ratio:
+ *   OAR = free_area / gross_area = (n+1)×gap / W  [-]
+ * Hydraulic diameter of rectangular passage:
+ *   Dh = 2·gap·H / (gap+H)                       [m]
+ */
+function calcGeometry(W_mm,H_mm,n_baffles){
+  const n_passages = n_baffles+1;
+  // Gap between adjacent baffles (or between baffle and casing wall)
+  const gap_mm = (W_mm - n_baffles*BAFFLE_THICKNESS_MM)/n_passages;
+  // Gross duct cross-section area [m²]
+  const gross_area_m2 = (W_mm/1000)*(H_mm/1000);
+  // Free (open) area available for airflow [m²]
+  const free_area_m2  = n_passages*(gap_mm/1000)*(H_mm/1000);
+  // Open area ratio: fraction of gross area that is open [-]
+  const open_area_ratio = free_area_m2/Math.max(gross_area_m2,1e-9);
+  // Hydraulic diameter for rectangular passage [m]
+  const Dh_m = 2*(gap_mm/1000)*(H_mm/1000)/Math.max((gap_mm/1000)+(H_mm/1000),1e-9);
+  return {n_baffles,n_passages,gap_mm,gross_area_m2,free_area_m2,open_area_ratio,Dh_m};
+}
+
+/* ========================= STEP 2 — AUTO SIZING (heuristic) ========================= */
+/**
+ * Heuristic algorithm:
+ *  For n = 1,2,3...: compute gap → compute IL@500Hz → stop if IL >= target.
+ *  Stop early if gap < MIN_GAP_WIDTH_MM (impractical geometry).
+ * ⚠ This is preliminary heuristic sizing — NOT a certified acoustic selection.
+ */
+function autoSelectBaffles(W_mm,H_mm,Q_m3h,target_IL_500Hz){
+  let fallback_n = 1;
+  let fallback_vs = Infinity;
+  for(let n=1;n<=20;n++){
+    const geo=calcGeometry(W_mm,H_mm,n);
+    if(geo.gap_mm<MIN_GAP_WIDTH_MM) return fallback_n;
+    const vs_ms=(Q_m3h/3600)/Math.max(geo.free_area_m2,1e-9);
+    const il500 = calcILAtBand(geo.gap_mm,vs_ms,3);
+
+    // Keep the lowest-velocity manufacturable option as fallback
+    if(vs_ms < fallback_vs){
+      fallback_vs = vs_ms;
+      fallback_n = n;
+    }
+
+    // Primary sizing criteria:
+    // 1) target insertion loss at 500 Hz
+    // 2) split velocity limited to DESIGN_MAX_SPLIT_VEL_MS
+    if(il500 >= target_IL_500Hz && vs_ms <= DESIGN_MAX_SPLIT_VEL_MS) return n;
+  }
+  return fallback_n;
+}
+
+/* ========================= STEP 3 — VELOCITY ========================= */
+/**
+ * face_velocity  = Q [m³/s] / gross_area [m²]   at duct cross-section [m/s]
+ * split_velocity = Q [m³/s] / free_area  [m²]   inside passages [m/s]
+ * Q must be converted: Q_m3s = Q_m3h / 3600
+ * Split velocity governs pressure drop AND regenerated self-noise.
+ */
+function calcVelocity(Q_m3h,geo){
+  const Q_m3s = Q_m3h/3600;
+  const face_velocity_ms  = Q_m3s/Math.max(geo.gross_area_m2,1e-9);
+  const split_velocity_ms = Q_m3s/Math.max(geo.free_area_m2,1e-9);
+  return {Q_m3s,face_velocity_ms,split_velocity_ms};
+}
+
+/* ========================= PRESSURE DROP MODEL ========================= */
+/**
+ * ΔP = ζ_total × (ρ × v_split² / 2)     [Pa]
+ *
+ * Loss coefficients (Idelchik "Handbook of Hydraulic Resistance"):
+ *   ζ_entry  = 0.5 × (1/OAR − 1)²   sudden contraction, Idelchik §5-23
+ *   ζ_exit   = (1 − OAR)²            sudden expansion,   Idelchik §5-24
+ *   ζ_fric   = λ × L/Dh              Darcy-Weisbach friction
+ *   λ = 0.027 + 0.015×(0.05/Dh)     Darcy friction, higher than smooth for lined duct
+ *
+ * ⚠ Preliminary model — use manufacturer pressure drop data for final design.
+ */
+function calcPressureDrop(Q_m3h,geo,vel){
+  const OAR=Math.max(geo.open_area_ratio,0.05);
+  const dyn_P = 0.5*AIR_DENSITY_KGM3*Math.pow(vel.split_velocity_ms,2);
+
+  // More conservative splitter-silencer loss model:
+  // contraction + expansion + lined passage friction + edge/wake losses
+  const z_entry = 1.35*Math.pow(Math.max(1/OAR-1,0),1.7);
+  const z_exit  = Math.pow(1-OAR,1.2);
+  const lambda  = 0.065 + 0.02*(0.1/Math.max(geo.Dh_m,0.05));
+  const z_fric  = lambda*(SILENCER_LENGTH_MM/1000)/Math.max(geo.Dh_m,0.01);
+  const z_lining = 0.18*Math.pow((SILENCER_LENGTH_MM/1000)/Math.max(geo.Dh_m,0.01),0.9);
+  const z_baffle = 0.85*((1-OAR)/OAR);
+
+  const z_total = z_entry+z_exit+z_fric+z_lining+z_baffle;
+
+  return {
+    delta_P_Pa:Math.round(z_total*dyn_P),
+    dynamic_pressure_Pa:Math.round(dyn_P*10)/10,
+    zeta_total:Math.round(z_total*100)/100,
+    z_entry,z_exit,z_fric,z_lining,z_baffle
+  };
+}
+
+/* ========================= INSERTION LOSS MODEL ========================= */
+/**
+ * IL(f) = IL_REF(f) × (100/gap)^p(f) × (L/1.2) − vel_correction(f)
+ *
+ * Acoustic principles:
+ *  + IL increases with length (roughly linear for dissipative silencer)
+ *  + IL increases as gap narrows (more lined surface per unit flow area)
+ *  − 63–125 Hz: poor attenuation — dissipative silencers weak at low freq
+ *  − High velocity erodes IL: each 1 m/s above 5 m/s reduces IL by VEL_DEG[f]
+ *
+ * Valid approximately for: gap 80–300mm, L 600–2400mm, v 2–10 m/s
+ * ⚠ Empirical model — NOT EN ISO 7235 laboratory-certified values.
+ */
+function calcILAtBand(gap_mm,split_velocity_ms,band_index){
+  // Geometry contribution
+  const gap_sc  = Math.pow(100/Math.max(gap_mm,10),IL_GAP_EXPONENT[band_index]);
+  const len_sc  = (SILENCER_LENGTH_MM/1000)/1.2;
+  const il_geo  = IL_REF_AT_100MM[band_index]*gap_sc*len_sc;
+  // Velocity correction: above threshold, IL degrades
+  const dv      = Math.max(0,split_velocity_ms-IL_VEL_THRESHOLD_MS);
+  const il_vcorr= IL_VEL_DEGRADATION[band_index]*dv;
+  return Math.max(0,il_geo-il_vcorr);
+}
+
+function calcInsertionLossByBand(gap_mm,split_velocity_ms){
+  return FREQS.map((_,fi)=>Math.round(calcILAtBand(gap_mm,split_velocity_ms,fi)*10)/10);
+}
+
+/* ========================= REGENERATED NOISE MODEL ========================= */
+/**
+ * Lw_regen(f) = REGEN_REF(f) + 60·log10(v_split/10)  [dB]
+ *
+ * Turbulence self-noise in silencer passages (VDI 2081 Bild 11):
+ *  - Level scales strongly with velocity (60dB per decade = 6th power law)
+ *  - Mid/high frequency dominated (500–2000 Hz peak)
+ *  - Below ~3 m/s: negligible (<20 dB per band)
+ *  - Above 8–10 m/s: may dominate over attenuated source noise
+ * ⚠ Use manufacturer self-noise data for final acoustic verification.
+ */
+function calcRegeneratedNoiseByBand(split_velocity_ms){
+  const vel_log = 60*Math.log10(Math.max(split_velocity_ms,0.5)/10);
+  return REGEN_REF_AT_10MS.map(ref=>Math.round(ref+vel_log));
+}
+
+/* ========================= OUTLET SOUND MODEL ========================= */
+/**
+ * Energetic combination of two sound level components:
+ *   L_total = 10·log10(10^(La/10) + 10^(Lb/10))
+ *
+ * Sound energies (∝ 10^(L/10)) must be summed — NOT the dB values directly.
+ *
+ * Outlet sound per band:
+ *   L_transmitted = Lwi − IL          (source reduced by insertion loss)
+ *   L_outlet      = energeticSum(L_transmitted, L_regen)
+ *
+ * Lwi − IL alone UNDERESTIMATES outlet level when regen noise is significant.
+ */
+function sumDecibels(La,Lb){
+  return 10*Math.log10(Math.pow(10,La/10)+Math.pow(10,Lb/10));
+}
+
+function calcOutletSoundByBand(lwi_array,il_array,lregen_array){
+  return FREQS.map((_,fi)=>{
+    if(lwi_array[fi]===null) return null;
+    const L_transmitted = lwi_array[fi]-il_array[fi];
+    const L_regen       = lregen_array[fi];
+    return Math.round(sumDecibels(L_transmitted,L_regen)*10)/10;
+  });
+}
+
+/* ========================= A-WEIGHTED LEVEL LOGIC ========================= */
+/**
+ * L_A = 10·log10( Σ 10^((L_i + A_i)/10) )   [dB(A)]
+ *
+ * A-weighting (IEC 61672-1):
+ *   63Hz→-26.2,  125Hz→-16.1,  250Hz→-8.6,  500Hz→-3.2
+ *   1kHz→0.0,    2kHz→+1.2,    4kHz→+1.0,   8kHz→-1.1
+ * ⚠ Arithmetic mean of octave levels is INCORRECT. Energy must be summed.
+ */
+function calcAWeighted(level_array){
+  const energy_sum=level_array.reduce((acc,L,i)=>{
+    if(L===null||!isFinite(L)||isNaN(L)) return acc;
+    return acc+Math.pow(10,(L+A_WEIGHT[i])/10);
+  },0);
+  return energy_sum>0?Math.round(10*Math.log10(energy_sum)):null;
+}
+
+/* ========================= WEIGHT CALCULATION ========================= */
+/**
+ * m_casing    = 2·(W+H)·L·t·ρ_steel          outer casing sheet
+ * m_bfl_steel = n·2·H·L·t·ρ_steel            baffle steel skins (2 faces)
+ * m_wool      = n·t_wool·H·L·ρ_wool          mineral wool infill
+ * m_g4        = n·2·H·L·ρ_G4_surface         G4 filter facing (both sides)
+ * m_flanges   = 2·2·(W+H)·fl_w·fl_t·ρ_steel  connection flanges
+ * m_reinf     = 8% of steel mass              stiffeners, rivets, handles
+ */
+function calcWeight(W_mm,H_mm,n_baffles){
+  const W=W_mm/1000, H=H_mm/1000, L=SILENCER_LENGTH_MM/1000;
+  const t=CASING_STEEL_MM/1000;
+  const t_wool=MINERAL_WOOL_THICK_MM/1000;
+  const fl_w=FLANGE_WIDTH_MM/1000, fl_t=0.003;
+
+  const m_casing    = 2*(W+H)*L*t*DENSITY_STEEL_KGM3;
+  const m_bfl_steel = n_baffles*2*H*L*t*DENSITY_STEEL_KGM3;
+  const m_wool      = n_baffles*t_wool*H*L*DENSITY_MINERAL_WOOL;
+  const m_g4        = n_baffles*2*H*L*G4_SURFACE_MASS_KGM2;
+  const m_flanges   = 2*2*(W+H)*fl_w*fl_t*DENSITY_STEEL_KGM3;
+  const m_reinf     = (m_casing+m_bfl_steel)*REINFORCEMENT_FACTOR;
+
+  return {
+    total:       Math.round(m_casing+m_bfl_steel+m_wool+m_g4+m_flanges+m_reinf),
+    m_casing:    Math.round(m_casing*10)/10,
+    m_bfl_steel: Math.round(m_bfl_steel*10)/10,
+    m_wool:      Math.round(m_wool*10)/10,
+    m_g4:        Math.round(m_g4*10)/10,
+    m_flanges:   Math.round(m_flanges*10)/10,
+    m_reinf:     Math.round(m_reinf*10)/10
+  };
+}
+
+/* ========================= MODEL CODE GENERATOR ========================= */
+/**
+ * Format: SIL-{sys}-{W}x{H}-L{len}-B{n}-P{gap}-MW{wool}-100KG
+ *  SIL=Splitter Silencer  S/E/SE=system  B=baffle count
+ *  P=passage width [mm]   MW=mineral wool thickness [mm]
+ */
+function generateModelCode(sys,W_mm,H_mm,n,gap_mm){
+  const sc={s:"S",e:"E",b:"SE"}[sys]||"S";
+  return `SIL-${sc}-${W_mm}x${H_mm}-L${SILENCER_LENGTH_MM}-B${n}-P${Math.round(gap_mm)}-MW${Math.round(MINERAL_WOOL_THICK_MM)}-100KG`;
+}
+
+/* ========================= RPM / BPF ANALYSIS ========================= */
+/**
+ * Blade-pass frequency: f_BPF = RPM × n_blades / 60  [Hz]
+ * Fan noise peaks at BPF and harmonics (2×, 3×, 4×BPF).
+ * Used to identify which octave band receives peak fan energy.
+ */
+function calcBladePassFrequency(rpm,n_blades){
+  const f_bpf=(rpm*n_blades)/60;
+  const nearest_octave=FREQS.reduce((a,b)=>Math.abs(b-f_bpf)<Math.abs(a-f_bpf)?b:a);
+  const octave_index=FREQS.indexOf(nearest_octave);
+  const harmonics=[1,2,3,4].map(k=>({
+    order:k, freq_hz:Math.round(f_bpf*k),
+    nearest_octave:FREQS.reduce((a,b)=>Math.abs(b-f_bpf*k)<Math.abs(a-f_bpf*k)?b:a)
+  }));
+  return {f_bpf:Math.round(f_bpf),nearest_octave,octave_index,harmonics};
+}
+
+/* ========================= ESTIMATED FAN SPECTRUM ========================= */
+/**
+ * Eck formula (1973): Lw ≈ 10·log10(Q[m³/s]) + 20·log10(ΔP[Pa]) + 43  [dB]
+ * Octave shape: ASHRAE 2019 Ch.48 typical centrifugal fan
+ * ⚠ ROUGH ESTIMATE (±10 dB). Always use measured data for final design.
+ */
+function estimateFanSpectrum(Q_m3h,system_DP_Pa){
+  const Q_m3s=Q_m3h/3600;
+  const Lw=10*Math.log10(Math.max(Q_m3s,0.001))+20*Math.log10(Math.max(system_DP_Pa,10))+43;
+  const mx=Math.max(...FAN_SPECTRUM_SHAPE);
+  return FAN_SPECTRUM_SHAPE.map(s=>Math.round(Lw+10*Math.log10(s/mx)+3));
+}
+
+/* ========================= WARNING SYSTEM ========================= */
+function buildWarnings(vs_ms,gap_mm,dP_Pa,W_mm,H_mm,has_lwi){
+  const warnings=[],info=[];
+  if(vs_ms>SPLIT_VEL_CRITICAL_MS)
+    warnings.push(`⚠ v_split=${vs_ms.toFixed(1)}m/s>${SPLIT_VEL_CRITICAL_MS}m/s — დასაშვებ ზღვარს მნიშვნელოვნად აჭარბებს. W×H გაზარდე.`);
+  else if(vs_ms>SPLIT_VEL_WARNING_MS)
+    warnings.push(`⚠ v_split=${vs_ms.toFixed(1)}m/s>${SPLIT_VEL_WARNING_MS}m/s — პროექტირების ლიმიტი 6 მ/წმ გადაცილებულია.`);
+  if(gap_mm<MIN_GAP_WIDTH_MM)
+    warnings.push(`⚠ gap=${Math.round(gap_mm)}mm<${MIN_GAP_WIDTH_MM}mm — ვიწრო, წარმ. ძნ.`);
+  if(dP_Pa>MAX_PRESSURE_DROP_PA)
+    warnings.push(`⚠ ΔP=${dP_Pa}Pa>${MAX_PRESSURE_DROP_PA}Pa — გადაჭარბ. წინაღობა.`);
+  else if(dP_Pa>WARNING_PRESSURE_PA)
+    info.push(`ℹ ΔP=${dP_Pa}Pa — შეამ. სისტ. ბალანსი.`);
+  if(W_mm<200||H_mm<150)
+    warnings.push(`⚠ W×H ძ. პატარა.`);
+  if(!has_lwi)
+    info.push(`ℹ Lwi არ არის — გამ. სავ. სპ. (Eck ±10dB). გამოიყ. გაზომ. მონ.`);
+  return {warnings,info};
+}
+
+/* ========================= UI HELPERS ========================= */
+function g(id){return document.getElementById(id);}
+function s(id,val){const el=g(id);if(el)el.textContent=val;}
+function v(id){return document.getElementById(id).value;}
+function fv(x){
+  const f=parseFloat(x);
+  return`<span style="color:${f<=6?"var(--green)":f<=8?"var(--amber)":"var(--red)"}">${typeof x==="number"?x.toFixed(1):x}</span>`;
+}
+
+function formatWarnInfoHTML(warns, info, isStandard){
+  const lines = [];
+  warns.forEach(msg=>lines.push({html:msg, hot:!isStandard}));
+  info.forEach(msg=>{
+    const hot = !isStandard && (msg.includes("არასტანდარტული") || msg.includes("Lwi არ არის"));
+    lines.push({html:msg, hot});
+  });
+  return lines.map(line=>`<div class="msg-line${line.hot?' hot':''}">${line.html}</div>`).join("");
+}
+
+/* ========================= MAIN ORCHESTRATOR ========================= */
+/**
+ * calc() — sequential engineering calculation pipeline:
+ *  1→getInputs  2→autoSelectBaffles  3→calcGeometry  4→calcVelocity
+ *  5→calcPressureDrop  6→calcInsertionLossByBand  7→calcRegeneratedNoiseByBand
+ *  8→[estimateFanSpectrum if no Lwi]  9→calcOutletSoundByBand
+ * 10→calcWeight  11→calcBladePassFrequency  12→buildWarnings  13→updateUI
+ */
+function calc(){
+  const inp = getInputs();
+  const req = normalizeDims(inp.W_mm,inp.H_mm);
+  currentStdModel = selectStandardModel(req.W_mm,req.H_mm);
+  SILENCER_LENGTH_MM = currentStdModel.L_mm;
+
+  const calcW = req.W_mm;
+  const calcH = req.H_mm;
+  const isStandard = !currentStdModel.snapped;
+  const stdSel=g("std-model-select");
+  if(stdSel){
+    const exactIdx = STANDARD_MODELS.findIndex(m=>m.W_mm===calcW && m.H_mm===calcH);
+    stdSel.value = exactIdx>=0 ? String(exactIdx) : "";
+  }
+
+  const n   = autoSelectBaffles(calcW,calcH,inp.Q_s,inp.target500);
+  const geo = calcGeometry(calcW,calcH,n);
+  const vel = calcVelocity(inp.Q_s,geo);
+  const dp  = calcPressureDrop(inp.Q_s,geo,vel);
+  const ils = calcInsertionLossByBand(geo.gap_mm,vel.split_velocity_ms);
+  const lregen = calcRegeneratedNoiseByBand(vel.split_velocity_ms);
+  const has_lwi = inp.lwi.some(x=>x!==null);
+  const lwi_eff = has_lwi ? inp.lwi : estimateFanSpectrum(inp.Q_s,dp.delta_P_Pa+250);
+  const lwo = calcOutletSoundByBand(lwi_eff,ils,lregen);
+  const wt  = calcWeight(calcW,calcH,n);
+  const bpf = calcBladePassFrequency(inp.rpm,inp.blades);
+  const {warnings:warns,info} = buildWarnings(vel.split_velocity_ms,geo.gap_mm,dp.delta_P_Pa,calcW,calcH,has_lwi);
+
+  if(isStandard){
+    info.unshift(`ℹ არჩეული სტანდარტული მოდელი: <b>${currentStdModel.code}</b> (${calcH}×${calcW}×${SILENCER_LENGTH_MM}მმ)`);
+  }else{
+    info.unshift(currentStdModel.overflow
+      ? `ℹ შეყვანილი ზომა არის <b>არასტანდარტული</b> და კატალოგის მაქსიმუმსაც აჭარბებს. რეკომენდებული უახლოესი სტანდარტული მოდელი: <b>${currentStdModel.code}</b> (${currentStdModel.H_mm}×${currentStdModel.W_mm}×${currentStdModel.L_mm}მმ)`
+      : `ℹ შეყვანილი ზომა არის <b>არასტანდარტული</b>. რეკომენდებულია უახლოესი სტანდარტული მოდელი: <b>${currentStdModel.code}</b> (${currentStdModel.H_mm}×${currentStdModel.W_mm}×${currentStdModel.L_mm}მმ)`);
+  }
+
+  const mCode=isStandard
+    ? `${currentStdModel.code} · ${generateModelCode(curSys,calcW,calcH,n,geo.gap_mm)}`
+    : `CUSTOM ${calcH}x${calcW} · რეკომ.: ${currentStdModel.code}`;
+  const Dh_mm=Math.round(geo.Dh_m*1000);
+
+  s("dim-chip",isStandard
+    ? `${currentStdModel.code} · ${calcW}×${calcH}×${SILENCER_LENGTH_MM}`
+    : `CUSTOM ${calcW}×${calcH} · რეკომ.: ${currentStdModel.code}`);
+  s("model-code",mCode);
+  s("m-n",n); s("m-a",Math.round(geo.gap_mm));
+  s("m-dp",dp.delta_P_Pa); s("m-w",wt.total); s("m-il",Math.round(ils[3]));
+  s("dim-W",calcW); s("dim-H",calcH); s("dim-L",SILENCER_LENGTH_MM);
+  s("m-vface",vel.face_velocity_ms.toFixed(1));
+  s("m-oar",Math.round(geo.open_area_ratio*100));
+  s("m-regen",calcAWeighted(lregen)??"—");
+
+  const ve=g("m-vel");
+  if(ve){ve.textContent=vel.split_velocity_ms.toFixed(1);
+    ve.style.color=vel.split_velocity_ms<=DESIGN_MAX_SPLIT_VEL_MS?"var(--green)":vel.split_velocity_ms<=SPLIT_VEL_CRITICAL_MS?"var(--amber)":"var(--red)";}
+
+  FREQS.forEach((_,i)=>s("ti"+i,Math.round(ils[i])));
+  s("tiA",calcAWeighted(ils)??"—");
+  FREQS.forEach((_,i)=>{const el=g("tr"+i);if(el)el.textContent=lregen[i];});
+  const trA=g("trA");if(trA)trA.textContent=calcAWeighted(lregen)??"—";
+  FREQS.forEach((_,i)=>s("tw"+i,lwi_eff[i]!==null?lwi_eff[i]:"—"));
+  s("twA",calcAWeighted(lwi_eff)??"—");
+  FREQS.forEach((_,i)=>{
+    const el=g("to"+i);if(!el)return;
+    if(lwo[i]!==null){el.textContent=Math.max(0,Math.round(lwo[i]));
+      el.className=lwo[i]<=40?"vok vmono":"vfail vmono";}
+    else{el.textContent="—";el.className="";}
+  });
+  s("toA",has_lwi?(calcAWeighted(lwo.map(x=>x))??"—"):"—");
+
+  if(curSys==="b"){
+    g("both-panel").style.display="";
+    const velE=calcVelocity(inp.Q_e,geo);
+    const dpE=calcPressureDrop(inp.Q_e,geo,velE);
+    s("bs-q",inp.Q_s);g("bs-v").innerHTML=fv(vel.split_velocity_ms);
+    s("bs-dp",dp.delta_P_Pa);s("bs-i5",Math.round(ils[3]));s("bs-i1k",Math.round(ils[4]));
+    g("bs-st").innerHTML=vel.split_velocity_ms<=DESIGN_MAX_SPLIT_VEL_MS?"<span class='vok'>✓</span>":"<span class='vfail'>⚠</span>";
+    s("be-q",inp.Q_e);g("be-v").innerHTML=fv(velE.split_velocity_ms);
+    s("be-dp",dpE.delta_P_Pa);s("be-i5",Math.round(ils[3]));s("be-i1k",Math.round(ils[4]));
+    g("be-st").innerHTML=velE.split_velocity_ms<=DESIGN_MAX_SPLIT_VEL_MS?"<span class='vok'>✓</span>":"<span class='vfail'>⚠</span>";
+  }else g("both-panel").style.display="none";
+
+  if(rpmMode==="manual"){
+    const harm_str=bpf.harmonics.map(h=>
+      `<b>${h.freq_hz}Hz</b>(×${h.order}) IL≈${Math.round(ils[FREQS.indexOf(h.nearest_octave)])}dB`
+    ).join("  ");
+    g("rpm-res").style.display="";
+    g("rpm-res").innerHTML=`<b>BPF=${inp.rpm}×${inp.blades}/60=${bpf.f_bpf}Hz≈${bpf.nearest_octave}Hz | IL=${Math.round(ils[bpf.octave_index])}dB</b><br>
+<span style="font-size:10.5px;color:var(--txt3)">${harm_str}</span>`;
+  }else g("rpm-res").style.display="none";
+
+  const wb=g("warn");
+  const all_msgs=[...warns,...info];
+  if(all_msgs.length){
+    wb.style.display="";
+    wb.classList.toggle("nonstandard-alert", !isStandard);
+    wb.innerHTML=formatWarnInfoHTML(warns, info, isStandard);
+  }else{
+    wb.style.display="none";
+    wb.classList.remove("nonstandard-alert");
+  }
+
+  const ok=vel.split_velocity_ms<=DESIGN_MAX_SPLIT_VEL_MS&&ils[3]>=inp.target500&&geo.gap_mm>=MIN_GAP_WIDTH_MM&&dp.delta_P_Pa<=MAX_PRESSURE_DROP_PA;
+  const sb=g("st-badge");
+  sb.className="badge "+(ok?"bok":warns.length?"bfail":"bwarn");
+  sb.textContent=ok?"✓ კარგი":warns.length?"⚠ გადახედე":"~ ზღვარი";
+
+  s("r-dist",Math.round(Dh_mm*2/100)*100+"–"+Math.round(Dh_mm*3/100)*100);
+  s("r-dh",Dh_mm);
+
+  drawAll(calcW,calcH,n,geo.gap_mm);
+  build3D(calcW,calcH,n,geo.gap_mm);
+  drawSim();
+  renderStandardModelTable();
+}
+
+// ── DRAWINGS ─────────────────────────────────────────────────────────────────
+function dArr(x1,y1,x2,y2,lbl,above){
+  const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);
+  if(len<1)return"";
+  const ux=dx/len,uy=dy/len,px=-uy,py=ux;
+  const os=above?-10:10;
+  const lx=(x1+x2)/2+px*os,ly=(y1+y2)/2+py*os;
+  const s=5;
+  return`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#1a3a6b" stroke-width="0.8"/>
+<polygon points="${x1+ux*s+px*3},${y1+uy*s+py*3} ${x1+ux*s-px*3},${y1+uy*s-py*3} ${x1},${y1}" fill="#1a3a6b"/>
+<polygon points="${x2-ux*s+px*3},${y2-uy*s+py*3} ${x2-ux*s-px*3},${y2-uy*s-py*3} ${x2},${y2}" fill="#1a3a6b"/>
+<text x="${lx}" y="${ly}" text-anchor="middle" dominant-baseline="central" font-size="9" fill="#1a3a6b" font-family="IBM Plex Mono,monospace">${lbl}</text>`;
+}
+
+function drawFront(W,H,n,a,vw,vh){
+  const pad=36;
+  const sc=Math.min((vw-2*pad)/W,(vh-2*pad-20)/H)*0.82;
+  const dW=W*sc,dH=H*sc,ox=(vw-dW)/2,oy=(vh-dH)/2-8;
+  const bf=BAFFLE_THICKNESS_MM*sc,gap=a*sc;
+  const g4=10*sc,wl=50*sc,st=1.2;
+  let h=`<defs><pattern id="h" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="4" stroke="#666" stroke-width="0.8"/></pattern>
+<pattern id="d" patternUnits="userSpaceOnUse" width="5" height="5"><circle cx="2.5" cy="2.5" r="1" fill="#d4a050"/></pattern></defs>`;
+  // outer
+  h+=`<rect x="${ox}" y="${oy}" width="${dW}" height="${dH}" fill="#fff" stroke="#1a2840" stroke-width="1.5"/>`;
+  // steel hatch
+  h+=`<rect x="${ox}" y="${oy}" width="${dW}" height="${st*2}" fill="url(#h)"/>`;
+  h+=`<rect x="${ox}" y="${oy+dH-st*2}" width="${dW}" height="${st*2}" fill="url(#h)"/>`;
+  h+=`<rect x="${ox}" y="${oy}" width="${st*2}" height="${dH}" fill="url(#h)"/>`;
+  h+=`<rect x="${ox+dW-st*2}" y="${oy}" width="${st*2}" height="${dH}" fill="url(#h)"/>`;
+  // air bg
+  h+=`<rect x="${ox+st*2}" y="${oy+st*2}" width="${dW-st*4}" height="${dH-st*4}" fill="#e8f4ff"/>`;
+  // baffles
+  for(let i=0;i<n;i++){
+    const bx=ox+(i+1)*gap+i*bf;
+    h+=`<rect x="${bx}" y="${oy}" width="${st}" height="${dH}" fill="#556"/>`;
+    h+=`<rect x="${bx+st}" y="${oy}" width="${g4}" height="${dH}" fill="#68c0e0" opacity=".8"/>`;
+    h+=`<rect x="${bx+st+g4}" y="${oy}" width="${wl}" height="${dH}" fill="url(#d)"/>`;
+    h+=`<rect x="${bx+st+g4+wl}" y="${oy}" width="${g4}" height="${dH}" fill="#68c0e0" opacity=".8"/>`;
+    h+=`<rect x="${bx+bf-st}" y="${oy}" width="${st}" height="${dH}" fill="#556"/>`;
+  }
+  // airflow arrows
+  for(let i=0;i<=n;i++){
+    const gx=ox+(i*(gap+bf))+gap/2;
+    const cy=oy+dH/2;
+    h+=`<line x1="${gx}" y1="${cy-8}" x2="${gx}" y2="${cy+2}" stroke="#1a3a6b" stroke-width="1"/>`;
+    h+=`<polygon points="${gx},${cy+9} ${gx-3},${cy+2} ${gx+3},${cy+2}" fill="#1a3a6b"/>`;
+  }
+  // dims
+  h+=dArr(ox,oy+dH+16,ox+dW,oy+dH+16,`W=${W}მმ`,false);
+  h+=dArr(ox-22,oy,ox-22,oy+dH,`H=${H}მმ`,false);
+  return h;
+}
+
+function drawTop(W,H,n,a,vw,vh){
+  // top view: horizontal=L (length), vertical=W (width)
+  const padL=36,padT=28;
+  const dL=vw*0.62,dW_px=vh*0.52;
+  const ox=(vw-dL)/2,oy=(vh-dW_px)/2-8;
+  const sc_W=dW_px/W,sc_L=dL/SILENCER_LENGTH_MM;
+  const bf_L=BAFFLE_THICKNESS_MM*sc_W,gap_px=a*sc_W;
+  let h=`<defs><pattern id="d2" patternUnits="userSpaceOnUse" width="5" height="5"><circle cx="2.5" cy="2.5" r="1" fill="#d4a050"/></pattern></defs>`;
+  h+=`<rect x="${ox}" y="${oy}" width="${dL}" height="${dW_px}" fill="#fff" stroke="#1a2840" stroke-width="1.5"/>`;
+  // Flanges at ends
+  const fl_px=FLANGE_WIDTH_MM*sc_L;
+  h+=`<rect x="${ox}" y="${oy}" width="${fl_px}" height="${dW_px}" fill="#c0c8d8" opacity=".7"/>`;
+  h+=`<rect x="${ox+dL-fl_px}" y="${oy}" width="${fl_px}" height="${dW_px}" fill="#c0c8d8" opacity=".7"/>`;
+  // airflow →
+  h+=`<text x="${vw/2}" y="${oy-8}" text-anchor="middle" font-size="9" fill="#1a3a6b" font-family="IBM Plex Mono,monospace">→ ჰაერის ნაკადი →</text>`;
+  // Baffles (visible from top as horizontal stripes across width)
+  for(let i=0;i<n;i++){
+    const by=oy+(i+1)*gap_px+i*bf_L;
+    h+=`<rect x="${ox+fl_px}" y="${by}" width="${dL-2*fl_px}" height="${bf_L}" fill="url(#d2)" stroke="#b0882a" stroke-width="0.4"/>`;
+  }
+  // center lines
+  h+=`<line x1="${ox}" y1="${oy+dW_px/2}" x2="${ox+dL}" y2="${oy+dW_px/2}" stroke="#dde6f2" stroke-width="0.5" stroke-dasharray="5,3"/>`;
+  // dims: bottom = L=1200, side = W=...
+  h+=dArr(ox,oy+dW_px+16,ox+dL,oy+dW_px+16,`L=${SILENCER_LENGTH_MM}მმ (ფლ.${SILENCER_LENGTH_MM+2*FLANGE_WIDTH_MM}მმ)`,false);
+  h+=dArr(ox-22,oy,ox-22,oy+dW_px,`W=${W}მმ`,false);
+  // Flange label
+  h+=`<text x="${ox+fl_px/2}" y="${oy+dW_px/2}" text-anchor="middle" font-size="7" fill="#505870" font-family="IBM Plex Mono,monospace" transform="rotate(-90,${ox+fl_px/2},${oy+dW_px/2})">ფლ.${FLANGE_WIDTH_MM}</text>`;
+  return h;
+}
+
+function drawSide(W,H,n,a,vw,vh){
+  // side view: horizontal=L, vertical=H
+  const dL=vw*0.62,dH_px=vh*0.45;
+  const ox=(vw-dL)/2,oy=(vh-dH_px)/2-8;
+  const sc_L=dL/SILENCER_LENGTH_MM;
+  const fl_px=FLANGE_WIDTH_MM*sc_L;
+  let h="";
+  h+=`<rect x="${ox}" y="${oy}" width="${dL}" height="${dH_px}" fill="#e8f4ff" stroke="#1a2840" stroke-width="1.5"/>`;
+  // Flanges
+  h+=`<rect x="${ox}" y="${oy}" width="${fl_px}" height="${dH_px}" fill="#c0c8d8" opacity=".8" stroke="#9099b0" stroke-width="0.5"/>`;
+  h+=`<rect x="${ox+dL-fl_px}" y="${oy}" width="${fl_px}" height="${dH_px}" fill="#c0c8d8" opacity=".8" stroke="#9099b0" stroke-width="0.5"/>`;
+  // Center lines
+  h+=`<line x1="${ox}" y1="${oy+dH_px/2}" x2="${ox+dL}" y2="${oy+dH_px/2}" stroke="#dde6f2" stroke-width="0.5" stroke-dasharray="5,3"/>`;
+  h+=`<line x1="${ox+dL/2}" y1="${oy}" x2="${ox+dL/2}" y2="${oy+dH_px}" stroke="#dde6f2" stroke-width="0.5" stroke-dasharray="5,3"/>`;
+  // Airflow arrows
+  h+=`<text x="${vw/2}" y="${oy-8}" text-anchor="middle" font-size="9" fill="#1a3a6b" font-family="IBM Plex Mono,monospace">→ ჰაერის ნაკადი →</text>`;
+  // dims
+  h+=dArr(ox,oy+dH_px+16,ox+dL,oy+dH_px+16,`L=${SILENCER_LENGTH_MM}მმ (სულ ${SILENCER_LENGTH_MM+2*FLANGE_WIDTH_MM}მმ)`,false);
+  h+=dArr(ox-22,oy,ox-22,oy+dH_px,`H=${H}მმ`,false);
+  h+=`<text x="${ox+fl_px/2}" y="${oy+dH_px/2}" text-anchor="middle" font-size="7" fill="#505870" font-family="IBM Plex Mono,monospace" transform="rotate(-90,${ox+fl_px/2},${oy+dH_px/2})">ფლ.${FLANGE_WIDTH_MM}</text>`;
+  return h;
+}
+
+function drawXSec(W,H,n,a,vw,vh){
+  // cross-section: W × H, baffles full height (no wall lining)
+  const pad=36;
+  const sc=Math.min((vw-2*pad)/W,(vh-2*pad-20)/H)*0.82;
+  const dW=W*sc,dH=H*sc,ox=(vw-dW)/2,oy=(vh-dH)/2-8;
+  const bf=BAFFLE_THICKNESS_MM*sc,gap=a*sc;
+  const g4=10*sc,wl=50*sc,st=1.5;
+  let h=`<defs><pattern id="hx" patternUnits="userSpaceOnUse" width="4" height="4" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="4" stroke="#666" stroke-width="0.8"/></pattern>
+<pattern id="dx" patternUnits="userSpaceOnUse" width="5" height="5"><circle cx="2.5" cy="2.5" r="1" fill="#d4a050"/></pattern></defs>`;
+  h+=`<rect x="${ox}" y="${oy}" width="${dW}" height="${dH}" fill="white" stroke="#1a2840" stroke-width="1.5"/>`;
+  h+=`<rect x="${ox}" y="${oy}" width="${st*2}" height="${dH}" fill="url(#hx)"/>`;
+  h+=`<rect x="${ox+dW-st*2}" y="${oy}" width="${st*2}" height="${dH}" fill="url(#hx)"/>`;
+  h+=`<rect x="${ox}" y="${oy}" width="${dW}" height="${st*2}" fill="url(#hx)"/>`;
+  h+=`<rect x="${ox}" y="${oy+dH-st*2}" width="${dW}" height="${st*2}" fill="url(#hx)"/>`;
+  h+=`<rect x="${ox+st*2}" y="${oy+st*2}" width="${dW-st*4}" height="${dH-st*4}" fill="#daeeff"/>`;
+  for(let i=0;i<n;i++){
+    const bx=ox+(i+1)*gap+i*bf;
+    h+=`<rect x="${bx}" y="${oy}" width="${st}" height="${dH}" fill="#556"/>`;
+    h+=`<rect x="${bx+st}" y="${oy}" width="${g4}" height="${dH}" fill="#68c0e0" opacity=".8"/>`;
+    h+=`<rect x="${bx+st+g4}" y="${oy}" width="${wl}" height="${dH}" fill="url(#dx)"/>`;
+    h+=`<rect x="${bx+st+g4+wl}" y="${oy}" width="${g4}" height="${dH}" fill="#68c0e0" opacity=".8"/>`;
+    h+=`<rect x="${bx+bf-st}" y="${oy}" width="${st}" height="${dH}" fill="#556"/>`;
+  }
+  for(let i=0;i<=n;i++){
+    const gx=ox+(i*(gap+bf))+gap/2;
+    const cy=oy+dH/2;
+    h+=`<line x1="${gx}" y1="${cy-7}" x2="${gx}" y2="${cy+1}" stroke="#1a3a6b" stroke-width="1"/>`;
+    h+=`<polygon points="${gx},${cy+8} ${gx-3},${cy+1} ${gx+3},${cy+1}" fill="#1a3a6b"/>`;
+  }
+  h+=dArr(ox,oy+dH+16,ox+dW,oy+dH+16,`W=${W}მმ`,false);
+  h+=dArr(ox-22,oy,ox-22,oy+dH,`H=${H}მმ`,false);
+  if(n>0){
+    const g1=ox,g2=ox+gap;
+    h+=dArr(g1,oy+dH+28,g2,oy+dH+28,`a=${Math.round(a)}მმ`,false);
+  }
+  return h;
+}
+
+function drawAll(W,H,n,a){
+  const svgs=[
+    ["svg-front", drawFront(W,H,n,a,340,240)],
+    ["svg-top",   drawTop(W,H,n,a,340,240)],
+    ["svg-side",  drawSide(W,H,n,a,340,240)],
+    ["svg-xsec",  drawXSec(W,H,n,a,340,240)],
+  ];
+  svgs.forEach(([id,html])=>{const el=g(id);if(el)el.innerHTML=html;});
+}
+
+// ── THREE.JS — OPEN BOX ───────────────────────────────────────────────────
+
+
+// ── SIMULATION ──────────────────────────────────────────────────────────────
+let simActive=false,simReq=null,simT=0;
+
+function toggleSim(){
+  simActive=!simActive;
+  const btn=document.getElementById("sim-btn");
+  if(simActive){btn.textContent="⏸ Stop";runSim();}
+  else{btn.textContent="▶ Start";if(simReq)cancelAnimationFrame(simReq);}
+}
+function runSim(){if(!simActive)return;simT+=0.018;drawSim();simReq=requestAnimationFrame(runSim);}
+
+function spl(t,al){
+  t=Math.max(0,Math.min(1,t));al=al||1;
+  let r,g,b;
+  if(t<0.2){r=220;g=Math.round(t/0.2*100);b=0;}
+  else if(t<0.4){r=Math.round(220-(t-0.2)/0.2*120);g=Math.round(100+(t-0.2)/0.2*120);b=0;}
+  else if(t<0.6){r=Math.round(100-(t-0.4)/0.2*100);g=220;b=Math.round((t-0.4)/0.2*100);}
+  else if(t<0.8){r=0;g=Math.round(220-(t-0.6)/0.2*100);b=Math.round(100+(t-0.6)/0.2*120);}
+  else{r=0;g=Math.round(120-(t-0.8)/0.2*120);b=220;}
+  return"rgba("+r+","+g+","+b+","+al+")";
+}
+
+function drawSim(){
+  const cv=document.getElementById("sim-canvas");if(!cv)return;
+  const ctx=cv.getContext("2d");
+  const bnd=cv.getBoundingClientRect();
+  if(cv.width!==Math.round(bnd.width||800))cv.width=Math.round(bnd.width)||800;
+  const CW=cv.width,CH=cv.height;
+
+  const W_mm=+v("W")||600;
+  const nv=parseInt((g("m-n")||{}).textContent)||2;
+  const av=parseFloat((g("m-a")||{}).textContent)||150;
+  const Dh=parseFloat(g("r-dh")?.textContent)||480;
+  const il=parseFloat(g("m-il")?.textContent)||20;
+
+  const MT=28,MB=48,FW=68,DW=Math.min(150,CW*0.14),MR=72;
+  // Proportional silencer centered in canvas
+  const maxSW=CW-FW-DW-MR-20, maxSH=CH-MT-MB;
+  const aspect=1200/W_mm;
+  let SW,SH;
+  if(maxSW/aspect<=maxSH){SW=maxSW;SH=Math.round(maxSW/aspect);}
+  else{SH=maxSH;SW=Math.round(maxSH*aspect);}
+  // Center horizontally: fan on left, silencer centered, legend on right
+  const SX=Math.round((CW-SW)/2);  // silencer start X — centered
+  const fanX=Math.round(SX-DW-FW/2);
+  const SY=MT+Math.round((maxSH-SH)/2);
+  const scH=SH/W_mm,bfPx=72.6*scH,gPx=av*scH;
+
+  // Background
+  ctx.fillStyle="#f0f4f8";ctx.fillRect(0,0,CW,CH);
+
+  // SPL gradient zones
+  let gPre=ctx.createLinearGradient(fanX+FW/2,0,SX,0);
+  gPre.addColorStop(0,spl(0.02,0.45));gPre.addColorStop(1,spl(0.08,0.55));
+  ctx.fillStyle=gPre;ctx.fillRect(fanX+FW/2,SY,SX-(fanX+FW/2),SH);
+
+  let gSil=ctx.createLinearGradient(SX,0,SX+SW,0);
+  for(let i=0;i<=10;i++)gSil.addColorStop(i/10,spl(Math.min(i/10*(il/38)+0.05,1),0.55));
+  ctx.fillStyle=gSil;ctx.fillRect(SX,SY,SW,SH);
+
+  const tEx=Math.min(il/38,1);
+  let gPost=ctx.createLinearGradient(SX+SW,0,SX+SW+MR,0);
+  gPost.addColorStop(0,spl(tEx,0.55));gPost.addColorStop(1,spl(tEx,0.1));
+  ctx.fillStyle=gPost;ctx.fillRect(SX+SW,SY,MR,SH);
+
+  // Streamline particles in gaps
+  for(let gi=0;gi<=nv;gi++){
+    const gY=SY+gi*(gPx+bfPx)+gPx/2;
+    for(let p=0;p<8;p++){
+      const rx=(simT*88+p*(SW+DW+42)/7)%(SW+DW+48)-DW+fanX+FW/2;
+      if(rx<fanX+FW/2-4||rx>SX+SW+18)continue;
+      const tC=rx>=SX?Math.min((rx-SX)/SW*(il/34),1):0.04;
+      ctx.beginPath();ctx.arc(rx,gY,2.6,0,Math.PI*2);
+      ctx.fillStyle=spl(tC,0.92);ctx.fill();
+    }
+  }
+
+  // Sound waves before silencer
+  const amp0=SH*0.30;
+  ctx.beginPath();ctx.setLineDash([]);
+  for(let x=fanX+FW/2;x<=SX;x+=2){
+    const y=SY+SH/2+amp0*Math.sin((x/34-simT*2.4)*Math.PI*2);
+    x===Math.round(fanX+FW/2)?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle=spl(0.04,0.65);ctx.lineWidth=1.4;ctx.stroke();
+
+  // Sound waves after silencer (reduced amplitude)
+  const ampOut=amp0*Math.max(0.04,1-il/38);
+  ctx.beginPath();
+  for(let x=SX+SW;x<=SX+SW+MR-4;x+=2){
+    const y=SY+SH/2+ampOut*Math.sin((x/34-simT*2.4)*Math.PI*2);
+    x===SX+SW?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle=spl(Math.min(il/38,0.94),0.65);ctx.lineWidth=1.2;ctx.stroke();
+
+  // Silencer box
+  ctx.strokeStyle="#1a3a6b";ctx.lineWidth=2;ctx.strokeRect(SX,SY,SW,SH);
+
+  // Baffles
+  for(let i=0;i<nv;i++){
+    const by=SY+(i+1)*gPx+i*bfPx;
+    ctx.fillStyle="#bf7518";ctx.fillRect(SX,by,SW,bfPx);
+    ctx.strokeStyle="#dda030";ctx.lineWidth=0.5;ctx.strokeRect(SX,by,SW,bfPx);
+  }
+
+  // Fan
+  ctx.save();ctx.translate(fanX,SY+SH/2);
+  ctx.strokeStyle="#1a3a6b";ctx.lineWidth=1.6;
+  ctx.beginPath();ctx.arc(0,0,FW/2-6,0,Math.PI*2);ctx.stroke();
+  ctx.rotate(simT*4.5);
+  const nr=FW/2-7;
+  for(let b=0;b<6;b++){
+    ctx.save();ctx.rotate(b*Math.PI/3);
+    ctx.fillStyle="rgba(60,100,160,0.88)";
+    ctx.beginPath();ctx.ellipse(nr*0.44,0,nr*0.42,nr*0.1,0.25,0,Math.PI*2);
+    ctx.fill();ctx.restore();
+  }
+  ctx.fillStyle="#1a3a6b";ctx.beginPath();ctx.arc(0,0,nr*0.18,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  ctx.fillStyle="#1a3a6b";ctx.font="8px IBM Plex Mono,monospace";ctx.textAlign="center";
+  ctx.fillText("ვენტ.",fanX,SY+SH+16);
+
+  // Distance annotation
+  const dMX=Math.round(fanX+FW/2+DW/2);
+  ctx.strokeStyle="#1a2840";ctx.lineWidth=1;ctx.setLineDash([4,3]);
+  ctx.beginPath();ctx.moveTo(fanX+FW/2+2,SY+SH/2);ctx.lineTo(SX-2,SY+SH/2);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle="#1a2840";ctx.font="bold 9px IBM Plex Mono,monospace";ctx.textAlign="center";
+  ctx.fillText("≥"+Math.round(Dh*2/100)*100+"მმ",dMX,SY+SH/2-8);
+  ctx.font="7px IBM Plex Mono,monospace";ctx.fillStyle="#1a2840";
+  ctx.fillText("SysEffect",dMX,SY+SH/2+11);
+
+  // Labels
+  ctx.setLineDash([]);
+  ctx.fillStyle="#1a3a6b";ctx.font="9px IBM Plex Mono,monospace";ctx.textAlign="center";
+  ctx.fillText("L = "+SILENCER_LENGTH_MM+"მმ",SX+SW/2,SY-7);
+  // W label on right side of silencer (vertical)
+  ctx.save();ctx.translate(SX+SW+42,SY+SH/2);ctx.rotate(-Math.PI/2);
+  ctx.fillStyle="#1a3a6b";ctx.font="8px IBM Plex Mono,monospace";ctx.textAlign="center";
+  ctx.fillText("W="+W_mm+"მმ",0,0);ctx.restore();
+  ctx.fillStyle="#1a2840";ctx.font="bold 10px IBM Plex Mono,monospace";ctx.textAlign="center";
+  ctx.fillText("IL = "+Math.round(il)+" dB @ 500ჰც",SX+SW/2,SY+SH+17);
+  ctx.font="8px IBM Plex Mono,monospace";ctx.fillStyle="#5070a0";
+  ctx.fillText(nv+" ტ. / a="+Math.round(av)+"მმ",SX+SW/2,SY+SH+29);
+
+  // SPL Legend
+  const LX=SX+SW+16,LY=SY,LH=SH,LW=14;
+  const lg=ctx.createLinearGradient(0,LY,0,LY+LH);
+  for(let i=0;i<=8;i++)lg.addColorStop(i/8,spl(i/8,1));
+  ctx.fillStyle=lg;ctx.fillRect(LX,LY,LW,LH);
+  ctx.strokeStyle="#1a3a6b";ctx.lineWidth=0.8;ctx.strokeRect(LX,LY,LW,LH);
+  ctx.fillStyle="#1a3a6b";ctx.font="7px IBM Plex Mono,monospace";ctx.textAlign="left";
+  ctx.fillText("SPL",LX,LY-5);
+  ctx.fillText("Hi",LX+LW+2,LY+8);
+  ctx.fillText("Lo",LX+LW+2,LY+LH-2);
+}
+
+function zoom3d(d){if(ca3)ca3.position.z=Math.max(1.5,Math.min(14,ca3.position.z-d*0.6)),r3d();}
+function toggleRot(){autoRot=!autoRot;const b=document.getElementById("rot-btn");if(b)b.textContent=autoRot?"⏸ Stop":"▶ Play";}
+function init3D(){
+  const cv=g("c3d"); if(!cv||!window.THREE)return;
+  const wrap=cv.parentElement, w=wrap.clientWidth||700, h=wrap.clientHeight||340;
+  cv.width=w; cv.height=h;
+  sc3=new THREE.Scene();
+  ca3=new THREE.PerspectiveCamera(42,w/h,0.01,200);
+  ca3.position.set(0,0,4.4);
+  re3=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+  re3.setSize(w,h); re3.setClearColor(0,0);
+  sc3.add(new THREE.AmbientLight(0xffffff,.55));
+  const d1=new THREE.DirectionalLight(0xffffff,.85); d1.position.set(3,4,5); sc3.add(d1);
+  const d2=new THREE.DirectionalLight(0x8899ff,.3); d2.position.set(-3,-2,-3); sc3.add(d2);
+  grp3=new THREE.Group(); sc3.add(grp3);
+  cv.addEventListener("mousedown",e=>{drag=true;pmx=e.clientX;pmy=e.clientY;});
+  window.addEventListener("mousemove",e=>{if(!drag)return;rotY+=(e.clientX-pmx)*.012;rotX+=(e.clientY-pmy)*.012;rotX=Math.max(-1.4,Math.min(1.4,rotX));pmx=e.clientX;pmy=e.clientY;r3d();});
+  window.addEventListener("mouseup",()=>drag=false);
+  cv.addEventListener("touchstart",e=>{drag=true;pmx=e.touches[0].clientX;pmy=e.touches[0].clientY;},{passive:true});
+  cv.addEventListener("touchmove",e=>{if(!drag)return;rotY+=(e.touches[0].clientX-pmx)*.012;rotX+=(e.touches[0].clientY-pmy)*.012;pmx=e.touches[0].clientX;pmy=e.touches[0].clientY;r3d();},{passive:true});
+  cv.addEventListener("touchend",()=>drag=false);
+  cv.addEventListener("wheel",e=>{ca3.position.z=Math.max(1.5,Math.min(14,ca3.position.z+e.deltaY*.008));r3d();e.preventDefault();},{passive:false});
+  window.addEventListener("resize",()=>{
+    const w=wrap.clientWidth||700, h=wrap.clientHeight||340;
+    cv.width=w; cv.height=h;
+    if(ca3){ca3.aspect=w/h; ca3.updateProjectionMatrix();}
+    if(re3)re3.setSize(w,h);
+    drawSim();
+    r3d();
+  });
+  (function anim(){requestAnimationFrame(anim);if(!drag&&autoRot){rotY+=.004;r3d();}})();
+}
+
+function build3D(Wmm,Hmm,n,amm){
+  if(!grp3||!window.THREE)return;
+  while(grp3.children.length)grp3.remove(grp3.children[0]);
+  const mx=Math.max(Wmm,Hmm,SILENCER_LENGTH_MM);
+  const S=3.2/mx;
+  const W=Wmm*S,H=Hmm*S,L=SILENCER_LENGTH_MM*S,fl=FLANGE_WIDTH_MM*S;
+  const bf=BAFFLE_THICKNESS_MM*S,a=amm*S,g4=10*S,wl=50*S;
+  const st=Math.max(0.8*S,0.018);
+
+  // Materials — glass-box style from v1
+  const mGlass=new THREE.MeshPhongMaterial({color:0x8898b8,transparent:true,opacity:0.22,side:THREE.DoubleSide,depthWrite:false});
+  const mEdge =new THREE.LineBasicMaterial({color:0x2a4a80});
+  const mWool =new THREE.MeshPhongMaterial({color:0xf0a840});
+  const mG4   =new THREE.MeshPhongMaterial({color:0x78c8e8,transparent:true,opacity:0.82});
+  const mSkin =new THREE.MeshPhongMaterial({color:0x7888a0});
+  const mFlg  =new THREE.MeshPhongMaterial({color:0x4a6080});
+  const mCapFront = new THREE.MeshPhongMaterial({color:0xcc7a00});
+  const mCapBack  = new THREE.MeshPhongMaterial({color:0x0f4c81});
+  const mCapEdge  = new THREE.LineBasicMaterial({color:0xffffff});
+
+  const mk=(w,h,l,x,y,z,m)=>{const me=new THREE.Mesh(new THREE.BoxGeometry(w,h,l),m);me.position.set(x,y,z);grp3.add(me); return me;};
+
+  // Front/back (W×H) — სრულიად ამოღებულია, ჰაერი შედის/გამოდის
+  // Top/bottom (W×L) + Left/right (H×L) — გამჭირვალე
+  const wh=Math.max(st*3, 0.025);
+  const mT=new THREE.MeshPhongMaterial({color:0x4a6888,transparent:true,opacity:0.30,side:THREE.DoubleSide,depthWrite:false});
+  mk(W,  wh, L, 0,  H/2, 0, mT);  // top    (W×L)
+  mk(W,  wh, L, 0, -H/2, 0, mT);  // bottom (W×L)
+  mk(wh, H,  L,-W/2, 0,  0, mT);  // left   (H×L)
+  mk(wh, H,  L, W/2, 0,  0, mT);  // right  (H×L)
+  // Wireframe — ყველა 12 კიდე
+  const hg=new THREE.BoxGeometry(W,H,L);
+  grp3.add(new THREE.LineSegments(new THREE.EdgesGeometry(hg),mEdge));
+
+  // Flanges — hidden in 3D (visible in technical drawings)
+
+  // Baffles — wool core + G4 faces + steel skins + visible end caps
+  for(let i=0;i<n;i++){
+    const cx=-W/2+(i+1)*a+i*bf+bf/2;
+    mk(wl, H,L, cx,0,0, mWool);
+    mk(g4, H,L, cx-wl/2-g4/2,0,0, mG4);
+    mk(g4, H,L, cx+wl/2+g4/2,0,0, mG4);
+    mk(st, H,L, cx-bf/2+st/2,0,0, mSkin);
+    mk(st, H,L, cx+bf/2-st/2,0,0, mSkin);
+
+    // front / back caps to make each baffle count visually obvious
+    const frontCap = mk(bf*0.92, H*0.92, Math.max(st*2,0.018), cx, 0, -L/2 + Math.max(st*1.2,0.02), mCapFront);
+    const backCap  = mk(bf*0.92, H*0.92, Math.max(st*2,0.018), cx, 0,  L/2 - Math.max(st*1.2,0.02), mCapBack);
+    const frontEdges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(bf*0.92, H*0.92, Math.max(st*2,0.018))), mCapEdge); frontEdges.position.set(cx,0,-L/2 + Math.max(st*1.2,0.02)); grp3.add(frontEdges);
+    const backEdges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(bf*0.92, H*0.92, Math.max(st*2,0.018))), mCapEdge); backEdges.position.set(cx,0, L/2 - Math.max(st*1.2,0.02)); grp3.add(backEdges);
+  }
+
+  const badge=g("baffle-badge");
+  if(badge) badge.textContent=`ტიხრები: ${n} ც`;
+
+  r3d();
+}
+
+function r3d(){if(!re3)return;grp3.rotation.x=rotX;grp3.rotation.y=rotY;re3.render(sc3,ca3);}
+
+// ── UI ─────────────────────────────────────────────────────────────────────
+function setSys(sys,btn){
+  curSys=sys;
+  ["sys-s","sys-e","sys-b"].forEach(id=>g(id).classList.remove("on"));
+  btn.classList.add("on");
+  g("qe-row").style.display=sys==="b"?"":"none";
+  calc();
+}
+function setRpm(mode){
+  rpmMode=mode;
+  g("rpm-a").classList.toggle("on",mode==="auto");
+  g("rpm-m").classList.toggle("on",mode==="manual");
+  g("rpm-inp").style.display=mode==="manual"?"":"none";
+  if(mode==="auto")g("rpm-res").style.display="none";
+  calc();
+}
+function set3DViewForPrint(rx,ry,zoomZ){
+  if(!ca3||!grp3)return;
+  rotX=rx;
+  rotY=ry;
+  ca3.position.z=zoomZ||6;
+  r3d();
+}
+
+function capturePrintViews(){
+  const canvas=g("c3d");
+  if(!canvas||!re3||!grp3)return;
+  const prev={rotX,rotY,z:ca3.position.z,autoRot};
+  autoRot=false;
+  const views=[
+    {id:"print-view-1", rx:0.55,  ry:-0.88, z:4.3},
+    {id:"print-view-2", rx:0.50,  ry: 0.65, z:4.8},
+    {id:"print-view-3", rx:-0.20, ry:-2.25, z:5.0},
+    {id:"print-view-4", rx:1.10,  ry: 0.55, z:4.9}
+  ];
+  views.forEach(vw=>{
+    set3DViewForPrint(vw.rx,vw.ry,vw.z);
+    const img=g(vw.id);
+    if(img) img.src=canvas.toDataURL("image/png");
+  });
+  rotX=prev.rotX;
+  rotY=prev.rotY;
+  ca3.position.z=prev.z;
+  autoRot=prev.autoRot;
+  r3d();
+}
+
+function exportPDF(){
+  calc(); // refresh all
+  try{capturePrintViews();}catch(err){console.warn("Print views capture skipped:", err);}
+  setTimeout(()=>window.print(),350);
+}
+
+
+function setupMobileNav(){
+  const links=[...document.querySelectorAll('.mobile-nav a')];
+  if(!links.length) return;
+  const sections=links.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  links.forEach(link=>{
+    link.addEventListener('click',e=>{
+      const target=document.querySelector(link.getAttribute('href'));
+      if(!target) return;
+      e.preventDefault();
+      const offset=window.innerWidth<=820?170:20;
+      const top=target.getBoundingClientRect().top+window.scrollY-offset;
+      window.scrollTo({top,behavior:'smooth'});
+    });
+  });
+  const setActive=()=>{
+    const offset=window.innerWidth<=820?220:80;
+    let activeId='#calc-section';
+    sections.forEach(section=>{
+      if(section.getBoundingClientRect().top<=offset) activeId='#'+section.id;
+    });
+    links.forEach(link=>link.classList.toggle('active', link.getAttribute('href')===activeId));
+  };
+  window.addEventListener('scroll',setActive,{passive:true});
+  window.addEventListener('resize',setActive);
+  setActive();
+}
+
+// ── INIT ───────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded",()=>{
+  const now=new Date();
+  const dateField=g("cl-date");
+  if(dateField)dateField.value=now.toLocaleDateString("ka-GE")+" "+now.toLocaleTimeString("ka-GE",{hour:"2-digit",minute:"2-digit"});
+  populateStandardDropdown();
+  setupMobileNav();
+  try{init3D();}catch(err){console.warn("3D init skipped:", err);}
+  try{calc();}catch(err){console.error("Calculation init failed:", err);}
+});
+</script>
+
+</body></html>

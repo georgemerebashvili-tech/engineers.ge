@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  /* Surfaces */
+  --bg: #f2f5fa;
+  --sur: #ffffff;
+  --sur-2: #f7f9fd;
+  --bdr: #dde6f2;
+  --bdr-2: #c4d4e8;
+
+  /* Brand */
+  --navy: #1a3a6b;
+  --navy-2: #0f2550;
+
+  /* Interactive */
+  --blue: #1f6fd4;
+  --blue-lt: #e8f1fd;
+  --blue-bd: #b8d0f0;
+
+  /* Semantic */
+  --ora: #c05010;
+  --ora-lt: #fff5ea;
+  --ora-bd: #e8c080;
+  --grn: #0f6e3a;
+  --grn-lt: #edfbf3;
+  --grn-bd: #9ddcba;
+  --red: #c0201a;
+  --red-lt: #fff0ef;
+
+  /* Text */
+  --text: #1a2840;
+  --text-2: #3d5470;
+  --text-3: #7a96b8;
+
+  /* System */
+  --radius: 10px;
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.07), 0 4px 14px rgba(0, 0, 0, 0.05);
+  --shadow-sticky: 0 1px 4px rgba(0, 0, 0, 0.08);
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.dark {
+  --bg: #0f1724;
+  --sur: #151f2f;
+  --sur-2: #1b2638;
+  --bdr: #253349;
+  --bdr-2: #324566;
+  --text: #e6ecf5;
+  --text-2: #a7b7d1;
+  --text-3: #6b82a6;
+  /* Remap brand ink tokens so `text-navy` stays readable on dark surfaces */
+  --navy: #e6ecf5;
+  --navy-2: #c6d4ed;
+  --blue-lt: #15294a;
+  --ora-lt: #2a1c10;
+  --grn-lt: #0f2a1c;
+  --red-lt: #2a1313;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-sur: var(--sur);
+  --color-sur-2: var(--sur-2);
+  --color-bdr: var(--bdr);
+  --color-bdr-2: var(--bdr-2);
+  --color-navy: var(--navy);
+  --color-navy-2: var(--navy-2);
+  --color-blue: var(--blue);
+  --color-blue-lt: var(--blue-lt);
+  --color-blue-bd: var(--blue-bd);
+  --color-ora: var(--ora);
+  --color-ora-lt: var(--ora-lt);
+  --color-ora-bd: var(--ora-bd);
+  --color-grn: var(--grn);
+  --color-grn-lt: var(--grn-lt);
+  --color-grn-bd: var(--grn-bd);
+  --color-red: var(--red);
+  --color-red-lt: var(--red-lt);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-sticky: var(--shadow-sticky);
+  --shadow-modal: var(--shadow-modal);
+
+  --radius-card: 10px;
+  --radius-pill: 20px;
+
+  --font-sans: var(--font-jakarta);
+  --font-mono: var(--font-plex-mono);
+
+  --container-site: 1120px;
+}
+
+html {
+  font-size: 13px;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans), system-ui, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  border-color: var(--bdr);
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Background tint — driven by <BgSlider /> via --bg-tint (0..100) */
+:root {
+  --bg-tint: 20;
+  --bg-tone-a: #ffffff;
+  --bg-tone-b: #e4ebf5;
+}
+
+.dark {
+  --bg-tone-a: #05090f;
+  --bg-tone-b: #1a2740;
+}
+
+html, body {
+  background: color-mix(in srgb, var(--bg-tone-a), var(--bg-tone-b) calc(var(--bg-tint) * 1%));
+  transition: background-color 160ms ease;
+}
+

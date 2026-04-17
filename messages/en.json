@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "title": "engineers.ge",
+    "description": "Engineering knowledge and online calculators"
+  },
+  "nav": {
+    "home": "Home",
+    "calculators": "Calculators",
+    "about": "About"
+  },
+  "home": {
+    "hero": "Engineering knowledge in one place",
+    "subhero": "Free online calculators and resources",
+    "calculators_title": "Calculators",
+    "calculators_empty": "Coming soon..."
+  },
+  "share": {
+    "label": "Share",
+    "copy": "Copy link",
+    "copied": "Copied"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "lang": {
+    "label": "Language"
+  },
+  "admin": {
+    "login": "Sign in",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Sign in",
+    "error": "Invalid credentials",
+    "banners": "Banners",
+    "stats": "Stats",
+    "logout": "Sign out"
+  },
+  "loader": {
+    "loading": "Loading..."
+  }
+}
