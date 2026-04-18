@@ -180,13 +180,25 @@ export function HeroAdsForm({initial}: Props) {
 
                 <Field label="Image URL">
                   <input
-                    type="text"
+                    type="url"
                     value={selected.image_url}
                     onChange={(e) =>
                       updateSlot(selected.slot_key, {image_url: e.target.value})
                     }
                     className="input"
-                    placeholder="https://..."
+                    placeholder="https://images.unsplash.com/..."
+                  />
+                </Field>
+
+                <Field label="Link URL (კლიკზე გადავა)">
+                  <input
+                    type="url"
+                    value={selected.link_url}
+                    onChange={(e) =>
+                      updateSlot(selected.slot_key, {link_url: e.target.value})
+                    }
+                    className="input"
+                    placeholder="https://clientsite.com"
                   />
                 </Field>
 

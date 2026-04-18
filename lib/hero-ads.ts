@@ -19,6 +19,7 @@ export type HeroAdSlot = {
   label: string;
   sublabel: string;
   image_url: string;
+  link_url: string;
   client_name: string;
   price_gel: number;
   occupied_until: string | null;
@@ -29,11 +30,12 @@ export type HeroAdSlot = {
 
 type SlotSpec = Omit<
   HeroAdSlot,
-  'client_name' | 'price_gel' | 'occupied_until'
+  'client_name' | 'price_gel' | 'occupied_until' | 'link_url'
 > & {
   default_client_name: string;
   default_price_gel: number;
   default_occupied_until: string | null;
+  default_link_url: string;
 };
 
 /*
@@ -52,107 +54,115 @@ Upload guidance table
 export const HERO_SLOT_SPECS: Record<HeroSlotKey, SlotSpec> = {
   site: {
     slot_key: 'site',
-    display_name: 'ობიექტზე',
-    label: 'ობიექტზე',
-    sublabel: 'ინჟინერია ველზე',
+    display_name: 'კომპანია 1',
+    label: 'კომპანია 1',
+    sublabel: 'კომენტარი 1',
     image_url: 'https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&q=70',
     is_ad_slot: false,
     format_hint: 'JPG / PNG / WEBP',
     size_hint: '544 × 280 px',
-    default_client_name: '',
+    default_client_name: 'კომპანია 1',
     default_price_gel: 0,
-    default_occupied_until: null
+    default_occupied_until: null,
+    default_link_url: ''
   },
   cta: {
     slot_key: 'cta',
-    display_name: 'კალკულატორები',
-    label: 'კალკულატორები',
-    sublabel: '7 ინსტრუმენტი · უფასო',
+    display_name: 'კომპანია 2',
+    label: 'კომპანია 2',
+    sublabel: 'კომენტარი 2',
     image_url: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=1400&q=70',
     is_ad_slot: true,
     format_hint: 'JPG / PNG / WEBP',
     size_hint: '532 × 712 px',
-    default_client_name: 'Engineers.ge',
+    default_client_name: 'კომპანია 2',
     default_price_gel: 1250,
-    default_occupied_until: '2026-05-30'
+    default_occupied_until: '2026-05-30',
+    default_link_url: 'https://example.com'
   },
   slogan: {
     slot_key: 'slogan',
-    display_name: 'ინჟინერია',
-    label: 'ინჟინერია.',
-    sublabel: 'ქართულად · ზუსტად',
+    display_name: 'კომპანია 3',
+    label: 'კომპანია 3',
+    sublabel: 'კომენტარი 3',
     image_url: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=900&q=70',
     is_ad_slot: true,
     format_hint: 'JPG / PNG / WEBP',
     size_hint: '488 × 200 px',
-    default_client_name: 'Partner A',
+    default_client_name: 'კომპანია 3',
     default_price_gel: 690,
-    default_occupied_until: '2026-05-12'
+    default_occupied_until: '2026-05-12',
+    default_link_url: ''
   },
   business: {
     slot_key: 'business',
-    display_name: 'ბიზნესი',
-    label: 'ბიზნესი',
-    sublabel: 'საინჟინრო სამუშაოზე',
+    display_name: 'კომპანია 4',
+    label: 'კომპანია 4',
+    sublabel: 'კომენტარი 4',
     image_url: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=900&q=70',
     is_ad_slot: true,
     format_hint: 'JPG / PNG / WEBP',
     size_hint: '488 × 232 px',
-    default_client_name: 'Partner B',
+    default_client_name: 'კომპანია 4',
     default_price_gel: 620,
-    default_occupied_until: '2026-06-08'
+    default_occupied_until: '2026-06-08',
+    default_link_url: ''
   },
   childhood: {
     slot_key: 'childhood',
-    display_name: 'ბავშვობა',
-    label: 'ბავშვობა',
-    sublabel: 'საწყისი',
+    display_name: 'კომპანია 5',
+    label: 'კომპანია 5',
+    sublabel: 'კომენტარი 5',
     image_url: 'https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=800&q=70',
     is_ad_slot: true,
     format_hint: 'JPG / PNG / WEBP',
     size_hint: '488 × 280 px',
-    default_client_name: 'Partner C',
+    default_client_name: 'კომპანია 5',
     default_price_gel: 580,
-    default_occupied_until: '2026-06-20'
+    default_occupied_until: '2026-06-20',
+    default_link_url: ''
   },
   b1: {
     slot_key: 'b1',
-    display_name: 'HVAC',
-    label: 'HVAC',
-    sublabel: 'გათბობა · გაგრილება',
+    display_name: 'კომპანია 6',
+    label: 'კომპანია 6',
+    sublabel: 'კომენტარი 6',
     image_url: 'https://images.unsplash.com/photo-1581094288338-2314dddb7ece?w=900&q=70',
     is_ad_slot: true,
     format_hint: 'JPG / PNG / WEBP',
     size_hint: '340 × 432 px',
-    default_client_name: 'Partner D',
+    default_client_name: 'კომპანია 6',
     default_price_gel: 540,
-    default_occupied_until: '2026-05-25'
+    default_occupied_until: '2026-05-25',
+    default_link_url: ''
   },
   b2: {
     slot_key: 'b2',
-    display_name: 'თბოდანაკარგი',
-    label: 'თბოდანაკარგი',
-    sublabel: 'EN 12831',
+    display_name: 'კომპანია 7',
+    label: 'კომპანია 7',
+    sublabel: 'კომენტარი 7',
     image_url: 'https://images.unsplash.com/photo-1497436072909-60f360e1d4b1?w=900&q=70',
     is_ad_slot: true,
     format_hint: 'JPG / PNG / WEBP',
     size_hint: '296 × 712 px',
-    default_client_name: 'Partner E',
+    default_client_name: 'კომპანია 7',
     default_price_gel: 960,
-    default_occupied_until: '2026-07-01'
+    default_occupied_until: '2026-07-01',
+    default_link_url: ''
   },
   b3: {
     slot_key: 'b3',
-    display_name: 'იზოლაცია',
-    label: 'იზოლაცია',
-    sublabel: 'ISO 6946',
+    display_name: 'კომპანია 8',
+    label: 'კომპანია 8',
+    sublabel: 'კომენტარი 8',
     image_url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=900&q=70',
     is_ad_slot: true,
     format_hint: 'JPG / PNG / WEBP',
     size_hint: '340 × 280 px',
-    default_client_name: 'Partner F',
+    default_client_name: 'კომპანია 8',
     default_price_gel: 510,
-    default_occupied_until: '2026-05-18'
+    default_occupied_until: '2026-05-18',
+    default_link_url: ''
   }
 };
 
@@ -165,6 +175,7 @@ export function getDefaultHeroAdSlots(): HeroAdSlot[] {
       label: spec.label,
       sublabel: spec.sublabel,
       image_url: spec.image_url,
+      link_url: spec.default_link_url,
       client_name: spec.default_client_name,
       price_gel: spec.default_price_gel,
       occupied_until: spec.default_occupied_until,
@@ -196,6 +207,7 @@ export function normalizeHeroAdSlots(rows: Partial<HeroAdSlot>[] | null | undefi
       label: row?.label?.trim() || slot.label,
       sublabel: row?.sublabel?.trim() || slot.sublabel,
       image_url: row?.image_url?.trim() || slot.image_url,
+      link_url: row?.link_url?.trim() || slot.link_url,
       client_name: row?.client_name?.trim() || '',
       price_gel:
         typeof row?.price_gel === 'number' && Number.isFinite(row.price_gel)
@@ -218,9 +230,8 @@ export function formatOccupiedUntil(value: string | null | undefined) {
   if (!value) return 'თავისუფალია';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat('ka-GE', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).format(date);
+  const dd = String(date.getUTCDate()).padStart(2, '0');
+  const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const yyyy = date.getUTCFullYear();
+  return `${dd}.${mm}.${yyyy}`;
 }

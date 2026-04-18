@@ -1,14 +1,28 @@
 'use client';
 
-import {useState, useTransition} from 'react';
+import {useEffect, useState, useTransition} from 'react';
 import {useRouter} from 'next/navigation';
+
+const REMEMBER_KEY = 'engge_admin_remember';
 
 export function LoginForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = window.localStorage.getItem(REMEMBER_KEY);
+      if (saved) {
+        setUsername(saved);
+        setRemember(true);
+      }
+    } catch {}
+  }, []);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -23,6 +37,13 @@ export function LoginForm() {
         setError('Invalid credentials');
         return;
       }
+      try {
+        if (remember) {
+          window.localStorage.setItem(REMEMBER_KEY, username);
+        } else {
+          window.localStorage.removeItem(REMEMBER_KEY);
+        }
+      } catch {}
       router.replace('/admin/banners');
       router.refresh();
     });
@@ -31,8 +52,12 @@ export function LoginForm() {
   return (
     <form onSubmit={submit} className="space-y-4">
       <div className="space-y-1">
-        <label className="text-sm">Username</label>
+        <label htmlFor="admin-username" className="text-sm">
+          მომხმარებელი
+        </label>
         <input
+          id="admin-username"
+          name="username"
           autoComplete="username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
@@ -41,8 +66,12 @@ export function LoginForm() {
         />
       </div>
       <div className="space-y-1">
-        <label className="text-sm">Password</label>
+        <label htmlFor="admin-password" className="text-sm">
+          პაროლი
+        </label>
         <input
+          id="admin-password"
+          name="password"
           type="password"
           autoComplete="current-password"
           value={password}
@@ -51,13 +80,22 @@ export function LoginForm() {
           required
         />
       </div>
+      <label className="flex cursor-pointer items-center gap-2 text-xs text-text-2">
+        <input
+          type="checkbox"
+          checked={remember}
+          onChange={(e) => setRemember(e.target.checked)}
+          className="h-3.5 w-3.5 cursor-pointer accent-blue"
+        />
+        დამახსოვრება
+      </label>
       {error && <p className="text-sm text-danger">{error}</p>}
       <button
         type="submit"
         disabled={pending}
         className="w-full rounded-lg bg-accent text-accent-fg py-2 font-medium disabled:opacity-60"
       >
-        {pending ? '…' : 'Sign in'}
+        {pending ? '…' : 'შესვლა'}
       </button>
     </form>
   );

@@ -11,6 +11,7 @@ import {
   type LucideIcon
 } from 'lucide-react';
 import {Container} from './container';
+import {CalcCardExternal} from './calc-card-external';
 
 type System = {
   slug: string;
@@ -20,6 +21,7 @@ type System = {
   toolsCount: number;
   href: string | null;
   accent: string;
+  externalHtml?: string;
 };
 
 const SYSTEMS: System[] = [
@@ -56,11 +58,12 @@ const SYSTEMS: System[] = [
   {
     slug: 'wall-thermal',
     icons: [{icon: Layers, color: 'var(--navy)'}],
-    title: 'კედლის თბოტექნიკური ანალიზი',
+    title: 'თბოგადაცემის კოეფიციენტის გაანგარიშება',
     desc: 'ISO 6946 U-ფაქტორი, multilayer, კონდენსაცია, Glaser',
     toolsCount: 1,
     href: '/calc/wall-thermal',
-    accent: 'var(--navy)'
+    accent: 'var(--navy)',
+    externalHtml: '/calc/heat-transfer.html'
   },
   {
     slug: 'heat-loss',
@@ -69,7 +72,8 @@ const SYSTEMS: System[] = [
     desc: 'EN 12831 · building heat load, zone-by-zone, PDF report',
     toolsCount: 1,
     href: '/calc/heat-loss',
-    accent: 'var(--ora)'
+    accent: 'var(--ora)',
+    externalHtml: '/calc/heat-transfer.html'
   },
   {
     slug: 'fluid-dynamics',
@@ -153,6 +157,13 @@ export function CalcGrid() {
               </div>
             );
 
+            if (active && s.externalHtml) {
+              return (
+                <CalcCardExternal key={s.slug} href={s.externalHtml} slug={s.slug}>
+                  {card}
+                </CalcCardExternal>
+              );
+            }
             if (active && s.href) {
               return (
                 <Link key={s.slug} href={s.href} className="block h-full">

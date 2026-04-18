@@ -19,7 +19,7 @@ export const CALCULATORS: CalcMeta[] = [
   {
     slug: 'wall-thermal',
     icon: '🧱',
-    title: 'კედლის თბოგამტარობა',
+    title: 'თბოგადაცემის კოეფიციენტის გაანგარიშება',
     desc: 'ISO 6946 · მრავალშრიანი კედლის U-ფაქტორი, კონდენსაცია, Glaser',
     tag: 'შრეები',
     standard: 'ISO 6946 · ISO 13788'
@@ -54,6 +54,14 @@ export const CALCULATORS: CalcMeta[] = [
     desc: 'Air Handling Unit-ის რეპორტი ASHRAE სტანდარტით',
     tag: 'HVAC',
     standard: 'ASHRAE'
+  },
+  {
+    slug: 'stair-pressurization',
+    icon: '🏢',
+    title: 'სადარბაზოს დაწნეხვა',
+    desc: '3D სიმულატორი · ჭრილი + გეგმა, სართულები, კარი, ჰაერის მიწოდების სცენარი',
+    tag: 'HVAC',
+    standard: 'EN 12101-6'
   },
   {
     slug: 'procurement',

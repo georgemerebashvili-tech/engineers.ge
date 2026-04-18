@@ -4,23 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AHU Engineering Report — ASHRAE</title>
+<script src="/calc/_theme-sync.js"></script>
+<link rel="stylesheet" href="/calc/_base.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+Georgian:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* ── CSS VARIABLES ─────────────────────────────────────────────── */
+/* ── LOCAL TOKENS ──────────────────────────────────────────────── */
 :root{
-  --bg:#f2f5fa; --surface:#ffffff; --surface2:#f7f9fd; --border:#dde6f2;
-  --border2:#c4d4e8; --navy:#1a3a6b; --blue:#1f6fd4; --blue-lt:#e8f1fd;
-  --blue-md:#4a85d8; --teal:#0890a8; --orange:#c05010; --orange-lt:#fff5ea;
-  --orange-bd:#e8c080; --green:#007040; --green-lt:#e8f6ee; --green-bd:#80c8a0;
-  --red:#b81818; --red-lt:#fef0f0; --red-bd:#f0a0a0;
-  --text:#1a2840; --text-md:#3d5470; --text-dim:#7a96b8;
-  --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 14px rgba(0,0,0,.05);
   --r:10px; --nav:220px; --hdr:68px;
+  --sur-hdr: color-mix(in srgb, var(--blue-lt) 55%, var(--sur));
+  --sur-hdr-hover: color-mix(in srgb, var(--blue-lt) 75%, var(--sur));
 }
-*{box-sizing:border-box;margin:0;padding:0}
+.dark:root,.dark{
+  --sur-hdr: color-mix(in srgb, var(--blue-lt) 50%, var(--sur));
+  --sur-hdr-hover: color-mix(in srgb, var(--blue-lt) 70%, var(--sur));
+}
 html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;line-height:1.55}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);font-size:13px;line-height:1.55}
 
 /* ── PRINT ─────────────────────────────────────────────────────── */
 @media print{
@@ -28,11 +29,11 @@ body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans
   .page-wrap{display:block}
   header{border-bottom:2px solid var(--navy);padding:12px 24px;box-shadow:none;height:auto}
   main{padding:12px 20px;width:100%}
-  .section{break-inside:avoid;box-shadow:none;margin-bottom:10px;border:1px solid #ccc}
+  .section{break-inside:avoid;box-shadow:none;margin-bottom:10px;border:1px solid var(--bdr)}
   .section-body.hidden{display:block!important}
   body{font-size:11px;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .grid2,.grid3{gap:8px} input{background:#fff!important;border:none!important;font-weight:700}
-  canvas{border:1px solid #ddd;border-radius:4px}
+  canvas{border:1px solid var(--bdr);border-radius:4px}
   .compliance-pill{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .page-break{page-break-before:always}
   .results-table td,.results-table th{padding:5px 8px}
@@ -40,135 +41,177 @@ body{background:var(--bg);color:var(--text);font-family:'Plus Jakarta Sans',sans
 
 /* ── LAYOUT ────────────────────────────────────────────────────── */
 .page-wrap{display:grid;grid-template-columns:var(--nav) 1fr;grid-template-rows:var(--hdr) 1fr}
-header{grid-column:1/-1;background:#fff;border-bottom:1px solid var(--border);
+header{grid-column:1/-1;background:var(--sur);border-bottom:1px solid var(--bdr);
        display:flex;align-items:center;gap:14px;padding:0 24px;
-       box-shadow:0 1px 4px rgba(0,0,0,.07);z-index:100}
+       box-shadow:var(--shadow-sticky);z-index:100;flex-wrap:wrap}
 .logo{width:40px;height:40px;border-radius:9px;background:linear-gradient(135deg,var(--navy),var(--blue));
-      display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.hdr-info h1{font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:var(--navy)}
-.hdr-info p{color:var(--text-dim);font-size:11px}
-.hdr-badges{display:flex;gap:5px;margin-left:16px}
-.badge{background:var(--blue-lt);border:1px solid #b8d0f0;color:var(--blue);
-       padding:2px 8px;border-radius:20px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600}
-.header-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+      display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:#fff}
+.hdr-info{min-width:0}
+.hdr-info h1{font-family:var(--font-sans);font-size:17px;font-weight:700;color:var(--navy);letter-spacing:-0.01em}
+.hdr-info p{color:var(--text-3);font-size:11px}
+.hdr-badges{display:flex;gap:5px;margin-left:16px;flex-wrap:wrap}
+.badge{background:var(--blue-lt);border:1px solid var(--blue-bd);color:var(--blue);
+       padding:2px 8px;border-radius:20px;font-family:var(--font-mono);font-size:9.5px;font-weight:600}
+.header-right{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;
-     border:none;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;transition:all .15s}
-.btn-pdf{background:var(--navy);color:#fff}
-.btn-pdf:hover{background:#0f2a52;box-shadow:0 4px 12px rgba(26,58,107,.3)}
-.btn-reset{background:var(--surface2);color:var(--text-md);border:1px solid var(--border)}
-.btn-reset:hover{background:var(--bg)}
+     border:1px solid transparent;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;transition:background .15s,border-color .15s,color .15s,box-shadow .15s}
+.btn-pdf{background:var(--navy);color:#fff;border-color:var(--navy)}
+.btn-pdf:hover{background:var(--navy-2);border-color:var(--navy-2);box-shadow:0 4px 12px rgba(0,0,0,.18)}
+.btn-reset{background:var(--sur-2);color:var(--text-2);border-color:var(--bdr)}
+.btn-reset:hover{background:var(--bg);border-color:var(--bdr-2);color:var(--text)}
 
 /* ── NAV ───────────────────────────────────────────────────────── */
-nav{background:#fff;border-right:1px solid var(--border);padding:14px 0;
+nav{background:var(--sur);border-right:1px solid var(--bdr);padding:14px 0;
     position:sticky;top:0;height:calc(100vh - var(--hdr));overflow-y:auto;align-self:start}
-nav a{display:flex;align-items:center;gap:8px;padding:6px 16px;color:var(--text-dim);
-      text-decoration:none;font-size:12px;font-weight:500;border-left:2px solid transparent;transition:all .12s}
+nav a{display:flex;align-items:center;gap:8px;padding:6px 16px;color:var(--text-3);
+      text-decoration:none;font-size:12px;font-weight:500;border-left:2px solid transparent;transition:color .12s,background .12s,border-color .12s}
 nav a:hover{color:var(--blue);background:var(--blue-lt)}
 nav a.active{color:var(--blue);border-left-color:var(--blue);background:var(--blue-lt)}
 .nav-icon{font-size:13px;width:16px;text-align:center}
-.nav-grp{font-size:9.5px;font-weight:700;letter-spacing:1.5px;color:var(--text-dim);
+.nav-grp{font-size:9.5px;font-weight:700;letter-spacing:1.5px;color:var(--text-3);
          text-transform:uppercase;padding:12px 16px 4px}
 
 /* ── MAIN ──────────────────────────────────────────────────────── */
-main{padding:22px 26px;overflow-x:hidden}
+main{padding:22px 26px;overflow-x:hidden;min-width:0}
 
 /* ── SECTION ───────────────────────────────────────────────────── */
-.section{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
-         margin-bottom:14px;box-shadow:var(--shadow)}
-.sec-hdr{background:linear-gradient(90deg,#f0f4fb,var(--surface));padding:12px 18px;
+.section{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);
+         margin-bottom:14px;box-shadow:var(--shadow-card)}
+.sec-hdr{background:linear-gradient(90deg,var(--sur-hdr),var(--sur));padding:12px 18px;
          display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none;
-         border-bottom:1px solid var(--border);border-radius:var(--r) var(--r) 0 0}
-.sec-hdr:hover{background:#e8eef8}
+         border-bottom:1px solid var(--bdr);border-radius:var(--r) var(--r) 0 0;flex-wrap:wrap}
+.sec-hdr:hover{background:var(--sur-hdr-hover)}
 .sec-icon{font-size:14px}
 .sec-title{font-size:13px;font-weight:700;color:var(--navy)}
-.sec-std{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9px;
-         color:var(--blue);background:var(--blue-lt);border:1px solid #b8d0f0;
+.sec-std{margin-left:auto;font-family:var(--font-mono);font-size:9px;
+         color:var(--blue);background:var(--blue-lt);border:1px solid var(--blue-bd);
          padding:2px 8px;border-radius:12px}
-.chevron{color:var(--text-dim);font-size:10px;transition:transform .2s;margin-left:5px}
+.chevron{color:var(--text-3);font-size:10px;transition:transform .2s;margin-left:5px}
 .closed .chevron{transform:rotate(-90deg)}
 .sec-body{padding:18px}
 .sec-body.hidden{display:none}
 
 /* ── INPUTS ────────────────────────────────────────────────────── */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px}
-.irow{display:flex;flex-direction:column;gap:3px}
-.ilbl{font-size:11px;color:var(--text-md);font-weight:600;display:flex;align-items:center;gap:5px}
-.utag{font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--orange);
-      background:var(--orange-lt);border:1px solid var(--orange-bd);padding:1px 5px;border-radius:3px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.irow{display:flex;flex-direction:column;gap:3px;min-width:0}
+.ilbl{font-size:11px;color:var(--text-2);font-weight:600;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.utag{font-family:var(--font-mono);font-size:9px;color:var(--ora);
+      background:var(--ora-lt);border:1px solid var(--ora-bd);padding:1px 5px;border-radius:3px}
 input[type=number],input[type=text]{
-  background:var(--surface2);border:1.5px solid var(--border);border-radius:6px;
-  padding:7px 10px;color:var(--text);font-family:'IBM Plex Mono',monospace;
-  font-size:13px;font-weight:600;outline:none;width:100%;transition:border-color .15s}
-input[type=number]:focus,input[type=text]:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(31,111,212,.1)}
-input[readonly]{background:var(--bg);color:var(--text-dim)}
-.inp-s{border-left:3px solid #e06020!important}
-.inp-w{border-left:3px solid #2070c8!important}
+  background:var(--sur-2);border:1.5px solid var(--bdr);border-radius:6px;
+  padding:7px 10px;color:var(--text);font-family:var(--font-mono);
+  font-size:13px;font-weight:600;outline:none;width:100%;transition:border-color .15s,box-shadow .15s;
+  min-width:0}
+input[type=text]{font-family:var(--font-sans)}
+input[type=number]:focus,input[type=text]:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(31,111,212,.2)}
+input[readonly]{background:var(--bg);color:var(--text-3)}
+.inp-s{border-left:3px solid var(--ora)!important}
+.inp-w{border-left:3px solid var(--blue)!important}
 
 /* ── FORMULA ───────────────────────────────────────────────────── */
-.fbox{background:var(--orange-lt);border:1px solid var(--orange-bd);border-radius:8px;
+.fbox{background:var(--ora-lt);border:1px solid var(--ora-bd);border-radius:8px;
       padding:12px 15px;margin:10px 0;position:relative}
 .fbox::before{content:'FORMULA';position:absolute;top:-8px;left:12px;
-  background:var(--orange-lt);color:var(--orange);font-family:'IBM Plex Mono',monospace;
+  background:var(--ora-lt);color:var(--ora);font-family:var(--font-mono);
   font-size:9px;font-weight:700;letter-spacing:1.5px;padding:0 6px;
-  border:1px solid var(--orange-bd);border-radius:3px}
-.feq{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--orange);line-height:1.8}
-.fsub{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#b08040;margin-top:3px}
-.fnote{font-size:11px;color:var(--text-dim);margin-top:5px;font-style:italic}
-.std-ref{display:inline-flex;align-items:center;gap:4px;font-family:'IBM Plex Mono',monospace;
+  border:1px solid var(--ora-bd);border-radius:3px}
+.feq{font-family:var(--font-mono);font-size:12.5px;color:var(--ora);line-height:1.8;word-break:break-word;overflow-wrap:anywhere}
+.fsub{font-family:var(--font-mono);font-size:11px;color:var(--ora);opacity:.78;margin-top:3px;overflow-wrap:anywhere}
+.fnote{font-size:11px;color:var(--text-3);margin-top:5px;font-style:italic}
+.std-ref{display:inline-flex;align-items:center;gap:4px;font-family:var(--font-mono);
          font-size:9.5px;color:var(--blue);background:var(--blue-lt);
-         border:1px solid #b8d0f0;border-radius:4px;padding:2px 8px;margin-top:5px}
+         border:1px solid var(--blue-bd);border-radius:4px;padding:2px 8px;margin-top:5px;flex-wrap:wrap}
 
 /* ── RESULTS ───────────────────────────────────────────────────── */
 .rcols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
-.rcols3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:12px}
-.rcard{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:13px}
+.rcols3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+.rcard{background:var(--sur-2);border:1px solid var(--bdr);border-radius:8px;padding:13px;min-width:0}
 .rcard-title{font-size:10px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;
-             color:var(--text-dim);margin-bottom:9px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+             color:var(--text-3);margin-bottom:9px;padding-bottom:6px;border-bottom:1px solid var(--bdr)}
 .rt{width:100%;border-collapse:collapse}
-.rt td{padding:5px 2px;border-bottom:1px solid rgba(0,0,0,.04);font-size:12px}
+.rt td{padding:5px 2px;border-bottom:1px solid var(--bdr);font-size:12px;color:var(--text-2)}
 .rt tr:last-child td{border:none}
-.rt td:nth-child(2){font-family:'IBM Plex Mono',monospace;font-weight:700;text-align:right;color:var(--blue);font-size:13px}
-.rt td:nth-child(3){font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:var(--orange);padding-left:4px}
-.rt td.summer{color:#c04010!important}
-.rt td.winter{color:#1060b0!important}
+.rt td:nth-child(2){font-family:var(--font-mono);font-weight:700;text-align:right;color:var(--blue);font-size:13px}
+.rt td:nth-child(3){font-family:var(--font-mono);font-size:9.5px;color:var(--ora);padding-left:4px}
+.rt td.summer{color:var(--ora)!important}
+.rt td.winter{color:var(--blue)!important}
 .rt td.result{color:var(--blue)!important}
 
 /* ── COMPLIANCE ────────────────────────────────────────────────── */
 .pill{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;margin-top:8px;font-size:12px;font-weight:600}
-.pill-ok{background:var(--green-lt);border:1px solid var(--green-bd);color:var(--green)}
-.pill-fail{background:var(--red-lt);border:1px solid var(--red-bd);color:var(--red)}
+.pill-ok{background:var(--grn-lt);border:1px solid var(--grn-bd);color:var(--grn)}
+.pill-fail{background:var(--red-lt);border:1px solid var(--red);color:var(--red)}
 .pill-row{display:flex;align-items:center;justify-content:space-between;padding:8px 13px;
-          border-radius:7px;margin-top:7px;font-size:12px}
-.pill-row.ok{background:var(--green-lt);border:1px solid var(--green-bd)}
-.pill-row.fail{background:var(--red-lt);border:1px solid var(--red-bd)}
-.pill-row.ok .pval{color:var(--green);font-weight:700;font-family:'IBM Plex Mono',monospace}
-.pill-row.fail .pval{color:var(--red);font-weight:700;font-family:'IBM Plex Mono',monospace}
+          border-radius:7px;margin-top:7px;font-size:12px;gap:8px;flex-wrap:wrap}
+.pill-row.ok{background:var(--grn-lt);border:1px solid var(--grn-bd);color:var(--grn)}
+.pill-row.fail{background:var(--red-lt);border:1px solid var(--red);color:var(--red)}
+.pill-row.ok .pval{color:var(--grn);font-weight:700;font-family:var(--font-mono)}
+.pill-row.fail .pval{color:var(--red);font-weight:700;font-family:var(--font-mono)}
 
 /* ── SUB-SECTION ───────────────────────────────────────────────── */
 .sub{margin-top:18px}
 .sub-title{font-size:10.5px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;
            color:var(--navy);margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .sub-title::before{content:'';width:3px;height:14px;background:var(--blue);border-radius:2px;flex-shrink:0}
-.divline{display:flex;align-items:center;gap:10px;color:var(--text-dim);font-size:11px;margin:12px 0 8px}
-.divline::before,.divline::after{content:'';flex:1;height:1px;background:var(--border)}
+.divline{display:flex;align-items:center;gap:10px;color:var(--text-3);font-size:11px;margin:12px 0 8px}
+.divline::before,.divline::after{content:'';flex:1;height:1px;background:var(--bdr)}
 
 /* ── CANVAS WRAPS ──────────────────────────────────────────────── */
-.chart-wrap{background:var(--surface);border:1px solid var(--border);border-radius:8px;
+.chart-wrap{background:var(--sur);border:1px solid var(--bdr);border-radius:8px;
             overflow:hidden;margin-top:12px}
-.chart-title{background:linear-gradient(90deg,#f0f4fb,var(--surface));padding:10px 14px;
-             border-bottom:1px solid var(--border);font-size:11px;font-weight:700;
-             color:var(--navy);display:flex;align-items:center;gap:6px}
-canvas{display:block;width:100%;height:auto}
+.chart-title{background:linear-gradient(90deg,var(--sur-hdr),var(--sur));padding:10px 14px;
+             border-bottom:1px solid var(--bdr);font-size:11px;font-weight:700;
+             color:var(--navy);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+canvas{display:block;width:100%;height:auto;max-width:100%}
 
 /* ── AHU DIAGRAM ───────────────────────────────────────────────── */
-.ahu-diagram{width:100%;background:var(--surface2);border:1px solid var(--border);
+.ahu-diagram{width:100%;background:var(--sur-2);border:1px solid var(--bdr);
              border-radius:8px;overflow:hidden;margin-top:14px}
-.ahu-diagram svg{width:100%;height:auto}
+.ahu-diagram svg{width:100%;height:auto;display:block}
+.dark .ahu-diagram svg [fill="white"],
+.dark .ahu-diagram svg [fill="#f8fafd"]{fill:var(--sur-2)}
 
 /* ── DIVIDER ───────────────────────────────────────────────────── */
-.sep{height:1px;background:var(--border);margin:14px 0}
+.sep{height:1px;background:var(--bdr);margin:14px 0}
+
+/* ── RESPONSIVE ────────────────────────────────────────────────── */
+@media (max-width: 960px){
+  :root{ --nav:180px; --hdr:auto; }
+  .page-wrap{grid-template-columns:var(--nav) 1fr}
+  main{padding:16px 18px}
+  .g4{grid-template-columns:repeat(2,1fr)}
+  .rcols3{grid-template-columns:repeat(2,1fr)}
+  .sec-body{padding:14px}
+  header{padding:10px 16px}
+  .hdr-badges{display:none}
+}
+@media (max-width: 780px){
+  .page-wrap{grid-template-columns:1fr;grid-template-rows:auto auto 1fr}
+  nav{position:static;height:auto;border-right:none;border-bottom:1px solid var(--bdr);
+      display:flex;flex-wrap:wrap;padding:8px;gap:2px;overflow-x:auto}
+  nav a{padding:4px 10px;border-left:none;border-bottom:2px solid transparent;font-size:11px}
+  nav a.active{border-left:none;border-bottom-color:var(--blue)}
+  .nav-grp{display:none}
+  main{padding:14px 14px;overflow-x:hidden}
+  .rcols,.rcols3,.g2,.g3{grid-template-columns:1fr}
+  .g4{grid-template-columns:repeat(2,1fr)}
+  .sec-hdr{padding:10px 14px;font-size:12px}
+  .sec-std{margin-left:0;margin-top:4px}
+}
+@media (max-width: 480px){
+  html{font-size:12px}
+  main{padding:10px 10px}
+  header{padding:8px 12px;gap:10px}
+  .header-right{width:100%;justify-content:flex-end}
+  .btn{padding:6px 10px;font-size:11px}
+  .g4{grid-template-columns:1fr}
+  .sec-body{padding:12px}
+  .logo{width:34px;height:34px;font-size:15px}
+  .hdr-info h1{font-size:15px}
+  .feq{font-size:11px}
+}
 </style>
 </head>
 <body>
@@ -340,12 +383,12 @@ canvas{display:block;width:100%;height:auto}
     <span class="sec-std">System Overview</span><span class="chevron">▾</span>
   </div>
   <div class="sec-body">
-    <p style="font-size:11px;color:var(--text-dim);margin-bottom:10px">
+    <p style="font-size:11px;color:var(--text-3);margin-bottom:10px">
       Air flow path: Outdoor Air → Filters → Crossflow HEX → Coils → Supply Fan → Supply Air<br>
       Return path: Exhaust Air → Crossflow HEX → Exhaust Fan → Outside
     </p>
     <div class="ahu-diagram">
-      <svg viewBox="0 0 900 280" xmlns="http://www.w3.org/2000/svg" style="background:#f8fafd">
+      <svg viewBox="0 0 900 280" xmlns="http://www.w3.org/2000/svg" style="background:var(--sur-2)">
         <defs>
           <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
             <path d="M0,0 L0,6 L8,3 z" fill="#1f6fd4"/>
@@ -518,9 +561,9 @@ canvas{display:block;width:100%;height:auto}
     <!-- PSYCHRO CHART -->
     <div class="chart-wrap" style="margin-top:14px">
       <div class="chart-title">📊 Psychrometric Chart (SI) — State Points &amp; Processes
-        <span style="margin-left:auto;font-size:9.5px;color:var(--text-dim);font-weight:400">P_site = <span id="chart_P">—</span> kPa</span>
+        <span style="margin-left:auto;font-size:9.5px;color:var(--text-3);font-weight:400">P_site = <span id="chart_P">—</span> kPa</span>
       </div>
-      <canvas id="psychroCanvas" width="860" height="480" style="background:#fafcff"></canvas>
+      <canvas id="psychroCanvas" width="860" height="480" style="background:var(--sur-2)"></canvas>
     </div>
 
     <!-- Legend -->
@@ -536,7 +579,7 @@ canvas{display:block;width:100%;height:auto}
     <!-- Psychro results tables -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
       <div class="rcard">
-        <div class="rcard-title" style="color:#c03010">☀ Summer — Outdoor Air</div>
+        <div class="rcard-title" style="color:var(--ora)">☀ Summer — Outdoor Air</div>
         <table class="rt">
           <tr><td>T_db</td><td id="ps_db" class="summer">—</td><td>°C</td></tr>
           <tr><td>P_ws</td><td id="ps_pws" class="summer">—</td><td>kPa</td></tr>
@@ -549,7 +592,7 @@ canvas{display:block;width:100%;height:auto}
         </table>
       </div>
       <div class="rcard">
-        <div class="rcard-title" style="color:#1060b0">❄ Winter — Outdoor Air</div>
+        <div class="rcard-title" style="color:var(--blue)">❄ Winter — Outdoor Air</div>
         <table class="rt">
           <tr><td>T_db</td><td id="pw_db" class="winter">—</td><td>°C</td></tr>
           <tr><td>P_ws</td><td id="pw_pws" class="winter">—</td><td>kPa</td></tr>
@@ -592,7 +635,7 @@ canvas{display:block;width:100%;height:auto}
     </div>
     <div class="rcols" style="margin-top:12px">
       <div class="rcard">
-        <div class="rcard-title" style="color:#c03010">☀ Summer Mode</div>
+        <div class="rcard-title" style="color:var(--ora)">☀ Summer Mode</div>
         <table class="rt">
           <tr><td>T₁ OA inlet</td><td id="hs_T1" class="summer">—</td><td>°C</td></tr>
           <tr><td>T₃ Exhaust inlet</td><td id="hs_T3">—</td><td>°C</td></tr>
@@ -606,7 +649,7 @@ canvas{display:block;width:100%;height:auto}
         </table>
       </div>
       <div class="rcard">
-        <div class="rcard-title" style="color:#1060b0">❄ Winter Mode</div>
+        <div class="rcard-title" style="color:var(--blue)">❄ Winter Mode</div>
         <table class="rt">
           <tr><td>T₁ OA inlet</td><td id="hw_T1" class="winter">—</td><td>°C</td></tr>
           <tr><td>T₃ Exhaust inlet</td><td id="hw_T3">—</td><td>°C</td></tr>
@@ -750,7 +793,7 @@ canvas{display:block;width:100%;height:auto}
     <!-- Fan results -->
     <div class="rcols" style="margin-top:12px">
       <div class="rcard">
-        <div class="rcard-title" style="color:var(--green)">⬆ Supply Fan</div>
+        <div class="rcard-title" style="color:var(--grn)">⬆ Supply Fan</div>
         <table class="rt">
           <tr><td>Flow</td><td id="fs_V" class="result">—</td><td>m³/h</td></tr>
           <tr><td>Static Pressure</td><td id="fs_dP" class="result">—</td><td>Pa</td></tr>
@@ -765,7 +808,7 @@ canvas{display:block;width:100%;height:auto}
         </div>
       </div>
       <div class="rcard">
-        <div class="rcard-title" style="color:var(--text-md)">⬇ Exhaust Fan</div>
+        <div class="rcard-title" style="color:var(--text-2)">⬇ Exhaust Fan</div>
         <table class="rt">
           <tr><td>Flow</td><td id="fe_V" class="result">—</td><td>m³/h</td></tr>
           <tr><td>Static Pressure</td><td id="fe_dP" class="result">—</td><td>Pa</td></tr>
@@ -785,11 +828,11 @@ canvas{display:block;width:100%;height:auto}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px">
       <div class="chart-wrap">
         <div class="chart-title">⬆ Supply Fan Characteristic Curve</div>
-        <canvas id="fanSupplyCanvas" width="440" height="280" style="background:#fafcff"></canvas>
+        <canvas id="fanSupplyCanvas" width="440" height="280" style="background:var(--sur-2)"></canvas>
       </div>
       <div class="chart-wrap">
         <div class="chart-title">⬇ Exhaust Fan Characteristic Curve</div>
-        <canvas id="fanExhCanvas" width="440" height="280" style="background:#fafcff"></canvas>
+        <canvas id="fanExhCanvas" width="440" height="280" style="background:var(--sur-2)"></canvas>
       </div>
     </div>
   </div>
@@ -816,7 +859,7 @@ canvas{display:block;width:100%;height:auto}
 
     <!-- Filter illustration -->
     <div class="ahu-diagram" style="margin-top:14px">
-      <svg viewBox="0 0 760 160" xmlns="http://www.w3.org/2000/svg" style="background:#f8fafd">
+      <svg viewBox="0 0 760 160" xmlns="http://www.w3.org/2000/svg" style="background:var(--sur-2)">
         <!-- G4 -->
         <rect x="30" y="20" width="160" height="120" rx="6" fill="white" stroke="#e8c080" stroke-width="1.5"/>
         <text x="110" y="40" text-anchor="middle" font-size="11" font-weight="700" fill="#906010">G4 Pre-filter</text>
@@ -961,7 +1004,7 @@ canvas{display:block;width:100%;height:auto}
         </table>
       </div>
     </div>
-    <div style="margin-top:14px;padding:11px 14px;background:var(--blue-lt);border:1px solid #b8d0f0;border-radius:7px;font-size:10.5px;color:var(--text-md);line-height:1.9">
+    <div style="margin-top:14px;padding:11px 14px;background:var(--blue-lt);border:1px solid var(--blue-bd);border-radius:7px;font-size:10.5px;color:var(--text-2);line-height:1.9">
       <strong style="color:var(--navy)">References: </strong>
       ASHRAE Fundamentals Handbook 2021 Ch.1 (Psychrometrics) ·
       ASHRAE HoF 2021 Ch.26 (Heat Exchangers, ε-NTU Eq.26.56) ·

@@ -19,7 +19,7 @@ const CONTENT: Record<Exclude<ModalKey, null>, ModalContent> = {
   privacy: {
     icon: Shield,
     title: 'კონფიდენციალურობის პოლიტიკა',
-    subtitle: 'engineers.ge | engineering.ge',
+    subtitle: 'engineers.ge',
     sections: [
       {
         heading: 'რას არ ვინახავთ',

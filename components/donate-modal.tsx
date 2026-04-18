@@ -2,7 +2,7 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import {createPortal} from 'react-dom';
-import {Heart, X, Copy, Check, QrCode, ExternalLink} from 'lucide-react';
+import {Heart, X, Copy, Check, QrCode} from 'lucide-react';
 import {QRCodeSVG} from 'qrcode.react';
 
 type BankCode = 'bog' | 'tbc' | 'other';
@@ -23,7 +23,6 @@ const FALLBACK: DonationInfo = {
   recipient_name: 'გიორგი',
   recipient_surname: 'მერებაშვილი',
   banks: [
-    {name: 'TBC Bank', iban: 'GE00TB0000000000000000', account: null, code: 'tbc', pay_link: null},
     {name: 'Bank of Georgia', iban: 'GE00BG0000000000000000', account: null, code: 'bog', pay_link: null}
   ]
 };
@@ -31,16 +30,8 @@ const FALLBACK: DonationInfo = {
 const AMOUNT_PRESETS = [5, 10, 25, 50, 100];
 const PURPOSE = 'engineers.ge donation';
 
-function buildPayLink(bank: Bank, amount: number | null): string | null {
-  if (!bank.pay_link) return null;
-  if (!amount) return bank.pay_link;
-  try {
-    const url = new URL(bank.pay_link);
-    url.searchParams.set('amount', String(amount));
-    return url.toString();
-  } catch {
-    return bank.pay_link;
-  }
+function pickBoG(banks: Bank[]): Bank {
+  return banks.find((b) => b.code === 'bog') ?? banks[0];
 }
 
 function formatFullInfo(recipient: string, bank: Bank, amount: number | null) {
@@ -137,7 +128,7 @@ export function DonateModal({open, onClose}: {open: boolean; onClose: () => void
           aria-modal="true"
           aria-labelledby="donate-title"
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-md rounded-[var(--radius-card)] border bg-sur p-5 shadow-xl md:p-6"
+          className="relative w-full max-w-xl rounded-[var(--radius-card)] border bg-sur p-6 shadow-xl md:p-8"
         >
           <button
             onClick={onClose}
@@ -205,84 +196,69 @@ export function DonateModal({open, onClose}: {open: boolean; onClose: () => void
             <span>დაასკანირე ან დააკოპირე რეკვიზიტები</span>
           </div>
 
-          <div className="mt-2 space-y-2">
-            {data.banks.map((bank, i) => {
-              const payUrl = buildPayLink(bank, effectiveAmount);
+          <div className="mt-3">
+            {(() => {
+              const bank = pickBoG(data.banks);
               const fullInfo = formatFullInfo(recipient, bank, effectiveAmount);
               return (
-                <div
-                  key={i}
-                  className="rounded-[var(--radius-card)] border bg-sur p-3"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="shrink-0 rounded-md border bg-white p-1.5">
+                <div className="rounded-[var(--radius-card)] border bg-sur p-5">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="font-mono text-[11px] font-semibold uppercase tracking-[0.12em] text-text-3">
+                      {bank.name}
+                    </div>
+                    <div className="rounded-lg border bg-white p-3">
                       <QRCodeSVG
-                        value={payUrl ?? bank.iban}
-                        size={72}
+                        value={fullInfo}
+                        size={220}
                         level="M"
                         marginSize={0}
                       />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="font-mono text-[10px] font-semibold uppercase tracking-[0.1em] text-text-3">
-                        {bank.name}
+                    <div className="w-full break-all text-center font-mono text-sm text-navy">
+                      {bank.iban}
+                    </div>
+                    {bank.account ? (
+                      <div className="w-full break-all text-center font-mono text-xs text-text-2">
+                        {bank.account}
                       </div>
-                      <div className="mt-0.5 break-all font-mono text-xs text-navy">
-                        {bank.iban}
-                      </div>
-                      {bank.account ? (
-                        <div className="mt-0.5 break-all font-mono text-[11px] text-text-2">
-                          {bank.account}
-                        </div>
-                      ) : null}
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        <button
-                          onClick={() => handleCopy(bank.iban, `iban-${i}`)}
-                          className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold text-text-2 transition-colors hover:border-blue hover:text-blue"
-                        >
-                          {copied === `iban-${i}` ? (
-                            <>
-                              <Check size={11} /> IBAN
-                            </>
-                          ) : (
-                            <>
-                              <Copy size={11} /> IBAN
-                            </>
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleCopy(fullInfo, `full-${i}`)}
-                          className="inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold text-text-2 transition-colors hover:border-blue hover:text-blue"
-                        >
-                          {copied === `full-${i}` ? (
-                            <>
-                              <Check size={11} /> სრული
-                            </>
-                          ) : (
-                            <>
-                              <Copy size={11} /> სრული
-                            </>
-                          )}
-                        </button>
-                        {payUrl ? (
-                          <a
-                            href={payUrl}
-                            target="_blank"
-                            rel="noreferrer noopener"
-                            className="inline-flex items-center gap-1 rounded-md border border-navy/30 bg-navy px-2 py-0.5 text-[10px] font-semibold text-white transition-opacity hover:opacity-90"
-                          >
-                            <ExternalLink size={11} /> გახსნა აპში
-                          </a>
-                        ) : null}
-                      </div>
+                    ) : null}
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <button
+                        onClick={() => handleCopy(bank.iban, 'iban')}
+                        className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold text-text-2 transition-colors hover:border-blue hover:text-blue"
+                      >
+                        {copied === 'iban' ? (
+                          <>
+                            <Check size={13} /> დაკოპირდა
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={13} /> IBAN
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleCopy(fullInfo, 'full')}
+                        className="inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold text-text-2 transition-colors hover:border-blue hover:text-blue"
+                      >
+                        {copied === 'full' ? (
+                          <>
+                            <Check size={13} /> დაკოპირდა
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={13} /> სრული რეკვიზიტები
+                          </>
+                        )}
+                      </button>
                     </div>
                   </div>
                 </div>
               );
-            })}
+            })()}
           </div>
 
-          <p className="mt-4 text-center text-[10px] text-text-3">მადლობა! ❤</p>
+          <p className="mt-5 text-center text-[11px] text-text-3">მადლობა! ❤</p>
         </div>
       </div>
     </div>,

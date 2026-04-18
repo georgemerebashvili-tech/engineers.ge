@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>სადარბაზოს დაწნეხვა — 3D სიმულატორი</title>
+<link rel="stylesheet" href="/calc/_base.css">
+<script src="/calc/_theme-sync.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body { display: flex; flex-direction: column; }
+
+  .sp-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px;
+    background: var(--sur);
+    border-bottom: 1px solid var(--bdr);
+    flex: 0 0 auto;
+  }
+  .sp-header h1 {
+    font-size: 13px; font-weight: 700; color: var(--navy);
+    letter-spacing: 0.01em;
+  }
+  .sp-header .badge {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    background: var(--blue-lt);
+    color: var(--blue);
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .sp-header .spacer { flex: 1; }
+  .sp-header .summary {
+    font-family: var(--font-mono);
+    font-size: 10px; color: var(--text-2);
+    padding: 4px 10px;
+    background: var(--sur-2);
+    border: 1px solid var(--bdr);
+    border-radius: 6px;
+    display: flex; gap: 10px; align-items: center;
+  }
+  .sp-header .summary b { color: var(--navy); font-weight: 700; }
+
+  .sp-root {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  /* ==== Sidebar ==== */
+  .sp-side {
+    background: var(--sur);
+    border-right: 1px solid var(--bdr);
+    overflow-y: auto;
+    padding: 12px;
+  }
+  .sp-side .group { margin-bottom: 14px; }
+  .sp-side .group-title {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--navy);
+    font-weight: 700;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--bdr);
+  }
+  .sp-side label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-2);
+    font-weight: 500;
+    margin-bottom: 3px;
+  }
+  .sp-side .field { margin-bottom: 8px; }
+  .sp-side .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .sp-side input[type=number],
+  .sp-side input[type=text],
+  .sp-side select {
+    width: 100%;
+    padding: 5px 7px;
+    border: 1.5px solid var(--bdr);
+    background: var(--sur);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    border-radius: 5px;
+    transition: border-color .15s;
+  }
+  .sp-side input:focus, .sp-side select:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 2px rgba(31,111,212,.15);
+  }
+
+  .stepper {
+    display: grid;
+    grid-template-columns: 28px 1fr 28px;
+    gap: 4px;
+    align-items: stretch;
+  }
+  .stepper button {
+    background: var(--sur-2);
+    border: 1.5px solid var(--bdr);
+    border-radius: 5px;
+    font-size: 14px;
+    color: var(--navy);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .stepper button:hover { background: var(--blue-lt); border-color: var(--blue); color: var(--blue); }
+  .stepper input { text-align: center; }
+
+  .seg {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 2px;
+    background: var(--sur-2);
+    border: 1.5px solid var(--bdr);
+    border-radius: 6px;
+    padding: 2px;
+  }
+  .seg button {
+    border: 0;
+    background: transparent;
+    padding: 5px 4px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-2);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all .15s;
+    font-family: var(--font-sans);
+  }
+  .seg button:hover { color: var(--navy); }
+  .seg button.active { background: var(--blue); color: #fff; }
+
+  .hint {
+    font-size: 10px;
+    color: var(--text-3);
+    font-style: italic;
+    margin-top: 2px;
+    line-height: 1.35;
+  }
+
+  .actions {
+    display: flex; gap: 6px; margin-top: 10px;
+  }
+  .btn {
+    flex: 1;
+    padding: 7px 10px;
+    border-radius: 6px;
+    border: 1.5px solid var(--bdr);
+    background: var(--sur-2);
+    color: var(--text-2);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn:hover { border-color: var(--blue); color: var(--blue); }
+  .btn.primary {
+    background: var(--blue); border-color: var(--blue); color: #fff;
+  }
+  .btn.primary:hover { background: var(--navy-2); border-color: var(--navy-2); }
+
+  /* ==== Main stage ==== */
+  .sp-main {
+    display: flex; flex-direction: column;
+    background: var(--bg);
+    min-width: 0; min-height: 0;
+  }
+  .sp-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--sur);
+    border-bottom: 1px solid var(--bdr);
+    padding: 0 12px;
+    flex: 0 0 auto;
+  }
+  .sp-tab {
+    padding: 9px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-3);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    border-left: 0; border-right: 0; border-top: 0;
+    font-family: var(--font-sans);
+    display: flex; align-items: center; gap: 6px;
+    transition: color .15s, border-color .15s, background .15s;
+  }
+  .sp-tab:hover { color: var(--text-2); }
+  .sp-tab.active {
+    color: var(--blue);
+    border-bottom-color: var(--blue);
+    background: var(--blue-lt);
+  }
+  .sp-tab .icon { width: 14px; height: 14px; opacity: .9; }
+
+  .sp-stage {
+    flex: 1 1 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .sp-view {
+    position: absolute; inset: 0;
+    display: none;
+  }
+  .sp-view.active { display: block; }
+
+  /* SVG wrapper */
+  .sp-svg-wrap {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    overflow: auto;
+  }
+  .sp-svg-wrap svg {
+    max-width: 100%; max-height: 100%;
+    height: auto;
+  }
+
+  .sp-3d {
+    width: 100%; height: 100%;
+    background: radial-gradient(circle at 30% 20%, #2a3a55 0%, #0f1724 70%);
+  }
+  .dark .sp-3d {
+    background: radial-gradient(circle at 30% 20%, #1a2540 0%, #05080f 70%);
+  }
+  .sp-3d canvas { display: block; width: 100% !important; height: 100% !important; }
+
+  .legend {
+    position: absolute;
+    left: 12px; bottom: 12px;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(6px);
+    border: 1px solid var(--bdr);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text-2);
+    display: flex; flex-direction: column; gap: 4px;
+    z-index: 5;
+    box-shadow: var(--shadow-card);
+  }
+  .dark .legend { background: rgba(20,30,50,.92); color: var(--text); }
+  .legend .row { display: flex; align-items: center; gap: 6px; }
+  .legend .sw { width: 14px; height: 10px; border-radius: 2px; display: inline-block; border: 1px solid rgba(0,0,0,.2); }
+
+  .helper-3d {
+    position: absolute; right: 12px; top: 12px;
+    background: rgba(255,255,255,.92);
+    border: 1px solid var(--bdr);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 10px;
+    color: var(--text-2);
+    font-family: var(--font-mono);
+    z-index: 5;
+  }
+  .dark .helper-3d { background: rgba(20,30,50,.92); color: var(--text); }
+
+  /* SVG styles */
+  .s-wall { fill: var(--sur-2); stroke: var(--text); stroke-width: 2; }
+  .s-slab { fill: var(--bdr-2); stroke: var(--text); stroke-width: 1.5; }
+  .s-door { fill: var(--sur); stroke: var(--navy); stroke-width: 1.5; stroke-dasharray: 3 2; }
+  .s-door-open { fill: var(--blue-lt); stroke: var(--blue); stroke-width: 1.5; }
+  .s-label { font-family: var(--font-mono); font-size: 10px; fill: var(--text-2); }
+  .s-label-b { font-family: var(--font-mono); font-size: 11px; fill: var(--navy); font-weight: 700; }
+  .s-dim { stroke: var(--text-3); stroke-width: .7; fill: none; }
+  .s-dim-tick { stroke: var(--text-3); stroke-width: .7; }
+  .s-airflow { fill: none; stroke: var(--blue); stroke-width: 2; stroke-linecap: round; marker-end: url(#arrow-blue); }
+  .s-airflow-out { fill: none; stroke: var(--ora); stroke-width: 2; stroke-dasharray: 4 3; stroke-linecap: round; marker-end: url(#arrow-ora); }
+  .s-fan { fill: var(--blue); stroke: var(--navy); stroke-width: 1; }
+  .s-stair { fill: var(--sur-2); stroke: var(--text-2); stroke-width: 1; }
+  .s-stair-line { stroke: var(--text-2); stroke-width: .8; }
+  .s-grid { stroke: var(--bdr); stroke-width: .4; fill: none; }
+
+  .dark .s-wall { fill: #1f2a42; stroke: #a7b7d1; }
+  .dark .s-slab { fill: #2a3550; stroke: #a7b7d1; }
+  .dark .s-stair { fill: #1a2438; stroke: #7a8fb0; }
+  .dark .s-stair-line { stroke: #7a8fb0; }
+  .dark .s-door { stroke: #4a9eff; fill: #1a2438; }
+  .dark .s-door-open { fill: #15294a; stroke: #4a9eff; }
+  .dark .s-label, .dark .s-dim, .dark .s-dim-tick { stroke: #a7b7d1; }
+  .dark .s-label { fill: #a7b7d1; stroke: none; }
+  .dark .s-label-b { fill: #e6ecf5; }
+
+  @media (max-width: 820px) {
+    .sp-root { grid-template-columns: 1fr; }
+    .sp-side {
+      border-right: 0;
+      border-bottom: 1px solid var(--bdr);
+      max-height: 45vh;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="sp-header">
+  <h1>სადარბაზოს დაწნეხვის სიმულატორი</h1>
+  <span class="badge">EN 12101-6 · ვიზუალი</span>
+  <div class="spacer"></div>
+  <div class="summary" id="summary">
+    <span>სართული: <b id="sm-floors">5</b></span>
+    <span>·</span>
+    <span>სიმაღლე: <b id="sm-height">15.0 მ</b></span>
+    <span>·</span>
+    <span>ჭრილი: <b id="sm-shaft">2.4 × 5.2 მ</b></span>
+    <span>·</span>
+    <span>კარი: <b id="sm-door">900 × 2100</b></span>
+  </div>
+</div>
+
+<div class="sp-root">
+
+  <!-- ========= SIDEBAR ========= -->
+  <aside class="sp-side">
+
+    <div class="group">
+      <div class="group-title">სართულები</div>
+      <div class="field">
+        <label>სართულების რაოდენობა</label>
+        <div class="stepper">
+          <button type="button" data-step="floors" data-delta="-1">−</button>
+          <input type="number" id="inp-floors" min="2" max="40" value="5">
+          <button type="button" data-step="floors" data-delta="1">+</button>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>სართულის სიმაღლე (მ)</label>
+          <input type="number" id="inp-floor-h" min="2.2" max="6" step="0.05" value="3.0">
+        </div>
+        <div class="field">
+          <label>სარდაფი</label>
+          <div class="seg" data-group="basement">
+            <button type="button" data-val="0" class="active">−</button>
+            <button type="button" data-val="1">1</button>
+            <button type="button" data-val="2">2</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">სადარბაზოს ჭრილი</div>
+      <div class="row2">
+        <div class="field">
+          <label>სიგანე W (მ)</label>
+          <input type="number" id="inp-shaft-w" min="1.5" max="8" step="0.1" value="2.4">
+        </div>
+        <div class="field">
+          <label>სიღრმე D (მ)</label>
+          <input type="number" id="inp-shaft-d" min="2.5" max="10" step="0.1" value="5.2">
+        </div>
+      </div>
+      <div class="field">
+        <label>სქემა</label>
+        <div class="seg" data-group="stair-type">
+          <button type="button" data-val="switchback" class="active">U-სახე</button>
+          <button type="button" data-val="straight">სწორი</button>
+          <button type="button" data-val="spiral">ხვეული</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">კარის ზომები</div>
+      <div class="row2">
+        <div class="field">
+          <label>სიგანე (მმ)</label>
+          <input type="number" id="inp-door-w" min="700" max="1800" step="10" value="900">
+        </div>
+        <div class="field">
+          <label>სიმაღლე (მმ)</label>
+          <input type="number" id="inp-door-h" min="1900" max="2400" step="10" value="2100">
+        </div>
+      </div>
+      <div class="field">
+        <label>კარის განლაგება</label>
+        <div class="seg" data-group="door-pos">
+          <button type="button" data-val="front" class="active">წინა</button>
+          <button type="button" data-val="side">გვერდი</button>
+          <button type="button" data-val="alternate">მონაცვლე</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">დაწნეხვის სცენარი</div>
+      <div class="field">
+        <label>ჰაერის მიწოდების წერტილი</label>
+        <div class="seg" data-group="supply">
+          <button type="button" data-val="bottom" class="active">ქვემოდან</button>
+          <button type="button" data-val="top">ზემოდან</button>
+          <button type="button" data-val="both">ორივე</button>
+          <button type="button" data-val="per-floor">თითო-სართულ.</button>
+        </div>
+        <div class="hint" id="supply-hint">მოდული ქვემოთ, გაშვება ზემოთ · EN 12101-6 Class A</div>
+      </div>
+      <div class="field">
+        <label>მიზნობრივი წნევა Δp</label>
+        <div class="seg" data-group="dp">
+          <button type="button" data-val="30">30 Pa</button>
+          <button type="button" data-val="50" class="active">50 Pa</button>
+          <button type="button" data-val="60">60 Pa</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">ვიზუალიზაცია</div>
+      <div class="field">
+        <label>ჰაერის ნაკადი</label>
+        <div class="seg" data-group="flow-viz">
+          <button type="button" data-val="on" class="active">ჩართ</button>
+          <button type="button" data-val="off">გამორთ</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn" id="btn-reset">Reset</button>
+      <button class="btn primary" id="btn-rebuild">განახლება</button>
+    </div>
+
+  </aside>
+
+  <!-- ========= MAIN ========= -->
+  <main class="sp-main">
+    <div class="sp-tabs">
+      <button class="sp-tab active" data-view="section">ჭრილი</button>
+      <button class="sp-tab" data-view="plan">გეგმა</button>
+      <button class="sp-tab" data-view="d3">3D სცენა</button>
+    </div>
+
+    <div class="sp-stage">
+
+      <!-- SECTION -->
+      <div class="sp-view active" data-view="section">
+        <div class="sp-svg-wrap">
+          <svg id="svg-section" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+        <div class="legend">
+          <div class="row"><span class="sw" style="background:var(--bdr-2)"></span> კედელი / გადახურვა</div>
+          <div class="row"><span class="sw" style="background:var(--blue-lt);border-color:var(--blue)"></span> ღია კარი (ინჟინრული)</div>
+          <div class="row"><span class="sw" style="background:var(--blue)"></span> ჰაერის მიწოდება</div>
+          <div class="row"><span class="sw" style="background:var(--ora)"></span> გამონაბოლქვი / გაჟონვა</div>
+        </div>
+      </div>
+
+      <!-- PLAN -->
+      <div class="sp-view" data-view="plan">
+        <div class="sp-svg-wrap">
+          <svg id="svg-plan" viewBox="0 0 700 520" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+        <div class="legend">
+          <div class="row"><span class="sw" style="background:var(--sur-2);border-color:var(--text)"></span> სადარბაზოს კედელი</div>
+          <div class="row"><span class="sw" style="background:var(--bdr-2)"></span> საფეხურები</div>
+          <div class="row"><span class="sw" style="background:var(--blue-lt)"></span> კარი</div>
+        </div>
+      </div>
+
+      <!-- 3D -->
+      <div class="sp-view" data-view="d3">
+        <div class="sp-3d" id="canvas-3d"></div>
+        <div class="helper-3d">🖱 გადაადგილება: drag · 🎯 zoom: wheel · 🖱 pan: right-drag</div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ============== STATE ==============
+const state = {
+  floors: 5,
+  floorH: 3.0,
+  basement: 0,
+  shaftW: 2.4,
+  shaftD: 5.2,
+  stairType: 'switchback',
+  doorW: 900,
+  doorH: 2100,
+  doorPos: 'front',
+  supply: 'bottom',
+  dp: 50,
+  flowViz: 'on'
+};
+
+// ============== HELPERS ==============
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const svgNS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs={}, children=[]) {
+  const n = document.createElementNS(svgNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  for (const c of children) n.appendChild(c);
+  return n;
+}
+
+function supplyHintText() {
+  if (state.supply === 'bottom') return 'მოდული ქვემოთ, გაშვება ზემოთ · EN 12101-6 Class A';
+  if (state.supply === 'top') return 'მოდული სახურავზე, ვენტშახტი ქვემოთ';
+  if (state.supply === 'both') return 'ჰაერი ორივე ბოლოდან · დაბალანსება უკეთესია';
+  return 'თითოეულ სართულზე ცალ-ცალკე · Class B-C';
+}
+
+function syncSummary() {
+  const totalFl = state.floors + state.basement;
+  const totalH = totalFl * state.floorH;
+  $('#sm-floors').textContent = state.floors + (state.basement ? ` +${state.basement} სარდ.` : '');
+  $('#sm-height').textContent = totalH.toFixed(1) + ' მ';
+  $('#sm-shaft').textContent = `${state.shaftW} × ${state.shaftD} მ`;
+  $('#sm-door').textContent = `${state.doorW} × ${state.doorH}`;
+  $('#supply-hint').textContent = supplyHintText();
+}
+
+// ============== SECTION (ჭრილი) ==============
+function drawSection() {
+  const svg = $('#svg-section');
+  svg.innerHTML = '';
+
+  const totalFl = state.floors + state.basement;
+  const totalH = totalFl * state.floorH;
+
+  // viewBox scaling
+  const pxPerM = Math.min(60, 480 / totalH);
+  const shaftPx = state.shaftW * pxPerM * 2;  // section uses depth for width visual
+  const depthPx = state.shaftD * pxPerM;
+  const contentW = Math.max(depthPx + 160, 500);
+  const contentH = totalH * pxPerM + 120;
+  svg.setAttribute('viewBox', `0 0 ${contentW} ${contentH}`);
+
+  // defs
+  const defs = el('defs');
+  defs.innerHTML = `
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--blue)"/>
+    </marker>
+    <marker id="arrow-ora" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--ora)"/>
+    </marker>
+    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="6" stroke="var(--text-3)" stroke-width="1" opacity=".4"/>
+    </pattern>
+  `;
+  svg.appendChild(defs);
+
+  // ground level
+  const leftX = 80;
+  const topY = 40;
+  const shaftX0 = leftX;
+  const shaftX1 = leftX + depthPx;
+  const groundY = topY + (state.floors * state.floorH) * pxPerM;
+
+  // grid ground
+  const g = el('g');
+  // ground line
+  g.appendChild(el('line', {
+    x1: leftX - 40, y1: groundY, x2: shaftX1 + 60, y2: groundY,
+    stroke: 'var(--text-2)', 'stroke-width': 1.5
+  }));
+  // ground hatching
+  for (let i = 0; i < 10; i++) {
+    const x = leftX - 30 + i * 10;
+    g.appendChild(el('line', {
+      x1: x, y1: groundY, x2: x - 6, y2: groundY + 8,
+      stroke: 'var(--text-2)', 'stroke-width': .7
+    }));
+  }
+  svg.appendChild(g);
+
+  // outer walls (left + right of shaft)
+  const wallT = 8;
+  svg.appendChild(el('rect', {
+    x: shaftX0 - wallT, y: topY,
+    width: wallT, height: (totalFl * state.floorH) * pxPerM,
+    class: 's-wall'
+  }));
+  svg.appendChild(el('rect', {
+    x: shaftX1, y: topY,
+    width: wallT, height: (totalFl * state.floorH) * pxPerM,
+    class: 's-wall'
+  }));
+
+  // roof
+  svg.appendChild(el('rect', {
+    x: shaftX0 - wallT, y: topY - wallT,
+    width: depthPx + 2*wallT, height: wallT,
+    class: 's-wall'
+  }));
+
+  // floors — from top: floor N down to floor 1, then basements
+  for (let i = -state.basement; i <= state.floors; i++) {
+    // i = 0: ground slab, i=1..floors: floor slabs (above), i=-1..: basement
+    // y position — floors above ground go up (smaller y)
+    const floorIdx = i; // 0 is ground
+    const y = groundY - floorIdx * state.floorH * pxPerM;
+    // slab at y
+    if (floorIdx !== 0 || state.basement > 0) {
+      svg.appendChild(el('rect', {
+        x: shaftX0, y: y - 4, width: depthPx, height: 4,
+        class: 's-slab'
+      }));
+    }
+    // label
+    if (floorIdx > 0 && floorIdx < state.floors) {
+      svg.appendChild(el('text', {
+        x: shaftX1 + 12, y: y + 14, class: 's-label-b'
+      })).textContent = floorIdx + '';
+    } else if (floorIdx === 0) {
+      svg.appendChild(el('text', {
+        x: shaftX1 + 12, y: y + 14, class: 's-label-b'
+      })).textContent = 'G';
+    } else if (floorIdx < 0) {
+      svg.appendChild(el('text', {
+        x: shaftX1 + 12, y: y + 14, class: 's-label'
+      })).textContent = 'B' + Math.abs(floorIdx);
+    } else if (floorIdx === state.floors) {
+      svg.appendChild(el('text', {
+        x: shaftX1 + 12, y: y + 14, class: 's-label'
+      })).textContent = 'R';
+    }
+  }
+
+  // doors on each floor (one door per floor, at right end of shaft toward corridor)
+  const doorWpx = Math.max(10, state.doorW / 1000 * pxPerM);
+  const doorHpx = Math.max(12, state.doorH / 1000 * pxPerM);
+  for (let f = -state.basement; f < state.floors; f++) {
+    // door sits on slab at floor f (bottom) going up
+    const bottomY = groundY - f * state.floorH * pxPerM;
+    const topDoorY = bottomY - doorHpx;
+    // alternate positions
+    let alt = 'right';
+    if (state.doorPos === 'alternate') alt = f % 2 === 0 ? 'right' : 'left';
+    if (state.doorPos === 'side') alt = 'left';
+    if (state.doorPos === 'front') alt = 'right';
+    const dx = alt === 'right' ? shaftX1 - doorWpx - 8 : shaftX0 + 8;
+    svg.appendChild(el('rect', {
+      x: dx, y: topDoorY, width: doorWpx, height: doorHpx,
+      class: 's-door-open', rx: 1
+    }));
+    // door swing arc hint
+    const arcStart = alt === 'right' ? dx + doorWpx : dx;
+    svg.appendChild(el('path', {
+      d: alt === 'right'
+        ? `M ${arcStart} ${bottomY} q ${doorWpx*0.7} -${doorWpx*0.5} ${doorWpx*0.7} -${doorWpx*1.0}`
+        : `M ${arcStart} ${bottomY} q -${doorWpx*0.7} -${doorWpx*0.5} -${doorWpx*0.7} -${doorWpx*1.0}`,
+      fill: 'none', stroke: 'var(--blue)', 'stroke-width': .7, 'stroke-dasharray': '2 2'
+    }));
+  }
+
+  // stair representation (diagonal zig-zag inside shaft)
+  drawSectionStairs(svg, shaftX0, shaftX1, groundY, pxPerM);
+
+  // airflow
+  if (state.flowViz === 'on') drawSectionAirflow(svg, shaftX0, shaftX1, groundY, topY, pxPerM);
+
+  // total dimension on left
+  drawDimensionVertical(svg, shaftX0 - 50, topY, groundY, `+${(state.floors*state.floorH).toFixed(1)} მ`);
+  if (state.basement) {
+    drawDimensionVertical(svg, shaftX0 - 50, groundY, groundY + state.basement*state.floorH*pxPerM,
+      `-${(state.basement*state.floorH).toFixed(1)} მ`);
+  }
+
+  // door dim small
+  const dimX = shaftX1 + 55;
+  const dimBottomY = groundY;
+  svg.appendChild(el('text', {
+    x: dimX, y: dimBottomY - doorHpx/2, class: 's-label'
+  })).textContent = `${state.doorH} მმ`;
+  svg.appendChild(el('line', {
+    x1: dimX - 4, y1: dimBottomY - doorHpx, x2: dimX - 4, y2: dimBottomY,
+    class: 's-dim'
+  }));
+
+  // Title
+  svg.appendChild(el('text', {
+    x: leftX, y: topY - 15, class: 's-label-b', 'font-size': 13
+  })).textContent = `ჭრილი A–A · ${state.floors + state.basement} სართული · ${(totalH).toFixed(1)} მ`;
+}
+
+function drawSectionStairs(svg, x0, x1, groundY, pxPerM) {
+  const g = el('g', {opacity: '.5'});
+  const midX = (x0 + x1) / 2;
+  for (let f = -state.basement; f < state.floors; f++) {
+    const y0 = groundY - f * state.floorH * pxPerM;
+    const y1 = groundY - (f+1) * state.floorH * pxPerM;
+    // up-run from left half, landing mid, down-run right half (switchback)
+    if (state.stairType === 'switchback') {
+      g.appendChild(el('line', {x1: x0 + 20, y1: y0 - 2, x2: midX - 5, y2: y1 + state.floorH * pxPerM * .45, class: 's-stair-line'}));
+      g.appendChild(el('line', {x1: midX + 5, y1: y1 + state.floorH * pxPerM * .45, x2: x1 - 20, y2: y1 + 2, class: 's-stair-line'}));
+      // landings
+      g.appendChild(el('rect', {x: midX - 18, y: y1 + state.floorH * pxPerM * .42, width: 36, height: 3, class: 's-stair'}));
+    } else if (state.stairType === 'straight') {
+      g.appendChild(el('line', {x1: x0 + 20, y1: y0 - 2, x2: x1 - 20, y2: y1 + 2, class: 's-stair-line'}));
+    } else { // spiral
+      for (let t = 0; t <= 1; t += .1) {
+        const sx = x0 + 25 + (x1 - x0 - 50) * (0.5 + 0.45 * Math.sin(t * Math.PI * 2));
+        const sy = y0 - t * (y0 - y1);
+        g.appendChild(el('circle', {cx: sx, cy: sy, r: 1.5, fill: 'var(--text-3)'}));
+      }
+    }
+  }
+  svg.appendChild(g);
+}
+
+function drawSectionAirflow(svg, x0, x1, groundY, topY, pxPerM) {
+  const g = el('g');
+  const midX = (x0 + x1) / 2;
+  const totalH = (state.floors + state.basement) * state.floorH * pxPerM;
+  const bottomY = groundY + state.basement * state.floorH * pxPerM;
+
+  if (state.supply === 'bottom' || state.supply === 'both') {
+    // fan at bottom
+    drawFan(g, midX, bottomY + 30, 14, 'up');
+    // label
+    const lbl = el('text', {x: midX + 24, y: bottomY + 36, class: 's-label-b', fill: 'var(--blue)'});
+    lbl.textContent = `Δp ${state.dp} Pa`;
+    g.appendChild(lbl);
+    // main arrow up center
+    for (let i = 0; i < 4; i++) {
+      const dx = (i - 1.5) * 14;
+      g.appendChild(el('path', {
+        d: `M ${midX + dx} ${bottomY + 14} L ${midX + dx} ${topY + 10}`,
+        class: 's-airflow'
+      }));
+    }
+  }
+
+  if (state.supply === 'top' || state.supply === 'both') {
+    // fan at top
+    drawFan(g, midX, topY - 22, 14, 'down');
+    const lbl = el('text', {x: midX + 24, y: topY - 18, class: 's-label-b', fill: 'var(--blue)'});
+    lbl.textContent = `Δp ${state.dp} Pa`;
+    g.appendChild(lbl);
+    for (let i = 0; i < 4; i++) {
+      const dx = (i - 1.5) * 14;
+      g.appendChild(el('path', {
+        d: `M ${midX + dx} ${topY - 8} L ${midX + dx} ${bottomY - 10}`,
+        class: 's-airflow'
+      }));
+    }
+  }
+
+  if (state.supply === 'per-floor') {
+    for (let f = 0; f < state.floors; f++) {
+      const y = groundY - f * state.floorH * pxPerM - state.floorH * pxPerM * 0.5;
+      drawFan(g, x0 - 22, y, 9, 'right');
+      g.appendChild(el('path', {
+        d: `M ${x0 - 6} ${y} L ${midX} ${y}`,
+        class: 's-airflow'
+      }));
+    }
+  }
+
+  // out-flow arrows (pressure relief to corridor through doors)
+  for (let f = 0; f < state.floors; f++) {
+    const y = groundY - f * state.floorH * pxPerM - 12;
+    const alt = state.doorPos === 'alternate' ? (f % 2 === 0 ? 'right' : 'left')
+              : state.doorPos === 'side' ? 'left' : 'right';
+    if (alt === 'right') {
+      g.appendChild(el('path', {
+        d: `M ${x1 - 30} ${y} L ${x1 + 35} ${y}`,
+        class: 's-airflow-out'
+      }));
+    } else {
+      g.appendChild(el('path', {
+        d: `M ${x0 + 30} ${y} L ${x0 - 35} ${y}`,
+        class: 's-airflow-out'
+      }));
+    }
+  }
+
+  svg.appendChild(g);
+}
+
+function drawFan(g, cx, cy, r, dir) {
+  // housing
+  g.appendChild(el('circle', {cx, cy, r: r+4, fill: 'var(--sur)', stroke: 'var(--navy)', 'stroke-width': 1.2}));
+  // blades
+  for (let i = 0; i < 3; i++) {
+    const a = i * (Math.PI * 2 / 3);
+    const x2 = cx + Math.cos(a) * r;
+    const y2 = cy + Math.sin(a) * r;
+    g.appendChild(el('path', {
+      d: `M ${cx} ${cy} Q ${cx + Math.cos(a+0.6)*r*0.7} ${cy + Math.sin(a+0.6)*r*0.7} ${x2} ${y2}`,
+      fill: 'var(--blue)', stroke: 'var(--navy)', 'stroke-width': .6, opacity: .85
+    }));
+  }
+  // center hub
+  g.appendChild(el('circle', {cx, cy, r: 2, fill: 'var(--navy)'}));
+}
+
+function drawDimensionVertical(svg, x, y0, y1, label) {
+  svg.appendChild(el('line', {x1: x, y1: y0, x2: x, y2: y1, class: 's-dim'}));
+  svg.appendChild(el('line', {x1: x-4, y1: y0, x2: x+4, y2: y0, class: 's-dim-tick'}));
+  svg.appendChild(el('line', {x1: x-4, y1: y1, x2: x+4, y2: y1, class: 's-dim-tick'}));
+  const t = el('text', {x: x - 8, y: (y0+y1)/2, class: 's-label',
+    transform: `rotate(-90 ${x-8} ${(y0+y1)/2})`, 'text-anchor': 'middle'});
+  t.textContent = label;
+  svg.appendChild(t);
+}
+
+// ============== PLAN (გეგმა) ==============
+function drawPlan() {
+  const svg = $('#svg-plan');
+  svg.innerHTML = '';
+
+  const defs = el('defs');
+  defs.innerHTML = `
+    <marker id="arrow-blue-p" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="var(--blue)"/>
+    </marker>
+  `;
+  svg.appendChild(defs);
+
+  const w = state.shaftW;
+  const d = state.shaftD;
+  const pxPerM = Math.min(90, Math.min(520/d, 480/w));
+  const shaftWpx = w * pxPerM;
+  const shaftDpx = d * pxPerM;
+  const cx0 = 350 - shaftDpx/2;
+  const cy0 = 250 - shaftWpx/2;
+  const cx1 = cx0 + shaftDpx;
+  const cy1 = cy0 + shaftWpx;
+
+  svg.setAttribute('viewBox', `0 0 ${700} ${520}`);
+
+  // outer walls (with thickness)
+  const wallT = 10;
+  // outer rect
+  svg.appendChild(el('rect', {
+    x: cx0 - wallT, y: cy0 - wallT,
+    width: shaftDpx + 2*wallT, height: shaftWpx + 2*wallT,
+    class: 's-wall'
+  }));
+  // inner (air space)
+  svg.appendChild(el('rect', {
+    x: cx0, y: cy0,
+    width: shaftDpx, height: shaftWpx,
+    fill: 'var(--sur)', stroke: 'none'
+  }));
+
+  // stairs
+  drawPlanStairs(svg, cx0, cy0, cx1, cy1);
+
+  // door — one door per representative floor (plan shows one floor)
+  const doorWpx = Math.max(12, state.doorW / 1000 * pxPerM);
+  let doorX, doorY, doorSide;
+  if (state.doorPos === 'front') {
+    doorSide = 'right';
+    doorX = cx1 - wallT;
+    doorY = cy0 + shaftWpx/2 - doorWpx/2;
+    svg.appendChild(el('rect', {
+      x: doorX, y: doorY, width: wallT + 2, height: doorWpx,
+      fill: 'var(--sur)', stroke: 'var(--blue)', 'stroke-width': 1.5
+    }));
+    // swing
+    svg.appendChild(el('path', {
+      d: `M ${cx1 + 2} ${doorY + doorWpx} A ${doorWpx} ${doorWpx} 0 0 0 ${cx1 + doorWpx + 2} ${doorY}`,
+      fill: 'none', stroke: 'var(--blue)', 'stroke-width': .8, 'stroke-dasharray': '3 2'
+    }));
+    // door leaf open
+    svg.appendChild(el('line', {
+      x1: cx1 + 2, y1: doorY + doorWpx, x2: cx1 + 2, y2: doorY + doorWpx - doorWpx,
+      stroke: 'var(--blue)', 'stroke-width': 2
+    }));
+    svg.appendChild(el('text', {x: cx1 + doorWpx + 12, y: doorY + doorWpx/2 + 3, class: 's-label'}))
+      .textContent = `კარი ${state.doorW}×${state.doorH}`;
+  } else if (state.doorPos === 'side') {
+    doorSide = 'bottom';
+    doorX = cx0 + shaftDpx/2 - doorWpx/2;
+    doorY = cy1 - wallT;
+    svg.appendChild(el('rect', {
+      x: doorX, y: doorY, width: doorWpx, height: wallT + 2,
+      fill: 'var(--sur)', stroke: 'var(--blue)', 'stroke-width': 1.5
+    }));
+    svg.appendChild(el('path', {
+      d: `M ${doorX} ${cy1 + 2} A ${doorWpx} ${doorWpx} 0 0 1 ${doorX + doorWpx} ${cy1 + doorWpx + 2}`,
+      fill: 'none', stroke: 'var(--blue)', 'stroke-width': .8, 'stroke-dasharray': '3 2'
+    }));
+    svg.appendChild(el('text', {x: doorX + doorWpx/2, y: cy1 + doorWpx + 22, class: 's-label', 'text-anchor': 'middle'}))
+      .textContent = `კარი ${state.doorW}×${state.doorH}`;
+  } else {
+    // alternate — show both sides
+    const dy = cy0 + shaftWpx/2 - doorWpx/2;
+    svg.appendChild(el('rect', {
+      x: cx1 - wallT, y: dy, width: wallT + 2, height: doorWpx,
+      fill: 'var(--sur)', stroke: 'var(--blue)', 'stroke-width': 1.5
+    }));
+    svg.appendChild(el('text', {x: cx1 + 12, y: dy - 4, class: 's-label'})).textContent = 'კარი (ლუწი სართ.)';
+    const dx2 = cx0 + shaftDpx/2 - doorWpx/2;
+    svg.appendChild(el('rect', {
+      x: dx2, y: cy1 - wallT, width: doorWpx, height: wallT + 2,
+      fill: 'var(--sur-2)', stroke: 'var(--blue)', 'stroke-width': 1.5, 'stroke-dasharray': '4 3'
+    }));
+    svg.appendChild(el('text', {x: dx2 + doorWpx/2, y: cy1 + 22, class: 's-label', 'text-anchor': 'middle'}))
+      .textContent = 'კარი (კენტი სართ.)';
+  }
+
+  // airflow
+  if (state.flowViz === 'on') {
+    if (state.supply === 'bottom' || state.supply === 'top' || state.supply === 'both') {
+      // arrow from center up (representing shaft injection direction in plan = rising from center)
+      const mcx = cx0 + shaftDpx/2;
+      const mcy = cy0 + shaftWpx/2;
+      svg.appendChild(el('circle', {cx: mcx, cy: mcy, r: 22,
+        fill: 'var(--blue-lt)', stroke: 'var(--blue)', 'stroke-width': 1.5, 'stroke-dasharray': '3 2'}));
+      svg.appendChild(el('text', {x: mcx, y: mcy + 4, class: 's-label-b',
+        'text-anchor': 'middle', fill: 'var(--blue)'}))
+        .textContent = state.supply === 'top' ? '↓' : '↑';
+      svg.appendChild(el('text', {x: mcx, y: mcy + 38, class: 's-label',
+        'text-anchor': 'middle'}))
+        .textContent = `Δp ${state.dp} Pa`;
+    }
+  }
+
+  // dimensions
+  // width (horizontal)
+  const dimY = cy1 + 50;
+  svg.appendChild(el('line', {x1: cx0, y1: dimY, x2: cx1, y2: dimY, class: 's-dim'}));
+  svg.appendChild(el('line', {x1: cx0, y1: dimY-4, x2: cx0, y2: dimY+4, class: 's-dim-tick'}));
+  svg.appendChild(el('line', {x1: cx1, y1: dimY-4, x2: cx1, y2: dimY+4, class: 's-dim-tick'}));
+  svg.appendChild(el('text', {x: (cx0+cx1)/2, y: dimY - 4, class: 's-label', 'text-anchor': 'middle'}))
+    .textContent = `D = ${state.shaftD} მ`;
+
+  const dimX = cx0 - 50;
+  svg.appendChild(el('line', {x1: dimX, y1: cy0, x2: dimX, y2: cy1, class: 's-dim'}));
+  svg.appendChild(el('line', {x1: dimX-4, y1: cy0, x2: dimX+4, y2: cy0, class: 's-dim-tick'}));
+  svg.appendChild(el('line', {x1: dimX-4, y1: cy1, x2: dimX+4, y2: cy1, class: 's-dim-tick'}));
+  const tt = el('text', {x: dimX - 8, y: (cy0+cy1)/2, class: 's-label', 'text-anchor': 'middle',
+    transform: `rotate(-90 ${dimX-8} ${(cy0+cy1)/2})`});
+  tt.textContent = `W = ${state.shaftW} მ`;
+  svg.appendChild(tt);
+
+  // title
+  svg.appendChild(el('text', {x: cx0, y: cy0 - 25, class: 's-label-b', 'font-size': 13}))
+    .textContent = `გეგმა · ტიპური სართული · ${state.shaftW}×${state.shaftD} მ`;
+
+  // north arrow
+  const nx = 640, ny = 70;
+  svg.appendChild(el('circle', {cx: nx, cy: ny, r: 18, fill: 'var(--sur)', stroke: 'var(--navy)', 'stroke-width': 1}));
+  svg.appendChild(el('path', {d: `M ${nx} ${ny-14} L ${nx-7} ${ny+10} L ${nx} ${ny+4} L ${nx+7} ${ny+10} z`,
+    fill: 'var(--navy)'}));
+  svg.appendChild(el('text', {x: nx, y: ny + 32, class: 's-label-b', 'text-anchor': 'middle', 'font-size': 10})).textContent = 'N';
+}
+
+function drawPlanStairs(svg, x0, y0, x1, y1) {
+  const g = el('g');
+  const w = x1 - x0;
+  const h = y1 - y0;
+
+  if (state.stairType === 'switchback') {
+    // two flights + landing in middle (top + bottom half along depth)
+    const midX = x0 + w/2;
+    // top flight (up)
+    const flightH = h * 0.42;
+    const nSteps = 11;
+    for (let i = 0; i < nSteps; i++) {
+      const sx = x0 + 10 + (midX - x0 - 20) * (i / nSteps);
+      g.appendChild(el('line', {
+        x1: sx, y1: y0 + 6, x2: sx, y2: y0 + 6 + flightH,
+        class: 's-stair-line'
+      }));
+    }
+    // bottom flight (down)
+    for (let i = 0; i < nSteps; i++) {
+      const sx = midX + 10 + (x1 - midX - 20) * (i / nSteps);
+      g.appendChild(el('line', {
+        x1: sx, y1: y1 - 6 - flightH, x2: sx, y2: y1 - 6,
+        class: 's-stair-line'
+      }));
+    }
+    // central landing/void
+    g.appendChild(el('rect', {
+      x: x0 + 8, y: y0 + h*0.44, width: w - 16, height: h*0.12,
+      fill: 'var(--bdr-2)', stroke: 'var(--text-2)', 'stroke-width': .6,
+      opacity: .6
+    }));
+    // direction arrows
+    g.appendChild(el('path', {
+      d: `M ${x0 + 20} ${y0 + flightH/2 + 6} L ${midX - 16} ${y0 + flightH/2 + 6}`,
+      fill: 'none', stroke: 'var(--blue)', 'stroke-width': 1.2, 'marker-end': 'url(#arrow-blue-p)'
+    }));
+    g.appendChild(el('text', {x: (x0 + midX)/2, y: y0 + flightH/2 - 2, class: 's-label',
+      'text-anchor': 'middle', 'font-size': 9})).textContent = 'UP';
+  } else if (state.stairType === 'straight') {
+    const nSteps = 14;
+    for (let i = 0; i < nSteps; i++) {
+      const sx = x0 + 8 + (w - 16) * (i / nSteps);
+      g.appendChild(el('line', {
+        x1: sx, y1: y0 + 10, x2: sx, y2: y1 - 10,
+        class: 's-stair-line'
+      }));
+    }
+    g.appendChild(el('path', {
+      d: `M ${x0 + 15} ${(y0+y1)/2} L ${x1 - 20} ${(y0+y1)/2}`,
+      fill: 'none', stroke: 'var(--blue)', 'stroke-width': 1.2, 'marker-end': 'url(#arrow-blue-p)'
+    }));
+  } else {
+    // spiral
+    const cx = x0 + w/2;
+    const cy = y0 + h/2;
+    const r = Math.min(w, h) / 2 - 15;
+    g.appendChild(el('circle', {cx, cy, r, fill: 'var(--sur-2)', stroke: 'var(--text-2)', 'stroke-width': 1}));
+    g.appendChild(el('circle', {cx, cy, r: r * 0.25, fill: 'var(--bdr-2)', stroke: 'var(--text-2)', 'stroke-width': .8}));
+    const nSteps = 16;
+    for (let i = 0; i < nSteps; i++) {
+      const a = i * (Math.PI * 2 / nSteps);
+      g.appendChild(el('line', {
+        x1: cx + Math.cos(a) * r * 0.25, y1: cy + Math.sin(a) * r * 0.25,
+        x2: cx + Math.cos(a) * r, y2: cy + Math.sin(a) * r,
+        class: 's-stair-line'
+      }));
+    }
+  }
+
+  svg.appendChild(g);
+}
+
+// ============== 3D ==============
+let scene, camera, renderer, controls;
+let shaftGroup, particleGroup;
+const particles = [];
+
+function init3D() {
+  const mount = $('#canvas-3d');
+  scene = new THREE.Scene();
+  const isDark = document.documentElement.classList.contains('dark');
+  scene.background = null;
+  scene.fog = new THREE.Fog(isDark ? 0x0a1020 : 0x1a2438, 40, 120);
+
+  const w = mount.clientWidth || 800;
+  const h = mount.clientHeight || 600;
+  camera = new THREE.PerspectiveCamera(45, w/h, 0.1, 500);
+  camera.position.set(18, 14, 22);
+
+  renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(w, h, false);
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  mount.appendChild(renderer.domElement);
+
+  // lights
+  const amb = new THREE.AmbientLight(0xffffff, 0.55);
+  scene.add(amb);
+  const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+  dir.position.set(20, 35, 25);
+  dir.castShadow = true;
+  dir.shadow.mapSize.set(1024, 1024);
+  dir.shadow.camera.left = -30;
+  dir.shadow.camera.right = 30;
+  dir.shadow.camera.top = 30;
+  dir.shadow.camera.bottom = -30;
+  scene.add(dir);
+  const fill = new THREE.PointLight(0x4a9eff, 0.5, 60);
+  fill.position.set(-10, 10, -10);
+  scene.add(fill);
+
+  // ground
+  const groundMat = new THREE.MeshStandardMaterial({color: 0x232f48, roughness: .9, metalness: .1});
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(60, 64), groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = 0;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // grid
+  const grid = new THREE.GridHelper(60, 30, 0x4a6080, 0x2a3a55);
+  grid.material.opacity = 0.4;
+  grid.material.transparent = true;
+  scene.add(grid);
+
+  // controls
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.target.set(0, 6, 0);
+  controls.maxPolarAngle = Math.PI * 0.49;
+  controls.minDistance = 8;
+  controls.maxDistance = 80;
+
+  shaftGroup = new THREE.Group();
+  scene.add(shaftGroup);
+  particleGroup = new THREE.Group();
+  scene.add(particleGroup);
+
+  window.addEventListener('resize', onResize3D);
+  const ro = new ResizeObserver(onResize3D);
+  ro.observe(mount);
+
+  animate3D();
+}
+
+function onResize3D() {
+  const mount = $('#canvas-3d');
+  if (!mount || !renderer) return;
+  const w = mount.clientWidth;
+  const h = mount.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+
+function clearGroup(g) {
+  while (g.children.length) {
+    const c = g.children[0];
+    g.remove(c);
+    if (c.geometry) c.geometry.dispose?.();
+    if (c.material) {
+      if (Array.isArray(c.material)) c.material.forEach(m => m.dispose?.());
+      else c.material.dispose?.();
+    }
+  }
+}
+
+function build3D() {
+  if (!scene) return;
+  clearGroup(shaftGroup);
+  clearGroup(particleGroup);
+  particles.length = 0;
+
+  const W = state.shaftW;
+  const D = state.shaftD;
+  const floorH = state.floorH;
+  const floors = state.floors;
+  const basements = state.basement;
+  const wallT = 0.25;
+
+  // Materials
+  const wallMat = new THREE.MeshStandardMaterial({
+    color: 0xdde6f2,
+    roughness: .85,
+    metalness: .05,
+    transparent: true,
+    opacity: .22,
+    side: THREE.DoubleSide
+  });
+  const slabMat = new THREE.MeshStandardMaterial({
+    color: 0xc4d4e8,
+    roughness: .9,
+    metalness: .05,
+    transparent: true,
+    opacity: .45
+  });
+  const wallEdgeMat = new THREE.LineBasicMaterial({color: 0x1a3a6b, opacity: .7, transparent: true});
+  const doorMat = new THREE.MeshStandardMaterial({
+    color: 0x1f6fd4, emissive: 0x0a3370, emissiveIntensity: .35,
+    roughness: .5, metalness: .2,
+    transparent: true, opacity: .75
+  });
+  const doorFrameMat = new THREE.MeshStandardMaterial({color: 0xe8f1fd, emissive: 0x4a9eff, emissiveIntensity: .15});
+  const stairMat = new THREE.MeshStandardMaterial({color: 0x7a96b8, roughness: .85});
+  const fanMat = new THREE.MeshStandardMaterial({color: 0x1f6fd4, emissive: 0x1f6fd4, emissiveIntensity: .5});
+  const fanHousingMat = new THREE.MeshStandardMaterial({color: 0x3d5470, roughness: .6, metalness: .4});
+
+  const groundLevel = basements * floorH;
+
+  // Outer shell — 4 walls with door openings
+  const totalH = (floors + basements) * floorH;
+  const shaftGeo = new THREE.BoxGeometry(D, totalH, W);
+  // We'll fake "open shell" by using an outline + 4 wall panels
+  // Build 4 wall panels each with door-shaped holes cut via ShapeGeometry
+
+  // LEFT wall (x = -D/2), plane in z×y
+  const buildWallWithDoors = (side) => {
+    // side: 'right' | 'left' | 'front' | 'back'
+    // create a big rectangle with holes for doors on each floor if matches doorPos
+    const isHoleFloor = (f, side) => {
+      if (state.doorPos === 'front') return side === 'right';
+      if (state.doorPos === 'side') return side === 'left';
+      if (state.doorPos === 'alternate') {
+        return (f % 2 === 0 && side === 'right') || (f % 2 === 1 && side === 'left');
+      }
+      return false;
+    };
+
+    let width, height, pos, rot;
+    if (side === 'right') {
+      width = W; height = totalH;
+      pos = new THREE.Vector3(D/2, totalH/2, 0);
+      rot = [0, -Math.PI/2, 0];
+    } else if (side === 'left') {
+      width = W; height = totalH;
+      pos = new THREE.Vector3(-D/2, totalH/2, 0);
+      rot = [0, Math.PI/2, 0];
+    } else if (side === 'back') {
+      width = D; height = totalH;
+      pos = new THREE.Vector3(0, totalH/2, -W/2);
+      rot = [0, 0, 0];
+    } else {
+      width = D; height = totalH;
+      pos = new THREE.Vector3(0, totalH/2, W/2);
+      rot = [0, Math.PI, 0];
+    }
+
+    // Shape of wall
+    const shape = new THREE.Shape();
+    shape.moveTo(-width/2, -height/2);
+    shape.lineTo(width/2, -height/2);
+    shape.lineTo(width/2, height/2);
+    shape.lineTo(-width/2, height/2);
+    shape.lineTo(-width/2, -height/2);
+
+    // Punch door holes
+    const doorWm = state.doorW / 1000;
+    const doorHm = state.doorH / 1000;
+    for (let f = -basements; f < floors; f++) {
+      if (!isHoleFloor(f + basements, side)) continue;
+      const floorBaseY = f * floorH - totalH/2 + basements * floorH;
+      const doorBottom = floorBaseY;
+      const doorTop = doorBottom + doorHm;
+      const doorX = 0;
+      const hole = new THREE.Path();
+      hole.moveTo(doorX - doorWm/2, doorBottom);
+      hole.lineTo(doorX + doorWm/2, doorBottom);
+      hole.lineTo(doorX + doorWm/2, doorTop);
+      hole.lineTo(doorX - doorWm/2, doorTop);
+      hole.lineTo(doorX - doorWm/2, doorBottom);
+      shape.holes.push(hole);
+    }
+
+    const geo = new THREE.ShapeGeometry(shape);
+    const wall = new THREE.Mesh(geo, wallMat);
+    wall.position.copy(pos);
+    wall.rotation.set(...rot);
+    wall.castShadow = true;
+    wall.receiveShadow = true;
+    shaftGroup.add(wall);
+
+    // edges
+    const edges = new THREE.EdgesGeometry(geo, 20);
+    const line = new THREE.LineSegments(edges, wallEdgeMat);
+    line.position.copy(pos);
+    line.rotation.set(...rot);
+    shaftGroup.add(line);
+  };
+
+  buildWallWithDoors('right');
+  buildWallWithDoors('left');
+  buildWallWithDoors('front');
+  buildWallWithDoors('back');
+
+  // Slabs per floor
+  for (let f = 0; f <= floors + basements; f++) {
+    const y = f * floorH - basements * floorH;
+    if (y < 0.01 && y > -0.01 && f === basements) {
+      // ground slab — slightly emphasized
+    }
+    const slab = new THREE.Mesh(
+      new THREE.BoxGeometry(D - 0.05, 0.08, W - 0.05),
+      slabMat
+    );
+    slab.position.set(0, y, 0);
+    slab.receiveShadow = true;
+    // leave a small rectangular void for stair (represented visually)
+    shaftGroup.add(slab);
+  }
+
+  // Door panels (in doorway openings) — semi-open
+  const doorWm = state.doorW / 1000;
+  const doorHm = state.doorH / 1000;
+  for (let f = -basements; f < floors; f++) {
+    const fIdx = f + basements;
+    let side;
+    if (state.doorPos === 'alternate') side = fIdx % 2 === 0 ? 'right' : 'left';
+    else if (state.doorPos === 'side') side = 'left';
+    else side = 'right';
+
+    const floorBaseY = f * floorH + basements * floorH + 0.02;
+    const doorCenterY = floorBaseY + doorHm/2;
+
+    // frame
+    const frame = new THREE.Mesh(
+      new THREE.BoxGeometry(doorWm + 0.1, doorHm + 0.08, 0.08),
+      doorFrameMat
+    );
+    // leaf (slightly rotated open to show airflow direction)
+    const leaf = new THREE.Mesh(
+      new THREE.BoxGeometry(doorWm, doorHm, 0.04),
+      doorMat
+    );
+
+    if (side === 'right') {
+      frame.position.set(D/2 + 0.02, doorCenterY, 0);
+      frame.rotation.y = Math.PI/2;
+      leaf.position.set(D/2 + 0.05, doorCenterY, -doorWm/2 * 0.1);
+      leaf.rotation.y = Math.PI/2 + 0.15;
+    } else {
+      frame.position.set(-D/2 - 0.02, doorCenterY, 0);
+      frame.rotation.y = -Math.PI/2;
+      leaf.position.set(-D/2 - 0.05, doorCenterY, doorWm/2 * 0.1);
+      leaf.rotation.y = -Math.PI/2 - 0.15;
+    }
+    shaftGroup.add(frame);
+    shaftGroup.add(leaf);
+  }
+
+  // Stairs — simplified switchback ramp per floor
+  for (let f = -basements; f < floors; f++) {
+    const y0 = f * floorH + basements * floorH;
+    if (state.stairType === 'switchback') {
+      // upper flight (left half going up-forward)
+      const flight1 = new THREE.Mesh(
+        new THREE.BoxGeometry(D * 0.42, 0.12, W * 0.38),
+        stairMat
+      );
+      flight1.position.set(-D * 0.22, y0 + floorH * 0.25, W * 0.25);
+      flight1.rotation.z = Math.atan2(floorH * 0.5, D * 0.42);
+      flight1.castShadow = true;
+      shaftGroup.add(flight1);
+      // landing
+      const landing = new THREE.Mesh(
+        new THREE.BoxGeometry(D * 0.42, 0.1, W * 0.38),
+        stairMat
+      );
+      landing.position.set(D * 0.22, y0 + floorH * 0.5, W * 0.25);
+      shaftGroup.add(landing);
+      // lower flight (right half)
+      const flight2 = new THREE.Mesh(
+        new THREE.BoxGeometry(D * 0.42, 0.12, W * 0.38),
+        stairMat
+      );
+      flight2.position.set(-D * 0.0, y0 + floorH * 0.75, -W * 0.22);
+      flight2.rotation.z = -Math.atan2(floorH * 0.5, D * 0.42);
+      flight2.castShadow = true;
+      // (kept simple, acceptable for visual simulator)
+      shaftGroup.add(flight2);
+    } else if (state.stairType === 'straight') {
+      const flight = new THREE.Mesh(
+        new THREE.BoxGeometry(D * 0.8, 0.12, W * 0.4),
+        stairMat
+      );
+      flight.position.set(0, y0 + floorH * 0.5, 0);
+      flight.rotation.z = Math.atan2(floorH, D * 0.8);
+      flight.castShadow = true;
+      shaftGroup.add(flight);
+    } else {
+      // spiral — helical steps
+      const nSteps = 12;
+      for (let i = 0; i < nSteps; i++) {
+        const a = i * (Math.PI * 2 / nSteps);
+        const r = Math.min(D, W) * 0.35;
+        const step = new THREE.Mesh(
+          new THREE.BoxGeometry(r * 0.7, 0.08, 0.35),
+          stairMat
+        );
+        step.position.set(
+          Math.cos(a) * r * 0.5,
+          y0 + (i / nSteps) * floorH,
+          Math.sin(a) * r * 0.5
+        );
+        step.rotation.y = a;
+        shaftGroup.add(step);
+      }
+    }
+  }
+
+  // Fan(s)
+  const placeFan = (y, direction) => {
+    const housing = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.65, 0.65, 0.35, 16),
+      fanHousingMat
+    );
+    housing.position.set(0, y, 0);
+    shaftGroup.add(housing);
+    const fanRotor = new THREE.Group();
+    for (let i = 0; i < 4; i++) {
+      const blade = new THREE.Mesh(
+        new THREE.BoxGeometry(0.55, 0.05, 0.12),
+        fanMat
+      );
+      blade.rotation.y = i * Math.PI / 2;
+      blade.position.set(
+        Math.cos(i * Math.PI / 2) * 0.3, 0,
+        Math.sin(i * Math.PI / 2) * 0.3
+      );
+      // adjust: blades should fan out from center
+      blade.position.set(0, 0, 0);
+      blade.translateX(0.3);
+      fanRotor.add(blade);
+    }
+    fanRotor.position.set(0, y, 0);
+    fanRotor.userData.spin = direction === 'up' ? 1 : -1;
+    fanRotor.name = 'fan-rotor';
+    shaftGroup.add(fanRotor);
+  };
+
+  const fanYBottom = -basements * floorH - 0.2;
+  const fanYTop = floors * floorH + 0.2;
+  if (state.supply === 'bottom' || state.supply === 'both') placeFan(fanYBottom, 'up');
+  if (state.supply === 'top' || state.supply === 'both') placeFan(fanYTop, 'down');
+  if (state.supply === 'per-floor') {
+    for (let f = 0; f < floors; f++) {
+      // side duct fan (wall-mounted, shown near left wall)
+      const fan = new THREE.Mesh(
+        new THREE.BoxGeometry(0.5, 0.5, 0.5),
+        fanHousingMat
+      );
+      fan.position.set(-D/2 + 0.3, f * floorH + floorH/2, -W/2 + 0.3);
+      shaftGroup.add(fan);
+    }
+  }
+
+  // particles (airflow)
+  if (state.flowViz === 'on') {
+    spawnParticles();
+  }
+}
+
+function spawnParticles() {
+  const count = Math.min(240, Math.max(60, state.floors * 12));
+  const totalH = (state.floors + state.basement) * state.floorH;
+  const D = state.shaftD;
+  const W = state.shaftW;
+  const startBottom = state.supply === 'bottom' || state.supply === 'both' || state.supply === 'per-floor';
+  const startTop = state.supply === 'top' || state.supply === 'both';
+
+  const geo = new THREE.SphereGeometry(0.08, 8, 6);
+  for (let i = 0; i < count; i++) {
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0x5ac8ff,
+      transparent: true,
+      opacity: 0.75
+    });
+    const s = new THREE.Mesh(geo, mat);
+    const x = (Math.random() - 0.5) * D * 0.8;
+    const z = (Math.random() - 0.5) * W * 0.8;
+    let fromBottom;
+    if (startBottom && startTop) fromBottom = Math.random() < 0.5;
+    else fromBottom = startBottom;
+    const y = fromBottom ? -state.basement * state.floorH + Math.random() * totalH
+                          : -state.basement * state.floorH + totalH - Math.random() * totalH * 0.2;
+    s.position.set(x, y, z);
+    s.userData = {
+      vy: fromBottom ? (0.02 + Math.random() * 0.03) : -(0.02 + Math.random() * 0.03),
+      x0: x, z0: z,
+      wobble: Math.random() * Math.PI * 2,
+      wobbleSpeed: 0.5 + Math.random(),
+      fromBottom
+    };
+    particleGroup.add(s);
+    particles.push(s);
+  }
+}
+
+const clock = new THREE.Clock();
+function animate3D() {
+  if (!renderer) return;
+  requestAnimationFrame(animate3D);
+  const dt = clock.getDelta();
+
+  // spin fans
+  shaftGroup.children.forEach(c => {
+    if (c.name === 'fan-rotor') c.rotation.y += (c.userData.spin || 1) * dt * 20;
+  });
+
+  // particles
+  const totalH = (state.floors + state.basement) * state.floorH;
+  const bottomLimit = -state.basement * state.floorH - 0.3;
+  const topLimit = state.floors * state.floorH + 0.3;
+  for (const p of particles) {
+    p.position.y += p.userData.vy * dt * 20;
+    p.userData.wobble += p.userData.wobbleSpeed * dt;
+    p.position.x = p.userData.x0 + Math.sin(p.userData.wobble) * 0.15;
+    p.position.z = p.userData.z0 + Math.cos(p.userData.wobble * 1.2) * 0.15;
+    if (p.userData.fromBottom && p.position.y > topLimit) p.position.y = bottomLimit;
+    if (!p.userData.fromBottom && p.position.y < bottomLimit) p.position.y = topLimit;
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+// ============== UI WIRING ==============
+function onInputChange() {
+  state.floors = clamp(parseInt($('#inp-floors').value) || 5, 2, 40);
+  state.floorH = clamp(parseFloat($('#inp-floor-h').value) || 3, 2.2, 6);
+  state.shaftW = clamp(parseFloat($('#inp-shaft-w').value) || 2.4, 1.5, 8);
+  state.shaftD = clamp(parseFloat($('#inp-shaft-d').value) || 5.2, 2.5, 10);
+  state.doorW = clamp(parseInt($('#inp-door-w').value) || 900, 700, 1800);
+  state.doorH = clamp(parseInt($('#inp-door-h').value) || 2100, 1900, 2400);
+  $('#inp-floors').value = state.floors;
+  $('#inp-floor-h').value = state.floorH;
+  $('#inp-shaft-w').value = state.shaftW;
+  $('#inp-shaft-d').value = state.shaftD;
+  $('#inp-door-w').value = state.doorW;
+  $('#inp-door-h').value = state.doorH;
+  redraw();
+}
+
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function redraw() {
+  syncSummary();
+  drawSection();
+  drawPlan();
+  build3D();
+}
+
+function resetState() {
+  Object.assign(state, {
+    floors: 5, floorH: 3.0, basement: 0,
+    shaftW: 2.4, shaftD: 5.2, stairType: 'switchback',
+    doorW: 900, doorH: 2100, doorPos: 'front',
+    supply: 'bottom', dp: 50, flowViz: 'on'
+  });
+  $('#inp-floors').value = state.floors;
+  $('#inp-floor-h').value = state.floorH;
+  $('#inp-shaft-w').value = state.shaftW;
+  $('#inp-shaft-d').value = state.shaftD;
+  $('#inp-door-w').value = state.doorW;
+  $('#inp-door-h').value = state.doorH;
+  $$('.seg').forEach(seg => {
+    const group = seg.dataset.group;
+    const match = state[groupToKey(group)];
+    $$('.seg[data-group="'+group+'"] button').forEach(b => {
+      b.classList.toggle('active', String(b.dataset.val) === String(match));
+    });
+  });
+  redraw();
+}
+
+function groupToKey(g) {
+  return ({
+    basement: 'basement',
+    'stair-type': 'stairType',
+    'door-pos': 'doorPos',
+    supply: 'supply',
+    dp: 'dp',
+    'flow-viz': 'flowViz'
+  })[g] || g;
+}
+
+function wireUI() {
+  // numbers
+  ['inp-floors','inp-floor-h','inp-shaft-w','inp-shaft-d','inp-door-w','inp-door-h'].forEach(id => {
+    $('#'+id).addEventListener('input', onInputChange);
+    $('#'+id).addEventListener('change', onInputChange);
+  });
+  // steppers
+  $$('.stepper button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.step;
+      const delta = parseInt(btn.dataset.delta);
+      if (target === 'floors') {
+        const inp = $('#inp-floors');
+        inp.value = clamp(parseInt(inp.value)+delta, 2, 40);
+        onInputChange();
+      }
+    });
+  });
+  // segments
+  $$('.seg').forEach(seg => {
+    seg.addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      $$('button', seg).forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      const k = groupToKey(seg.dataset.group);
+      const v = b.dataset.val;
+      if (k === 'basement') state.basement = parseInt(v);
+      else if (k === 'dp') state.dp = parseInt(v);
+      else state[k] = v;
+      redraw();
+    });
+  });
+  $('#btn-reset').addEventListener('click', resetState);
+  $('#btn-rebuild').addEventListener('click', redraw);
+
+  // tabs
+  $$('.sp-tab').forEach(t => {
+    t.addEventListener('click', () => {
+      $$('.sp-tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      const v = t.dataset.view;
+      $$('.sp-view').forEach(x => x.classList.toggle('active', x.dataset.view === v));
+      if (v === 'd3') setTimeout(onResize3D, 20);
+    });
+  });
+}
+
+// ============== BOOT ==============
+document.addEventListener('DOMContentLoaded', () => {
+  wireUI();
+  syncSummary();
+  drawSection();
+  drawPlan();
+  init3D();
+  build3D();
+});
+
+// re-theme 3D when parent theme changes
+const mo = new MutationObserver(() => {
+  if (!scene) return;
+  const isDark = document.documentElement.classList.contains('dark');
+  scene.fog.color.setHex(isDark ? 0x0a1020 : 0x1a2438);
+});
+mo.observe(document.documentElement, {attributes: true, attributeFilter: ['class']});
+
+</script>
+</body>
+</html>

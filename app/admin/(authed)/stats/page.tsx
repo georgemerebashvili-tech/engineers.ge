@@ -1,5 +1,7 @@
 import {supabaseAdmin} from '@/lib/supabase/admin';
+import {getCalcStats} from '@/lib/calc-stats';
 import {StatsDashboard} from './dashboard';
+import {CalcStatsPanel} from './calc-stats-panel';
 import type {PageViewRow} from './types';
 
 export const dynamic = 'force-dynamic';
@@ -7,6 +9,8 @@ export const revalidate = 0;
 
 export default async function StatsPage() {
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const calcStats = await getCalcStats(30);
 
   let rows: PageViewRow[] = [];
   let error: string | null = null;
@@ -40,9 +44,15 @@ export default async function StatsPage() {
             (<code>supabase/migrations/0001_page_views.sql</code>).
           </p>
         </div>
+        <CalcStatsPanel rows={calcStats} />
       </div>
     );
   }
 
-  return <StatsDashboard rows={rows} />;
+  return (
+    <div className="space-y-6">
+      <CalcStatsPanel rows={calcStats} />
+      <StatsDashboard rows={rows} />
+    </div>
+  );
 }

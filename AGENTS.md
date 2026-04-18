@@ -2,6 +2,26 @@
 
 ეს ფაილი არის **ერთიანი წყარო** Claude-სა და Codex-ისთვის. ორივე აგენტი კითხულობს ამ ფაილს ყოველი სესიის დასაწყისში.
 
+## 🚨 სავალდებულო წაკითხვა ყოველი ახალი task-ის წინ
+
+ახალი გვერდი / ფიჩერი / პროექტი → ჯერ წაიკითხე **ყველა** ფაილი:
+
+| # | ფაილი | რისთვის |
+|---|-------|---------|
+| 1 | [AGENTS.md](./AGENTS.md) (ეს) | როლები, stack, არქ. წესები |
+| 2 | [CLAUDE.md](./CLAUDE.md) | Claude-specific ინსტრუქციები |
+| 3 | [docs/PRD.md](./docs/PRD.md) | product requirements |
+| 4 | [docs/DESIGN_RULES.md](./docs/DESIGN_RULES.md) | **binding** დიზაინის წესები |
+| 5 | [docs/DESIGN.md](./docs/DESIGN.md) | ვიზუალური ენა |
+| 6 | [docs/STYLE.md](./docs/STYLE.md) | CSS tokens + Tailwind |
+| 7 | [docs/DECISIONS.md](./docs/DECISIONS.md) | ADR log |
+| 8 | [docs/ROADMAP.md](./docs/ROADMAP.md) | phase order |
+| 9 | [docs/TODO.md](./docs/TODO.md) | მიმდინარე tasks |
+
+**კონფლიქტის ჰიერარქია:** `AGENTS.md > DESIGN_RULES.md > DESIGN.md > STYLE.md`.
+
+**წესი:** ნებისმიერ აგენტს (Claude, Codex, ან ნებისმიერი გარე) ეკრძალება UI / route / schema ცვლილება ამ ფაილების გადამოწმების გარეშე. Cross-reference ყველა ცვლილებისთვის.
+
 ## როლები
 
 - **Claude (lead)** — არქიტექტურა, გადაწყვეტილებები, code review, integration.

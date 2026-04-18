@@ -1,7 +1,7 @@
 'use client';
 
 import {useMemo, useState} from 'react';
-import {ImagePlus, Megaphone, Mail, Phone} from 'lucide-react';
+import {ImagePlus, Megaphone, Mail} from 'lucide-react';
 import {HeroAdsOutline} from '@/components/hero-ads-outline';
 import {
   HERO_OWNER_NAME,
@@ -54,7 +54,7 @@ export function AdsSimulator({slots}: Props) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
       <header className="rounded-[var(--radius-card)] border bg-sur p-5 md:p-7 shadow-[var(--shadow-card)]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -82,10 +82,6 @@ export function AdsSimulator({slots}: Props) {
                 info@engineers.ge
               </a>
             </div>
-            <div className="mt-1 flex items-center gap-2 text-[12px] text-text-2">
-              <Phone size={12} />
-              <span className="font-mono">+995 XXX XXX XXX</span>
-            </div>
           </div>
         </div>
       </header>
@@ -110,7 +106,7 @@ export function AdsSimulator({slots}: Props) {
         />
       </section>
 
-      <section className="grid gap-5 md:grid-cols-[320px_minmax(0,1fr)]">
+      <section className="grid gap-3 md:grid-cols-[320px_minmax(0,1fr)]">
         <div className="rounded-[var(--radius-card)] border bg-sur p-4 md:p-5 shadow-[var(--shadow-card)]">
           <h3 className="text-sm font-semibold text-navy">სლოტის ატვირთვა</h3>
           <p className="mt-1 text-xs text-text-2">

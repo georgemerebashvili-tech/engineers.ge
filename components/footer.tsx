@@ -1,5 +1,4 @@
 import {Container} from './container';
-import {ShareBar} from './share-bar';
 
 export function Footer() {
   return (
@@ -13,7 +12,6 @@ export function Footer() {
           />
           <span className="text-base font-bold text-text-3">.ge</span>
         </div>
-        <ShareBar />
       </Container>
     </footer>
   );

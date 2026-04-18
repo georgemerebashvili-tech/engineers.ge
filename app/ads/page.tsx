@@ -14,7 +14,7 @@ export default async function AdsPage() {
     <>
       <NavBar />
       <main className="flex-1 bg-bg">
-        <Container className="py-10 md:py-14">
+        <Container className="py-4 md:py-5">
           <AdsSimulator slots={slots} />
         </Container>
       </main>

@@ -15,6 +15,7 @@ const SlotSchema = z.object({
   label: z.string().max(120).default(''),
   sublabel: z.string().max(160).default(''),
   image_url: z.string().max(2000).default(''),
+  link_url: z.string().max(2000).default(''),
   client_name: z.string().max(160).default(''),
   price_gel: z.number().min(0).max(100000).default(0),
   occupied_until: z.string().nullable().optional().default(null),

@@ -6,10 +6,22 @@
       "Bash(node -e \"const b=require\\('bcryptjs'\\);const p=process.argv[1];b.hash\\(p,10\\).then\\(h=>{console.log\\('HASH='+h\\);console.log\\('VERIFY='+require\\('bcryptjs'\\).compareSync\\(p,h\\)\\);}\\)\" \"?'/'''/'\")",
       "Bash(node -e \"console.log\\(require\\('crypto'\\).randomBytes\\(32\\).toString\\('base64url'\\)\\)\")",
       "Bash(PORT=3030 npm run dev)",
-      "Bash(curl -s -o /tmp/engsrc.html -w \"HTTP %{http_code} | %{size_download}b\\\\n\" http://localhost:3030/ --max-time 30)"
+      "Bash(curl -s -o /tmp/engsrc.html -w \"HTTP %{http_code} | %{size_download}b\\\\n\" http://localhost:3030/ --max-time 30)",
+      "Bash(lsof -i :3000 -i :3001 -i :3002 -sTCP:LISTEN)",
+      "Bash(npm run *)",
+      "Bash(echo \"started pid=$!\")",
+      "Bash(lsof -i :3000 -i :3001 -sTCP:LISTEN)",
+      "Bash(open http://localhost:3030/ads)",
+      "Bash(lsof -i :3030 -sTCP:LISTEN)",
+      "Bash(kill 39906)",
+      "Bash(lsof -iTCP -sTCP:LISTEN)",
+      "Bash(open http://localhost:3000/)",
+      "Bash(open http://localhost:3000/dashboard)",
+      "Bash(open http://localhost:3000/ads)"
     ],
     "additionalDirectories": [
-      "/Users/macbookair/Desktop/engineers.ge/engineers.ge/app"
+      "/Users/macbookair/Desktop/engineers.ge/engineers.ge/app",
+      "/Users/macbookair/Desktop/engineers.ge/engineers.ge/.next"
     ]
   }
 }

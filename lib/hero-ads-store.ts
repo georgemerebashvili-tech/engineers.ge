@@ -8,7 +8,7 @@ export async function getHeroAdSlots(): Promise<HeroAdSlot[]> {
     const {data, error} = await supabaseAdmin()
       .from('hero_ad_slots')
       .select(
-        'slot_key,display_name,label,sublabel,image_url,client_name,price_gel,occupied_until,is_ad_slot,format_hint,size_hint'
+        'slot_key,display_name,label,sublabel,image_url,link_url,client_name,price_gel,occupied_until,is_ad_slot,format_hint,size_hint'
       );
 
     if (error) throw error;

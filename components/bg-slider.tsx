@@ -28,7 +28,7 @@ export function BgSlider() {
   }
 
   return (
-    <Box sx={{width: 90, display: 'flex', alignItems: 'center', px: 1}}>
+    <Box sx={{width: {xs: 64, md: 90}, display: {xs: 'none', sm: 'flex'}, alignItems: 'center', px: 1}}>
       <Slider
         size="small"
         value={mounted ? value : DEFAULT}

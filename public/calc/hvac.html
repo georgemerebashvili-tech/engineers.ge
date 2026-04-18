@@ -3,1027 +3,1601 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MEP Calc v0.3</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>ჰაერსადენის სქემა — engineers.ge</title>
+<script>
+(function(){
+  try {
+    var stored = localStorage.getItem('theme') || 'system';
+    var dark = stored === 'dark' || (stored === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (window.parent && window.parent !== window) {
+      try {
+        dark = window.parent.document.documentElement.classList.contains('dark');
+      } catch (e) {}
+    }
+    if (dark) document.documentElement.classList.add('dark');
+    document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+  } catch (e) {}
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+Georgian:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-:root{
-  --bg:#f0f2f5;--sf:#fff;--s2:#f6f8fa;--s3:#eef1f5;
-  --bd:#e0e4ea;--bd2:#c8cdd6;
-  --tx:#1a1f2e;--t2:#525c6e;--t3:#9aa3b0;
-  --ac:#2563eb;--ab:#eff4ff;--ad:#bfdbfe;
-  --gr:#16a34a;--gb:#dcfce7;
-  --rd:#dc2626;--rb:#fee2e2;
-  --or:#d97706;--ob:#fef3c7;
-  --pu:#7c3aed;--pb:#ede9fe;
-  --te:#0d9488;--tb:#ccfbf1;
-  --HH:48px;--SW:264px;--r:7px;--rs:5px;--T:.2s ease;
-  --f:'Inter',system-ui,sans-serif;
+:root {
+  --bg: #f2f5fa;
+  --sur: #ffffff;
+  --sur-2: #f7f9fd;
+  --bdr: #dde6f2;
+  --bdr-2: #c4d4e8;
+  --navy: #1a3a6b;
+  --navy-2: #0f2550;
+  --blue: #1f6fd4;
+  --blue-lt: #e8f1fd;
+  --blue-bd: #b8d0f0;
+  --ora: #c05010;
+  --ora-lt: #fff5ea;
+  --ora-bd: #e8c080;
+  --grn: #0f6e3a;
+  --grn-lt: #edfbf3;
+  --red: #c0201a;
+  --red-lt: #fff0ef;
+  --text: #1a2840;
+  --text-2: #3d5470;
+  --text-3: #7a96b8;
+  --shadow-card: 0 1px 3px rgba(0,0,0,.07), 0 4px 14px rgba(0,0,0,.05);
+  --shadow-sticky: 0 1px 4px rgba(0,0,0,.08);
+  --radius: 10px;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  --font-sans: 'Plus Jakarta Sans', 'Noto Sans Georgian', system-ui, sans-serif;
 }
-body{font-family:var(--f);font-size:13px;background:var(--bg);color:var(--tx);height:100vh;display:flex;flex-direction:column;overflow:hidden;user-select:none;}
+.dark {
+  --bg: #0f1724;
+  --sur: #151f2f;
+  --sur-2: #1b2638;
+  --bdr: #253349;
+  --bdr-2: #324566;
+  --navy: #e6ecf5;
+  --navy-2: #c6d4ed;
+  --blue: #4a9eff;
+  --blue-lt: #15294a;
+  --blue-bd: #2a4a7a;
+  --text: #e6ecf5;
+  --text-2: #a7b7d1;
+  --text-3: #6b82a6;
+  --ora: #e87b3a;
+  --ora-lt: #2a1d10;
+  --ora-bd: #5a3a1a;
+  --grn: #4ade80;
+  --grn-lt: #0f2a1a;
+  --red: #f87171;
+  --red-lt: #2a1010;
+  --shadow-card: 0 1px 3px rgba(0,0,0,.4), 0 4px 14px rgba(0,0,0,.3);
+}
 
-/* ── HEADER ── */
-#hdr{height:var(--HH);background:var(--sf);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 10px;gap:5px;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.06);z-index:100;}
-.logo{display:flex;align-items:center;gap:8px;padding-right:14px;border-right:1px solid var(--bd);flex-shrink:0;}
-.lico{width:32px;height:32px;background:var(--ab);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--ac);}
-.logo b{font-size:14px;font-weight:700;letter-spacing:-.3px;}
-.logo small{font-size:10px;color:var(--t3);display:block;margin-top:-2px;}
-.tabs{display:flex;gap:1px;}
-.tab{display:flex;align-items:center;gap:5px;height:32px;padding:0 13px;border-radius:var(--rs);border:none;background:transparent;color:var(--t2);font-family:var(--f);font-size:12.5px;font-weight:500;cursor:pointer;transition:all var(--T);white-space:nowrap;}
-.tab:hover{background:var(--s2);color:var(--tx);}
-.tab.active{background:var(--ab);color:var(--ac);font-weight:600;}
-.hdr-r{display:flex;align-items:center;gap:4px;margin-left:auto;}
-.ib{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--sf);color:var(--t2);cursor:pointer;transition:all var(--T);}
-.ib:hover{background:var(--s2);color:var(--tx);border-color:var(--bd2);}
-.ib.save:hover{background:var(--ab);color:var(--ac);border-color:var(--ad);}
-.ib.load-btn:hover{background:var(--gb);color:var(--gr);border-color:#86efac;}
-.hdr-sep{width:1px;height:20px;background:var(--bd);margin:0 2px;}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 13px; }
+body {
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 100vh;
+  overflow: hidden;
+  user-select: none;
+}
 
-/* ── LAYOUT ── */
-#main{display:flex;flex:1;overflow:hidden;}
-.sb{background:var(--sf);display:flex;flex-direction:column;flex-shrink:0;transition:width var(--T);overflow:hidden;position:relative;z-index:10;}
-#lsb{width:var(--SW);border-right:1px solid var(--bd);}
-#rsb{width:var(--SW);border-left:1px solid var(--bd);}
-#lsb.col{width:0;}
-#rsb.col{width:0;}
+/* HEADER */
+.app-header {
+  background: var(--sur);
+  border-bottom: 1px solid var(--bdr);
+}
+.header-main {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--bdr);
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-mark {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 9px;
+  background: var(--navy);
+  color: var(--sur);
+  padding: 3px 7px;
+  letter-spacing: 0.08em;
+  border-radius: 4px;
+}
+.dark .brand-mark { background: var(--blue); color: #0f1724; }
+.brand-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--navy);
+}
+.brand-subtitle {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 1px;
+}
+.header-meta {
+  display: flex;
+  gap: 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-3);
+}
+.header-meta .val { color: var(--text); }
+.header-tabs {
+  display: flex;
+  padding: 0 16px;
+  gap: 4px;
+}
+.tab {
+  padding: 8px 14px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s, background .15s;
+}
+.tab:hover { color: var(--text-2); }
+.tab.active {
+  color: var(--blue);
+  border-bottom-color: var(--blue);
+  background: var(--blue-lt);
+}
 
-/* toggle btns */
-.sbt{position:absolute;top:50%;width:22px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:20;transition:all var(--T);}
-#lsb .sbt{right:-22px;border-radius:0 10px 10px 0;background:var(--ac);color:#fff;transform:translateY(-50%);box-shadow:4px 0 14px rgba(37,99,235,.4);}
-#rsb .sbt{left:-22px;border-radius:10px 0 0 10px;background:var(--rd);color:#fff;transform:translateY(-50%);box-shadow:-4px 0 14px rgba(220,38,38,.35);}
-#lsb .sbt:hover{filter:brightness(1.15);}
-#rsb .sbt:hover{filter:brightness(1.1);}
-#lsb .sbt svg,#rsb .sbt svg{transition:transform var(--T);}
-#lsb.col .sbt svg{transform:rotate(180deg);}
-#rsb.col .sbt svg{transform:rotate(180deg);}
+/* LAYOUT */
+.app-body {
+  display: grid;
+  grid-template-columns: 200px 1fr 280px;
+  height: calc(100vh - 78px);
+}
+.panel {
+  background: var(--sur);
+  border-right: 1px solid var(--bdr);
+  overflow-y: auto;
+}
+.panel:last-child {
+  border-right: none;
+  border-left: 1px solid var(--bdr);
+}
+.panel-section {
+  border-bottom: 1px solid var(--bdr);
+  padding: 12px 14px;
+}
+.panel-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--navy);
+  font-weight: 700;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.panel-title .badge {
+  background: var(--blue-lt);
+  color: var(--blue);
+  padding: 2px 6px;
+  font-size: 9px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
 
-/* sidebar header */
-.sbh{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--bd);flex-shrink:0;min-height:40px;}
-.sbtl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--t3);white-space:nowrap;overflow:hidden;}
-.col .sbtl{opacity:0;}
-.sb-sc{flex:1;overflow-y:auto;overflow-x:hidden;}
-.sb-sc::-webkit-scrollbar{width:3px;}
-.sb-sc::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px;}
+/* PALETTE */
+.palette {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.palette-btn {
+  aspect-ratio: 1;
+  background: var(--sur);
+  border: 1px solid var(--bdr);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 6px;
+  transition: border-color .15s, background .15s;
+}
+.palette-btn:hover {
+  border-color: var(--blue);
+  background: var(--blue-lt);
+}
+.palette-btn svg {
+  width: 28px;
+  height: 28px;
+  color: var(--navy);
+  margin-bottom: 4px;
+  pointer-events: none;
+}
+.palette-btn .name {
+  font-family: var(--font-sans);
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-2);
+  text-align: center;
+  line-height: 1.2;
+  pointer-events: none;
+}
+.palette-btn.primary {
+  background: var(--navy);
+  border-color: var(--navy);
+}
+.palette-btn.primary svg,
+.palette-btn.primary .name { color: var(--sur); }
+.dark .palette-btn.primary { background: var(--blue); border-color: var(--blue); }
+.dark .palette-btn.primary svg,
+.dark .palette-btn.primary .name { color: #0f1724; }
+.palette-btn.primary:hover { background: var(--navy-2); border-color: var(--navy-2); }
 
-/* ── LEFT ACCORDION ── */
-.ag{border-bottom:1px solid var(--bd);}
-.ah{display:flex;align-items:center;gap:8px;padding:7px 10px;cursor:pointer;transition:background var(--T);min-height:37px;}
-.ah:hover{background:var(--s2);}
-.ach{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.ach.bl{background:var(--ab);color:var(--ac);}
-.ach.te{background:var(--tb);color:var(--te);}
-.ach.or{background:var(--ob);color:var(--or);}
-.ach.pu{background:var(--pb);color:var(--pu);}
-.al{font-size:12.5px;font-weight:600;color:var(--tx);flex:1;white-space:nowrap;overflow:hidden;}
-.col .al,.col .apm{opacity:0;pointer-events:none;}
-.apm{width:20px;height:20px;border-radius:4px;border:1px solid var(--bd);background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:var(--t3);flex-shrink:0;line-height:1;transition:all var(--T);padding-bottom:1px;}
-.ag.open .apm{background:var(--ab);color:var(--ac);border-color:var(--ad);}
-.ab2{max-height:0;overflow:hidden;transition:max-height .28s ease;background:var(--s2);}
-.ag.open .ab2{max-height:600px;}
-.ci{display:flex;align-items:center;gap:9px;padding:7px 10px 7px 30px;cursor:grab;transition:background var(--T);border-bottom:1px solid rgba(0,0,0,.03);}
-.ci:hover{background:#e8f0fe;}
-.ci:active{cursor:grabbing;}
-.cico{width:30px;height:30px;border-radius:7px;background:var(--sf);border:1px solid var(--bd);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.cn{font-size:12px;font-weight:500;color:var(--tx);}
-.cs{font-size:10px;color:var(--t3);}
-.col .ci{padding-left:7px;}
-.col .cn,.col .cs{display:none;}
-.ae{padding:8px 30px;font-size:11px;color:var(--t3);font-style:italic;}
-.col .ae{display:none;}
+/* INPUT */
+.input-group { margin-bottom: 10px; }
+.input-group label {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-2);
+  margin-bottom: 3px;
+}
+input[type="number"], input[type="text"], select {
+  width: 100%;
+  padding: 5px 7px;
+  border: 1.5px solid var(--bdr);
+  background: var(--sur);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  border-radius: 4px;
+  transition: border-color .15s;
+}
+input[type="text"] { font-family: var(--font-sans); }
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(31,111,212,0.15);
+}
 
-/* ── CENTER ── */
-#cw{flex:1;display:flex;flex-direction:column;overflow:hidden;}
-.tp{display:none;flex-direction:column;flex:1;overflow:hidden;}
-.tp.active{display:flex;}
+/* MAIN */
+.main-area {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg);
+}
 
-/* canvas toolbar */
-.ctb{display:flex;align-items:center;gap:5px;padding:7px 12px;background:var(--sf);border-bottom:1px solid var(--bd);flex-shrink:0;flex-wrap:wrap;}
-.csep{width:1px;height:18px;background:var(--bd);margin:0 2px;}
-.cb{display:flex;align-items:center;gap:5px;height:28px;padding:0 10px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--sf);color:var(--t2);font-family:var(--f);font-size:12px;font-weight:500;cursor:pointer;transition:all var(--T);}
-.cb:hover{background:var(--s2);color:var(--tx);border-color:var(--bd2);}
-.cb.on{background:var(--ab);color:var(--ac);border-color:var(--ad);}
-.cb.sq{width:28px;padding:0;justify-content:center;}
-.zb{font-size:11.5px;font-weight:700;color:var(--t2);min-width:44px;text-align:center;background:var(--s2);border:1px solid var(--bd);border-radius:var(--rs);height:28px;display:flex;align-items:center;justify-content:center;}
-.csp{flex:1;}
+.toolbar {
+  background: var(--sur);
+  border-bottom: 1px solid var(--bdr);
+  padding: 8px 14px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.btn {
+  padding: 5px 12px;
+  border: 1px solid var(--bdr-2);
+  background: var(--sur-2);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  border-radius: 5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.btn:hover { border-color: var(--blue); color: var(--blue); }
+.btn-primary {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+.btn-primary:hover {
+  background: var(--navy-2);
+  border-color: var(--navy-2);
+  color: #fff;
+}
+.dark .btn-primary:hover { background: var(--blue); filter: brightness(1.1); }
+.btn-danger {
+  background: var(--red-lt);
+  color: var(--red);
+  border-color: var(--red);
+}
+.btn-danger:hover {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+}
+.toolbar-divider {
+  width: 1px;
+  height: 18px;
+  background: var(--bdr);
+  margin: 0 4px;
+}
+.toolbar-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-3);
+}
+.toolbar-meta .val {
+  color: var(--text);
+  font-weight: 600;
+}
 
-/* canvas */
-#cc{flex:1;position:relative;overflow:hidden;cursor:crosshair;}
-#cc.pan{cursor:grab;}
-#cc.pan:active{cursor:grabbing;}
-canvas{position:absolute;top:0;left:0;display:block;}
-.cht{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.92);border:1px solid var(--bd);border-radius:20px;padding:5px 16px;font-size:11px;color:var(--t3);backdrop-filter:blur(6px);pointer-events:none;white-space:nowrap;}
-.cco{position:absolute;bottom:14px;right:14px;background:rgba(255,255,255,.88);border:1px solid var(--bd);border-radius:var(--rs);padding:4px 10px;font-size:11px;color:var(--t3);font-family:'Courier New',monospace;}
+/* CANVAS */
+.canvas-wrap {
+  flex: 1;
+  overflow: auto;
+  position: relative;
+  background:
+    radial-gradient(circle at 1px 1px, var(--bdr) 1px, transparent 0) 0 0 / 20px 20px,
+    var(--bg);
+}
+.canvas {
+  position: relative;
+  width: 3000px;
+  height: 2000px;
+  cursor: default;
+}
 
-/* Function placeholder */
-.fnp{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:var(--t3);}
-.fnp svg{opacity:.18;}
+.canvas-svg {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+.canvas-svg .conn-line {
+  fill: none;
+  stroke: var(--text-2);
+  stroke-width: 2;
+  pointer-events: stroke;
+  cursor: pointer;
+  transition: stroke .15s;
+}
+.canvas-svg .conn-line:hover { stroke: var(--blue); stroke-width: 3; }
+.canvas-svg .conn-line.critical {
+  stroke: var(--ora);
+  stroke-width: 2.5;
+}
+.canvas-svg .conn-label {
+  fill: var(--text);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: var(--sur);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.canvas-svg .link-preview {
+  fill: none;
+  stroke: var(--blue);
+  stroke-width: 2;
+  stroke-dasharray: 5,3;
+  pointer-events: none;
+}
 
-/* ── FUNCTION 4 PANEL ── */
-.f4-wrap{flex:1;overflow-y:auto;padding:20px;}
-.f4-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);padding:20px;max-width:480px;margin:0 auto 16px;}
-.f4-title{font-size:13px;font-weight:700;color:var(--tx);margin-bottom:4px;}
-.f4-sub{font-size:11px;color:var(--t3);margin-bottom:16px;}
-.f4-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
-.f4-row label{font-size:12px;color:var(--t2);width:160px;flex-shrink:0;}
-.f4-row input[type=range]{flex:1;accent-color:var(--ac);height:4px;}
-.f4-row .f4-val{font-size:12px;font-weight:600;color:var(--ac);min-width:36px;text-align:right;}
-.f4-row input[type=color]{width:36px;height:28px;border:1px solid var(--bd);border-radius:var(--rs);cursor:pointer;padding:2px;}
-.f4-prev{width:100%;height:64px;border:1px solid var(--bd);border-radius:var(--rs);margin-top:8px;background:var(--s2);}
-.f4-sep{height:1px;background:var(--bd);margin:12px 0;}
-.f4-apply{display:flex;align-items:center;gap:8px;height:32px;padding:0 14px;border-radius:var(--rs);border:none;background:var(--ac);color:#fff;font-family:var(--f);font-size:12.5px;font-weight:600;cursor:pointer;transition:all var(--T);}
-.f4-apply:hover{background:var(--ac);filter:brightness(1.1);}
+/* Nodes */
+.node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 8px;
+  background: var(--sur);
+  border: 1.5px solid var(--bdr);
+  border-radius: 8px;
+  cursor: move;
+  transition: box-shadow .15s, border-color .15s;
+  z-index: 2;
+  min-width: 72px;
+  box-shadow: var(--shadow-card);
+}
+.node:hover { border-color: var(--blue); }
+.node.selected {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-lt), var(--shadow-card);
+  z-index: 3;
+}
+.node.dragging {
+  opacity: 0.85;
+  cursor: grabbing;
+  z-index: 10;
+}
+.node svg {
+  width: 44px;
+  height: 32px;
+  color: var(--navy);
+  pointer-events: none;
+}
+.node .node-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text);
+  font-weight: 600;
+  margin-top: 2px;
+  pointer-events: none;
+}
+.node .node-value {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-3);
+  margin-top: 1px;
+  line-height: 1.2;
+  text-align: center;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.node .node-dp {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  background: var(--navy);
+  color: var(--sur);
+  padding: 1px 5px;
+  border-radius: 10px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.dark .node .node-dp { background: var(--blue); color: #0f1724; }
+.node .node-dp.warn { background: var(--ora); color: #fff; }
+.node .node-dp.high { background: var(--red); color: #fff; }
 
-/* ── RIGHT SIDEBAR ── */
-.rsrch{padding:7px 10px;border-bottom:1px solid var(--bd);flex-shrink:0;}
-.rsrch input{width:100%;height:28px;border:1px solid var(--bd);border-radius:var(--rs);padding:0 28px 0 8px;font-family:var(--f);font-size:12px;color:var(--tx);background:var(--s2);outline:none;transition:border-color var(--T);}
-.rsrch input:focus{border-color:var(--ac);background:var(--sf);}
-.rsrch-w{position:relative;}
-.rsrch-w svg{position:absolute;right:8px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none;}
-.col .rsrch{display:none;}
-.rtabs{display:flex;border-bottom:1px solid var(--bd);flex-shrink:0;}
-.rt{flex:1;height:34px;display:flex;align-items:center;justify-content:center;gap:5px;font-size:12px;font-weight:500;color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;transition:all var(--T);}
-.rt:hover{color:var(--tx);background:var(--s2);}
-.rt.active{color:var(--ac);border-bottom-color:var(--ac);background:var(--ab);}
-.col .rtabs{display:none;}
-.fla{display:flex;gap:4px;padding:7px 10px;border-bottom:1px solid var(--bd);flex-shrink:0;}
-.col .fla{display:none;}
-.fb{display:flex;align-items:center;gap:4px;flex:1;height:28px;padding:0 8px;border-radius:var(--rs);border:1px solid var(--bd);background:var(--s2);color:var(--t2);font-family:var(--f);font-size:11.5px;font-weight:500;cursor:pointer;transition:all var(--T);justify-content:center;}
-.fb:hover{background:var(--sf);border-color:var(--bd2);}
-.fb.add:hover{background:var(--gb);color:var(--gr);border-color:#86efac;}
-.fb.rem:hover{background:var(--rb);color:var(--rd);border-color:#fca5a5;}
+/* Connection ports */
+.port {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--sur);
+  border: 2px solid var(--text-3);
+  border-radius: 50%;
+  cursor: crosshair;
+  z-index: 4;
+  transition: transform .15s, background .15s, border-color .15s;
+}
+.port:hover {
+  background: var(--blue);
+  border-color: var(--blue);
+  transform: scale(1.4);
+}
+.port.active {
+  background: var(--grn);
+  border-color: var(--grn);
+  transform: scale(1.3);
+}
+.port.in  { left: -6px;  top: 50%; transform: translateY(-50%); }
+.port.out { right: -6px; top: 50%; transform: translateY(-50%); }
+.port.in:hover  { transform: translateY(-50%) scale(1.4); }
+.port.out:hover { transform: translateY(-50%) scale(1.4); }
 
-/* tree */
-.tree{flex:1;overflow-y:auto;padding:4px 0;}
-.tree::-webkit-scrollbar{width:3px;}
-.tree::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px;}
-.col .tree,.col .bom{display:none;}
+/* RIGHT PANEL */
+.result-card {
+  background: var(--sur);
+  border: 1px solid var(--bdr);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  border-radius: var(--radius);
+}
+.result-card.highlight {
+  background: var(--navy);
+  color: var(--sur);
+  border-color: var(--navy);
+}
+.dark .result-card.highlight { background: var(--blue-lt); color: var(--navy); border-color: var(--blue-bd); }
+.result-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.result-card.highlight .result-label { color: rgba(255,255,255,0.7); }
+.dark .result-card.highlight .result-label { color: var(--text-3); }
+.result-value {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+}
+.result-card.highlight .result-value { color: var(--sur); }
+.dark .result-card.highlight .result-value { color: var(--navy); }
+.result-unit {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+  margin-left: 3px;
+  font-weight: 400;
+}
+.result-card.highlight .result-unit { color: rgba(255,255,255,0.7); }
+.dark .result-card.highlight .result-unit { color: var(--text-3); }
+.result-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-3);
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid var(--bdr);
+}
+.result-card.highlight .result-sub {
+  color: rgba(255,255,255,0.7);
+  border-top-color: rgba(255,255,255,0.15);
+}
+.dark .result-card.highlight .result-sub { color: var(--text-3); border-top-color: var(--bdr); }
+.result-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.result-grid .result-card {
+  margin-bottom: 0;
+  padding: 8px 10px;
+}
+.result-grid .result-value { font-size: 14px; }
 
-.tn{}
-.tr{display:flex;align-items:center;gap:5px;padding:5px 8px;cursor:pointer;border-radius:var(--rs);margin:0 5px;transition:background var(--T);min-height:30px;}
-.tr:hover{background:var(--s2);}
-.tr.sel{background:var(--ab);}
-.tr.sel .tl{color:var(--ac);font-weight:600;}
-.tcar{width:14px;height:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--t3);transition:transform var(--T);}
-.tn.open>.tr>.tcar{transform:rotate(90deg);}
-.tico{width:16px;height:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.tl{font-size:12px;font-weight:500;color:var(--tx);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-/* badge + eye group */
-.tbadge-grp{display:flex;align-items:center;gap:4px;flex-shrink:0;}
-.tbg{font-size:10px;color:var(--t3);background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:1px 6px;}
-.eye-btn{width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:4px;cursor:pointer;color:var(--t3);transition:all var(--T);}
-.eye-btn:hover{color:var(--ac);background:var(--ab);}
-.eye-btn.off{color:var(--bd2);}
-.tc{display:none;}
-.tn.open>.tc{display:block;}
+.editor-empty {
+  text-align: center;
+  padding: 18px 10px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--text-3);
+  line-height: 1.6;
+}
 
-/* floor params */
-.flp{background:var(--s3);border-radius:var(--rs);margin:2px 10px 6px 10px;padding:8px 10px;border:1px solid var(--bd);}
-.flp-row{display:flex;align-items:center;gap:6px;margin-bottom:5px;}
-.flp-row:last-child{margin-bottom:0;}
-.flp-row label{font-size:10.5px;color:var(--t2);width:90px;flex-shrink:0;}
-.flp-row input[type=number]{flex:1;height:24px;border:1px solid var(--bd);border-radius:4px;padding:0 5px;font-size:11px;font-family:var(--f);color:var(--tx);background:var(--sf);outline:none;min-width:0;}
-.flp-row input[type=number]:focus{border-color:var(--ac);}
-.flp-row span{font-size:10.5px;color:var(--t3);flex-shrink:0;}
+/* Status */
+.status-bar {
+  background: var(--navy);
+  color: rgba(255,255,255,0.75);
+  padding: 5px 16px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  display: flex;
+  gap: 14px;
+  letter-spacing: 0.04em;
+}
+.dark .status-bar { background: var(--sur-2); color: var(--text-3); border-top: 1px solid var(--bdr); }
+.status-item .label { color: rgba(255,255,255,0.5); }
+.dark .status-item .label { color: var(--text-3); opacity: 0.7; }
+.status-item .val { color: var(--sur); margin-left: 4px; font-weight: 600; }
+.dark .status-item .val { color: var(--text); }
+.status-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--grn);
+  margin-right: 4px;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100% {opacity:1;} 50% {opacity:0.5;} }
 
-/* device sub-accordion */
-.da{margin:0 5px 0 5px;}
-.dah{display:flex;align-items:center;gap:5px;padding:5px 8px 5px 10px;cursor:pointer;border-radius:var(--rs);transition:background var(--T);}
-.dah:hover{background:var(--s2);}
-.dacar{width:12px;height:12px;display:flex;align-items:center;justify-content:center;color:var(--t3);transition:transform var(--T);flex-shrink:0;}
-.da.open .dacar{transform:rotate(90deg);}
-.dal{font-size:11.5px;font-weight:600;flex:1;}
-.dac{font-size:10px;color:var(--t3);background:var(--s2);border:1px solid var(--bd);border-radius:10px;padding:1px 5px;}
-.dab{display:none;padding-bottom:4px;}
-.da.open .dab{display:block;}
-.di{display:flex;align-items:center;gap:6px;padding:4px 8px 4px 26px;border-radius:var(--rs);cursor:pointer;transition:background var(--T);}
-.di:hover{background:var(--s2);}
-.dll{font-size:11.5px;color:var(--tx);flex:1;}
-.di-del{width:16px;height:16px;display:flex;align-items:center;justify-content:center;border-radius:3px;cursor:pointer;color:var(--t3);opacity:0;transition:all var(--T);}
-.di:hover .di-del{opacity:1;}
-.di-del:hover{color:var(--rd);background:var(--rb);}
-.dadd{display:flex;align-items:center;gap:4px;padding:3px 8px 5px 26px;cursor:pointer;color:var(--ac);font-size:11px;opacity:.65;transition:opacity var(--T);}
-.dadd:hover{opacity:1;}
+/* Warning */
+.warn-banner {
+  position: absolute;
+  top: 50px;
+  left: 16px;
+  right: 16px;
+  background: var(--ora-lt);
+  border: 1px solid var(--ora-bd);
+  padding: 6px 10px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ora);
+  border-radius: 5px;
+  display: none;
+  z-index: 100;
+}
+.warn-banner.show { display: block; }
 
-/* BOM */
-.bom{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:var(--t3);}
-.bom svg{opacity:.18;}
-.bom p{font-size:12px;}
-.bom small{font-size:11px;text-align:center;line-height:1.5;}
+/* Mode indicator */
+.mode-indicator {
+  position: absolute;
+  top: 52px;
+  right: 16px;
+  background: var(--blue);
+  color: #fff;
+  padding: 6px 12px;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 5px;
+  z-index: 100;
+  display: none;
+  box-shadow: var(--shadow-sticky);
+}
+.mode-indicator.show { display: block; }
 
-/* ── STATUS ── */
-#sbar{height:24px;background:var(--sf);border-top:1px solid var(--bd);display:flex;align-items:center;padding:0 12px;gap:14px;flex-shrink:0;font-size:11px;color:var(--t3);}
-.sdot{width:6px;height:6px;border-radius:50%;background:var(--gr);}
-.ssep{width:1px;height:12px;background:var(--bd);}
-.ssp{flex:1;}
+.canvas-info {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  background: var(--sur);
+  border: 1px solid var(--bdr);
+  padding: 6px 10px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--text-2);
+  border-radius: 5px;
+  z-index: 50;
+  display: flex;
+  gap: 12px;
+  box-shadow: var(--shadow-sticky);
+}
+.help-hint {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background: var(--sur);
+  border: 1px solid var(--bdr);
+  padding: 10px 12px;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--text-2);
+  border-radius: var(--radius);
+  z-index: 50;
+  line-height: 1.6;
+  max-width: 240px;
+  box-shadow: var(--shadow-card);
+}
+.help-hint strong {
+  color: var(--navy);
+  font-size: 11px;
+  font-weight: 700;
+  display: block;
+  margin-bottom: 4px;
+}
+.help-hint .kbd {
+  background: var(--sur-2);
+  padding: 1px 5px;
+  border-radius: 3px;
+  border: 1px solid var(--bdr);
+  font-weight: 600;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
 
-/* ── MODAL ── */
-#modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
-#modal.show{display:flex;}
-.modal-box{background:var(--sf);border-radius:14px;padding:24px 28px;width:320px;box-shadow:0 24px 64px rgba(0,0,0,.25);animation:mIn .15s ease;}
-@keyframes mIn{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
-.modal-ico{width:40px;height:40px;background:var(--rb);border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;color:var(--rd);}
-.modal-title{font-size:15px;font-weight:700;margin-bottom:6px;}
-.modal-msg{font-size:12.5px;color:var(--t2);line-height:1.5;margin-bottom:20px;}
-.modal-btns{display:flex;gap:8px;justify-content:flex-end;}
-.mbtn{height:32px;padding:0 16px;border-radius:var(--rs);font-family:var(--f);font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid var(--bd);background:var(--s2);color:var(--t2);transition:all var(--T);}
-.mbtn:hover{background:var(--sf);}
-.mbtn.danger{background:var(--rd);color:#fff;border-color:var(--rd);}
-.mbtn.danger:hover{filter:brightness(1.08);}
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--sur-2); }
+::-webkit-scrollbar-thumb { background: var(--bdr-2); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-3); }
+
+.formula-mini {
+  background: var(--sur-2);
+  color: var(--text-2);
+  padding: 7px 9px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.5;
+  border-left: 2px solid var(--blue);
+  border-radius: 0 5px 5px 0;
+  margin-top: 6px;
+}
+.formula-mini.warn { border-left-color: var(--ora); background: var(--ora-lt); color: var(--ora); }
+
+/* Responsive — symmetrical scale-down, no overlap */
+@media (max-width: 1200px) {
+  .app-body { grid-template-columns: 180px 1fr 260px; }
+}
+@media (max-width: 1024px) {
+  .app-body { grid-template-columns: 160px 1fr 240px; }
+  .header-meta { gap: 10px; }
+  .header-meta > div:nth-child(1) { display: none; }
+  .toolbar { flex-wrap: wrap; row-gap: 6px; }
+  .toolbar-meta { width: 100%; order: 10; }
+}
+@media (max-width: 860px) {
+  .app-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+    height: auto;
+    min-height: calc(100vh - 78px);
+  }
+  .panel { border-right: none; border-bottom: 1px solid var(--bdr); max-height: 220px; }
+  .panel:last-child { border-left: none; border-top: 1px solid var(--bdr); }
+  .palette { grid-template-columns: repeat(4, 1fr); }
+  .header-main { flex-wrap: wrap; row-gap: 6px; }
+  .header-meta { width: 100%; justify-content: flex-start; }
+  .canvas-wrap { min-height: 420px; }
+  .help-hint { display: none; }
+  .canvas-info { font-size: 9px; gap: 8px; flex-wrap: wrap; }
+}
+@media (max-width: 520px) {
+  html { font-size: 12px; }
+  .header-tabs { overflow-x: auto; }
+  .tab { padding: 8px 10px; white-space: nowrap; }
+  .toolbar .btn { padding: 5px 9px; font-size: 10px; }
+  .brand-title { font-size: 12px; }
+  .palette { grid-template-columns: repeat(3, 1fr); }
+  .status-bar { flex-wrap: wrap; row-gap: 4px; font-size: 9px; }
+  .canvas-info { display: none; }
+}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
-<div id="hdr">
-  <div class="logo">
-    <div class="lico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-    <div><b>MEP Calc</b><small>HVAC / Refrigeration</small></div>
+<header class="app-header">
+  <div class="header-main">
+    <div class="brand">
+      <span class="brand-mark">ENG · HVAC</span>
+      <div>
+        <div class="brand-title">ჰაერსადენის სქემა</div>
+        <div class="brand-subtitle">DRAG-AND-DROP · SCHEMATIC · EN 12599</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div>PROJECT <span class="val" id="projectName">Agrobabi</span></div>
+      <div>REV <span class="val">v3.0</span></div>
+      <div>DATE <span class="val" id="currentDate">—</span></div>
+    </div>
   </div>
+  <div class="header-tabs">
+    <div class="tab active">სქემა</div>
+    <div class="tab">ცხრილი</div>
+    <div class="tab">ფანი</div>
+    <div class="tab">ანგარიში</div>
+  </div>
+</header>
 
-  <div class="tabs">
-    <button class="tab active" onclick="swTab(0,this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>გრაფიკები
-    </button>
-    <button class="tab" onclick="swTab(1,this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M21 12h-2M5 12H3"/></svg>ფუნქცია 1
-    </button>
-    <button class="tab" onclick="swTab(2,this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/></svg>ფუნქცია 2
-    </button>
-    <button class="tab" onclick="swTab(3,this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>ფუნქცია 3
-    </button>
-    <button class="tab" onclick="swTab(4,this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>ხაზის სტილი
-    </button>
-  </div>
+<div class="app-body">
 
-  <div class="hdr-r">
-    <button class="ib save" title="შენახვა (JSON)" onclick="saveProject()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-    </button>
-    <button class="ib load-btn" title="ჩატვირთვა" onclick="document.getElementById('fi').click()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-    </button>
-    <div class="hdr-sep"></div>
-    <button class="ib" title="პარამეტრები"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 19.07l-1.41 1.41M21 12h-2M5 12H3M19.07 19.07l-1.41-1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2"/></svg></button>
-  </div>
-  <input type="file" id="fi" accept=".json,.hvac" style="display:none" onchange="loadProject(event)">
+  <aside class="panel">
+    <div class="panel-section">
+      <div class="panel-title">კომპონენტები <span class="badge">DRAG</span></div>
+      <div class="palette" id="palette"></div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">გლობალური</div>
+      <div class="input-group">
+        <label>ტემპერატურა, °C</label>
+        <input type="number" id="airTemp" value="20">
+      </div>
+      <div class="input-group">
+        <label>სიმკვრივე ρ, kg/m³</label>
+        <input type="number" id="airDensity" value="1.2" step="0.01">
+      </div>
+      <div class="input-group">
+        <label>ν ×10⁻⁶ m²/s</label>
+        <input type="number" id="airViscosity" value="15.1" step="0.1">
+      </div>
+      <div class="input-group">
+        <label>ხაოიანობა ε, mm</label>
+        <select id="roughness">
+          <option value="0.09">გალვან. ფოლადი</option>
+          <option value="0.05">უჟანგავი</option>
+          <option value="0.15">ფრი მონტაჟი</option>
+          <option value="3.0">მოქნილი</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">ლიმიტები</div>
+      <div class="input-group">
+        <label>v_max, m/s</label>
+        <input type="number" id="vMax" value="8" step="0.5">
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-area">
+    <div class="toolbar">
+      <button class="btn btn-primary" onclick="loadSample()">ნიმუში</button>
+      <button class="btn" onclick="undo()">⟲ დაბრუნება</button>
+      <div class="toolbar-divider"></div>
+      <button class="btn" onclick="autoLayout()">⎌ ავტო-განლაგება</button>
+      <button class="btn" onclick="fitView()">⛶ მორგება</button>
+      <div class="toolbar-divider"></div>
+      <button class="btn btn-danger" onclick="deleteSelected()">✕ წაშლა</button>
+      <button class="btn btn-danger" onclick="clearAll()">გასუფთავება</button>
+      <div class="toolbar-divider"></div>
+      <button class="btn" onclick="exportCSV()">⬇ CSV</button>
+      <button class="btn" onclick="window.print()">🖶 ბეჭდვა</button>
+      <div style="flex:1"></div>
+      <div class="toolbar-meta">
+        ნოდები <span class="val" id="nodeCount">0</span> ·
+        კავშირები <span class="val" id="linkCount">0</span>
+      </div>
+    </div>
+
+    <div id="warnBanner" class="warn-banner"></div>
+    <div id="modeIndicator" class="mode-indicator">🔗 კავშირის რეჟიმი · დააჭირე მეორე ნოდზე (ESC გასასვლელად)</div>
+
+    <div class="canvas-wrap" id="canvasWrap">
+      <div class="canvas" id="canvas">
+        <svg class="canvas-svg" id="canvasSvg">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+            <marker id="arrow-critical" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#c05010"/>
+            </marker>
+            <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="#1f6fd4"/>
+            </marker>
+          </defs>
+          <g id="svgLinks"></g>
+          <g id="svgPreview"></g>
+        </svg>
+      </div>
+      <div class="canvas-info">
+        <span>🖱 გადათრევა</span>
+        <span>◎ წრე = კავშირი</span>
+        <span>⌨ DELETE = წაშლა</span>
+      </div>
+      <div class="help-hint">
+        <strong>📌 სწრაფი გზამკვლევი</strong>
+        1. Palette-დან დააჭირე კომპონენტს<br>
+        2. ნოდი გადაათრიე ხელით<br>
+        3. <span class="kbd">●</span> მარჯვენა წრე (OUT) დააჭირე<br>
+        4. შემდეგ <span class="kbd">●</span> სხვა ნოდის მარცხ. წრეზე<br>
+        5. ხაზი ავტომატ. დაიხაზება
+      </div>
+    </div>
+  </main>
+
+  <aside class="panel">
+    <div class="panel-section">
+      <div class="panel-title">შედეგი <span class="badge" id="badge">—</span></div>
+      <div class="result-card highlight">
+        <div class="result-label">ფანის საჭ. წნევა</div>
+        <div class="result-value" id="rFanDp">0<span class="result-unit">Pa</span></div>
+        <div class="result-sub" id="rFanSub">კრიტიკული მარშრუტი</div>
+      </div>
+      <div class="result-grid">
+        <div class="result-card">
+          <div class="result-label">ნაკადი</div>
+          <div class="result-value" id="rFlow">0<span class="result-unit">m³/h</span></div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">v_max</div>
+          <div class="result-value" id="rVmax">0<span class="result-unit">m/s</span></div>
+        </div>
+      </div>
+      <div class="result-grid">
+        <div class="result-card">
+          <div class="result-label">ნოდები</div>
+          <div class="result-value" id="rNodes">0</div>
+        </div>
+        <div class="result-card">
+          <div class="result-label">სიმძლავრე</div>
+          <div class="result-value" id="rPower">0<span class="result-unit">kW</span></div>
+        </div>
+      </div>
+      <div class="formula-mini" id="formulaHint">
+        ჩატვირთე ნიმუში ან დაიწყე ნოდების დამატებით
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">ელემენტის რედაქტ. <span class="badge" id="selBadge">—</span></div>
+      <div id="editor">
+        <div class="editor-empty">ელემენტი არ არის არჩეული<br>დააჭირე ნოდს canvas-ზე</div>
+      </div>
+    </div>
+  </aside>
 </div>
 
-<!-- MAIN -->
-<div id="main">
-
-  <!-- LEFT SIDEBAR -->
-  <div class="sb" id="lsb">
-    <div class="sbh">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--t3);flex-shrink:0"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      <span class="sbtl">კომპონენტები</span>
-    </div>
-    <div class="sb-sc">
-
-      <!-- მილები -->
-      <div class="ag open" id="ag-p">
-        <div class="ah" onclick="togAg('ag-p')">
-          <div class="ach bl"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9h18M3 15h18M9 9v6M15 9v6"/></svg></div>
-          <span class="al">მილები</span><span class="apm">−</span>
-        </div>
-        <div class="ab2">
-          <div class="ci" draggable="true" data-type="supply">
-            <div class="cico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.2"><line x1="4" y1="12" x2="18" y2="12"/><polyline points="13 7 18 12 13 17"/><rect x="1" y="9" width="3" height="6" rx="1" fill="#dbeafe" stroke="#2563eb"/></svg></div>
-            <div><div class="cn">მიწოდების მილი</div><div class="cs">Supply Pipe</div></div>
-          </div>
-          <div class="ci" draggable="true" data-type="return">
-            <div class="cico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2.2"><line x1="20" y1="12" x2="6" y2="12"/><polyline points="11 7 6 12 11 17"/><rect x="20" y="9" width="3" height="6" rx="1" fill="#fee2e2" stroke="#dc2626"/></svg></div>
-            <div><div class="cn">უკუსვლის მილი</div><div class="cs">Return Pipe</div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ფიტინგები -->
-      <div class="ag" id="ag-f">
-        <div class="ah" onclick="togAg('ag-f')">
-          <div class="ach te"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
-          <span class="al">ფიტინგები</span><span class="apm">+</span>
-        </div>
-        <div class="ab2"><div class="ae">მალე დაემატება…</div></div>
-      </div>
-
-      <!-- შიდა ბლოკები -->
-      <div class="ag" id="ag-i">
-        <div class="ah" onclick="togAg('ag-i')">
-          <div class="ach or"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg></div>
-          <span class="al">შიდა ბლოკები</span><span class="apm">+</span>
-        </div>
-        <div class="ab2"><div class="ae">მალე დაემატება…</div></div>
-      </div>
-
-      <!-- გარე ბლოკები -->
-      <div class="ag" id="ag-o">
-        <div class="ah" onclick="togAg('ag-o')">
-          <div class="ach pu"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-          <span class="al">გარე ბლოკები</span><span class="apm">+</span>
-        </div>
-        <div class="ab2"><div class="ae">მალე დაემატება…</div></div>
-      </div>
-
-    </div>
-    <div class="sbt" onclick="togLeft()">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="15 18 9 12 15 6"/></svg>
-    </div>
-  </div>
-
-  <!-- CENTER -->
-  <div id="cw">
-
-    <!-- Panel 0: 2D Canvas -->
-    <div class="tp active" id="p0">
-      <div class="ctb">
-        <span style="font-size:11px;color:var(--t3);font-weight:500;">ზუმი:</span>
-        <button class="cb sq" onclick="zIn()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
-        <div class="zb" id="zlbl">100%</div>
-        <button class="cb sq" onclick="zOut()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
-        <button class="cb" onclick="showAll()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>Show All</button>
-        <div class="csep"></div>
-        <button class="cb on" id="btn-gr" onclick="togGrid(this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18"/></svg>გრიდი</button>
-        <button class="cb" id="btn-pan" onclick="togPan(this)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9V5l2 2M5 5L3 7M19 9V5l-2 2m2-2l2 2M9 19h10m0 0l-2-2m2 2l-2 2M5 19v-4"/></svg>პანი</button>
-        <div class="csep"></div>
-        <span style="font-size:11px;color:var(--t3);font-weight:500;">ფენა:</span>
-        <button class="cb" id="layer-btn">სართული 1</button>
-        <div class="csp"></div>
-        <span style="font-size:10.5px;color:var(--t3);" id="cinfo">2D ხედი · drag&amp;drop</span>
-      </div>
-      <div id="cc">
-        <canvas id="cv"></canvas>
-        <div class="cht">🖱 კომპონენტი: მარცხნიდან drag&drop · Scroll = ზუმი · Middle/Pan = გადაადგილება</div>
-        <div class="cco" id="coords">x: 0.00 მ  y: 0.00 მ</div>
-      </div>
-    </div>
-
-    <!-- Panels 1-3: placeholders -->
-    <div class="tp" id="p1"><div class="fnp"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M21 12h-2M5 12H3"/></svg><p>ფუნქცია 1 — მალე დაემატება</p></div></div>
-    <div class="tp" id="p2"><div class="fnp"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/></svg><p>ფუნქცია 2 — მალე დაემატება</p></div></div>
-    <div class="tp" id="p3"><div class="fnp"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg><p>ფუნქცია 3 — მალე დაემატება</p></div></div>
-
-    <!-- Panel 4: Line Style -->
-    <div class="tp" id="p4">
-      <div class="f4-wrap">
-        <div class="f4-card">
-          <div class="f4-title">📐 სართულის ხაზის სტილი</div>
-          <div class="f4-sub">პარამეტრები გავრცელდება ყველა სართულის ხაზზე canvas-ზე</div>
-          <div class="f4-sep"></div>
-
-          <div class="f4-row">
-            <label>სისქე (px)</label>
-            <input type="range" id="f4t" min="0.5" max="12" step="0.5" value="2" oninput="updF4()">
-            <span class="f4-val" id="f4tv">2 px</span>
-          </div>
-          <div class="f4-row">
-            <label>წყვეტის სიგრძე (px)</label>
-            <input type="range" id="f4d" min="2" max="50" step="1" value="12" oninput="updF4()">
-            <span class="f4-val" id="f4dv">12 px</span>
-          </div>
-          <div class="f4-row">
-            <label>პაუზა / gap (px)</label>
-            <input type="range" id="f4g" min="1" max="30" step="1" value="6" oninput="updF4()">
-            <span class="f4-val" id="f4gv">6 px</span>
-          </div>
-          <div class="f4-row">
-            <label>ფერი</label>
-            <input type="color" id="f4c" value="#1a1f2e" oninput="updF4()">
-            <span class="f4-val" id="f4cv" style="font-size:11px;color:var(--t2)">#1a1f2e</span>
-          </div>
-
-          <div class="f4-sep"></div>
-          <div style="margin-bottom:8px;font-size:11.5px;font-weight:600;color:var(--t2);">გადახედვა</div>
-          <canvas id="f4prev" height="64" style="width:100%;border:1px solid var(--bd);border-radius:var(--rs);background:var(--s2);display:block;"></canvas>
-
-          <div class="f4-sep"></div>
-          <button class="f4-apply" onclick="applyF4()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-            გამოყენება canvas-ზე
-          </button>
-        </div>
-
-        <div class="f4-card">
-          <div class="f4-title">📋 ახსნა</div>
-          <div class="f4-sub">სართულის ხაზი canvas-ზე</div>
-          <div style="font-size:12px;color:var(--t2);line-height:1.7;">
-            <b>ნიშნული</b> — სართულის სიმაღლე (მ.) — Y ღერძი<br>
-            <b>X₀ — საწყისი X</b> — სადან იწყება ხაზი (მ.) — X ღერძი<br>
-            <b>სიგანე</b> — ხაზის სრული სიგრძე (მ.)<br>
-            <b>1 ბადე = 1 მ.</b> (minor grid 0.5 მ.)
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /cw -->
-
-  <!-- RIGHT SIDEBAR -->
-  <div class="sb" id="rsb">
-    <div class="sbh">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--t3);flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-      <span class="sbtl">პროექტი</span>
-    </div>
-
-    <div class="rsrch">
-      <div class="rsrch-w">
-        <input type="text" id="rsq" placeholder="ძებნა პროექტში…" oninput="srch(this.value)">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      </div>
-    </div>
-
-    <div class="rtabs">
-      <div class="rt active" onclick="rTab('fl',this)">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
-        სართული
-      </div>
-      <div class="rt" onclick="rTab('bom',this)">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>
-        BOM
-      </div>
-    </div>
-
-    <div class="fla" id="fla">
-      <button class="fb add" onclick="addFloor()">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>სართული
-      </button>
-      <button class="fb rem" onclick="askDelFloor()">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>წაშლა
-      </button>
-    </div>
-
-    <div class="tree" id="tw"></div>
-
-    <div class="bom" id="bom" style="display:none;">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="12" y2="16"/></svg>
-      <p>BOM ცარიელია</p>
-      <small>კომპონენტების დამატებისას<br>ავტომატურად გამოჩნდება</small>
-    </div>
-
-    <div class="sbt" onclick="togRight()">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg>
-    </div>
-  </div>
-
+<div class="status-bar">
+  <span class="status-item"><span class="status-dot"></span>READY</span>
+  <span class="status-item"><span class="label">MODE</span><span class="val" id="statusMode">EDIT</span></span>
+  <span class="status-item"><span class="label">METHOD</span><span class="val">Darcy · Altshul</span></span>
+  <span class="status-item"><span class="label">UNITS</span><span class="val">SI</span></span>
+  <span style="flex:1"></span>
+  <span class="status-item"><span class="label">CURSOR</span><span class="val" id="cursorPos">—</span></span>
 </div>
 
-<!-- STATUS BAR -->
-<div id="sbar">
-  <div class="sdot"></div><span>მზად</span>
-  <div class="ssep"></div>
-  <span id="st-c">კომპ: 0</span>
-  <div class="ssep"></div>
-  <span id="st-f">სართ: 1</span>
-  <div class="ssep"></div>
-  <span id="st-save" style="color:var(--t3);">—</span>
-  <div class="ssp"></div>
-  <span>MEP Calc v0.3</span>
-</div>
-
-<!-- MODAL -->
-<div id="modal" onclick="if(event.target===this)mCancel()">
-  <div class="modal-box">
-    <div class="modal-ico" id="m-ico">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-    </div>
-    <div class="modal-title" id="m-title">წაშლა</div>
-    <div class="modal-msg" id="m-msg">ნამდვილად გსურთ წაშლა?</div>
-    <div class="modal-btns">
-      <button class="mbtn" onclick="mCancel()">გაუქმება</button>
-      <button class="mbtn danger" id="m-ok" onclick="mConfirm()">წაშლა</button>
-    </div>
-  </div>
-</div>
+<svg style="display:none;">
+  <symbol id="ico-fan" viewBox="0 0 60 40">
+    <rect x="1" y="5" width="58" height="30" fill="none" stroke="currentColor" stroke-width="2"/>
+    <circle cx="30" cy="20" r="10" fill="none" stroke="currentColor" stroke-width="1.5"/>
+    <path d="M30 10 L30 20 L38 16 M30 10 L30 20 L22 16 M30 30 L30 20 L38 24 M30 30 L30 20 L22 24" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    <circle cx="30" cy="20" r="2" fill="currentColor"/>
+  </symbol>
+  <symbol id="ico-duct" viewBox="0 0 60 40">
+    <rect x="0" y="12" width="60" height="16" fill="none" stroke="currentColor" stroke-width="2"/>
+    <line x1="10" y1="20" x2="50" y2="20" stroke="currentColor" stroke-width="1" stroke-dasharray="3,2"/>
+  </symbol>
+  <symbol id="ico-elbow" viewBox="0 0 60 40">
+    <path d="M0 20 L30 20 Q40 20 40 30 L40 40" fill="none" stroke="currentColor" stroke-width="2"/>
+    <path d="M0 12 L36 12 Q48 12 48 24 L48 40" fill="none" stroke="currentColor" stroke-width="2"/>
+  </symbol>
+  <symbol id="ico-tee" viewBox="0 0 60 40">
+    <rect x="0" y="12" width="60" height="16" fill="none" stroke="currentColor" stroke-width="2"/>
+    <rect x="22" y="0" width="16" height="14" fill="none" stroke="currentColor" stroke-width="2"/>
+  </symbol>
+  <symbol id="ico-reducer" viewBox="0 0 60 40">
+    <path d="M0 10 L60 16 L60 24 L0 30 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+  </symbol>
+  <symbol id="ico-damper" viewBox="0 0 60 40">
+    <rect x="10" y="12" width="40" height="16" fill="none" stroke="currentColor" stroke-width="2"/>
+    <line x1="15" y1="28" x2="45" y2="12" stroke="currentColor" stroke-width="2"/>
+    <circle cx="30" cy="20" r="2" fill="currentColor"/>
+  </symbol>
+  <symbol id="ico-filter" viewBox="0 0 60 40">
+    <rect x="10" y="8" width="40" height="24" fill="none" stroke="currentColor" stroke-width="2"/>
+    <line x1="14" y1="8" x2="14" y2="32" stroke="currentColor"/>
+    <line x1="18" y1="8" x2="18" y2="32" stroke="currentColor"/>
+    <line x1="22" y1="8" x2="22" y2="32" stroke="currentColor"/>
+    <line x1="26" y1="8" x2="26" y2="32" stroke="currentColor"/>
+    <line x1="30" y1="8" x2="30" y2="32" stroke="currentColor"/>
+    <line x1="34" y1="8" x2="34" y2="32" stroke="currentColor"/>
+    <line x1="38" y1="8" x2="38" y2="32" stroke="currentColor"/>
+    <line x1="42" y1="8" x2="42" y2="32" stroke="currentColor"/>
+    <line x1="46" y1="8" x2="46" y2="32" stroke="currentColor"/>
+  </symbol>
+  <symbol id="ico-heater" viewBox="0 0 60 40">
+    <rect x="8" y="10" width="44" height="20" fill="none" stroke="currentColor" stroke-width="2"/>
+    <text x="30" y="25" text-anchor="middle" font-size="11" font-weight="bold" fill="currentColor" font-family="monospace">H</text>
+  </symbol>
+  <symbol id="ico-cooler" viewBox="0 0 60 40">
+    <rect x="8" y="10" width="44" height="20" fill="none" stroke="currentColor" stroke-width="2"/>
+    <text x="30" y="25" text-anchor="middle" font-size="11" font-weight="bold" fill="currentColor" font-family="monospace">C</text>
+  </symbol>
+  <symbol id="ico-silencer" viewBox="0 0 60 40">
+    <rect x="4" y="10" width="52" height="20" fill="none" stroke="currentColor" stroke-width="2"/>
+    <rect x="8" y="14" width="3" height="12" fill="currentColor" opacity="0.5"/>
+    <rect x="14" y="14" width="3" height="12" fill="currentColor" opacity="0.5"/>
+    <rect x="20" y="14" width="3" height="12" fill="currentColor" opacity="0.5"/>
+    <rect x="26" y="14" width="3" height="12" fill="currentColor" opacity="0.5"/>
+    <rect x="32" y="14" width="3" height="12" fill="currentColor" opacity="0.5"/>
+    <rect x="38" y="14" width="3" height="12" fill="currentColor" opacity="0.5"/>
+    <rect x="44" y="14" width="3" height="12" fill="currentColor" opacity="0.5"/>
+    <rect x="50" y="14" width="3" height="12" fill="currentColor" opacity="0.5"/>
+  </symbol>
+  <symbol id="ico-grille" viewBox="0 0 60 40">
+    <rect x="30" y="6" width="24" height="28" fill="none" stroke="currentColor" stroke-width="2"/>
+    <line x1="32" y1="10" x2="52" y2="10" stroke="currentColor"/>
+    <line x1="32" y1="14" x2="52" y2="14" stroke="currentColor"/>
+    <line x1="32" y1="18" x2="52" y2="18" stroke="currentColor"/>
+    <line x1="32" y1="22" x2="52" y2="22" stroke="currentColor"/>
+    <line x1="32" y1="26" x2="52" y2="26" stroke="currentColor"/>
+    <line x1="32" y1="30" x2="52" y2="30" stroke="currentColor"/>
+    <line x1="0" y1="20" x2="30" y2="20" stroke="currentColor" stroke-width="2"/>
+  </symbol>
+  <symbol id="ico-diffuser" viewBox="0 0 60 40">
+    <path d="M0 14 L30 14 L50 4 L50 36 L30 26 L0 26 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+  </symbol>
+  <symbol id="ico-intake" viewBox="0 0 60 40">
+    <rect x="6" y="6" width="24" height="28" fill="none" stroke="currentColor" stroke-width="2"/>
+    <line x1="9" y1="10" x2="27" y2="10" stroke="currentColor"/>
+    <line x1="9" y1="15" x2="27" y2="15" stroke="currentColor"/>
+    <line x1="9" y1="20" x2="27" y2="20" stroke="currentColor"/>
+    <line x1="9" y1="25" x2="27" y2="25" stroke="currentColor"/>
+    <line x1="9" y1="30" x2="27" y2="30" stroke="currentColor"/>
+    <line x1="30" y1="20" x2="60" y2="20" stroke="currentColor" stroke-width="2"/>
+  </symbol>
+</svg>
 
 <script>
-/* ══════════════════════════════════════
-   STATE
-══════════════════════════════════════ */
-const SCALE = 50; // px per meter at zoom=1
-
-const S = {
-  zoom: 1, ox: 0, oy: 0,
-  grid: true, panMode: false, panning: false, lm: {x:0, y:0},
-  comps: [],
-  floors: [
-    {id:1, name:'სართული 1', elev:0,   open:true,  visible:true, offset:0, width:10, fit:[], ind:['FCU-01','FCU-02'], out:[]},
-    {id:2, name:'სართული 2', elev:3.2, open:false, visible:true, offset:0, width:10, fit:[], ind:[], out:['ODU-01']},
-  ],
-  nid: 3, selF: null, curTab: 0, rsbMode: 'fl',
-  lineStyle: { thick:2, dash:12, gap:6, color:'#1a1f2e' },
-  modalCb: null,
+const TYPES = {
+  intake:   { icon: 'ico-intake',   label: 'შესასვლ.',  tag: 'LV',  zeta: 1.5, hasL: false, hasSize: true, primary: false },
+  fan:      { icon: 'ico-fan',      label: 'ვენტილ.',    tag: 'FAN', zeta: 0,   hasL: false, hasSize: false, primary: true, isFan: true },
+  filter:   { icon: 'ico-filter',   label: 'ფილტრი',     tag: 'F',   zeta: 0,   fixedDp: 100, hasL: false, hasSize: true },
+  silencer: { icon: 'ico-silencer', label: 'ხმამაუშ.',   tag: 'SIL', zeta: 0,   fixedDp: 50,  hasL: true,  hasSize: true },
+  heater:   { icon: 'ico-heater',   label: 'გამათ.',     tag: 'H',   zeta: 0,   fixedDp: 80,  hasL: false, hasSize: true },
+  cooler:   { icon: 'ico-cooler',   label: 'გამაც.',     tag: 'C',   zeta: 0,   fixedDp: 120, hasL: false, hasSize: true },
+  damper:   { icon: 'ico-damper',   label: 'დემპფერი',   tag: 'DMP', zeta: 0.5, hasL: false, hasSize: true },
+  duct:     { icon: 'ico-duct',     label: 'არხი',       tag: 'D',   zeta: 0,   hasL: true,  hasSize: true, defaultL: 5 },
+  elbow:    { icon: 'ico-elbow',    label: 'მუხლი',      tag: 'EL',  zeta: 0.3, hasL: false, hasSize: true },
+  tee:      { icon: 'ico-tee',      label: 'ტრიფა',      tag: 'T',   zeta: 1.2, hasL: false, hasSize: true },
+  reducer:  { icon: 'ico-reducer',  label: 'გადასახ.',   tag: 'R',   zeta: 0.15, hasL: false, hasSize: true },
+  grille:   { icon: 'ico-grille',   label: 'ცხაური',     tag: 'G',   zeta: 1.8, hasL: false, hasSize: true },
+  diffuser: { icon: 'ico-diffuser', label: 'დიფუზ.',     tag: 'DF',  zeta: 1.5, hasL: false, hasSize: true }
 };
 
-// load from localStorage on start
-try {
-  const saved = localStorage.getItem('mep_project');
-  if (saved) { const d = JSON.parse(saved); if (d.floors) S.floors = d.floors; if (d.lineStyle) S.lineStyle = d.lineStyle; if (d.comps) S.comps = d.comps; S.nid = Math.max(...S.floors.map(f=>f.id)) + 1; }
-} catch(e) {}
+let nodes = [];
+let links = [];
+let counter = 0;
+let selectedId = null;
+let history = [];
+let dragNode = null;
+let dragOffset = { x: 0, y: 0 };
+let linkFrom = null;
+let mouseX = 0, mouseY = 0;
 
-/* ══════════════════════════════════════
-   AUTOSAVE
-══════════════════════════════════════ */
-function autoSave() {
-  localStorage.setItem('mep_project', JSON.stringify({ floors: S.floors, lineStyle: S.lineStyle, comps: S.comps }));
-  const n = new Date();
-  document.getElementById('st-save').textContent = `ავტო-სეივი: ${n.getHours().toString().padStart(2,'0')}:${n.getMinutes().toString().padStart(2,'0')}`;
-}
-setInterval(autoSave, 30000);
+document.getElementById('currentDate').textContent = new Date().toLocaleDateString('ka-GE');
 
-/* ══════════════════════════════════════
-   SAVE / LOAD FILE
-══════════════════════════════════════ */
-function saveProject() {
-  const data = JSON.stringify({ version:'0.3', floors: S.floors, lineStyle: S.lineStyle, comps: S.comps }, null, 2);
-  const blob = new Blob([data], { type:'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'project.hvac.json';
-  a.click();
-  autoSave();
-  document.getElementById('st-save').textContent = '💾 შენახულია';
+const palette = document.getElementById('palette');
+Object.entries(TYPES).forEach(([key, def]) => {
+  const btn = document.createElement('button');
+  btn.className = 'palette-btn' + (def.primary ? ' primary' : '');
+  btn.innerHTML = `<svg><use href="#${def.icon}"></use></svg><span class="name">${def.label}</span>`;
+  btn.onclick = () => addNode(key);
+  palette.appendChild(btn);
+});
+
+document.getElementById('airTemp').addEventListener('input', e => {
+  const T = parseFloat(e.target.value);
+  if (!isNaN(T)) {
+    document.getElementById('airDensity').value = (1.293 * 273.15 / (273.15 + T)).toFixed(3);
+    document.getElementById('airViscosity').value = (13.3 + 0.09 * T).toFixed(1);
+    recalc();
+  }
+});
+['airDensity','airViscosity','roughness','vMax'].forEach(id => {
+  document.getElementById(id).addEventListener('input', recalc);
+});
+
+function saveHistory() {
+  history.push({ nodes: JSON.parse(JSON.stringify(nodes)), links: JSON.parse(JSON.stringify(links)) });
+  if (history.length > 30) history.shift();
 }
-function loadProject(e) {
-  const f = e.target.files[0]; if (!f) return;
-  const r = new FileReader();
-  r.onload = ev => {
-    try {
-      const d = JSON.parse(ev.target.result);
-      if (d.floors) S.floors = d.floors;
-      if (d.lineStyle) S.lineStyle = d.lineStyle;
-      if (d.comps) S.comps = d.comps;
-      S.nid = Math.max(...S.floors.map(f=>f.id)) + 1;
-      buildTree(); draw(); updCount();
-      syncF4();
-      document.getElementById('st-save').textContent = '📂 ჩატვირთულია: ' + f.name;
-    } catch(err) { alert('ფაილი არ არის სწორი ფორმატის'); }
+function undo() {
+  if (!history.length) return;
+  const prev = history.pop();
+  nodes = prev.nodes;
+  links = prev.links;
+  selectedId = null;
+  render();
+}
+
+function addNode(type) {
+  saveHistory();
+  counter++;
+  const def = TYPES[type];
+  const cols = 8;
+  const idx = nodes.length;
+  const x = 120 + (idx % cols) * 130;
+  const y = 120 + Math.floor(idx / cols) * 110;
+  const src = selectedId ? nodes.find(n => n.id === selectedId) : (nodes[nodes.length - 1] || null);
+  const node = {
+    id: counter, type, tag: `${def.tag}${counter}`, x, y,
+    flow: src ? src.flow : 3000,
+    a: src ? src.a : 400,
+    b: src ? src.b : 300,
+    L: def.defaultL || 0,
+    zeta: def.zeta || 0,
+    fixedDp: def.fixedDp || 0
   };
-  r.readAsText(f);
-  e.target.value = '';
+  nodes.push(node);
+  if (selectedId) {
+    links.push({ id: `l${Date.now()}`, from: selectedId, to: node.id });
+  }
+  selectedId = node.id;
+  render();
 }
 
-/* ══════════════════════════════════════
-   MODAL
-══════════════════════════════════════ */
-function showModal(title, msg, cb, btnTxt='წაშლა', isDanger=true) {
-  document.getElementById('m-title').textContent = title;
-  document.getElementById('m-msg').textContent = msg;
-  document.getElementById('m-ok').textContent = btnTxt;
-  document.getElementById('m-ok').className = 'mbtn ' + (isDanger ? 'danger' : '');
-  S.modalCb = cb;
-  document.getElementById('modal').classList.add('show');
-}
-function mConfirm() { document.getElementById('modal').classList.remove('show'); if (S.modalCb) { S.modalCb(); S.modalCb = null; } }
-function mCancel()  { document.getElementById('modal').classList.remove('show'); S.modalCb = null; }
-
-/* ══════════════════════════════════════
-   HEADER TABS
-══════════════════════════════════════ */
-function swTab(i, btn) {
-  document.querySelectorAll('#hdr .tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tp').forEach(p => p.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('p' + i).classList.add('active');
-  S.curTab = i;
-  if (i === 0) setTimeout(resizeCv, 10);
-  if (i === 4) setTimeout(() => { syncF4(); drawF4Prev(); }, 10);
+function deleteSelected() {
+  if (!selectedId) return;
+  saveHistory();
+  links = links.filter(l => l.from !== selectedId && l.to !== selectedId);
+  nodes = nodes.filter(n => n.id !== selectedId);
+  selectedId = null;
+  render();
 }
 
-/* ══════════════════════════════════════
-   SIDEBAR TOGGLES
-══════════════════════════════════════ */
-function togLeft()  { document.getElementById('lsb').classList.toggle('col'); setTimeout(resizeCv, 240); }
-function togRight() { document.getElementById('rsb').classList.toggle('col'); setTimeout(resizeCv, 240); }
-
-/* ══════════════════════════════════════
-   LEFT ACCORDION
-══════════════════════════════════════ */
-function togAg(id) {
-  const el = document.getElementById(id);
-  const o = el.classList.toggle('open');
-  el.querySelector('.apm').textContent = o ? '−' : '+';
+function clearAll() {
+  if (nodes.length && !confirm('ყველა ელემენტის წაშლა?')) return;
+  saveHistory();
+  nodes = [];
+  links = [];
+  counter = 0;
+  selectedId = null;
+  linkFrom = null;
+  render();
 }
 
-/* ══════════════════════════════════════
-   RIGHT TAB SWITCH
-══════════════════════════════════════ */
-function rTab(mode, el) {
-  document.querySelectorAll('.rt').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  S.rsbMode = mode;
-  const isF = mode === 'fl';
-  document.getElementById('tw').style.display = isF ? 'block' : 'none';
-  document.getElementById('fla').style.display = isF ? 'flex' : 'none';
-  document.getElementById('bom').style.display = isF ? 'none' : 'flex';
+function fitView() {
+  const wrap = document.getElementById('canvasWrap');
+  if (nodes.length === 0) { wrap.scrollTo(0, 0); return; }
+  const minX = Math.min(...nodes.map(n => n.x)) - 100;
+  const minY = Math.min(...nodes.map(n => n.y)) - 100;
+  wrap.scrollTo({ left: Math.max(0, minX), top: Math.max(0, minY), behavior: 'smooth' });
 }
 
-/* ══════════════════════════════════════
-   TREE
-══════════════════════════════════════ */
-const CATS = [
-  { k:'fit', lbl:'ფიტინგები',     clr:'#0d9488' },
-  { k:'ind', lbl:'შიდა ბლოკები',  clr:'#d97706' },
-  { k:'out', lbl:'გარე ბლოკები',  clr:'#7c3aed' },
-];
-
-function eyeIcon(on) {
-  return on
-    ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
-    : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
-}
-
-function buildTree(q = '') {
-  const tw = document.getElementById('tw');
-  tw.innerHTML = '';
-  const ql = q.toLowerCase();
-
-  S.floors.forEach(f => {
-    if (ql) {
-      const hit = f.name.toLowerCase().includes(ql) || CATS.some(c => f[c.k].some(x => x.toLowerCase().includes(ql)));
-      if (!hit) return;
-    }
-    const total = f.fit.length + f.ind.length + f.out.length;
-
-    const catsHtml = CATS.map(c => `
-      <div class="da" id="da${f.id}${c.k}">
-        <div class="dah" onclick="togDA('da${f.id}${c.k}')">
-          <div class="dacar"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg></div>
-          <span class="dal" style="color:${c.clr}">${c.lbl}</span>
-          <span class="dac">${f[c.k].length}</span>
-        </div>
-        <div class="dab">
-          ${f[c.k].map((it, i) => `
-            <div class="di">
-              <svg width="8" height="8" viewBox="0 0 10 10" fill="${c.clr}"><circle cx="5" cy="5" r="3.5"/></svg>
-              <span class="dll">${it}</span>
-              <div class="di-del" onclick="askDelDev(${f.id},'${c.k}',${i},'${it}')" title="წაშლა">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </div>
-            </div>`).join('')}
-          <div class="dadd" onclick="addDev(${f.id},'${c.k}')">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            დამატება
-          </div>
-        </div>
-      </div>`).join('');
-
-    const node = document.createElement('div');
-    node.className = 'tn' + (f.open ? ' open' : '');
-    node.innerHTML = `
-      <div class="tr${S.selF === f.id ? ' sel' : ''}" onclick="selF(${f.id});togTN(this)">
-        <div class="tcar"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="9 18 15 12 9 6"/></svg></div>
-        <div class="tico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div>
-        <span class="tl">${f.name}</span>
-        <div class="tbadge-grp">
-          <span class="tbg">${total}</span>
-          <div class="eye-btn${f.visible ? '' : ' off'}" onclick="togVis(event,${f.id})" title="${f.visible ? 'დამალვა' : 'ჩვენება'}">${eyeIcon(f.visible)}</div>
-        </div>
-      </div>
-
-      <div class="flp">
-        <div class="flp-row">
-          <label>ნიშნული</label>
-          <input type="number" step="0.1" value="${f.elev}"
-            onchange="setFloorProp(${f.id},'elev',this.value)"
-            onclick="event.stopPropagation()">
-          <span>მ.</span>
-        </div>
-        <div class="flp-row">
-          <label>X₀ (საწყისი)</label>
-          <input type="number" step="0.5" value="${f.offset ?? 0}"
-            onchange="setFloorProp(${f.id},'offset',this.value)"
-            onclick="event.stopPropagation()">
-          <span>მ.</span>
-        </div>
-        <div class="flp-row">
-          <label>სიგანე</label>
-          <input type="number" step="0.5" min="1" value="${f.width ?? 10}"
-            onchange="setFloorProp(${f.id},'width',this.value)"
-            onclick="event.stopPropagation()">
-          <span>მ.</span>
-        </div>
-      </div>
-
-      <div class="tc">${catsHtml}</div>`;
-
-    tw.appendChild(node);
+function autoLayout() {
+  if (nodes.length === 0) return;
+  saveHistory();
+  const incoming = {};
+  nodes.forEach(n => incoming[n.id] = 0);
+  links.forEach(l => { incoming[l.to] = (incoming[l.to] || 0) + 1; });
+  const layers = [];
+  const placed = new Set();
+  let currentLayer = nodes.filter(n => incoming[n.id] === 0);
+  if (currentLayer.length === 0) currentLayer = [nodes[0]];
+  while (currentLayer.length && placed.size < nodes.length) {
+    layers.push(currentLayer);
+    currentLayer.forEach(n => placed.add(n.id));
+    const next = [];
+    currentLayer.forEach(n => {
+      links.filter(l => l.from === n.id).forEach(l => {
+        const target = nodes.find(x => x.id === l.to);
+        if (target && !placed.has(target.id) && !next.includes(target)) next.push(target);
+      });
+    });
+    currentLayer = next;
+  }
+  nodes.forEach(n => { if (!placed.has(n.id)) layers[layers.length - 1] = [...(layers[layers.length - 1] || []), n]; });
+  const XSTEP = 160, YSTEP = 110, XSTART = 120, YSTART = 120;
+  layers.forEach((layer, li) => {
+    layer.forEach((n, ni) => {
+      n.x = XSTART + li * XSTEP;
+      n.y = YSTART + ni * YSTEP;
+    });
   });
-
-  document.getElementById('st-f').textContent = 'სართ: ' + S.floors.length;
-  draw();
+  render();
+  setTimeout(fitView, 100);
 }
 
-function togTN(row) {
-  const node = row.closest('.tn');
-  node.classList.toggle('open');
-  const lbl = row.querySelector('.tl').textContent;
-  const f = S.floors.find(x => x.name === lbl);
-  if (f) f.open = node.classList.contains('open');
+function loadSample() {
+  saveHistory();
+  nodes = [];
+  links = [];
+  counter = 0;
+  const spec = [
+    { type: 'intake',   flow: 6000, a: 600, b: 500, L: 0, x: 80,  y: 140 },
+    { type: 'damper',   flow: 6000, a: 600, b: 500, L: 0, x: 220, y: 140 },
+    { type: 'filter',   flow: 6000, a: 600, b: 500, L: 0, x: 360, y: 140, fixedDp: 120 },
+    { type: 'heater',   flow: 6000, a: 600, b: 500, L: 0, x: 500, y: 140, fixedDp: 80 },
+    { type: 'fan',      flow: 6000, a: 500, b: 400, L: 0, x: 640, y: 140 },
+    { type: 'silencer', flow: 6000, a: 500, b: 400, L: 0.9, x: 780, y: 140, fixedDp: 50 },
+    { type: 'duct',     flow: 6000, a: 500, b: 400, L: 8, x: 920, y: 140 },
+    { type: 'elbow',    flow: 6000, a: 500, b: 400, L: 0, x: 1060, y: 140 },
+    { type: 'tee',      flow: 6000, a: 500, b: 400, L: 0, x: 1200, y: 140 },
+    { type: 'duct',     flow: 3500, a: 400, b: 300, L: 5, x: 1340, y: 60 },
+    { type: 'diffuser', flow: 3500, a: 400, b: 300, L: 0, x: 1480, y: 60 },
+    { type: 'duct',     flow: 2500, a: 350, b: 250, L: 4, x: 1340, y: 220 },
+    { type: 'grille',   flow: 2500, a: 350, b: 250, L: 0, x: 1480, y: 220 }
+  ];
+  const created = spec.map(s => {
+    counter++;
+    const def = TYPES[s.type];
+    return { id: counter, tag: `${def.tag}${counter}`, zeta: def.zeta || 0, fixedDp: def.fixedDp || 0, ...s };
+  });
+  nodes = created;
+  for (let i = 0; i < 8; i++) {
+    links.push({ id: `l${i}`, from: nodes[i].id, to: nodes[i+1].id });
+  }
+  links.push({ id: 'l8a', from: nodes[8].id, to: nodes[9].id });
+  links.push({ id: 'l9',  from: nodes[9].id, to: nodes[10].id });
+  links.push({ id: 'l8b', from: nodes[8].id, to: nodes[11].id });
+  links.push({ id: 'l11', from: nodes[11].id, to: nodes[12].id });
+  render();
 }
-function togDA(id) { document.getElementById(id)?.classList.toggle('open'); }
-function selF(id) { S.selF = id; buildTree(); }
-function togVis(e, id) {
+
+function calcNode(n, rho, nu, eps) {
+  const def = TYPES[n.type];
+  const flow_m3s = n.flow / 3600;
+  const a_m = n.a / 1000, b_m = n.b / 1000;
+  const area = a_m * b_m;
+  const v = area > 0 ? flow_m3s / area : 0;
+  const Dh = area > 0 ? (2 * a_m * b_m) / (a_m + b_m) : 0;
+  const Re = nu > 0 ? (v * Dh) / (nu * 1e-6) : 0;
+  let lambda = 0;
+  if (Re > 0) lambda = Re < 2300 ? 64 / Re : 0.11 * Math.pow(68 / Re + eps / Dh, 0.25);
+  const pdyn = rho * v * v / 2;
+  const R = Dh > 0 ? (lambda / Dh) * pdyn : 0;
+  let dP_fr = 0;
+  if (def.hasL && n.L) dP_fr = R * n.L;
+  const dP_loc = (n.zeta || 0) * pdyn;
+  const dP_fixed = n.fixedDp || 0;
+  const dP_sum = dP_fr + dP_loc + dP_fixed;
+  return { v, Dh: Dh * 1000, Re, lambda, pdyn, R, dP_fr, dP_loc, dP_fixed, dP_sum };
+}
+
+function findCriticalPath() {
+  const incoming = {};
+  nodes.forEach(n => incoming[n.id] = 0);
+  links.forEach(l => { incoming[l.to] = (incoming[l.to] || 0) + 1; });
+  const sources = nodes.filter(n => incoming[n.id] === 0);
+  if (sources.length === 0 && nodes.length) sources.push(nodes[0]);
+  let bestPath = [], bestDp = 0;
+  function dfs(nodeId, path, cumDp) {
+    const outLinks = links.filter(l => l.from === nodeId);
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return;
+    const newCum = cumDp + (node._c ? node._c.dP_sum : 0);
+    const newPath = [...path, nodeId];
+    if (outLinks.length === 0) {
+      if (newCum > bestDp) { bestDp = newCum; bestPath = newPath; }
+      return;
+    }
+    outLinks.forEach(l => dfs(l.to, newPath, newCum));
+  }
+  sources.forEach(s => dfs(s.id, [], 0));
+  return { path: bestPath, dp: bestDp };
+}
+
+function recalc() {
+  const rho = parseFloat(document.getElementById('airDensity').value) || 1.2;
+  const nu = parseFloat(document.getElementById('airViscosity').value) || 15.1;
+  const eps = (parseFloat(document.getElementById('roughness').value) || 0.09) / 1000;
+  const vMax = parseFloat(document.getElementById('vMax').value) || 8;
+  let maxV = 0, maxFlow = 0;
+  const warnings = [];
+  nodes.forEach(n => {
+    n._c = calcNode(n, rho, nu, eps);
+    if (n._c.v > maxV) maxV = n._c.v;
+    if (n.flow > maxFlow) maxFlow = n.flow;
+    if (n._c.v > vMax) warnings.push(`${n.tag}: v=${n._c.v.toFixed(1)} m/s`);
+  });
+  const { path, dp } = findCriticalPath();
+  const criticalSet = new Set(path);
+  nodes.forEach(n => n._critical = criticalSet.has(n.id));
+  const hasFan = nodes.some(n => TYPES[n.type].isFan);
+  const power = maxFlow > 0 ? (maxFlow / 3600 * dp * 1.15) / 0.65 / 1000 : 0;
+
+  document.getElementById('rFanDp').innerHTML = `${dp.toFixed(0)}<span class="result-unit">Pa</span>`;
+  document.getElementById('rFanSub').textContent = hasFan
+    ? `საპროექტო: ${(dp * 1.15).toFixed(0)} Pa (+15%) · ${path.length} ნოდი`
+    : '⚠ ვენტილატორი არ არის';
+  document.getElementById('rFlow').innerHTML = `${maxFlow.toFixed(0)}<span class="result-unit">m³/h</span>`;
+  document.getElementById('rVmax').innerHTML = `${maxV.toFixed(1)}<span class="result-unit">m/s</span>`;
+  document.getElementById('rNodes').textContent = nodes.length;
+  document.getElementById('rPower').innerHTML = `${power.toFixed(2)}<span class="result-unit">kW</span>`;
+  document.getElementById('nodeCount').textContent = nodes.length;
+  document.getElementById('linkCount').textContent = links.length;
+
+  const badge = document.getElementById('badge');
+  badge.textContent = nodes.length === 0 ? '—' : (warnings.length ? 'WARN' : 'OK');
+  badge.style.background = warnings.length ? 'var(--ora-lt)' : 'var(--blue-lt)';
+  badge.style.color = warnings.length ? 'var(--ora)' : 'var(--blue)';
+
+  const fh = document.getElementById('formulaHint');
+  fh.classList.remove('warn');
+  if (nodes.length === 0) {
+    fh.textContent = 'ჩატვირთე ნიმუში ან დაიწყე ნოდების დამატებით';
+  } else if (!hasFan) {
+    fh.innerHTML = '⚠ დაამატე ვენტილატორი';
+    fh.classList.add('warn');
+  } else {
+    fh.innerHTML = `კრიტ. მარშრუტი: ${path.length} ნოდი<br>ΔP_crit = ${dp.toFixed(0)} Pa<br>P_fan = ${power.toFixed(2)} kW`;
+  }
+
+  const wb = document.getElementById('warnBanner');
+  if (warnings.length) {
+    wb.textContent = `⚠ სიჩქარე > ${vMax} m/s: ${warnings.slice(0, 4).join(' · ')}`;
+    wb.classList.add('show');
+  } else {
+    wb.classList.remove('show');
+  }
+
+  renderEditor();
+}
+
+function render() {
+  const canvas = document.getElementById('canvas');
+  [...canvas.querySelectorAll('.node')].forEach(n => n.remove());
+  const rho = parseFloat(document.getElementById('airDensity').value) || 1.2;
+  const nu = parseFloat(document.getElementById('airViscosity').value) || 15.1;
+  const eps = (parseFloat(document.getElementById('roughness').value) || 0.09) / 1000;
+  const vMax = parseFloat(document.getElementById('vMax').value) || 8;
+
+  nodes.forEach(n => {
+    const def = TYPES[n.type];
+    const c = calcNode(n, rho, nu, eps);
+    n._c = c;
+    const vClass = c.v > vMax ? 'high' : c.v > vMax * 0.85 ? 'warn' : '';
+    const el = document.createElement('div');
+    el.className = 'node' + (selectedId === n.id ? ' selected' : '');
+    el.style.left = n.x + 'px';
+    el.style.top = n.y + 'px';
+    el.dataset.id = n.id;
+    const dpBadge = c.dP_sum > 0 ? `<div class="node-dp ${vClass}">ΔP ${c.dP_sum.toFixed(0)}</div>` : '';
+    const valHtml = def.isFan
+      ? `<div class="node-value">${n.flow} m³/h</div>`
+      : def.hasL
+        ? `<div class="node-value">${n.a}×${n.b} · L=${n.L}m</div><div class="node-value">v=${c.v.toFixed(1)} m/s</div>`
+        : `<div class="node-value">${n.a}×${n.b}</div><div class="node-value">v=${c.v.toFixed(1)} m/s</div>`;
+    el.innerHTML = `
+      ${dpBadge}
+      <div class="port in" data-port="in" data-id="${n.id}"></div>
+      <svg><use href="#${def.icon}"></use></svg>
+      <div class="node-tag">${n.tag}</div>
+      ${valHtml}
+      <div class="port out ${linkFrom === n.id ? 'active' : ''}" data-port="out" data-id="${n.id}"></div>
+    `;
+    el.addEventListener('mousedown', nodeMouseDown);
+    el.addEventListener('click', (e) => {
+      if (e.target.classList.contains('port')) return;
+      e.stopPropagation();
+      selectedId = n.id;
+      render();
+    });
+    canvas.appendChild(el);
+  });
+  canvas.querySelectorAll('.port').forEach(p => p.addEventListener('click', portClick));
+  renderLinks();
+  recalc();
+}
+
+function renderLinks() {
+  const svgLinks = document.getElementById('svgLinks');
+  svgLinks.innerHTML = '';
+  const criticalIds = new Set(nodes.filter(n => n._critical).map(n => n.id));
+  links.forEach(l => {
+    const a = nodes.find(n => n.id === l.from);
+    const b = nodes.find(n => n.id === l.to);
+    if (!a || !b) return;
+    const nodeW = 88, nodeH = 70;
+    const x1 = a.x + nodeW;
+    const y1 = a.y + nodeH / 2;
+    const x2 = b.x;
+    const y2 = b.y + nodeH / 2;
+    const dx = Math.abs(x2 - x1);
+    const cx = Math.max(40, dx / 2);
+    const path = `M ${x1} ${y1} C ${x1 + cx} ${y1}, ${x2 - cx} ${y2}, ${x2} ${y2}`;
+    const isCritical = criticalIds.has(a.id) && criticalIds.has(b.id);
+    const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pathEl.setAttribute('d', path);
+    pathEl.setAttribute('class', 'conn-line' + (isCritical ? ' critical' : ''));
+    pathEl.setAttribute('marker-end', isCritical ? 'url(#arrow-critical)' : 'url(#arrow)');
+    pathEl.addEventListener('click', () => {
+      if (confirm('ამ კავშირის წაშლა?')) {
+        saveHistory();
+        links = links.filter(x => x.id !== l.id);
+        render();
+      }
+    });
+    svgLinks.appendChild(pathEl);
+    const midX = (x1 + x2) / 2;
+    const midY = (y1 + y2) / 2 - 6;
+    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    txt.setAttribute('x', midX);
+    txt.setAttribute('y', midY);
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('class', 'conn-label');
+    txt.textContent = `${b.flow} m³/h`;
+    svgLinks.appendChild(txt);
+  });
+}
+
+function renderEditor() {
+  const ed = document.getElementById('editor');
+  const badge = document.getElementById('selBadge');
+  if (!selectedId) {
+    ed.innerHTML = '<div class="editor-empty">ელემენტი არ არის არჩეული<br>დააჭირე ნოდს canvas-ზე</div>';
+    badge.textContent = '—';
+    return;
+  }
+  const n = nodes.find(x => x.id === selectedId);
+  if (!n) return;
+  const def = TYPES[n.type];
+  badge.textContent = n.tag;
+  let html = `
+    <div class="input-group"><label>TAG</label>
+      <input type="text" value="${n.tag}" onchange="updNode(${n.id},'tag',this.value)"></div>
+    <div class="input-group"><label>ნაკადი, m³/h</label>
+      <input type="number" value="${n.flow}" onchange="updNode(${n.id},'flow',parseFloat(this.value))"></div>
+  `;
+  if (def.hasSize) {
+    html += `
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+        <div class="input-group"><label>a, mm</label>
+          <input type="number" value="${n.a}" onchange="updNode(${n.id},'a',parseFloat(this.value))"></div>
+        <div class="input-group"><label>b, mm</label>
+          <input type="number" value="${n.b}" onchange="updNode(${n.id},'b',parseFloat(this.value))"></div>
+      </div>
+    `;
+  }
+  if (def.hasL) {
+    html += `<div class="input-group"><label>L, m</label>
+      <input type="number" step="0.1" value="${n.L}" onchange="updNode(${n.id},'L',parseFloat(this.value))"></div>`;
+  }
+  if (!def.isFan) {
+    html += `<div class="input-group"><label>ζ</label>
+      <input type="number" step="0.05" value="${n.zeta}" onchange="updNode(${n.id},'zeta',parseFloat(this.value))"></div>`;
+  }
+  if (def.fixedDp !== undefined) {
+    html += `<div class="input-group"><label>ΔP_fixed, Pa</label>
+      <input type="number" value="${n.fixedDp}" onchange="updNode(${n.id},'fixedDp',parseFloat(this.value))"></div>`;
+  }
+  if (n._c) {
+    html += `
+      <div style="background: var(--sur-2); padding: 8px 10px; margin-top: 8px; border-radius: 5px; font-family: var(--font-mono); font-size: 10px; color: var(--text-2); border: 1px solid var(--bdr);">
+        <div style="color: var(--text-3); margin-bottom: 4px; font-weight: 600;">გათვლილი</div>
+        <div>v = <strong style="color:var(--text)">${n._c.v.toFixed(2)}</strong> m/s</div>
+        <div>D_h = <strong style="color:var(--text)">${n._c.Dh.toFixed(0)}</strong> mm</div>
+        <div>Re = <strong style="color:var(--text)">${n._c.Re.toFixed(0)}</strong></div>
+        <div>P_dyn = <strong style="color:var(--text)">${n._c.pdyn.toFixed(1)}</strong> Pa</div>
+        ${n._c.dP_fr > 0 ? `<div>ΔP_fr = <strong style="color:var(--text)">${n._c.dP_fr.toFixed(1)}</strong> Pa</div>` : ''}
+        ${n._c.dP_loc > 0 ? `<div>ΔP_loc = <strong style="color:var(--text)">${n._c.dP_loc.toFixed(1)}</strong> Pa</div>` : ''}
+        ${n._c.dP_fixed > 0 ? `<div>ΔP_fix = <strong style="color:var(--text)">${n._c.dP_fixed.toFixed(1)}</strong> Pa</div>` : ''}
+        <div style="margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--bdr); color: var(--navy);">
+          <strong>ΔP = ${n._c.dP_sum.toFixed(1)} Pa</strong>
+        </div>
+        ${n._critical ? '<div style="margin-top:4px; color:var(--ora); font-weight:700;">✓ კრიტიკულ მარშრუტზე</div>' : ''}
+      </div>
+    `;
+  }
+  html += `
+    <div style="margin-top: 10px; display: flex; gap: 5px;">
+      <button class="btn btn-danger" style="flex:1;" onclick="deleteSelected()">წაშლა</button>
+      <button class="btn" style="flex:1;" onclick="duplicateSelected()">დუბლიკატი</button>
+    </div>
+  `;
+  ed.innerHTML = html;
+}
+
+function updNode(id, field, val) {
+  saveHistory();
+  const n = nodes.find(x => x.id === id);
+  if (!n) return;
+  n[field] = val;
+  render();
+}
+
+function duplicateSelected() {
+  if (!selectedId) return;
+  const src = nodes.find(n => n.id === selectedId);
+  if (!src) return;
+  saveHistory();
+  counter++;
+  const def = TYPES[src.type];
+  const newNode = { ...src, id: counter, tag: `${def.tag}${counter}`, x: src.x + 140, y: src.y };
+  nodes.push(newNode);
+  links.push({ id: `l${Date.now()}`, from: src.id, to: newNode.id });
+  selectedId = newNode.id;
+  render();
+}
+
+function nodeMouseDown(e) {
+  if (e.target.classList.contains('port')) return;
+  const id = parseInt(e.currentTarget.dataset.id);
+  const n = nodes.find(x => x.id === id);
+  if (!n) return;
+  dragNode = n;
+  const rect = e.currentTarget.getBoundingClientRect();
+  dragOffset.x = e.clientX - rect.left;
+  dragOffset.y = e.clientY - rect.top;
+  e.currentTarget.classList.add('dragging');
+  saveHistory();
+  e.preventDefault();
+}
+
+document.addEventListener('mousemove', e => {
+  const canvasRect = document.getElementById('canvas').getBoundingClientRect();
+  mouseX = e.clientX - canvasRect.left;
+  mouseY = e.clientY - canvasRect.top;
+  document.getElementById('cursorPos').textContent = `x:${Math.round(mouseX)} y:${Math.round(mouseY)}`;
+  if (dragNode) {
+    dragNode.x = Math.max(0, mouseX - dragOffset.x);
+    dragNode.y = Math.max(0, mouseY - dragOffset.y);
+    dragNode.x = Math.round(dragNode.x / 10) * 10;
+    dragNode.y = Math.round(dragNode.y / 10) * 10;
+    const el = document.querySelector(`.node[data-id="${dragNode.id}"]`);
+    if (el) {
+      el.style.left = dragNode.x + 'px';
+      el.style.top = dragNode.y + 'px';
+    }
+    renderLinks();
+  }
+  if (linkFrom) {
+    const from = nodes.find(n => n.id === linkFrom);
+    if (from) {
+      const preview = document.getElementById('svgPreview');
+      const x1 = from.x + 88;
+      const y1 = from.y + 35;
+      preview.innerHTML = `<path d="M ${x1} ${y1} C ${x1+80} ${y1}, ${mouseX-80} ${mouseY}, ${mouseX} ${mouseY}" class="link-preview" marker-end="url(#arrow-blue)"/>`;
+    }
+  }
+});
+
+document.addEventListener('mouseup', () => {
+  if (dragNode) {
+    document.querySelector(`.node[data-id="${dragNode.id}"]`)?.classList.remove('dragging');
+    dragNode = null;
+  }
+});
+
+function portClick(e) {
   e.stopPropagation();
-  const f = S.floors.find(x => x.id === id);
-  if (f) { f.visible = !f.visible; buildTree(); }
-}
-function setFloorProp(fid, prop, val) {
-  const f = S.floors.find(x => x.id === fid);
-  if (f) { f[prop] = parseFloat(val) || 0; draw(); autoSave(); }
-}
-
-function addFloor() {
-  const newF = {
-    id: S.nid, name: 'სართული ' + S.nid,
-    elev: parseFloat((S.floors.length * 3.0).toFixed(1)),
-    open: true, visible: true,
-    offset: 0, width: 10,
-    fit: [], ind: [], out: []
-  };
-  S.floors.push(newF);
-  S.nid++;
-  buildTree();
-  autoSave();
-}
-
-function askDelFloor() {
-  const f = S.floors.find(x => x.id === S.selF);
-  if (!f) { showModal('არ არის მონიშნული', 'გთხოვთ ჯერ მონიშნოთ სართული tree-ში', null, 'გასაგებია', false); return; }
-  if (S.floors.length <= 1) { showModal('შეუძლებელია', 'მინიმუმ 1 სართული საჭიროა', null, 'გასაგებია', false); return; }
-  showModal('სართულის წაშლა', `ნამდვილად გსურთ "${f.name}" წაშლა? ეს ქმედება შეუქცევადია.`, () => {
-    S.floors = S.floors.filter(x => x.id !== S.selF);
-    S.selF = null;
-    buildTree(); autoSave();
-  });
-}
-
-function askDelDev(fid, k, i, name) {
-  showModal('კომპონენტის წაშლა', `ნამდვილად წაშალოთ "${name}"?`, () => {
-    const f = S.floors.find(x => x.id === fid);
-    if (f) { f[k].splice(i, 1); buildTree(); updCount(); autoSave(); }
-  });
-}
-
-function addDev(fid, k) {
-  const f = S.floors.find(x => x.id === fid);
-  if (!f) return;
-  const nm = { fit:'FIT', ind:'FCU', out:'ODU' };
-  f[k].push(nm[k] + '-' + (f[k].length + 1).toString().padStart(2, '0'));
-  buildTree(); updCount(); autoSave();
-}
-
-function srch(q) { buildTree(q); }
-function updCount() {
-  const t = S.comps.length + S.floors.reduce((a, f) => a + f.fit.length + f.ind.length + f.out.length, 0);
-  document.getElementById('st-c').textContent = 'კომპ: ' + t;
-}
-
-/* ══════════════════════════════════════
-   CANVAS
-══════════════════════════════════════ */
-const cv  = document.getElementById('cv');
-const ctx = cv.getContext('2d');
-
-function resizeCv() {
-  const cc = document.getElementById('cc');
-  cv.width  = cc.offsetWidth;
-  cv.height = cc.offsetHeight;
-  draw();
-}
-
-function draw() {
-  if (S.curTab !== 0) return;
-  ctx.clearRect(0, 0, cv.width, cv.height);
-  ctx.fillStyle = '#f6f8fa'; ctx.fillRect(0, 0, cv.width, cv.height);
-  ctx.save();
-  ctx.translate(S.ox, S.oy);
-  ctx.scale(S.zoom, S.zoom);
-
-  // GRID
-  if (S.grid) {
-    const GS = SCALE * 0.5; // minor grid = 0.5m
-    const sx = Math.floor(-S.ox / S.zoom / GS) * GS;
-    const sy = Math.floor(-S.oy / S.zoom / GS) * GS;
-    const ex = sx + cv.width  / S.zoom + GS;
-    const ey = sy + cv.height / S.zoom + GS;
-    ctx.strokeStyle = '#e2e6ea'; ctx.lineWidth = .4 / S.zoom;
-    for (let x = sx; x < ex; x += GS) { ctx.beginPath(); ctx.moveTo(x,sy); ctx.lineTo(x,ey); ctx.stroke(); }
-    for (let y = sy; y < ey; y += GS) { ctx.beginPath(); ctx.moveTo(sx,y); ctx.lineTo(ex,y); ctx.stroke(); }
-    // major grid = 1m
-    ctx.strokeStyle = '#cdd3da'; ctx.lineWidth = .7 / S.zoom;
-    const MG = SCALE;
-    const msx = Math.floor(-S.ox / S.zoom / MG) * MG;
-    const msy = Math.floor(-S.oy / S.zoom / MG) * MG;
-    for (let x = msx; x < ex; x += MG) { ctx.beginPath(); ctx.moveTo(x,msy); ctx.lineTo(x,ey); ctx.stroke(); }
-    for (let y = msy; y < ey; y += MG) { ctx.beginPath(); ctx.moveTo(msx,y); ctx.lineTo(ex,y); ctx.stroke(); }
-  }
-
-  // X AXIS
-  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1 / S.zoom;
-  ctx.setLineDash([]);
-  ctx.beginPath(); ctx.moveTo(-3000, 0); ctx.lineTo(3000, 0); ctx.stroke();
-  // Y AXIS
-  ctx.beginPath(); ctx.moveTo(0, -3000); ctx.lineTo(0, 3000); ctx.stroke();
-
-  // X label
-  ctx.fillStyle = '#64748b'; ctx.font = `bold ${11/S.zoom}px Inter`;
-  ctx.textAlign = 'left';
-  ctx.fillText('X →', 80 / S.zoom, -6 / S.zoom);
-  // Y label (canvas Y is down, world Y is up)
-  ctx.textAlign = 'center';
-  ctx.fillText('↑ Y', 8 / S.zoom, -80 / S.zoom);
-  // Origin
-  ctx.textAlign = 'left';
-  ctx.fillStyle = '#94a3b8'; ctx.font = `${10/S.zoom}px Inter`;
-  ctx.fillText('±0.000', 4 / S.zoom, -4 / S.zoom);
-
-  // FLOOR LINES
-  S.floors.forEach(fl => {
-    if (!fl.visible) return;
-    const y   = -fl.elev * SCALE;       // canvas Y (up = negative)
-    const x1  = (fl.offset ?? 0) * SCALE;
-    const x2  = ((fl.offset ?? 0) + (fl.width ?? 10)) * SCALE;
-    const ls  = S.lineStyle;
-
-    ctx.save();
-    ctx.strokeStyle = ls.color;
-    ctx.lineWidth   = ls.thick / S.zoom;
-    ctx.setLineDash([ls.dash / S.zoom, ls.gap / S.zoom]);
-    ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(x1, y); ctx.lineTo(x2, y); ctx.stroke();
-    ctx.setLineDash([]);
-
-    // end cap ticks
-    ctx.lineWidth = ls.thick / S.zoom;
-    const tk = 6 / S.zoom;
-    ctx.beginPath(); ctx.moveTo(x1, y - tk); ctx.lineTo(x1, y + tk); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x2, y - tk); ctx.lineTo(x2, y + tk); ctx.stroke();
-
-    // elevation labels at both ends
-    const lbl = (fl.elev >= 0 ? '+' : '') + fl.elev.toFixed(3);
-    ctx.fillStyle = ls.color;
-    ctx.font = `bold ${11/S.zoom}px Inter`;
-    ctx.textAlign = 'right';
-    ctx.fillText(lbl, x1 - 6/S.zoom, y - 5/S.zoom);
-    ctx.textAlign = 'left';
-    ctx.fillText(lbl, x2 + 6/S.zoom, y - 5/S.zoom);
-
-    // floor name centered
-    ctx.font = `${10/S.zoom}px Inter`;
-    ctx.fillStyle = '#94a3b8';
-    ctx.textAlign = 'center';
-    ctx.fillText(fl.name, (x1 + x2) / 2, y - 16/S.zoom);
-    ctx.restore();
-  });
-
-  // COMPONENTS (pipes dragged onto canvas)
-  S.comps.forEach(c => {
-    if (c.type === 'supply') {
-      ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 3 / S.zoom;
-      ctx.setLineDash([]);
-      ctx.beginPath(); ctx.moveTo(c.x, c.y); ctx.lineTo(c.x + 100/S.zoom, c.y); ctx.stroke();
-      ctx.fillStyle = '#2563eb';
-      ctx.beginPath(); ctx.moveTo(c.x+100/S.zoom,c.y); ctx.lineTo(c.x+88/S.zoom,c.y-5/S.zoom); ctx.lineTo(c.x+88/S.zoom,c.y+5/S.zoom); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#1a1f2e'; ctx.font = `${10/S.zoom}px Inter`; ctx.textAlign='left';
-      ctx.fillText('მიწოდება', c.x+2/S.zoom, c.y-7/S.zoom);
-    } else {
-      ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 3 / S.zoom;
-      ctx.setLineDash([]);
-      ctx.beginPath(); ctx.moveTo(c.x+100/S.zoom,c.y); ctx.lineTo(c.x,c.y); ctx.stroke();
-      ctx.fillStyle = '#dc2626';
-      ctx.beginPath(); ctx.moveTo(c.x,c.y); ctx.lineTo(c.x+12/S.zoom,c.y-5/S.zoom); ctx.lineTo(c.x+12/S.zoom,c.y+5/S.zoom); ctx.closePath(); ctx.fill();
-      ctx.fillStyle = '#1a1f2e'; ctx.font = `${10/S.zoom}px Inter`; ctx.textAlign='left';
-      ctx.fillText('უკუსვლა', c.x+2/S.zoom, c.y-7/S.zoom);
+  const portType = e.target.dataset.port;
+  const nodeId = parseInt(e.target.dataset.id);
+  if (!linkFrom && portType === 'out') {
+    linkFrom = nodeId;
+    document.getElementById('modeIndicator').classList.add('show');
+    document.getElementById('statusMode').textContent = 'LINK';
+    render();
+  } else if (linkFrom && portType === 'in') {
+    if (linkFrom !== nodeId) {
+      saveHistory();
+      const exists = links.some(l => l.from === linkFrom && l.to === nodeId);
+      if (!exists) links.push({ id: `l${Date.now()}`, from: linkFrom, to: nodeId });
     }
-  });
-
-  ctx.restore();
-}
-
-/* ══════════════════════════════════════
-   ZOOM / PAN
-══════════════════════════════════════ */
-function updZ() { document.getElementById('zlbl').textContent = Math.round(S.zoom * 100) + '%'; }
-function zIn()  { S.zoom = Math.min(S.zoom * 1.2, 12); updZ(); draw(); }
-function zOut() { S.zoom = Math.max(S.zoom / 1.2, 0.05); updZ(); draw(); }
-function showAll() {
-  S.zoom = 1; S.ox = cv.width / 2; S.oy = cv.height * 0.7; // origin at bottom-center
-  updZ(); draw();
-}
-function togGrid(b) { S.grid = !S.grid; b.classList.toggle('on', S.grid); draw(); }
-function togPan(b)  { S.panMode = !S.panMode; b.classList.toggle('on', S.panMode); document.getElementById('cc').className = S.panMode ? 'pan' : ''; }
-
-document.getElementById('cc').addEventListener('wheel', e => {
-  e.preventDefault();
-  const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
-  const f = e.deltaY < 0 ? 1.12 : 0.88;
-  const nz = Math.max(0.05, Math.min(12, S.zoom * f));
-  S.ox = mx - (mx - S.ox) * (nz / S.zoom);
-  S.oy = my - (my - S.oy) * (nz / S.zoom);
-  S.zoom = nz; updZ(); draw();
-}, { passive: false });
-
-document.getElementById('cc').addEventListener('mousedown', e => {
-  if (e.button === 1 || S.panMode) { S.panning = true; S.lm = {x:e.clientX, y:e.clientY}; e.preventDefault(); }
-});
-window.addEventListener('mousemove', e => {
-  if (S.panning) {
-    S.ox += e.clientX - S.lm.x; S.oy += e.clientY - S.lm.y;
-    S.lm = {x:e.clientX, y:e.clientY}; draw();
+    cancelLink();
   }
-  const r = cv.getBoundingClientRect();
-  const wx = ((e.clientX - r.left - S.ox) / S.zoom / SCALE).toFixed(2);
-  const wy = (-(e.clientY - r.top - S.oy) / S.zoom / SCALE).toFixed(2);
-  document.getElementById('coords').textContent = `x: ${wx} მ   y: ${wy} მ`;
-});
-window.addEventListener('mouseup', () => { S.panning = false; });
-
-/* ══════════════════════════════════════
-   DRAG & DROP
-══════════════════════════════════════ */
-let dType = null;
-document.querySelectorAll('.ci').forEach(it => {
-  it.addEventListener('dragstart', e => { dType = it.dataset.type; e.dataTransfer.effectAllowed = 'copy'; });
-});
-cv.addEventListener('dragover', e => e.preventDefault());
-cv.addEventListener('drop', e => {
-  e.preventDefault();
-  const r = cv.getBoundingClientRect();
-  S.comps.push({ type: dType, x: (e.clientX - r.left - S.ox) / S.zoom, y: (e.clientY - r.top - S.oy) / S.zoom });
-  updCount(); draw(); dType = null; autoSave();
-});
-
-/* ══════════════════════════════════════
-   FUNCTION 4 — LINE STYLE
-══════════════════════════════════════ */
-function syncF4() {
-  document.getElementById('f4t').value = S.lineStyle.thick;
-  document.getElementById('f4d').value = S.lineStyle.dash;
-  document.getElementById('f4g').value = S.lineStyle.gap;
-  document.getElementById('f4c').value = S.lineStyle.color;
-  document.getElementById('f4tv').textContent = S.lineStyle.thick + ' px';
-  document.getElementById('f4dv').textContent = S.lineStyle.dash + ' px';
-  document.getElementById('f4gv').textContent = S.lineStyle.gap + ' px';
-  document.getElementById('f4cv').textContent  = S.lineStyle.color;
-}
-function updF4() {
-  const t = parseFloat(document.getElementById('f4t').value);
-  const d = parseFloat(document.getElementById('f4d').value);
-  const g = parseFloat(document.getElementById('f4g').value);
-  const c = document.getElementById('f4c').value;
-  document.getElementById('f4tv').textContent = t + ' px';
-  document.getElementById('f4dv').textContent = d + ' px';
-  document.getElementById('f4gv').textContent = g + ' px';
-  document.getElementById('f4cv').textContent  = c;
-  drawF4Prev(t, d, g, c);
-}
-function applyF4() {
-  S.lineStyle.thick = parseFloat(document.getElementById('f4t').value);
-  S.lineStyle.dash  = parseFloat(document.getElementById('f4d').value);
-  S.lineStyle.gap   = parseFloat(document.getElementById('f4g').value);
-  S.lineStyle.color = document.getElementById('f4c').value;
-  draw(); autoSave();
-}
-function drawF4Prev(t, d, g, c) {
-  const pc = document.getElementById('f4prev');
-  if (!pc) return;
-  pc.width = pc.offsetWidth || 400;
-  const px = pc.getContext('2d');
-  px.clearRect(0, 0, pc.width, pc.height);
-  px.fillStyle = '#f6f8fa'; px.fillRect(0, 0, pc.width, pc.height);
-  const thick = t ?? S.lineStyle.thick;
-  const dash  = d ?? S.lineStyle.dash;
-  const gap   = g ?? S.lineStyle.gap;
-  const color = c ?? S.lineStyle.color;
-  px.strokeStyle = color; px.lineWidth = thick;
-  px.setLineDash([dash, gap]); px.lineCap = 'round';
-  px.beginPath(); px.moveTo(20, pc.height/2); px.lineTo(pc.width-20, pc.height/2); px.stroke();
-  px.setLineDash([]);
-  // end ticks
-  px.lineWidth = thick;
-  px.beginPath(); px.moveTo(20, pc.height/2-8); px.lineTo(20, pc.height/2+8); px.stroke();
-  px.beginPath(); px.moveTo(pc.width-20, pc.height/2-8); px.lineTo(pc.width-20, pc.height/2+8); px.stroke();
-  // labels
-  px.fillStyle = color; px.font = 'bold 10px Inter';
-  px.textAlign = 'right'; px.fillText('+0.000', 16, pc.height/2-10);
-  px.textAlign = 'left';  px.fillText('+0.000', pc.width-16, pc.height/2-10);
 }
 
-/* ══════════════════════════════════════
-   INIT
-══════════════════════════════════════ */
-window.addEventListener('resize', resizeCv);
-resizeCv();
-buildTree();
-updCount();
-// Origin: center-bottom area
-S.ox = cv.width / 2;
-S.oy = cv.height * 0.7;
-draw();
-syncF4();
-setTimeout(drawF4Prev, 100);
+function cancelLink() {
+  linkFrom = null;
+  document.getElementById('modeIndicator').classList.remove('show');
+  document.getElementById('statusMode').textContent = 'EDIT';
+  document.getElementById('svgPreview').innerHTML = '';
+  render();
+}
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (selectedId) { e.preventDefault(); deleteSelected(); }
+  }
+  if (e.key === 'Escape') {
+    if (linkFrom) cancelLink();
+    selectedId = null;
+    render();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+    e.preventDefault();
+    undo();
+  }
+});
+
+document.getElementById('canvas').addEventListener('click', e => {
+  if (e.target.id === 'canvas' || e.target.id === 'canvasSvg') {
+    if (linkFrom) cancelLink();
+    else { selectedId = null; render(); }
+  }
+});
+
+function exportCSV() {
+  if (!nodes.length) { alert('ცარიელია'); return; }
+  const rows = [['TAG','TYPE','FLOW_m3h','a_mm','b_mm','L_m','zeta','dP_fixed_Pa','v_ms','Dh_mm','Re','dP_total_Pa','critical']];
+  nodes.forEach(n => {
+    const c = n._c || {};
+    rows.push([
+      n.tag, n.type, n.flow, n.a, n.b, n.L, n.zeta, n.fixedDp,
+      (c.v || 0).toFixed(2), (c.Dh || 0).toFixed(0), (c.Re || 0).toFixed(0),
+      (c.dP_sum || 0).toFixed(1), n._critical ? 'YES' : ''
+    ]);
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `hvac-schema-${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Theme sync with parent (same-origin iframe)
+(function syncTheme(){
+  try {
+    if (window.parent && window.parent !== window) {
+      const parentHtml = window.parent.document.documentElement;
+      const apply = () => {
+        const isDark = parentHtml.classList.contains('dark');
+        document.documentElement.classList.toggle('dark', isDark);
+        document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+      };
+      apply();
+      new MutationObserver(apply).observe(parentHtml, { attributes: true, attributeFilter: ['class'] });
+    }
+  } catch (e) {}
+})();
+
+loadSample();
 </script>
 </body>
 </html>

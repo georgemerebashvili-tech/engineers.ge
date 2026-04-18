@@ -13,6 +13,7 @@ type Tile = {
   label?: string;
   sublabel?: string;
   img?: string;
+  linkUrl?: string;
   accent?: string;
   adSlot?: boolean;
   priceGel?: number;
@@ -127,12 +128,13 @@ function toPhotoTile(slot: HeroAdSlot): Tile {
     label: slot.label,
     sublabel: slot.sublabel,
     img: slot.image_url,
+    linkUrl: slot.link_url,
     accent: 'var(--blue)',
     adSlot: slot.is_ad_slot,
     priceGel: slot.price_gel,
     occupiedUntil: slot.occupied_until,
     clientName: slot.client_name,
-    ownerName: HERO_OWNER_NAME
+    ownerName: slot.client_name || HERO_OWNER_NAME
   };
 }
 
@@ -147,6 +149,7 @@ type CellProps = {
   label?: string;
   sublabel?: string;
   img?: string;
+  linkUrl?: string;
   accent?: string;
   adSlot?: boolean;
   priceGel?: number;
@@ -318,13 +321,23 @@ function Cell(props: CellProps) {
 
   if (kind === 'photo' && img) {
     const clipId = `clip-${label}-${Math.round(x)}-${Math.round(y)}`;
-    const handleClick = () => onOpen?.({img, label});
+    const linkUrl = (props.linkUrl ?? props.payload?.linkUrl ?? '').trim();
+    const handleClick = () => {
+      if (linkUrl) {
+        window.open(linkUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      onOpen?.({img, label});
+    };
+    const ariaLabel = linkUrl
+      ? `გახსენი ბმული: ${label}`
+      : `გახსენი დიდი ზომით: ${label}`;
     return (
       <g
         onClick={handleClick}
         style={{cursor: 'pointer'}}
         role="button"
-        aria-label={`გახსენი დიდი ზომით: ${label}`}
+        aria-label={ariaLabel}
       >
         <defs>
           <clipPath id={clipId}>
@@ -383,7 +396,7 @@ function Cell(props: CellProps) {
             </>
           );
         })()}
-        {adSlot && innerW > 92 && innerH > 44 && (() => {
+        {ownerName && innerW > 92 && innerH > 44 && (() => {
           const ownerFs = Math.max(8, Math.min(10, innerW / 26));
           return (
             <text
