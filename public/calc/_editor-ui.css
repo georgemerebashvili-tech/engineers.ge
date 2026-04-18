@@ -1,0 +1,532 @@
+/* engineers.ge — portable editor UI primitives
+ * Loads AFTER /calc/_base.css (depends on its tokens).
+ * Intended for: wall-editor, stair-pressurization, elevator-shaft-press,
+ * parking-ventilation, corridor-pressurization, future composer, etc.
+ *
+ * Namespacing: .ep-* (editor primitive) — avoid collision with per-editor
+ * namespaces like .we-* (wall-editor), .sp-* (stair-press), .el-* (elevator).
+ *
+ * Scope covered here:
+ *   A. Layout tokens + shells
+ *   B. Panel shell + section primitives
+ *   C. Form field primitives (label, row, grid, toggle, segmented, swatch)
+ *   D. Library catalog card (2-col grid)
+ *   E. Floating UI (context menu on selection, PIP, status chips)
+ *   F. Tooltip helper, empty state, divider
+ */
+
+/* ───────────────────────────────────────────── A. Layout tokens ── */
+:root {
+  --ep-aside-w: 280px;      /* default right panel width              */
+  --ep-aside-w-wide: 320px; /* when dense forms are shown             */
+  --ep-mode-col-w: 44px;    /* left vertical mode strip               */
+  --ep-tools-col-w: 52px;   /* left vertical tools strip              */
+  --ep-top-h: 44px;         /* topbar height                          */
+  --ep-bottom-h: 28px;      /* statusbar / bottom controls            */
+  --ep-gap: 8px;
+  --ep-gap-lg: 12px;
+  --ep-radius-sm: 4px;
+  --ep-radius: 6px;
+  --ep-radius-lg: 10px;
+  --ep-field-h: 26px;       /* compact dense input height             */
+  --ep-label-color: var(--text-2);
+  --ep-hint-color: var(--text-3);
+  --ep-divider: var(--bdr);
+  --ep-section-head-bg: linear-gradient(180deg, var(--sur-2) 0%, var(--sur) 100%);
+  --ep-section-head-color: var(--navy);
+  --ep-shadow-float: 0 10px 24px rgba(10,25,50,.14), 0 2px 6px rgba(10,25,50,.08);
+}
+
+/* ───────────────────────────────────────────── B. Panel shell ── */
+.ep-panel {
+  background: var(--sur);
+  border-left: 1px solid var(--bdr);
+  display: flex; flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.ep-panel--left { border-left: 0; border-right: 1px solid var(--bdr); }
+
+.ep-panel-head {
+  flex: 0 0 auto;
+  padding: 10px 14px 8px;
+  border-bottom: 1px solid var(--bdr);
+  display: flex; align-items: center; gap: 8px;
+  background: var(--ep-section-head-bg);
+}
+.ep-panel-head .ep-icon {
+  width: 22px; height: 22px; border-radius: 5px;
+  background: var(--blue-lt); color: var(--blue);
+  display: inline-flex; align-items: center; justify-content: center;
+  flex: 0 0 auto;
+}
+.ep-panel-head h2 {
+  font-size: 12px; font-weight: 700; color: var(--navy);
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ep-panel-head .ep-panel-sub {
+  font-family: var(--font-mono);
+  font-size: 9.5px; color: var(--text-3);
+  font-weight: 600; letter-spacing: .04em;
+}
+
+.ep-panel-body {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Section = collapsible group of fields */
+.ep-section { border-bottom: 1px solid var(--bdr); }
+.ep-section:last-child { border-bottom: 0; }
+
+.ep-section-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 14px 7px;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ep-section-head-color);
+  font-weight: 700;
+  cursor: pointer;
+  background: transparent;
+  border: 0; width: 100%; text-align: left;
+  transition: background .12s;
+}
+.ep-section-head:hover { background: var(--sur-2); }
+.ep-section-head .ep-caret {
+  width: 10px; height: 10px;
+  transition: transform .15s;
+  flex: 0 0 auto;
+  color: var(--text-3);
+}
+.ep-section.collapsed .ep-caret { transform: rotate(-90deg); }
+.ep-section-head .ep-head-spacer { flex: 1; }
+.ep-section-head .ep-head-aux {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: var(--text-3);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.ep-section-body { padding: 4px 14px 12px; }
+.ep-section.collapsed .ep-section-body { display: none; }
+
+/* ───────────────────────────────────────────── C. Field primitives ── */
+.ep-field {
+  display: flex; flex-direction: column;
+  gap: 3px;
+  margin-bottom: 8px;
+}
+.ep-field:last-child { margin-bottom: 0; }
+
+.ep-field > label,
+.ep-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--ep-label-color);
+  letter-spacing: .01em;
+  display: flex; align-items: center; gap: 6px;
+}
+.ep-label .ep-unit { color: var(--text-3); font-family: var(--font-mono); font-weight: 500; font-size: 9px; }
+
+.ep-field-row {
+  display: flex; gap: 6px; align-items: center;
+}
+.ep-field-row > * { min-width: 0; }
+
+.ep-field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.ep-field-grid--3 { grid-template-columns: 1fr 1fr 1fr; }
+.ep-field-grid--4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+.ep-input,
+input.ep-input,
+select.ep-input,
+textarea.ep-input {
+  width: 100%;
+  height: var(--ep-field-h);
+  padding: 0 8px;
+  border: 1.5px solid var(--bdr);
+  background: var(--sur);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  border-radius: var(--ep-radius-sm);
+  transition: border-color .12s, box-shadow .12s;
+}
+.ep-input[type="text"], input.ep-input[type="text"] { font-family: var(--font-sans); }
+textarea.ep-input {
+  height: auto; min-height: 52px; padding: 6px 8px;
+  font-family: var(--font-sans); font-size: 11px; line-height: 1.4;
+  resize: vertical;
+}
+.ep-input:hover:not(:disabled) { border-color: var(--bdr-2); }
+.ep-input:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(31,111,212,.18);
+}
+.ep-input:disabled { background: var(--sur-2); color: var(--text-3); cursor: not-allowed; }
+
+/* Input with trailing unit (e.g. "mm") */
+.ep-num {
+  position: relative;
+  display: flex; align-items: center;
+}
+.ep-num input { padding-right: 26px; }
+.ep-num .ep-num-unit {
+  position: absolute;
+  right: 8px; top: 50%; transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 9px; font-weight: 600;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+/* Segmented control (mutually exclusive tabs/options) */
+.ep-seg {
+  display: inline-flex;
+  border: 1.5px solid var(--bdr);
+  border-radius: var(--ep-radius-sm);
+  overflow: hidden;
+  background: var(--sur-2);
+  width: 100%;
+}
+.ep-seg button {
+  flex: 1;
+  height: var(--ep-field-h);
+  padding: 0 8px;
+  background: transparent;
+  border: 0;
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-2);
+  cursor: pointer;
+  border-right: 1px solid var(--bdr);
+  transition: background .12s, color .12s;
+  white-space: nowrap;
+}
+.ep-seg button:last-child { border-right: 0; }
+.ep-seg button:hover { background: var(--sur); color: var(--navy); }
+.ep-seg button.active {
+  background: var(--blue); color: #fff;
+}
+
+/* Toggle (boolean switch) */
+.ep-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+  cursor: pointer;
+  user-select: none;
+}
+.ep-toggle > span:first-child {
+  font-size: 11px; color: var(--text); font-weight: 500;
+}
+.ep-toggle .ep-toggle-sw {
+  position: relative;
+  width: 28px; height: 16px;
+  background: var(--bdr-2);
+  border-radius: 9px;
+  transition: background .15s;
+  flex: 0 0 auto;
+}
+.ep-toggle .ep-toggle-sw::after {
+  content: '';
+  position: absolute;
+  left: 2px; top: 2px;
+  width: 12px; height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform .15s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.ep-toggle.active .ep-toggle-sw { background: var(--blue); }
+.ep-toggle.active .ep-toggle-sw::after { transform: translateX(12px); }
+
+/* Color / material swatch row */
+.ep-swatch-row {
+  display: flex; flex-wrap: wrap; gap: 4px;
+}
+.ep-swatch {
+  width: 22px; height: 22px;
+  border-radius: var(--ep-radius-sm);
+  border: 1.5px solid var(--bdr);
+  cursor: pointer;
+  position: relative;
+  flex: 0 0 auto;
+  transition: transform .12s, border-color .12s;
+}
+.ep-swatch:hover { transform: scale(1.08); border-color: var(--bdr-2); }
+.ep-swatch.active {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(31,111,212,.2);
+}
+
+/* Slider with label + value readout */
+.ep-slider-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.ep-slider-row input[type="range"] {
+  flex: 1; min-width: 0;
+  accent-color: var(--blue);
+}
+.ep-slider-row .ep-slider-val {
+  font-family: var(--font-mono);
+  font-size: 10px; color: var(--navy); font-weight: 700;
+  min-width: 36px; text-align: right;
+}
+
+/* Icon buttons (mini action row in section head) */
+.ep-iconbtn {
+  width: 22px; height: 22px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 4px;
+  color: var(--text-2);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.ep-iconbtn:hover { background: var(--sur-2); color: var(--blue); border-color: var(--bdr); }
+.ep-iconbtn.active { background: var(--blue-lt); color: var(--blue); border-color: var(--blue-bd); }
+.ep-iconbtn.danger:hover { background: var(--red-lt); color: var(--red); border-color: var(--red); }
+
+.ep-btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* Read-only stat line (length/area readouts) */
+.ep-stat {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 4px 0;
+  font-size: 10.5px;
+  color: var(--text-2);
+}
+.ep-stat .ep-stat-val {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--navy);
+  font-size: 11px;
+}
+
+/* ───────────────────────────────────────────── D. Library catalog ── */
+.ep-lib-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
+}
+.ep-lib-card {
+  background: var(--sur-2);
+  border: 1.5px solid var(--bdr);
+  border-radius: var(--ep-radius);
+  padding: 7px 6px;
+  cursor: pointer;
+  transition: border-color .12s, background .12s, transform .08s;
+  text-align: left;
+  display: flex; flex-direction: column; gap: 3px;
+  min-height: 48px;
+}
+.ep-lib-card:hover { border-color: var(--blue); background: var(--blue-lt); }
+.ep-lib-card:active { transform: scale(.98); }
+.ep-lib-card.active {
+  border-color: var(--blue); background: var(--blue-lt);
+  box-shadow: 0 0 0 2px rgba(31,111,212,.18);
+}
+.ep-lib-card .ep-lib-name {
+  font-size: 10.5px; font-weight: 700; color: var(--navy); line-height: 1.2;
+}
+.ep-lib-card.active .ep-lib-name { color: var(--blue); }
+.ep-lib-card .ep-lib-meta {
+  font-family: var(--font-mono);
+  font-size: 9px; color: var(--text-3); font-weight: 600;
+}
+.ep-lib-card .ep-lib-preview {
+  height: 28px;
+  background: var(--sur);
+  border: 1px solid var(--bdr);
+  border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-3);
+  margin-bottom: 2px;
+}
+
+/* ───────────────────────────────────────────── E. Floating UI ── */
+
+/* Selection context menu — floats near selected element */
+.ep-ctx {
+  position: absolute;
+  background: var(--sur);
+  border: 1px solid var(--bdr);
+  border-radius: var(--ep-radius-lg);
+  box-shadow: var(--ep-shadow-float);
+  padding: 4px;
+  display: flex; align-items: center; gap: 2px;
+  z-index: 90;
+  font-family: var(--font-sans);
+  user-select: none;
+  pointer-events: auto;
+}
+.ep-ctx button {
+  width: 28px; height: 28px;
+  border: 0; background: transparent;
+  border-radius: 5px;
+  color: var(--text-2);
+  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: background .1s, color .1s;
+}
+.ep-ctx button:hover { background: var(--sur-2); color: var(--blue); }
+.ep-ctx button.danger:hover { background: var(--red-lt); color: var(--red); }
+.ep-ctx .ep-ctx-sep {
+  width: 1px; height: 18px; background: var(--bdr);
+  margin: 0 2px;
+}
+.ep-ctx .ep-ctx-label {
+  font-family: var(--font-mono);
+  font-size: 9.5px; font-weight: 700;
+  color: var(--navy);
+  padding: 0 8px 0 6px;
+  white-space: nowrap;
+  border-right: 1px solid var(--bdr);
+  margin-right: 2px;
+}
+
+/* PIP — floating draggable preview window */
+.ep-pip {
+  position: absolute;
+  right: 16px; top: 16px;
+  width: 220px; height: 160px;
+  background: var(--sur);
+  border: 1px solid var(--bdr);
+  border-radius: var(--ep-radius-lg);
+  box-shadow: var(--ep-shadow-float);
+  overflow: hidden;
+  z-index: 70;
+  display: flex; flex-direction: column;
+  font-family: var(--font-sans);
+}
+.ep-pip-head {
+  height: 24px;
+  background: var(--sur-2);
+  border-bottom: 1px solid var(--bdr);
+  display: flex; align-items: center; gap: 4px;
+  padding: 0 4px 0 8px;
+  cursor: grab;
+  user-select: none;
+}
+.ep-pip-head:active { cursor: grabbing; }
+.ep-pip-head .ep-pip-title {
+  font-size: 10px; font-weight: 700; color: var(--navy);
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  letter-spacing: .02em;
+}
+.ep-pip-head .ep-pip-seg {
+  display: flex; gap: 1px;
+  background: var(--bdr); padding: 1px; border-radius: 4px;
+}
+.ep-pip-head .ep-pip-seg button {
+  border: 0; background: transparent;
+  font-size: 9px; font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  color: var(--text-2); cursor: pointer;
+}
+.ep-pip-head .ep-pip-seg button.active {
+  background: var(--sur); color: var(--navy);
+}
+.ep-pip-body { flex: 1; background: var(--sur-2); position: relative; }
+.ep-pip-body > svg,
+.ep-pip-body > canvas {
+  width: 100%; height: 100%;
+  display: block;
+}
+.ep-pip.collapsed { height: 24px; }
+.ep-pip.collapsed .ep-pip-body { display: none; }
+
+/* Status chip (in bottom bar or topbar) */
+.ep-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 2px 8px;
+  background: var(--sur-2);
+  border: 1px solid var(--bdr);
+  border-radius: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 600;
+  color: var(--text-2);
+}
+.ep-chip .ep-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--grn);
+}
+.ep-chip--warn { color: var(--ora); border-color: var(--ora-bd); background: var(--ora-lt); }
+.ep-chip--err { color: var(--red); border-color: var(--red); background: var(--red-lt); }
+.ep-chip--ok { color: var(--grn); border-color: var(--grn-bd); background: var(--grn-lt); }
+
+/* ───────────────────────────────────────────── F. Helpers ── */
+.ep-empty {
+  padding: 18px 14px;
+  text-align: center;
+  color: var(--text-3);
+  font-size: 10.5px;
+  font-style: italic;
+  line-height: 1.5;
+}
+.ep-empty .ep-empty-ico {
+  font-size: 20px; display: block; margin-bottom: 6px; opacity: .6;
+}
+
+.ep-divider {
+  height: 1px; background: var(--bdr);
+  margin: 8px 0;
+}
+
+.ep-hint {
+  font-size: 10px;
+  color: var(--ep-hint-color);
+  line-height: 1.45;
+  padding: 4px 0;
+}
+
+.ep-warn {
+  font-size: 10px;
+  color: var(--ora);
+  background: var(--ora-lt);
+  border: 1px solid var(--ora-bd);
+  border-radius: 4px;
+  padding: 6px 8px;
+  line-height: 1.4;
+}
+
+/* Tooltip (pure CSS on [data-tip]) */
+[data-tip] { position: relative; }
+[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 5px); left: 50%;
+  transform: translateX(-50%);
+  background: var(--navy);
+  color: #fff;
+  font-size: 10px; font-weight: 600;
+  padding: 3px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 300;
+  animation: ep-tip-in .15s ease-out;
+}
+@keyframes ep-tip-in { from { opacity: 0; transform: translateX(-50%) translateY(2px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* Responsive: collapse right panel below 900px */
+@media (max-width: 900px) {
+  :root { --ep-aside-w: 0; }
+  .ep-panel { display: none; }
+}

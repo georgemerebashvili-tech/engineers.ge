@@ -5,6 +5,7 @@ export type CalcMeta = {
   desc: string;
   tag: string;
   standard?: string;
+  useProjects?: boolean;
 };
 
 export const CALCULATORS: CalcMeta[] = [
@@ -61,14 +62,53 @@ export const CALCULATORS: CalcMeta[] = [
     title: 'სადარბაზოს დაწნეხვა',
     desc: '3D სიმულატორი · ჭრილი + გეგმა, სართულები, კარი, ჰაერის მიწოდების სცენარი',
     tag: 'HVAC',
-    standard: 'EN 12101-6'
+    standard: 'EN 12101-6',
+    useProjects: true
   },
   {
-    slug: 'procurement',
-    icon: '📋',
-    title: 'შესყიდვის მოდული',
-    desc: 'საინჟინრო შესყიდვების ფორმირება და მართვა',
-    tag: 'პროექტი'
+    slug: 'elevator-shaft-press',
+    icon: '🛗',
+    title: 'ლიფტის შახტის დაწნეხვა',
+    desc: '3D სიმულატორი · კაბინა, დირიჟელი, საპირწონე, piston effect, თანხვიდნი სართულები',
+    tag: 'HVAC',
+    standard: 'EN 12101-6 · Elevator',
+    useProjects: true
+  },
+  {
+    slug: 'parking-ventilation',
+    icon: '🅿️',
+    title: 'პარკინგის ვენტილაცია',
+    desc: 'CO + smoke extract · jet fans, heatmap, 3D პარკინგი, PDF/JSON export',
+    tag: 'HVAC',
+    standard: 'ASHRAE 62.1 · EN 12101-3',
+    useProjects: true
+  },
+  {
+    slug: 'floor-pressurization',
+    icon: '🚪',
+    title: 'კორიდორის დაწნეხვა',
+    desc: 'Lobby / corridor refuge mode · room door toggles, cross-shaft context, 3D corridor',
+    tag: 'HVAC',
+    standard: 'EN 12101-6 · Corridor',
+    useProjects: true
+  },
+  {
+    slug: 'wall-editor',
+    icon: '📐',
+    title: 'გეგმის რედაქტორი',
+    desc: '1-სართ. გეგმა · კედლები, კარ/ფანჯარა (1/2 ფრთ.), კოლონები, jet fans + exhausts',
+    tag: 'CAD',
+    standard: 'Wall editor',
+    useProjects: true
+  },
+  {
+    slug: 'building-composer',
+    icon: '🏢',
+    title: 'შენობის აღმშენებლობა',
+    desc: 'მრავალსართულიანი შენობის შეკრება · სართულები stacked 3D-ში, module library, connections',
+    tag: 'CAD',
+    standard: 'Building composer',
+    useProjects: true
   }
 ];
 

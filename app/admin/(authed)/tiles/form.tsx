@@ -1,7 +1,7 @@
 'use client';
 
 import {useMemo, useState} from 'react';
-import {ImagePlus, MonitorPlay} from 'lucide-react';
+import {ImagePlus, MonitorPlay, X} from 'lucide-react';
 import {HeroTreemap} from '@/components/hero-treemap';
 import {
   HERO_OWNER_NAME,
@@ -40,19 +40,38 @@ export function HeroAdsForm({initial}: Props) {
     setMsg(null);
   };
 
-  const handleUpload = (file: File | null, key: HeroSlotKey) => {
+  const [uploadingKey, setUploadingKey] = useState<HeroSlotKey | null>(null);
+
+  const handleUpload = async (file: File | null, key: HeroSlotKey) => {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : '';
-      if (!result) return;
-      setPreviewUploads((current) => ({...current, [key]: result}));
-      setMsg({
-        kind: 'ok',
-        text: 'სურათი ჩაიტვირთა მხოლოდ სიმულაციისთვის. შენახვისთვის image URL ცალკე შეინახე.'
-      });
-    };
-    reader.readAsDataURL(file);
+    setUploadingKey(key);
+    setMsg(null);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('folder', 'hero-tiles');
+      const res = await fetch('/api/admin/upload-image', {method: 'POST', body: form});
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data?.url) {
+        throw new Error(data?.message ?? data?.error ?? 'upload failed');
+      }
+      updateSlot(key, {image_url: data.url});
+      setPreviewUploads((current) => ({...current, [key]: data.url}));
+      setMsg({kind: 'ok', text: 'სურათი აიტვირთა და image_url-ს ჩაენაცვლა. დააჭირე "შენახვა"-ს.'});
+    } catch (e) {
+      setMsg({kind: 'err', text: e instanceof Error ? e.message : 'upload failed'});
+    } finally {
+      setUploadingKey(null);
+    }
+  };
+
+  const handleRemoveImage = (key: HeroSlotKey) => {
+    updateSlot(key, {image_url: ''});
+    setPreviewUploads((current) => {
+      const {[key]: _, ...rest} = current;
+      return rest;
+    });
+    setMsg({kind: 'ok', text: 'image_url გასუფთავდა. დააჭირე "შენახვა"-ს.'});
   };
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -202,19 +221,46 @@ export function HeroAdsForm({initial}: Props) {
                   />
                 </Field>
 
-                <Field label="სიმულაციის სურათი (local upload)">
-                  <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed border-blue-300 bg-blue-50/40 px-3 py-3 text-sm text-blue-700 transition-colors hover:bg-blue-50">
-                    <ImagePlus size={16} />
-                    სურათის ატვირთვა სიმულაციისთვის
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) =>
-                        handleUpload(e.currentTarget.files?.[0] ?? null, selected.slot_key)
-                      }
-                    />
-                  </label>
+                <Field label="სურათის ატვირთვა (Supabase Storage)">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label
+                      className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-3 text-sm transition-colors ${
+                        uploadingKey === selected.slot_key
+                          ? 'border-blue-400 bg-blue-50 text-blue-900'
+                          : 'border-blue-300 bg-blue-50/40 text-blue-700 hover:bg-blue-50'
+                      }`}
+                    >
+                      <ImagePlus size={16} />
+                      {uploadingKey === selected.slot_key
+                        ? 'იტვირთება…'
+                        : 'JPG / PNG / WEBP · max 5MB'}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+                        className="hidden"
+                        disabled={uploadingKey === selected.slot_key}
+                        onChange={(e) =>
+                          handleUpload(
+                            e.currentTarget.files?.[0] ?? null,
+                            selected.slot_key
+                          )
+                        }
+                      />
+                    </label>
+                    {selected.image_url && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(selected.slot_key)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[11px] font-semibold text-danger transition-colors hover:bg-red-100"
+                      >
+                        <X size={12} /> წაშლა
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-1 text-[10px] font-mono text-fg-muted">
+                    ფაილი ატვირთულ იქნება public-assets ბუკეტში; publicUrl-ი ავტომატურად
+                    ჩაწერდება <code>image_url</code>-ში.
+                  </p>
                 </Field>
 
                 <label className="flex items-center gap-2 rounded-lg border bg-surface-alt px-3 py-2 text-sm">

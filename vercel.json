@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/purge-deleted",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/purge-rate-limits",
+      "schedule": "0 4 * * 0"
+    },
+    {
+      "path": "/api/cron/purge-password-resets",
+      "schedule": "30 4 * * 0"
+    }
+  ]
+}

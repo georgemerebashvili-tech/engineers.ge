@@ -35,7 +35,40 @@
     "error": "Geçersiz bilgiler",
     "banners": "Bannerlar",
     "stats": "İstatistik",
+    "users": "Kullanıcılar",
     "logout": "Çıkış"
+  },
+  "register": {
+    "cta": "Kayıt ol",
+    "title": "Ücretsiz hesap oluştur",
+    "name": "Ad Soyad",
+    "email": "E-posta",
+    "password": "Şifre (8+)",
+    "language": "Dil",
+    "country": "Ülke",
+    "profession": "Meslek / İlgi alanı",
+    "search_country": "Ara veya ekle",
+    "add_country": "Ekle",
+    "submit": "Kayıt ol",
+    "back": "Geri",
+    "later": "Daha sonra",
+    "success_title": "Teşekkürler!",
+    "success_body": "Kayıt başarıyla tamamlandı.",
+    "email_taken": "Bu e-posta zaten kayıtlı"
+  },
+  "users": {
+    "title": "Kayıtlı kullanıcılar",
+    "subtitle": "Hesap oluşturan ziyaretçiler",
+    "search": "E-posta veya isimle ara",
+    "all_countries": "Tüm ülkeler",
+    "all_langs": "Tüm diller",
+    "clear": "Temizle",
+    "total": "Toplam hesap",
+    "countries_count": "Ülkeler",
+    "verified": "E-posta onaylı",
+    "top_country": "En çok ülke",
+    "empty": "Henüz kayıt yok",
+    "no_match": "Filtreyle eşleşen kayıt yok"
   },
   "loader": {
     "loading": "Yükleniyor..."

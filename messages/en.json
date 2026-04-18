@@ -35,7 +35,40 @@
     "error": "Invalid credentials",
     "banners": "Banners",
     "stats": "Stats",
+    "users": "Users",
     "logout": "Sign out"
+  },
+  "register": {
+    "cta": "Register",
+    "title": "Create a free account",
+    "name": "Full name",
+    "email": "Email",
+    "password": "Password (8+)",
+    "language": "Language",
+    "country": "Country",
+    "profession": "Profession / Interest",
+    "search_country": "Search or add",
+    "add_country": "Add",
+    "submit": "Register",
+    "back": "Back",
+    "later": "Later",
+    "success_title": "Thank you!",
+    "success_body": "Registration completed successfully.",
+    "email_taken": "This email is already registered"
+  },
+  "users": {
+    "title": "Registered users",
+    "subtitle": "Visitors who created an account",
+    "search": "Search by email or name",
+    "all_countries": "All countries",
+    "all_langs": "All languages",
+    "clear": "Clear",
+    "total": "Total accounts",
+    "countries_count": "Countries",
+    "verified": "Email verified",
+    "top_country": "Top country",
+    "empty": "No registrations yet",
+    "no_match": "No records match the filter"
   },
   "loader": {
     "loading": "Loading..."

@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>შენობის აღმშენებლობა — engineers.ge</title>
+<link rel="stylesheet" href="/calc/_base.css">
+<link rel="stylesheet" href="/calc/_editor-ui.css">
+<script src="/calc/_theme-sync.js"></script>
+<script src="/calc/_editor-panels.js"></script>
+<script src="/calc/_project-bridge.js"></script>
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+</script>
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body { display: flex; flex-direction: column; font-family: var(--font-sans); }
+
+  .bc-top {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px;
+    background: var(--sur);
+    border-bottom: 1px solid var(--bdr);
+    flex: 0 0 auto;
+  }
+  .bc-top h1 { font-size: 13px; font-weight: 700; color: var(--navy); display: flex; align-items: center; gap: 6px; }
+  .bc-top .sep { width: 1px; height: 18px; background: var(--bdr); }
+  .bc-top input, .bc-top select {
+    background: var(--sur-2); border: 1px solid var(--bdr);
+    border-radius: 4px; padding: 4px 8px;
+    font-size: 11px; color: var(--text); font-family: var(--font-sans);
+  }
+  .bc-top .spacer { flex: 1; }
+  .bc-top button {
+    background: var(--sur-2); border: 1px solid var(--bdr);
+    border-radius: 4px; padding: 4px 10px;
+    font-size: 11px; font-weight: 600; color: var(--text-2);
+    cursor: pointer; transition: all .12s;
+  }
+  .bc-top button:hover { border-color: var(--blue); color: var(--blue); }
+  .bc-top button.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .bc-top button.primary:hover { background: var(--navy-2); border-color: var(--navy-2); }
+
+  .bc-root {
+    display: grid;
+    grid-template-columns: 260px 1fr var(--ep-aside-w);
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  /* Left: floor list (stack) */
+  .bc-stack {
+    background: var(--sur);
+    border-right: 1px solid var(--bdr);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .bc-stack-head {
+    padding: 10px 12px 8px;
+    border-bottom: 1px solid var(--bdr);
+    background: linear-gradient(180deg, var(--sur-2) 0%, var(--sur) 100%);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .bc-stack-head h2 { font-size: 12px; font-weight: 700; color: var(--navy); flex: 1; }
+  .bc-stack-head .count {
+    font-family: var(--font-mono);
+    font-size: 9.5px; color: var(--text-3);
+  }
+  .bc-stack-list { flex: 1 1 0; overflow-y: auto; padding: 8px; }
+  .bc-floor-card {
+    border: 1.5px solid var(--bdr);
+    background: var(--sur-2);
+    border-radius: 6px;
+    padding: 7px 9px;
+    margin-bottom: 5px;
+    cursor: pointer;
+    transition: all .12s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .bc-floor-card:hover { border-color: var(--blue); background: var(--blue-lt); }
+  .bc-floor-card.active {
+    border-color: var(--blue); background: var(--blue-lt);
+    box-shadow: 0 0 0 2px rgba(31,111,212,.18);
+  }
+  .bc-floor-card .bc-floor-badge {
+    width: 26px; height: 26px;
+    background: var(--navy); color: #fff;
+    border-radius: 5px;
+    font-family: var(--font-mono);
+    font-weight: 700; font-size: 10px;
+    display: flex; align-items: center; justify-content: center;
+    flex: 0 0 auto;
+  }
+  .bc-floor-card .bc-floor-name {
+    flex: 1; min-width: 0;
+    font-size: 11px; font-weight: 700; color: var(--navy);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .bc-floor-card .bc-floor-sub {
+    font-family: var(--font-mono);
+    font-size: 9px; color: var(--text-3);
+  }
+  .bc-floor-card .bc-floor-icons {
+    display: none;
+    gap: 2px;
+  }
+  .bc-floor-card:hover .bc-floor-icons { display: flex; }
+  .bc-floor-card .bc-floor-icons button {
+    width: 20px; height: 20px; border: 0; background: transparent;
+    border-radius: 3px; cursor: pointer; color: var(--text-2);
+    font-size: 11px;
+  }
+  .bc-floor-card .bc-floor-icons button:hover { background: var(--sur); color: var(--blue); }
+  .bc-floor-card .bc-floor-icons button.danger:hover { color: var(--red); background: var(--red-lt); }
+
+  .bc-stack-actions {
+    padding: 8px; border-top: 1px solid var(--bdr);
+    display: flex; gap: 4px; flex-wrap: wrap;
+  }
+  .bc-stack-actions button {
+    flex: 1 1 auto;
+    padding: 6px 8px;
+    font-size: 10.5px; font-weight: 600;
+    background: var(--sur-2);
+    border: 1px solid var(--bdr);
+    border-radius: 5px;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: all .12s;
+  }
+  .bc-stack-actions button:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* Center: 3D stage */
+  .bc-stage { position: relative; background: linear-gradient(180deg, #dce6f2 0%, #eef3fa 100%); overflow: hidden; }
+  .bc-stage canvas { display: block; width: 100% !important; height: 100% !important; }
+  .bc-stage-overlay {
+    position: absolute; left: 12px; bottom: 12px;
+    display: flex; gap: 6px;
+    pointer-events: none;
+  }
+  .bc-stage-overlay .ep-chip { pointer-events: auto; }
+
+  .bc-empty {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 8px;
+    color: var(--text-3); font-size: 12px; text-align: center;
+    padding: 20px;
+  }
+  .bc-empty b { color: var(--navy); font-size: 14px; }
+
+  /* Bottom */
+  .bc-bottom {
+    height: 32px;
+    background: var(--sur);
+    border-top: 1px solid var(--bdr);
+    display: flex; align-items: center; gap: 12px;
+    padding: 0 14px;
+    font-family: var(--font-mono);
+    font-size: 10px; color: var(--text-2);
+    flex: 0 0 auto;
+  }
+</style>
+</head>
+<body>
+
+<header class="bc-top">
+  <h1>🏢 შენობის აღმშენებლობა</h1>
+  <div class="sep"></div>
+  <label>პროექტი <input type="text" id="inp-name" value="ახალი შენობა" style="width:160px"></label>
+  <div class="sep"></div>
+  <label>სტანდ. სიმაღლე <input type="number" id="inp-floor-h" min="2.5" max="6" step="0.1" value="3.2" style="width:56px"> მ</label>
+  <div class="sep"></div>
+  <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--text-3);font-family:var(--font-mono)">
+    <span style="color:var(--text-2)">📁</span>
+    <span id="project-badge" style="color:var(--navy);font-weight:700;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span>
+  </span>
+  <button id="btn-save-as" title="Save as new project">💾 Save as</button>
+  <button id="btn-rename" title="Rename">✎</button>
+  <div class="spacer"></div>
+  <button id="btn-refresh" title="wall-editor-ის მონაცემების reload">↻ Reload</button>
+  <button id="btn-wall-editor" title="wall-editor-ზე გადასვლა">📐 გეგმა</button>
+  <button id="btn-import" title="JSON ჩატვირთვა">⬆ JSON</button>
+  <button id="btn-export" title="JSON ექსპორტი">⬇ JSON</button>
+  <button id="btn-print" title="PDF ბეჭდვა">🖨 PDF</button>
+  <button id="btn-gate" title="ყველა პროექტი">🗂</button>
+</header>
+
+<div class="bc-root">
+
+  <!-- Left: Stack of floors -->
+  <aside class="bc-stack">
+    <div class="bc-stack-head">
+      <h2>სართულები</h2>
+      <span class="count" id="floor-count">0</span>
+    </div>
+    <div class="bc-stack-list" id="stack-list"></div>
+    <div class="bc-stack-actions">
+      <button id="btn-import-wall">+ wall-editor-იდან</button>
+      <button id="btn-blank">+ ცარიელი</button>
+      <button id="btn-copy">დუბლ.</button>
+    </div>
+    <div class="bc-stack-head" style="border-top:1px solid var(--bdr)">
+      <h2>კავშირები</h2>
+      <span class="count" id="conn-count">0</span>
+    </div>
+    <div class="bc-stack-list" id="conn-list" style="max-height:220px;flex:0 0 auto"></div>
+    <div class="bc-stack-actions">
+      <button id="btn-add-stair" title="კიბე სართულებს შორის">+ 🪜 კიბე</button>
+      <button id="btn-add-elevator" title="ლიფტის შახტი">+ 🛗 ლიფტი</button>
+      <button id="btn-add-opening" title="ღიობი ფილაში">+ 🕳 ღიობი</button>
+      <button id="btn-detect-shafts" title="wall-editor-ის jetfan/exhaust/მსგავსი პოზიციებიდან ავტო-დეტექცია">⚡ ავტო</button>
+    </div>
+  </aside>
+
+  <!-- Center: 3D -->
+  <main class="bc-stage" id="stage">
+    <div id="three-host" style="position:absolute;inset:0"></div>
+    <div class="bc-empty" id="empty-msg" style="display:none">
+      <b>ცარიელია</b>
+      <span>დაამატე სართული მარცხნიდან ან შემოიტანე wall-editor-იდან</span>
+    </div>
+    <div class="bc-stage-overlay">
+      <span class="ep-chip"><span class="ep-dot"></span> Stack: <span id="chip-n">0</span></span>
+      <span class="ep-chip">Height: <span id="chip-h">0.0</span> მ</span>
+      <span class="ep-chip">GFA: <span id="chip-gfa">0</span> მ²</span>
+    </div>
+  </main>
+
+  <!-- Right: Context panel -->
+  <aside class="ep-panel" id="ctx-panel">
+    <div class="ep-panel-head">
+      <span class="ep-icon" id="ctx-panel-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+        </svg>
+      </span>
+      <h2 id="ctx-panel-title">შენობა</h2>
+      <span class="ep-panel-sub" id="ctx-panel-sub">BUILDING</span>
+    </div>
+    <div class="ep-panel-body" id="ctx-panel-body"></div>
+  </aside>
+</div>
+
+<footer class="bc-bottom">
+  <span><span class="ep-dot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--grn)"></span> Composer</span>
+  <span style="color:var(--text-3)">·</span>
+  <span>იყენებს wall-editor-ის localStorage <code>eng_wall_editor_v1</code> + project gate</span>
+  <span style="color:var(--text-3)">·</span>
+  <span>Task 014</span>
+</footer>
+
+<div class="we-toast" id="toast" style="position:fixed;bottom:44px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy);color:#fff;padding:8px 14px;border-radius:8px;font-size:11px;box-shadow:0 4px 16px rgba(0,0,0,.3);opacity:0;pointer-events:none;transition:all .25s;z-index:100"></div>
+
+<script type="module">
+'use strict';
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+// ============== STATE ==============
+const state = {
+  name: 'ახალი შენობა',
+  floorH: 3.2,             // default inter-floor height
+  floors: [],              // { id, label, color, visible, height, data:{walls,columns,openings,fixtures,rooms,dimensions} }
+  connections: [],         // { id, kind:'stair'|'elevator'|'slab-opening', pos:[x,y], w, d, fromIdx, toIdx, rot, label }
+  version: 1
+};
+const ui = { activeId: null, activeConnId: null, three: null, toolDefaults: {} };
+
+// localStorage keys
+const STORE_KEY = 'eng_building_composer_v1';
+const WALL_STORE_KEY = 'eng_wall_editor_v1';
+let _bridge = null;
+
+function toast(msg, dur=1800) {
+  const t = $('#toast');
+  t.textContent = msg; t.classList.add('show');
+  t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(toast._h);
+  toast._h = setTimeout(() => {
+    t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(20px)';
+  }, dur);
+}
+
+// ============== PERSISTENCE (via ProjectBridge) ==============
+function buildSnapshot() { return { ...state }; }
+function applySnapshot(data) {
+  if (!data || typeof data !== 'object') return;
+  if (Array.isArray(data.floors)) Object.assign(state, data);
+  if (!Array.isArray(state.connections)) state.connections = [];
+}
+function save() {
+  if (_bridge) { _bridge.save(); updateProjectBadge(); }
+  else { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch {} }
+}
+function restore() {
+  if (!window.ProjectBridge) return false;
+  _bridge = ProjectBridge.init({
+    slug: 'building-composer',
+    legacyKey: STORE_KEY,
+    getState: buildSnapshot,
+    applyState: applySnapshot,
+    onProjectChange: updateProjectBadge
+  });
+  const r = _bridge.load();
+  if (!Array.isArray(state.connections)) state.connections = [];
+  updateProjectBadge();
+  return r.loaded;
+}
+function updateProjectBadge() {
+  const el = document.getElementById('project-badge');
+  if (!el || !_bridge) return;
+  const p = _bridge.currentProject();
+  el.textContent = p ? p.name : (state.name || '—');
+  el.title = p ? `${p.name} · updated ${new Date(p.updatedAt).toLocaleString()}` : 'პროექტის გარეშე';
+}
+
+// Import floors from wall-editor's localStorage
+function importFromWallEditor() {
+  try {
+    const raw = localStorage.getItem(WALL_STORE_KEY);
+    if (!raw) { toast('wall-editor-ში ცარიელია'); return; }
+    const wd = JSON.parse(raw);
+    const src = wd._floors && wd._floors.length
+      ? wd._floors
+      : [{ id: uid(), name: '1F', data: { walls: wd.walls||[], columns: wd.columns||[], openings: wd.openings||[], fixtures: wd.fixtures||[], rooms: wd.rooms||[], dimensions: wd.dimensions||[] } }];
+    const palette = ['#3a7bd5','#d95f3a','#4aa56a','#9a5aa8','#c8a63a','#3aa8a0','#c83a6f','#6a8ac2'];
+    const newFloors = src.map((f, i) => ({
+      id: uid(),
+      label: f.name || `F${i+1}`,
+      color: palette[state.floors.length + i] || palette[i % palette.length],
+      visible: true,
+      height: (wd.floor && wd.floor.ceilingHeight) || state.floorH,
+      data: f.data
+    }));
+    state.floors.push(...newFloors);
+    if (!ui.activeId && state.floors.length) ui.activeId = state.floors[0].id;
+    save(); renderStack(); update3D(); renderPanel(); updateStats();
+    toast(`შემოსულია ${newFloors.length} სართული wall-editor-იდან`);
+  } catch (e) {
+    toast('შეცდომა: ' + e.message);
+  }
+}
+
+// ============== THREE.JS ==============
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+function init3D() {
+  const host = $('#three-host');
+  const w = host.clientWidth || 800, h = host.clientHeight || 600;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xe6edf6);
+  scene.fog = new THREE.Fog(0xe6edf6, 30, 120);
+
+  const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 400);
+  camera.position.set(18, 16, 18);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(w, h);
+  renderer.shadowMap.enabled = true;
+  host.appendChild(renderer.domElement);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.maxPolarAngle = Math.PI * 0.49;
+
+  // Lights
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x6b82a6, 0.55));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.85);
+  dir.position.set(12, 18, 10); dir.castShadow = true;
+  dir.shadow.mapSize.set(2048, 2048);
+  dir.shadow.camera.left = -40; dir.shadow.camera.right = 40;
+  dir.shadow.camera.top = 40; dir.shadow.camera.bottom = -40;
+  scene.add(dir);
+
+  // Ground
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(120, 120),
+    new THREE.MeshStandardMaterial({ color: 0xd8dfea, roughness: 0.95 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+  const grid = new THREE.GridHelper(120, 120, 0x9cb0cc, 0xc5d0e2);
+  grid.position.y = 0.002;
+  scene.add(grid);
+
+  const root = new THREE.Group();
+  scene.add(root);
+
+  ui.three = { THREE, scene, camera, renderer, controls, root, dir };
+
+  window.addEventListener('resize', () => {
+    const W = host.clientWidth, H = host.clientHeight;
+    if (W > 0 && H > 0) {
+      camera.aspect = W / H; camera.updateProjectionMatrix();
+      renderer.setSize(W, H);
+    }
+  });
+
+  (function loop() {
+    requestAnimationFrame(loop);
+    controls.update();
+    renderer.render(scene, camera);
+  })();
+}
+
+// Wall polygon for straight wall (copied from wall-editor for self-containment)
+function wallPoly(w) {
+  const [x1,y1] = w.start, [x2,y2] = w.end;
+  const dx = x2-x1, dy = y2-y1;
+  const L = Math.hypot(dx, dy);
+  if (L === 0) return [[x1,y1],[x1,y1],[x1,y1],[x1,y1]];
+  const nx = -dy/L, ny = dx/L, t = (w.thickness || 0.2)/2;
+  return [
+    [x1+nx*t,y1+ny*t],[x2+nx*t,y2+ny*t],
+    [x2-nx*t,y2-ny*t],[x1-nx*t,y1-ny*t]
+  ];
+}
+
+function update3D() {
+  if (!ui.three) return;
+  const { THREE, root } = ui.three;
+  while (root.children.length) {
+    const c = root.children[0]; root.remove(c);
+    if (c.geometry) c.geometry.dispose();
+    if (c.material) (Array.isArray(c.material)?c.material:[c.material]).forEach(m=>m.dispose&&m.dispose());
+  }
+
+  $('#empty-msg').style.display = state.floors.length === 0 ? 'flex' : 'none';
+
+  let zOffset = 0;
+  for (const floor of state.floors) {
+    if (!floor.visible) { zOffset += floor.height || state.floorH; continue; }
+    const group = new THREE.Group();
+    group.position.y = zOffset;
+
+    const col = new THREE.Color(floor.color || '#4a9eff');
+    const matWall = new THREE.MeshStandardMaterial({ color: col.clone().lerp(new THREE.Color(0xffffff), 0.35), roughness: 0.85 });
+    const matActive = new THREE.MeshStandardMaterial({ color: col, roughness: 0.6, emissive: col, emissiveIntensity: 0.05 });
+    const mat = (floor.id === ui.activeId) ? matActive : matWall;
+    const matCol = new THREE.MeshStandardMaterial({ color: 0xbec7d4, roughness: 0.6 });
+    const matSlab = new THREE.MeshStandardMaterial({ color: col.clone().lerp(new THREE.Color(0x000000), 0.4), roughness: 0.92, transparent: true, opacity: 0.3 });
+
+    // Slab (floor plate)
+    const walls = (floor.data && floor.data.walls) || [];
+    if (walls.length) {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const w of walls) {
+        minX = Math.min(minX, w.start[0], w.end[0]);
+        maxX = Math.max(maxX, w.start[0], w.end[0]);
+        minY = Math.min(minY, w.start[1], w.end[1]);
+        maxY = Math.max(maxY, w.start[1], w.end[1]);
+      }
+      if (isFinite(minX)) {
+        const slabW = maxX - minX + 0.6, slabD = maxY - minY + 0.6;
+        const slab = new THREE.Mesh(new THREE.BoxGeometry(slabW, 0.18, slabD), matSlab);
+        slab.position.set((minX+maxX)/2, 0.09, (minY+maxY)/2);
+        slab.receiveShadow = true;
+        group.add(slab);
+      }
+    }
+
+    // Walls
+    for (const w of walls) {
+      if (w.hidden) continue;
+      const poly = wallPoly(w);
+      const shape = new THREE.Shape(poly.map(p => new THREE.Vector2(p[0], p[1])));
+      const h = w.height || floor.height || state.floorH || 2.8;
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: false });
+      geo.rotateX(-Math.PI/2);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      group.add(mesh);
+    }
+    // Columns
+    for (const c of (floor.data && floor.data.columns) || []) {
+      if (c.hidden) continue;
+      const h = c.height || floor.height || state.floorH;
+      const geo = c.shape === 'round'
+        ? new THREE.CylinderGeometry(c.size/2, c.size/2, h, 24)
+        : new THREE.BoxGeometry(c.size, h, c.size);
+      const mesh = new THREE.Mesh(geo, matCol);
+      mesh.position.set(c.position[0], h/2, c.position[1]);
+      if (c.rotation) mesh.rotation.y = THREE.MathUtils.degToRad(c.rotation);
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      group.add(mesh);
+    }
+
+    // Floor label floating above slab
+    const lblCanvas = document.createElement('canvas');
+    lblCanvas.width = 256; lblCanvas.height = 128;
+    const ctx = lblCanvas.getContext('2d');
+    ctx.fillStyle = floor.color; ctx.fillRect(0, 0, 256, 128);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 64px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(floor.label, 128, 64);
+    const tex = new THREE.CanvasTexture(lblCanvas);
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
+    sprite.scale.set(2, 1, 1);
+    sprite.position.set(-6, 0.2, -6);
+    group.add(sprite);
+
+    root.add(group);
+    zOffset += floor.height || state.floorH;
+  }
+
+  // ----- Connections (stairs / elevator shafts / slab openings) -----
+  for (const c of state.connections) {
+    drawConnection(root, c);
+  }
+
+  // Center camera around root bbox on first add
+  if (state.floors.length > 0) {
+    const box = new ui.three.THREE.Box3().setFromObject(root);
+    if (!box.isEmpty()) {
+      const center = new ui.three.THREE.Vector3(); box.getCenter(center);
+      const size = new ui.three.THREE.Vector3(); box.getSize(size);
+      const dist = Math.max(size.x, size.z, size.y) * 1.4 + 8;
+      if (!ui.cameraInitialized) {
+        ui.three.camera.position.set(center.x + dist * 0.75, center.y + dist * 0.85, center.z + dist * 0.75);
+        ui.three.controls.target.copy(center);
+        ui.three.controls.update();
+        ui.cameraInitialized = true;
+      }
+    }
+  }
+}
+
+// ============== CONNECTIONS RENDER ==============
+function floorBaseY(idx) {
+  // sum heights of floors [0..idx-1]
+  let y = 0;
+  for (let i = 0; i < idx; i++) y += state.floors[i]?.height || state.floorH;
+  return y;
+}
+
+function drawConnection(root, c) {
+  if (!ui.three) return;
+  const THREE = ui.three.THREE;
+  const fromIdx = Math.max(0, Math.min(state.floors.length - 1, c.fromIdx ?? 0));
+  const toIdx = Math.max(fromIdx, Math.min(state.floors.length - 1, c.toIdx ?? (state.floors.length - 1)));
+  const yBase = floorBaseY(fromIdx);
+  const yTop = floorBaseY(toIdx) + (state.floors[toIdx]?.height || state.floorH);
+  const totalH = Math.max(0.1, yTop - yBase);
+  const [x, z] = c.pos || [0, 0];
+  const isActive = c.id === ui.activeConnId;
+  const w = c.w || 1.2, d = c.d || 2.0;
+  const rotY = THREE.MathUtils.degToRad(c.rot || 0);
+
+  if (c.kind === 'elevator') {
+    // Shaft — transparent box
+    const shaftMat = new THREE.MeshStandardMaterial({
+      color: isActive ? 0x1f6fd4 : 0x4a6b8f,
+      transparent: true, opacity: isActive ? 0.35 : 0.2, roughness: 0.4
+    });
+    const shaft = new THREE.Mesh(new THREE.BoxGeometry(w, totalH, d), shaftMat);
+    shaft.position.set(x, yBase + totalH / 2, z);
+    shaft.rotation.y = rotY;
+    root.add(shaft);
+    // Rails
+    for (const sx of [-1, 1]) for (const sd of [-1, 1]) {
+      const rail = new THREE.Mesh(
+        new THREE.BoxGeometry(0.05, totalH, 0.05),
+        new THREE.MeshStandardMaterial({ color: 0x1a2840 })
+      );
+      rail.position.set(x + sx * w * 0.45 * Math.cos(rotY) + sd * d * 0.45 * Math.sin(rotY),
+                        yBase + totalH / 2,
+                        z - sx * w * 0.45 * Math.sin(rotY) + sd * d * 0.45 * Math.cos(rotY));
+      root.add(rail);
+    }
+    // Cabin at bottom
+    const cabMat = new THREE.MeshStandardMaterial({
+      color: 0xd8dfea, roughness: 0.6, metalness: 0.2
+    });
+    const cabin = new THREE.Mesh(
+      new THREE.BoxGeometry(w * 0.8, (state.floors[fromIdx]?.height || state.floorH) * 0.75, d * 0.8),
+      cabMat
+    );
+    cabin.position.set(x, yBase + (state.floors[fromIdx]?.height || state.floorH) * 0.4, z);
+    cabin.rotation.y = rotY;
+    cabin.castShadow = true;
+    root.add(cabin);
+  } else if (c.kind === 'stair') {
+    // Staircase — stack of small risers visualizing steps
+    const floorSpans = toIdx - fromIdx + 1;
+    const stepsPerFloor = 14;
+    const totalSteps = floorSpans * stepsPerFloor;
+    const stepH = totalH / totalSteps;
+    const runPerStep = d / stepsPerFloor;
+    const stepMat = new THREE.MeshStandardMaterial({
+      color: isActive ? 0xd95f3a : 0xa08060, roughness: 0.7
+    });
+    const group = new THREE.Group();
+    group.position.set(x, yBase, z);
+    group.rotation.y = rotY;
+    for (let i = 0; i < totalSteps; i++) {
+      const floorOfStep = Math.floor(i / stepsPerFloor);
+      const stepInFloor = i % stepsPerFloor;
+      // Zig-zag: even floors go +z, odd floors go -z (U-shape approximation)
+      const dir = floorOfStep % 2 === 0 ? 1 : -1;
+      const off = dir * (stepInFloor * runPerStep - d / 2);
+      const tread = new THREE.Mesh(new THREE.BoxGeometry(w * 0.9, stepH * 0.8, runPerStep * 0.95), stepMat);
+      tread.position.set(0, i * stepH + stepH / 2, off);
+      tread.castShadow = true; tread.receiveShadow = true;
+      group.add(tread);
+    }
+    // Stair railing (simple lines on both sides)
+    const railMat = new THREE.MeshStandardMaterial({ color: 0x1a2840, roughness: 0.4 });
+    for (const side of [-1, 1]) {
+      const rail = new THREE.Mesh(
+        new THREE.BoxGeometry(0.05, 1.0, d * 0.95),
+        railMat
+      );
+      // Approximate: floating over steps
+      rail.position.set(side * w * 0.45, totalH - 0.5, 0);
+      group.add(rail);
+    }
+    root.add(group);
+
+    // Floor plates indicator (landing) at each intermediate floor — semi-transparent
+    for (let i = fromIdx; i <= toIdx; i++) {
+      const landingY = floorBaseY(i);
+      const landing = new THREE.Mesh(
+        new THREE.BoxGeometry(w * 1.1, 0.06, d * 1.1),
+        new THREE.MeshStandardMaterial({ color: 0xbdc9da, transparent: true, opacity: 0.5 })
+      );
+      landing.position.set(x, landingY + 0.03, z);
+      landing.rotation.y = rotY;
+      root.add(landing);
+    }
+  } else if (c.kind === 'slab-opening') {
+    // Opening — dashed outline on each floor slab + semi-transparent cylinder in the span
+    const openingMat = new THREE.MeshStandardMaterial({
+      color: 0xd95f3a, transparent: true, opacity: 0.12, wireframe: false
+    });
+    const shape = new THREE.Mesh(new THREE.BoxGeometry(w, totalH, d), openingMat);
+    shape.position.set(x, yBase + totalH / 2, z);
+    shape.rotation.y = rotY;
+    root.add(shape);
+    // Outline markers per floor
+    for (let i = fromIdx; i <= toIdx; i++) {
+      const y = floorBaseY(i) + 0.05;
+      const outline = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.BoxGeometry(w, 0.08, d)),
+        new THREE.LineBasicMaterial({ color: isActive ? 0xc0201a : 0x884040 })
+      );
+      outline.position.set(x, y, z);
+      outline.rotation.y = rotY;
+      root.add(outline);
+    }
+  }
+}
+
+// ============== CONNECTIONS LIST (bottom-left) ==============
+function renderConnList() {
+  const list = $('#conn-list');
+  list.innerHTML = '';
+  $('#conn-count').textContent = state.connections.length;
+  if (state.connections.length === 0) {
+    list.innerHTML = `<div class="ep-empty" style="padding:10px 8px;font-size:10px">კავშირები ცარიელია</div>`;
+    return;
+  }
+  for (const c of state.connections) {
+    const labels = { stair: '🪜 კიბე', elevator: '🛗 ლიფტი', 'slab-opening': '🕳 ღიობი' };
+    const card = h('div', {
+      class: 'bc-floor-card' + (c.id === ui.activeConnId ? ' active' : ''),
+      onclick: (e) => {
+        if (e.target.closest('button[data-act]')) return;
+        ui.activeConnId = c.id;
+        ui.activeId = null;
+        renderStack(); renderConnList(); renderPanel(); update3D();
+      }
+    },
+      h('div', { class: 'bc-floor-badge', style: 'background:' + (c.kind === 'stair' ? '#a08060' : c.kind === 'elevator' ? '#4a6b8f' : '#d95f3a') }, labels[c.kind].slice(0, 2)),
+      h('div', { style: 'flex:1;min-width:0' },
+        h('div', { class: 'bc-floor-name' }, c.label || labels[c.kind]),
+        h('div', { class: 'bc-floor-sub' },
+          `F${(c.fromIdx ?? 0) + 1}–${(c.toIdx ?? 0) + 1} · ${(c.w || 1).toFixed(1)}×${(c.d || 1).toFixed(1)}მ`)
+      ),
+      h('div', { class: 'bc-floor-icons' },
+        h('button', { 'data-act': 'delete', class: 'danger', title: 'წაშლა',
+          onclick: (e) => {
+            e.stopPropagation();
+            if (!confirm('წაშლა?')) return;
+            state.connections = state.connections.filter(x => x.id !== c.id);
+            if (ui.activeConnId === c.id) ui.activeConnId = null;
+            save(); renderConnList(); renderPanel(); update3D();
+          }
+        }, '🗑')
+      )
+    );
+    list.appendChild(card);
+  }
+}
+
+function addConnection(kind) {
+  if (state.floors.length < 1) { toast('ჯერ დაამატე სართული'); return; }
+  // Default position: centered on current active floor bbox
+  const active = state.floors.find(f => f.id === ui.activeId) || state.floors[0];
+  let px = 0, pz = 0;
+  if (active.data && active.data.walls && active.data.walls.length) {
+    let sx = 0, sz = 0, n = 0;
+    for (const w of active.data.walls) {
+      sx += (w.start[0] + w.end[0]) / 2; sz += (w.start[1] + w.end[1]) / 2; n++;
+    }
+    if (n > 0) { px = sx / n; pz = sz / n; }
+  }
+  const defaults = {
+    stair:        { w: 1.2, d: 2.8, label: 'კიბე' },
+    elevator:     { w: 1.6, d: 1.8, label: 'ლიფტი' },
+    'slab-opening':{ w: 1.0, d: 1.0, label: 'ღიობი' }
+  }[kind];
+  const conn = {
+    id: uid(),
+    kind,
+    pos: [px, pz],
+    w: defaults.w, d: defaults.d,
+    fromIdx: 0,
+    toIdx: state.floors.length - 1,
+    rot: 0,
+    label: defaults.label
+  };
+  state.connections.push(conn);
+  ui.activeConnId = conn.id;
+  ui.activeId = null;
+  save(); renderConnList(); renderStack(); renderPanel(); update3D();
+  toast(defaults.label + ' დამატდა');
+}
+
+function autoDetectShafts() {
+  // Heuristic: find clusters of columns/fixtures at same position across ≥2 floors
+  if (state.floors.length < 2) { toast('საჭიროა ≥2 სართული'); return; }
+  const tol = 0.6;
+  const clusters = new Map();  // key = "x:y" bucketed → {positions, floorIdx set, sample sizes}
+
+  state.floors.forEach((f, idx) => {
+    // Consider only "structural" fixtures (fires/fans not useful here)
+    const points = [];
+    for (const c of (f.data?.columns || [])) {
+      points.push({ x: c.position[0], y: c.position[1], size: (c.size || 0.4), kind: 'col' });
+    }
+    for (const o of (f.data?.openings || [])) {
+      if (o.type !== 'door') continue;
+      const wall = f.data.walls.find(w => w.id === o.wallId);
+      if (!wall) continue;
+      const [x1, y1] = wall.start, [x2, y2] = wall.end;
+      const L = Math.hypot(x2-x1, y2-y1) || 1;
+      points.push({ x: x1 + (x2-x1)/L * o.offset, y: y1 + (y2-y1)/L * o.offset, size: o.width || 0.9, kind: 'door' });
+    }
+    for (const p of points) {
+      // Snap to grid of ~1m
+      const gx = Math.round(p.x / tol) * tol;
+      const gy = Math.round(p.y / tol) * tol;
+      const key = gx.toFixed(2) + ':' + gy.toFixed(2);
+      if (!clusters.has(key)) clusters.set(key, { x: 0, y: 0, floors: new Set(), count: 0, maxSize: 0, kind: p.kind });
+      const c = clusters.get(key);
+      c.x += p.x; c.y += p.y; c.count++;
+      c.floors.add(idx);
+      c.maxSize = Math.max(c.maxSize, p.size);
+    }
+  });
+
+  let added = 0;
+  for (const cl of clusters.values()) {
+    if (cl.floors.size < 2) continue;
+    const fromIdx = Math.min(...cl.floors);
+    const toIdx = Math.max(...cl.floors);
+    // Skip if overlapping with existing connection
+    const px = cl.x / cl.count, py = cl.y / cl.count;
+    const dup = state.connections.some(c =>
+      Math.hypot(c.pos[0] - px, c.pos[1] - py) < 0.8 && c.fromIdx === fromIdx && c.toIdx === toIdx);
+    if (dup) continue;
+    state.connections.push({
+      id: uid(),
+      kind: 'elevator',          // heuristic default
+      pos: [px, py],
+      w: Math.max(1.2, cl.maxSize * 1.3),
+      d: Math.max(1.2, cl.maxSize * 1.3),
+      fromIdx, toIdx, rot: 0,
+      label: 'Auto (F' + (fromIdx+1) + '–F' + (toIdx+1) + ')'
+    });
+    added++;
+  }
+  if (added === 0) { toast('გამეორებული სტრუქტურა ვერ მოიძებნა'); return; }
+  save(); renderConnList(); renderPanel(); update3D();
+  toast(`ავტო-დეტექცია: ${added} შახტი`);
+}
+
+// ============== STACK (left) ==============
+function renderStack() {
+  const list = $('#stack-list');
+  list.innerHTML = '';
+  $('#floor-count').textContent = state.floors.length;
+
+  if (state.floors.length === 0) {
+    list.innerHTML = `<div class="ep-empty"><span class="ep-empty-ico">🏗</span>ცარიელია<br><span style="font-size:10px;color:var(--text-3)">დაამატე სართული</span></div>`;
+    return;
+  }
+
+  // Render top-to-bottom (reverse order of state.floors, which is bottom-first)
+  [...state.floors].reverse().forEach((f, vIdx) => {
+    const realIdx = state.floors.length - 1 - vIdx;
+    const card = document.createElement('div');
+    card.className = 'bc-floor-card' + (f.id === ui.activeId ? ' active' : '');
+    card.innerHTML = `
+      <div class="bc-floor-badge" style="background:${f.color}">${f.label}</div>
+      <div style="flex:1;min-width:0">
+        <div class="bc-floor-name">${(f.data?.walls?.length || 0)} კედ. · ${(f.data?.columns?.length || 0)} კოლ.</div>
+        <div class="bc-floor-sub">H = ${(f.height || state.floorH).toFixed(1)}მ · ${f.visible ? '👁' : '🚫'}</div>
+      </div>
+      <div class="bc-floor-icons">
+        <button data-act="up" title="ზემოთ">▲</button>
+        <button data-act="down" title="ქვემოთ">▼</button>
+        <button data-act="toggle" title="${f.visible ? 'დამალვა' : 'ჩვენება'}">${f.visible ? '👁' : '🚫'}</button>
+        <button data-act="delete" class="danger" title="წაშლა">🗑</button>
+      </div>`;
+    card.addEventListener('click', (e) => {
+      if (e.target.closest('button[data-act]')) return;
+      ui.activeId = f.id;
+      ui.activeConnId = null;
+      renderStack(); renderConnList(); renderPanel(); update3D();
+    });
+    card.querySelectorAll('button[data-act]').forEach(b => {
+      b.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const act = b.dataset.act;
+        if (act === 'up' && realIdx < state.floors.length - 1) {
+          [state.floors[realIdx], state.floors[realIdx+1]] = [state.floors[realIdx+1], state.floors[realIdx]];
+        } else if (act === 'down' && realIdx > 0) {
+          [state.floors[realIdx], state.floors[realIdx-1]] = [state.floors[realIdx-1], state.floors[realIdx]];
+        } else if (act === 'toggle') {
+          f.visible = !f.visible;
+        } else if (act === 'delete') {
+          if (!confirm('წაშლა?')) return;
+          state.floors.splice(realIdx, 1);
+          if (ui.activeId === f.id) ui.activeId = state.floors[0]?.id || null;
+        }
+        save(); renderStack(); update3D(); renderPanel(); updateStats();
+      });
+    });
+    list.appendChild(card);
+  });
+}
+
+function updateStats() {
+  $('#chip-n').textContent = state.floors.length;
+  const totalH = state.floors.reduce((s, f) => s + (f.visible ? (f.height || state.floorH) : 0), 0);
+  $('#chip-h').textContent = totalH.toFixed(1);
+  let gfa = 0;
+  for (const f of state.floors) {
+    if (!f.visible) continue;
+    // Approx floor area = sum of room areas OR bbox of walls × coverage
+    const rooms = (f.data && f.data.rooms) || [];
+    if (rooms.length) gfa += rooms.reduce((s, r) => s + (r.area || 0), 0);
+    else {
+      const walls = (f.data && f.data.walls) || [];
+      if (walls.length) {
+        let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+        for (const w of walls) {
+          minX=Math.min(minX,w.start[0],w.end[0]); maxX=Math.max(maxX,w.start[0],w.end[0]);
+          minY=Math.min(minY,w.start[1],w.end[1]); maxY=Math.max(maxY,w.start[1],w.end[1]);
+        }
+        if (isFinite(minX)) gfa += (maxX-minX) * (maxY-minY) * 0.7;
+      }
+    }
+  }
+  $('#chip-gfa').textContent = gfa.toFixed(0);
+}
+
+// ============== CTX PANEL (right) ==============
+function renderPanel() {
+  const body = $('#ctx-panel-body');
+  if (!window.EditorPanels) return;
+
+  const active = state.floors.find(f => f.id === ui.activeId);
+  const activeConn = state.connections.find(c => c.id === ui.activeConnId);
+  const B = EditorPanels.build;
+  const { h, field, numInput, textInput, selectInput, toggle, section, stat } = B;
+
+  const connHeadMap = {
+    stair: { icon: 'settings', title: '🪜 კიბე', sub: 'CONN' },
+    elevator: { icon: 'settings', title: '🛗 ლიფტი', sub: 'CONN' },
+    'slab-opening': { icon: 'settings', title: '🕳 ღიობი', sub: 'CONN' }
+  };
+  setPanelHead(activeConn
+    ? (connHeadMap[activeConn.kind] || { icon: 'settings', title: activeConn.label, sub: 'CONN' })
+    : active
+      ? { icon: 'floor', title: active.label + ' · სართული', sub: 'SEL' }
+      : { icon: 'settings', title: 'შენობა', sub: 'BUILDING' });
+
+  body.innerHTML = '';
+
+  // Building section (always shown)
+  body.appendChild(section({
+    title: 'შენობის მეტა',
+    aux: `${state.floors.length}F`,
+    collapsed: false,
+    children: [
+      field('სახელი', textInput({ value: state.name,
+        onInput: v => { state.name = v; $('#inp-name').value = v; save(); } })),
+      field(h('label', { class: 'ep-label' }, 'Default სიმაღლე ', h('span', { class: 'ep-unit' }, '(მ)')),
+        numInput({ value: state.floorH, min: 2.5, max: 6, step: 0.1, unit: 'მ',
+          onInput: v => { state.floorH = v; $('#inp-floor-h').value = v; save(); update3D(); updateStats(); } })),
+      stat('სართულების ჯამი', state.floors.length),
+      stat('ჯამური სიმაღლე', state.floors.reduce((s, f) => s + (f.visible ? (f.height || state.floorH) : 0), 0).toFixed(1) + ' მ'),
+      stat('GFA', $('#chip-gfa').textContent + ' მ²')
+    ]
+  }));
+
+  if (active) {
+    body.appendChild(section({
+      title: active.label,
+      aux: active.visible ? 'ხილვადი' : 'დამალული',
+      collapsed: false,
+      iconRow: [
+        h('button', { class: 'ep-iconbtn', 'data-tip': active.visible ? 'დამალვა' : 'ჩვენება',
+          onclick: () => { active.visible = !active.visible; save(); renderStack(); update3D(); renderPanel(); updateStats(); } },
+          B.mkIcon(active.visible ? 'visible' : 'hidden', 12)),
+        h('button', { class: 'ep-iconbtn danger', 'data-tip': 'წაშლა',
+          onclick: () => {
+            if (!confirm('წაშლა?')) return;
+            state.floors = state.floors.filter(x => x.id !== active.id);
+            ui.activeId = state.floors[0]?.id || null;
+            save(); renderStack(); update3D(); renderPanel(); updateStats();
+          } }, B.mkIcon('delete', 12))
+      ],
+      children: [
+        field('ლეიბლი', textInput({ value: active.label,
+          onInput: v => { active.label = v; save(); renderStack(); update3D(); } })),
+        field(h('label', { class: 'ep-label' }, 'სიმაღლე ', h('span', { class: 'ep-unit' }, '(მ)')),
+          numInput({ value: active.height || state.floorH, min: 2.2, max: 8, step: 0.1, unit: 'მ',
+            onInput: v => { active.height = v; save(); update3D(); updateStats(); } })),
+        field('ფერი',
+          (() => {
+            const row = h('div', { class: 'ep-swatch-row' });
+            const palette = ['#3a7bd5','#d95f3a','#4aa56a','#9a5aa8','#c8a63a','#3aa8a0','#c83a6f','#6a8ac2'];
+            for (const c of palette) {
+              const sw = h('div', {
+                class: 'ep-swatch' + (active.color === c ? ' active' : ''),
+                style: 'background:' + c,
+                onclick: () => { active.color = c; save(); renderStack(); update3D(); renderPanel(); }
+              });
+              row.appendChild(sw);
+            }
+            return row;
+          })()
+        ),
+        stat('კედლები', (active.data?.walls?.length || 0)),
+        stat('კოლონები', (active.data?.columns?.length || 0)),
+        stat('კარები', (active.data?.openings?.filter(o => o.type === 'door').length || 0)),
+        stat('ფანჯრები', (active.data?.openings?.filter(o => o.type === 'window').length || 0)),
+        stat('ოთახები', (active.data?.rooms?.length || 0)),
+        h('div', { class: 'ep-divider' }),
+        h('div', { class: 'ep-btn-row' },
+          h('button', { class: 'eng-btn',
+            onclick: () => {
+              // Copy floor
+              const copy = JSON.parse(JSON.stringify(active));
+              copy.id = uid();
+              copy.label = active.label + ' (copy)';
+              const idx = state.floors.findIndex(f => f.id === active.id);
+              state.floors.splice(idx + 1, 0, copy);
+              ui.activeId = copy.id;
+              save(); renderStack(); update3D(); renderPanel(); updateStats();
+              toast('სართული დუბლირდა');
+            } }, 'დუბლირება'),
+          h('button', { class: 'eng-btn',
+            onclick: () => {
+              // Open wall-editor with this floor's data
+              window.open('/calc/wall-editor', '_blank');
+              toast('wall-editor ახალ ტაბში');
+            } }, 'რედაქტირება')
+        )
+      ]
+    }));
+  } else if (activeConn) {
+    const c = activeConn;
+    const floorOpts = state.floors.map((f, i) => ({ value: i, label: `${f.label} (F${i+1})` }));
+    body.appendChild(section({
+      title: (c.label || 'კავშირი'),
+      aux: c.kind,
+      collapsed: false,
+      iconRow: [
+        h('button', { class: 'ep-iconbtn danger', 'data-tip': 'წაშლა',
+          onclick: () => {
+            if (!confirm('წაშლა?')) return;
+            state.connections = state.connections.filter(x => x.id !== c.id);
+            ui.activeConnId = null;
+            save(); renderConnList(); renderPanel(); update3D();
+          } }, B.mkIcon('delete', 12))
+      ],
+      children: [
+        field('ლეიბლი', textInput({ value: c.label || '',
+          onInput: v => { c.label = v; save(); renderConnList(); update3D(); } })),
+        field('ტიპი', selectInput({ value: c.kind,
+          options: [
+            { value: 'stair', label: '🪜 კიბე' },
+            { value: 'elevator', label: '🛗 ლიფტი' },
+            { value: 'slab-opening', label: '🕳 ღიობი ფილაში' }
+          ],
+          onChange: v => { c.kind = v; save(); renderConnList(); update3D(); renderPanel(); }
+        })),
+        h('div', { class: 'ep-field-grid' },
+          field(h('label', { class: 'ep-label' }, 'X ', h('span', { class: 'ep-unit' }, '(მ)')),
+            numInput({ value: c.pos[0] || 0, step: 0.1, unit: 'მ',
+              onInput: v => { c.pos[0] = v; save(); update3D(); } })),
+          field(h('label', { class: 'ep-label' }, 'Y ', h('span', { class: 'ep-unit' }, '(მ)')),
+            numInput({ value: c.pos[1] || 0, step: 0.1, unit: 'მ',
+              onInput: v => { c.pos[1] = v; save(); update3D(); } }))
+        ),
+        h('div', { class: 'ep-field-grid' },
+          field(h('label', { class: 'ep-label' }, 'სიგანე ', h('span', { class: 'ep-unit' }, '(მ)')),
+            numInput({ value: c.w || 1.2, min: 0.5, max: 10, step: 0.1, unit: 'მ',
+              onInput: v => { c.w = v; save(); update3D(); renderConnList(); } })),
+          field(h('label', { class: 'ep-label' }, 'სიღრმე ', h('span', { class: 'ep-unit' }, '(მ)')),
+            numInput({ value: c.d || 1.2, min: 0.5, max: 10, step: 0.1, unit: 'მ',
+              onInput: v => { c.d = v; save(); update3D(); renderConnList(); } }))
+        ),
+        field(h('label', { class: 'ep-label' }, 'ბრუნვა ', h('span', { class: 'ep-unit' }, '(°)')),
+          numInput({ value: c.rot || 0, min: 0, max: 359, step: 15, unit: '°',
+            onInput: v => { c.rot = v; save(); update3D(); } })),
+        h('div', { class: 'ep-field-grid' },
+          field('საიდან', selectInput({ value: c.fromIdx ?? 0, options: floorOpts,
+            onChange: v => { c.fromIdx = parseInt(v); if (c.toIdx < c.fromIdx) c.toIdx = c.fromIdx; save(); update3D(); renderConnList(); renderPanel(); } })),
+          field('სადამდე', selectInput({ value: c.toIdx ?? 0, options: floorOpts,
+            onChange: v => { c.toIdx = parseInt(v); if (c.toIdx < c.fromIdx) c.fromIdx = c.toIdx; save(); update3D(); renderConnList(); renderPanel(); } }))
+        ),
+        stat('სიმაღლე (ჯამი)',
+          (floorBaseY(Math.min(state.floors.length - 1, (c.toIdx ?? 0))) + (state.floors[c.toIdx ?? 0]?.height || state.floorH)
+           - floorBaseY(c.fromIdx ?? 0)).toFixed(2) + ' მ'),
+        stat('სართულების რაოდ.', Math.max(1, (c.toIdx ?? 0) - (c.fromIdx ?? 0) + 1)),
+        c.kind === 'stair' ? h('div', { class: 'ep-hint' }, 'ერთ სართულზე 14 ფეხი; ზიგზაგი U-ფორმით.') : null,
+        c.kind === 'elevator' ? h('div', { class: 'ep-hint' }, 'კაბინა ნიშნდება ქვედა სართულზე; რელსები კუთხეებში.') : null,
+        c.kind === 'slab-opening' ? h('div', { class: 'ep-hint' }, 'ფილაში ღიობი (atrium). წითელი outline ყოველ სართულზე.') : null
+      ].filter(Boolean)
+    }));
+  } else {
+    body.appendChild(h('div', { class: 'ep-hint' }, 'აირჩიე სართული ან კავშირი მარცხნიდან'));
+  }
+}
+
+function setPanelHead(head) {
+  const ico = $('#ctx-panel-icon');
+  if (ico && window.EditorPanels) {
+    const p = EditorPanels.icons[head.icon] || EditorPanels.icons.settings;
+    ico.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  }
+  $('#ctx-panel-title').textContent = head.title;
+  $('#ctx-panel-sub').textContent = head.sub;
+}
+
+// helper DOM builder (mini h)
+function h(tag, attrs, ...children) {
+  const el = document.createElement(tag);
+  if (attrs) for (const k in attrs) {
+    const v = attrs[k]; if (v == null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'style') el.style.cssText = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(), v);
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of children.flat(Infinity)) {
+    if (c == null || c === false) continue;
+    el.appendChild(c instanceof Node ? c : document.createTextNode(String(c)));
+  }
+  return el;
+}
+
+// ============== ACTIONS ==============
+function addBlankFloor() {
+  const palette = ['#3a7bd5','#d95f3a','#4aa56a','#9a5aa8','#c8a63a','#3aa8a0','#c83a6f','#6a8ac2'];
+  const f = {
+    id: uid(),
+    label: (state.floors.length + 1) + 'F',
+    color: palette[state.floors.length % palette.length],
+    visible: true, height: state.floorH,
+    data: { walls: [], columns: [], openings: [], fixtures: [], rooms: [], dimensions: [] }
+  };
+  state.floors.push(f);
+  ui.activeId = f.id;
+  save(); renderStack(); update3D(); renderPanel(); updateStats();
+  toast('ცარიელი სართული დამატდა');
+}
+
+function copyActive() {
+  const active = state.floors.find(f => f.id === ui.activeId);
+  if (!active) { toast('არჩეული არაფერი'); return; }
+  const copy = JSON.parse(JSON.stringify(active));
+  copy.id = uid();
+  copy.label = active.label + ' (copy)';
+  const idx = state.floors.findIndex(f => f.id === active.id);
+  state.floors.splice(idx + 1, 0, copy);
+  ui.activeId = copy.id;
+  save(); renderStack(); update3D(); renderPanel(); updateStats();
+  toast('სართული დუბლირდა');
+}
+
+function exportJSON() {
+  if (_bridge) return _bridge.exportJSON();
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (state.name || 'building') + '.json';
+  a.click();
+}
+function importJSON() {
+  if (!_bridge) return;
+  const fi = document.createElement('input');
+  fi.type = 'file'; fi.accept = 'application/json,.json';
+  fi.onchange = () => {
+    const f = fi.files[0]; if (!f) return;
+    _bridge.importJSON(f).then(p => {
+      renderStack(); renderConnList(); renderPanel(); update3D(); updateStats();
+      toast('ჩატვირთულია: ' + p.name);
+    }).catch(e => toast('შეცდომა: ' + e.message));
+  };
+  fi.click();
+}
+
+// ============== WIRE ==============
+function wire() {
+  $('#inp-name').addEventListener('input', e => { state.name = e.target.value; save(); renderPanel(); });
+  $('#inp-floor-h').addEventListener('input', e => {
+    state.floorH = parseFloat(e.target.value) || 3.0;
+    save(); update3D(); renderPanel(); updateStats();
+  });
+  $('#btn-refresh').addEventListener('click', () => { update3D(); toast('განახლდა'); });
+  $('#btn-wall-editor').addEventListener('click', () => { window.open('/calc/wall-editor', '_blank'); });
+  $('#btn-import-wall').addEventListener('click', importFromWallEditor);
+  $('#btn-blank').addEventListener('click', addBlankFloor);
+  $('#btn-copy').addEventListener('click', copyActive);
+  $('#btn-export').addEventListener('click', exportJSON);
+  $('#btn-import').addEventListener('click', importJSON);
+  $('#btn-print').addEventListener('click', () => _bridge && _bridge.printPDF());
+  $('#btn-gate').addEventListener('click', () => _bridge && _bridge.openGate());
+  $('#btn-save-as').addEventListener('click', () => {
+    if (!_bridge) return;
+    const name = prompt('პროექტის სახელი', state.name || 'ახალი შენობა');
+    if (!name) return;
+    const p = _bridge.saveAs(name);
+    toast('შენახულია: ' + p.name);
+  });
+  $('#btn-rename').addEventListener('click', () => {
+    if (!_bridge || !_bridge.projectId) return toast('ჯერ Save as-ით შექმენი პროექტი');
+    const cur = _bridge.currentProject();
+    const name = prompt('ახალი სახელი', cur?.name || '');
+    if (!name) return;
+    _bridge.rename(name);
+    toast('გადარქმეულია');
+  });
+  // Connection actions
+  $('#btn-add-stair').addEventListener('click', () => addConnection('stair'));
+  $('#btn-add-elevator').addEventListener('click', () => addConnection('elevator'));
+  $('#btn-add-opening').addEventListener('click', () => addConnection('slab-opening'));
+  $('#btn-detect-shafts').addEventListener('click', autoDetectShafts);
+}
+
+// ============== BOOT ==============
+(async function() {
+  restore();
+  init3D();
+  wire();
+  renderStack();
+  renderConnList();
+  renderPanel();
+  update3D();
+  updateStats();
+  $('#inp-name').value = state.name;
+  $('#inp-floor-h').value = state.floorH;
+})();
+</script>
+</body>
+</html>

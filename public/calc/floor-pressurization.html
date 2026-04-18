@@ -1,0 +1,2086 @@
+<!doctype html>
+<html lang="ka">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>კორიდორის დაწნეხვის სიმულატორი</title>
+<link rel="stylesheet" href="./_base.css">
+<link rel="stylesheet" href="./_editor-ui.css">
+<script src="./_theme-sync.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.164.1/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.164.1/examples/jsm/"
+  }
+}
+</script>
+<style>
+  :root {
+    --fp-side-w: 330px;
+    --fp-info-w: 290px;
+  }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    overflow: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .fp-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--bdr);
+    background: var(--sur);
+  }
+  .fp-header h1 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--navy);
+  }
+  .fp-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    background: var(--blue-lt);
+    color: var(--blue);
+  }
+  .fp-spacer { flex: 1; }
+  .fp-summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 6px 10px;
+    border: 1px solid var(--bdr);
+    border-radius: 999px;
+    background: var(--sur-2);
+    font-size: 11px;
+  }
+  .fp-summary b {
+    color: var(--navy);
+    font-family: var(--font-mono);
+  }
+
+  .btn {
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid var(--bdr);
+    border-radius: 8px;
+    background: var(--sur);
+    color: var(--text);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: border-color .12s, color .12s, background .12s;
+  }
+  .btn:hover {
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+  .btn.primary {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #fff;
+  }
+  .btn.primary:hover {
+    background: color-mix(in srgb, var(--blue) 92%, white);
+  }
+
+  .fp-root {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: var(--fp-side-w) 8px 1fr;
+  }
+
+  .fp-side {
+    min-width: 0;
+    border-right: 1px solid var(--bdr);
+  }
+
+  .fp-resizer {
+    cursor: col-resize;
+    position: relative;
+    background: linear-gradient(180deg, transparent 0%, var(--bdr) 40%, var(--bdr) 60%, transparent 100%);
+  }
+  .fp-resizer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    margin: auto;
+    width: 3px;
+    height: 48px;
+    border-radius: 999px;
+    background: var(--bdr-2);
+  }
+  .fp-resizer.active::after { background: var(--blue); }
+
+  .fp-main {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .fp-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--bdr);
+    background: var(--sur);
+  }
+  .fp-tab {
+    height: 32px;
+    padding: 0 12px;
+    border: 1px solid var(--bdr);
+    border-radius: 8px;
+    background: var(--sur-2);
+    color: var(--text-2);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .fp-tab.active {
+    border-color: var(--blue);
+    background: var(--blue-lt);
+    color: var(--blue);
+  }
+
+  .fp-stage {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+  }
+
+  .fp-view-area {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 0;
+    position: relative;
+    background: radial-gradient(circle at top, color-mix(in srgb, var(--blue-lt) 32%, transparent) 0%, transparent 44%), var(--bg);
+  }
+
+  .fp-view {
+    position: absolute;
+    inset: 0;
+    display: none;
+  }
+  .fp-view.active { display: block; }
+
+  .fp-svg-wrap {
+    width: 100%;
+    height: 100%;
+    padding: 12px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .fp-svg-wrap svg {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    display: block;
+    background: var(--sur);
+    border: 1px solid var(--bdr);
+    border-radius: 14px;
+  }
+
+  .fp-canvas {
+    width: 100%;
+    height: 100%;
+  }
+
+  .fp-formulas {
+    height: 100%;
+    overflow: auto;
+    padding: 14px;
+    box-sizing: border-box;
+    display: grid;
+    gap: 12px;
+    align-content: start;
+  }
+
+  .fp-info {
+    flex: 0 0 var(--fp-info-w);
+    min-width: 0;
+    border-left: 1px solid var(--bdr);
+    background: var(--sur);
+    padding: 12px;
+    overflow: auto;
+    box-sizing: border-box;
+  }
+
+  .card {
+    border: 1px solid var(--bdr);
+    border-radius: 12px;
+    background: var(--sur-2);
+    padding: 12px;
+  }
+
+  .std-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-weight: 800;
+    color: var(--navy);
+  }
+  .region {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .region.eu { background: var(--blue-lt); color: var(--blue); }
+  .region.us { background: var(--red-lt); color: var(--red); }
+  .region.ru { background: var(--ora-lt); color: var(--ora); }
+  .std-sub {
+    margin: 0 0 10px;
+    font-size: 11px;
+    color: var(--text-2);
+    line-height: 1.5;
+  }
+  .spec-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 8px;
+    font-size: 11px;
+    align-items: baseline;
+  }
+  .spec-grid span { color: var(--text-2); }
+  .spec-grid b { color: var(--navy); }
+
+  .status-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid var(--bdr);
+    background: var(--sur);
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .status-badge.warn {
+    background: var(--red-lt);
+    border-color: var(--red);
+    color: var(--red);
+  }
+  .status-badge.ok {
+    background: var(--grn-lt);
+    border-color: var(--grn-bd);
+    color: var(--grn);
+  }
+
+  .legend .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    margin-top: 8px;
+  }
+  .legend .sw {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1px solid var(--bdr);
+    flex: 0 0 auto;
+  }
+
+  .context-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .tpl-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .tpl-card {
+    border: 1px solid var(--bdr);
+    border-radius: 10px;
+    background: var(--sur-2);
+    padding: 8px;
+    text-align: left;
+    cursor: pointer;
+  }
+  .tpl-card.active {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--blue) 20%, transparent);
+  }
+  .tpl-card b {
+    display: block;
+    color: var(--navy);
+    font-size: 11px;
+    margin-bottom: 2px;
+  }
+  .tpl-card span {
+    display: block;
+    color: var(--text-3);
+    font-family: var(--font-mono);
+    font-size: 9px;
+  }
+
+  .formula-card h3, .formula-intro h2 {
+    margin: 0;
+    color: var(--navy);
+  }
+  .formula-head {
+    display: flex;
+    gap: 10px;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .formula-sub, .formula-ref, .formula-note, .formula-intro p {
+    font-size: 11px;
+    color: var(--text-2);
+    line-height: 1.5;
+  }
+  .formula-ref {
+    font-family: var(--font-mono);
+    font-size: 10px;
+  }
+  .formula-math {
+    border: 1px solid var(--bdr);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--blue-lt) 42%, white);
+    padding: 10px 12px;
+    overflow-x: auto;
+    margin-top: 10px;
+  }
+  .formula-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .formula-grid .kv,
+  .chart-meta .kv {
+    background: var(--sur);
+    border: 1px solid var(--bdr);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .formula-grid .kv span,
+  .chart-meta .kv span {
+    display: block;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+    font-family: var(--font-mono);
+    margin-bottom: 4px;
+  }
+  .formula-grid .kv b,
+  .chart-meta .kv b {
+    color: var(--navy);
+    font-size: 12px;
+  }
+  .formula-result {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--bdr);
+  }
+  .formula-card.warn {
+    border-color: var(--red);
+    background: color-mix(in srgb, var(--red-lt) 32%, white);
+  }
+  .formula-fallback {
+    margin: 0;
+    white-space: pre-wrap;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--navy);
+  }
+
+  .plan-room { fill: var(--sur-2); stroke: var(--text-2); stroke-width: 1.4; }
+  .plan-corridor { fill: color-mix(in srgb, var(--blue-lt) 24%, white); stroke: var(--navy); stroke-width: 2; }
+  .plan-core { fill: color-mix(in srgb, var(--ora-lt) 70%, white); stroke: var(--ora); stroke-width: 1.4; }
+  .plan-lift { fill: color-mix(in srgb, var(--red-lt) 70%, white); stroke: var(--red); stroke-width: 1.4; }
+  .plan-door { fill: var(--sur); stroke: var(--navy); stroke-width: 1.5; cursor: pointer; }
+  .plan-door.open { fill: var(--blue-lt); stroke: var(--blue); stroke-width: 2; }
+  .plan-flow { fill: none; stroke: var(--blue); stroke-width: 2.2; stroke-linecap: round; marker-end: url(#arrow-blue-plan); }
+  .plan-leak { fill: none; stroke: var(--ora); stroke-width: 2; stroke-linecap: round; marker-end: url(#arrow-ora-plan); }
+  .plan-label { font: 11px var(--font-sans); fill: var(--text-2); }
+  .plan-label-b { font: 700 12px var(--font-sans); fill: var(--navy); }
+  .plan-tip { font: 700 10px var(--font-mono); fill: var(--blue); }
+  .sec-shell { fill: var(--sur); stroke: var(--navy); stroke-width: 1.8; }
+  .sec-room { fill: var(--sur-2); stroke: var(--text-2); stroke-width: 1.2; }
+  .sec-door { fill: var(--sur); stroke: var(--navy); stroke-width: 1.3; }
+  .sec-door.open { fill: var(--blue-lt); stroke: var(--blue); stroke-width: 1.8; }
+  .sec-air { fill: none; stroke: var(--blue); stroke-width: 2.2; stroke-linecap: round; marker-end: url(#arrow-blue-sec); }
+  .sec-leak { fill: none; stroke: var(--ora); stroke-width: 1.9; stroke-linecap: round; marker-end: url(#arrow-ora-sec); }
+
+  .dark .plan-room,
+  .dark .sec-room { fill: #1c2740; stroke: #91a4c9; }
+  .dark .plan-corridor { fill: #16233d; stroke: #cfe1ff; }
+  .dark .sec-shell { fill: #16233d; stroke: #cfe1ff; }
+  .dark .plan-door,
+  .dark .sec-door { fill: #0f1730; stroke: #91a4c9; }
+
+  .fp-help {
+    position: absolute;
+    right: 16px;
+    bottom: 16px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(10, 25, 50, 0.72);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    pointer-events: none;
+  }
+
+  @media (max-width: 980px) {
+    .fp-root { grid-template-columns: 1fr; }
+    .fp-resizer { display: none; }
+    .fp-stage { flex-direction: column; }
+    .fp-info {
+      flex-basis: auto;
+      border-left: 0;
+      border-top: 1px solid var(--bdr);
+    }
+  }
+
+  @media print {
+    @page { size: A4 landscape; margin: 10mm; }
+    html, body {
+      overflow: visible !important;
+      height: auto !important;
+      background: #fff !important;
+    }
+    body { display: block; }
+    .fp-side, .fp-resizer, .fp-tabs, .fp-help, .screen-only { display: none !important; }
+    .fp-root, .fp-main, .fp-stage, .fp-view-area, .fp-info {
+      display: block !important;
+      min-height: auto !important;
+      overflow: visible !important;
+      border: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+    }
+    .fp-header {
+      padding: 0 0 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #bbb;
+      background: #fff !important;
+    }
+    .fp-view { position: static !important; display: none !important; }
+    .fp-view[data-view="plan"],
+    .fp-view[data-view="formulas"] { display: block !important; }
+    .fp-svg-wrap { padding: 0 0 10px; }
+    .fp-svg-wrap svg { border-color: #bbb !important; }
+  }
+</style>
+</head>
+<body>
+
+<input type="file" id="json-import" accept=".json,application/json" hidden>
+
+<header class="fp-header">
+  <h1>კორიდორის დაწნეხვის სიმულატორი</h1>
+  <span class="fp-badge" id="hdr-std-badge">EN 12101-6 · B</span>
+  <div class="fp-spacer"></div>
+  <div class="fp-summary" id="summary">
+    <span>სიგრძე: <b id="sm-length">24.0 მ</b></span>
+    <span>·</span>
+    <span>ოთახები: <b id="sm-rooms">12</b></span>
+    <span>·</span>
+    <span>ღია კარები: <b id="sm-open">0</b></span>
+    <span>·</span>
+    <span>Qreq: <b id="sm-flow">0.00 მ³/წმ</b></span>
+  </div>
+  <div class="screen-only" style="display:flex;gap:8px">
+    <button class="btn" id="btn-import-json" type="button">⬆ JSON</button>
+    <button class="btn" id="btn-export-json" type="button">⬇ JSON</button>
+    <button class="btn primary" id="btn-export-pdf" type="button">⬇ PDF</button>
+  </div>
+</header>
+
+<div class="fp-root">
+  <aside class="fp-side ep-panel ep-panel--left">
+    <div class="ep-panel-head">
+      <span class="ep-icon">↔</span>
+      <h2>პარამეტრები</h2>
+      <span class="ep-panel-sub">floor-pressurization</span>
+    </div>
+    <div class="ep-panel-body">
+      <section class="ep-section">
+        <button class="ep-section-head" type="button">
+          <span class="ep-caret">▾</span>
+          შაბლონები
+        </button>
+        <div class="ep-section-body">
+          <div class="tpl-grid" id="tpl-grid"></div>
+        </div>
+      </section>
+
+      <section class="ep-section">
+        <button class="ep-section-head" type="button">
+          <span class="ep-caret">▾</span>
+          სტანდარტი
+        </button>
+        <div class="ep-section-body">
+          <div class="ep-field">
+            <label>ნორმატიული ბაზა</label>
+            <div class="ep-seg" data-group="standard" id="seg-standard">
+              <button type="button" data-val="EN" class="active">EN</button>
+              <button type="button" data-val="NFPA">NFPA</button>
+              <button type="button" data-val="SP">СП</button>
+            </div>
+            <div class="ep-hint" id="std-region-hint">ევროკავშირი · refuge corridor</div>
+          </div>
+          <div class="ep-field">
+            <label id="lbl-std-class">Class</label>
+            <div class="ep-seg" id="seg-std-class"></div>
+          </div>
+          <div class="ep-field">
+            <label>Δp target</label>
+            <div class="ep-seg" id="seg-dp"></div>
+            <div class="ep-hint" id="dp-hint">დიაპაზონი ჩაიტვირთება სტანდარტიდან.</div>
+          </div>
+          <div class="ep-field">
+            <label>ერთეულები</label>
+            <div class="ep-seg" data-group="units">
+              <button type="button" data-val="metric" class="active">მეტრი</button>
+              <button type="button" data-val="imperial">ft / cfm</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="ep-section">
+        <button class="ep-section-head" type="button">
+          <span class="ep-caret">▾</span>
+          გეომეტრია
+        </button>
+        <div class="ep-section-body">
+          <div class="ep-field-grid">
+            <div class="ep-field">
+              <label>კორიდორი L</label>
+              <input class="ep-input" type="number" id="inp-corridor-l" min="8" max="60" step="0.5" value="24">
+            </div>
+            <div class="ep-field">
+              <label>კორიდორი W</label>
+              <input class="ep-input" type="number" id="inp-corridor-w" min="1.6" max="6" step="0.1" value="2.4">
+            </div>
+          </div>
+          <div class="ep-field-grid">
+            <div class="ep-field">
+              <label>სიმაღლე</label>
+              <input class="ep-input" type="number" id="inp-corridor-h" min="2.4" max="4.5" step="0.1" value="3">
+            </div>
+            <div class="ep-field">
+              <label>ოთახები</label>
+              <input class="ep-input" type="number" id="inp-room-count" min="2" max="24" step="1" value="12">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="ep-section">
+        <button class="ep-section-head" type="button">
+          <span class="ep-caret">▾</span>
+          გაჟონვა
+        </button>
+        <div class="ep-section-body">
+          <div class="ep-field-grid">
+            <div class="ep-field">
+              <label>კარის სიგანე (მმ)</label>
+              <input class="ep-input" type="number" id="inp-door-w" min="700" max="1800" step="50" value="900">
+            </div>
+            <div class="ep-field">
+              <label>კარის სიმაღლე (მმ)</label>
+              <input class="ep-input" type="number" id="inp-door-h" min="1900" max="2400" step="50" value="2100">
+            </div>
+          </div>
+          <div class="ep-field-grid">
+            <div class="ep-field">
+              <label>კარის crack area</label>
+              <input class="ep-input" type="number" id="inp-door-crack" min="0.002" max="0.04" step="0.001" value="0.01">
+            </div>
+            <div class="ep-field">
+              <label>კედლის crack / მ²</label>
+              <input class="ep-input" type="number" id="inp-wall-leak" min="0.0001" max="0.01" step="0.0001" value="0.001">
+            </div>
+          </div>
+          <div class="ep-hint">დახურული room doors + stair/lift interface doors ითვლება crack leakage-ად.</div>
+        </div>
+      </section>
+
+      <section class="ep-section">
+        <button class="ep-section-head" type="button">
+          <span class="ep-caret">▾</span>
+          მეზობელი შახტები
+        </button>
+        <div class="ep-section-body">
+          <div class="context-grid">
+            <div class="card">
+              <div class="ep-label">სადარბაზო Δp</div>
+              <div class="ep-stat"><span>Context</span><b class="ep-stat-val" id="ctx-stair-dp">50 Pa</b></div>
+              <div class="ep-hint">read-only overlay from stair module</div>
+            </div>
+            <div class="card">
+              <div class="ep-label">ლიფტის Δp</div>
+              <div class="ep-stat"><span>Context</span><b class="ep-stat-val" id="ctx-lift-dp">37 Pa</b></div>
+              <div class="ep-hint">read-only overlay from elevator module</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="ep-section">
+        <button class="ep-section-head" type="button">
+          <span class="ep-caret">▾</span>
+          სცენარი
+        </button>
+        <div class="ep-section-body">
+          <div class="ep-field">
+            <label>სისტემის რეჟიმი</label>
+            <div class="ep-seg" data-group="systemMode">
+              <button type="button" data-val="normal" class="active">Normal</button>
+              <button type="button" data-val="failure">Failure</button>
+            </div>
+          </div>
+          <div class="ep-field">
+            <label>Flow viz</label>
+            <div class="ep-seg" data-group="flowViz">
+              <button type="button" data-val="on" class="active">ჩართ</button>
+              <button type="button" data-val="off">გამორთ</button>
+            </div>
+          </div>
+          <div class="ep-btn-row">
+            <button class="btn" type="button" id="btn-seal">ყველა კარი დახურე</button>
+          </div>
+          <div class="ep-hint">Plan view-ზე კარზე დაჭერით შეგიძლია კონკრეტული ოთახის door state გადართო.</div>
+        </div>
+      </section>
+
+      <section class="ep-section">
+        <button class="ep-section-head" type="button">
+          <span class="ep-caret">▾</span>
+          მოქმედებები
+        </button>
+        <div class="ep-section-body">
+          <div class="ep-btn-row">
+            <button class="btn" id="btn-reset" type="button">Reset</button>
+            <button class="btn primary" id="btn-rebuild" type="button">განახლება</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <div class="fp-resizer" id="fp-resizer" role="separator" aria-orientation="vertical" tabindex="0" aria-label="პანელის ზომის ცვლილება"></div>
+
+  <main class="fp-main">
+    <div class="fp-tabs">
+      <button class="fp-tab active" type="button" data-view="plan">გეგმა</button>
+      <button class="fp-tab" type="button" data-view="section">ჭრილი</button>
+      <button class="fp-tab" type="button" data-view="d3">3D სცენა</button>
+      <button class="fp-tab" type="button" data-view="formulas">ფორმულები</button>
+    </div>
+
+    <div class="fp-stage">
+      <div class="fp-view-area">
+        <div class="fp-view active" data-view="plan">
+          <div class="fp-svg-wrap">
+            <svg id="svg-plan" viewBox="0 0 980 640" preserveAspectRatio="xMidYMid meet"></svg>
+          </div>
+        </div>
+        <div class="fp-view" data-view="section">
+          <div class="fp-svg-wrap">
+            <svg id="svg-section" viewBox="0 0 980 520" preserveAspectRatio="xMidYMid meet"></svg>
+          </div>
+        </div>
+        <div class="fp-view" data-view="d3">
+          <div class="fp-canvas" id="canvas-3d"></div>
+          <div class="fp-help">🖱 drag · კარები plan-ზე ირთვება</div>
+        </div>
+        <div class="fp-view" data-view="formulas">
+          <div class="fp-formulas" id="formulas-panel"></div>
+        </div>
+      </div>
+
+      <aside class="fp-info">
+        <div class="card" id="std-info"></div>
+        <div class="card legend" id="legend-panel" style="margin-top:12px"></div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import {
+  airChangeRate,
+  doorOpeningForce,
+  leakageFlow,
+  maxDpForDoor,
+  requiredSupplyFlow,
+  REFS as PHYSICS_REFS,
+  U as PHYSICS_U
+} from './_physics-engine.js';
+
+const SIMULATOR_ID = 'floor-pressurization';
+const EXPORT_VERSION = 1;
+
+const TEMPLATES = [
+  {
+    id: 'res-4',
+    name: 'საცხოვრებელი',
+    meta: '18მ · 4 ოთახი · Class D',
+    preset: {
+      standard: 'EN',
+      stdClass: 'D',
+      corridorL: 18,
+      corridorW: 2.2,
+      corridorH: 2.9,
+      roomCount: 4,
+      doorW: 900,
+      doorH: 2100,
+      doorCrackArea: 0.01,
+      wallLeakFactor: 0.0012,
+      systemMode: 'normal',
+      flowViz: 'on'
+    }
+  },
+  {
+    id: 'office-12',
+    name: 'ოფისი',
+    meta: '24მ · 12 ოთახი · Class B',
+    preset: {
+      standard: 'EN',
+      stdClass: 'B',
+      corridorL: 24,
+      corridorW: 2.4,
+      corridorH: 3.0,
+      roomCount: 12,
+      doorW: 950,
+      doorH: 2100,
+      doorCrackArea: 0.01,
+      wallLeakFactor: 0.001,
+      systemMode: 'normal',
+      flowViz: 'on'
+    }
+  },
+  {
+    id: 'hotel-20',
+    name: 'სასტუმრო',
+    meta: '36მ · 20 ოთახი · Refuge',
+    preset: {
+      standard: 'NFPA',
+      stdClass: 'refuge',
+      corridorL: 36,
+      corridorW: 2.6,
+      corridorH: 3.1,
+      roomCount: 20,
+      doorW: 900,
+      doorH: 2100,
+      doorCrackArea: 0.012,
+      wallLeakFactor: 0.0011,
+      systemMode: 'normal',
+      flowViz: 'on'
+    }
+  }
+];
+
+const STANDARDS = {
+  EN: {
+    id: 'EN',
+    name: 'EN 12101-6',
+    full: 'Pressure differential systems · corridor / lobby refuge mode',
+    region: 'EU',
+    regionLabel: 'ევროკავშირი · refuge corridor',
+    classLabel: 'Class',
+    classes: {
+      B: {id: 'B', name: 'Class B', dpValues: [40, 50, 60], dpDefault: 50, velocity: 2.0, force: 100, note: '2 ღია კარი · corridor spill control'},
+      C: {id: 'C', name: 'Class C', dpValues: [40, 50, 60], dpDefault: 50, velocity: 0.75, force: 100, note: 'სრული ევაკუაცია · 1 ღია კარი'},
+      D: {id: 'D', name: 'Class D', dpValues: [10, 30, 50], dpDefault: 30, velocity: 0.75, force: 100, note: 'სასტუმრო / საცხოვრებელი'}
+    }
+  },
+  NFPA: {
+    id: 'NFPA',
+    name: 'NFPA 92',
+    full: 'Smoke control systems · area of refuge / lobby',
+    region: 'US',
+    regionLabel: 'აშშ · refuge / lobby context',
+    classLabel: 'Use case',
+    classes: {
+      refuge: {id: 'refuge', name: 'Refuge', dpValues: [12, 25, 50], dpDefault: 25, velocity: 1.02, force: 133, note: 'IBC refuge area pressure'}
+    }
+  },
+  SP: {
+    id: 'SP',
+    name: 'СП 7.13130',
+    full: 'Supply smoke control ventilation · tambur-shlyuz',
+    region: 'RU',
+    regionLabel: 'რუსეთი · tambur / lobby pressurization',
+    classLabel: 'Тип',
+    classes: {
+      tambur: {id: 'tambur', name: 'Тамбур', dpValues: [20, 50, 150], dpDefault: 50, velocity: 1.3, force: 150, note: 'Тамбур-шлюз с подпором'}
+    }
+  }
+};
+
+function defaultClassForStandard(standard) {
+  return standard === 'NFPA' ? 'refuge' : standard === 'SP' ? 'tambur' : 'B';
+}
+
+function defaultStateValues() {
+  return {
+    standard: 'EN',
+    stdClass: 'B',
+    units: 'metric',
+    corridorL: 24,
+    corridorW: 2.4,
+    corridorH: 3.0,
+    roomCount: 12,
+    doorW: 900,
+    doorH: 2100,
+    doorCrackArea: 0.01,
+    wallLeakFactor: 0.001,
+    dp: 50,
+    flowViz: 'on',
+    systemMode: 'normal',
+    roomDoors: new Set(),
+    activeRoom: 0,
+    results: null
+  };
+}
+
+const state = defaultStateValues();
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const svgNS = 'http://www.w3.org/2000/svg';
+
+function el(tag, attrs = {}, children = []) {
+  const node = document.createElementNS(svgNS, tag);
+  for (const key in attrs) node.setAttribute(key, attrs[key]);
+  for (const child of children) node.appendChild(child);
+  return node;
+}
+
+function currentStd() {
+  return STANDARDS[state.standard];
+}
+
+function currentClass() {
+  return currentStd().classes[state.stdClass];
+}
+
+function contextPressures() {
+  if (state.standard === 'NFPA') {
+    return {stairDp: 37, liftDp: 25, stairLabel: 'Stair', liftLabel: 'Lift'};
+  }
+  if (state.standard === 'SP') {
+    return {stairDp: 50, liftDp: 50, stairLabel: 'Н2 stair', liftLabel: 'Lift'};
+  }
+  return {stairDp: 50, liftDp: 37, stairLabel: 'Stair', liftLabel: 'Lift'};
+}
+
+function sanitizeRoomState() {
+  const next = new Set([...state.roomDoors].filter(index => index >= 0 && index < state.roomCount));
+  state.roomDoors = next;
+  if (state.activeRoom >= state.roomCount) state.activeRoom = 0;
+  if (next.size && !next.has(state.activeRoom)) state.activeRoom = [...next][0];
+}
+
+function openRoomIndices() {
+  return [...state.roomDoors].sort((a, b) => a - b);
+}
+
+function doorAreaM2() {
+  return (state.doorW / 1000) * (state.doorH / 1000);
+}
+
+function roomLabel(index) {
+  return `R${index + 1}`;
+}
+
+function fmtLen(m, decimals = 1) {
+  if (state.units === 'imperial') return PHYSICS_U.m_to_ft(m).toFixed(decimals) + ' ft';
+  return Number(m).toFixed(decimals) + ' მ';
+}
+
+function fmtMm(mm) {
+  if (state.units === 'imperial') return PHYSICS_U.mm_to_in(mm).toFixed(1) + ' in';
+  return `${Math.round(mm)} მმ`;
+}
+
+function fmtArea(area, decimals = 1) {
+  if (state.units === 'imperial') return (area * 10.7639).toFixed(decimals) + ' ft²';
+  return Number(area).toFixed(decimals) + ' მ²';
+}
+
+function fmtVol(volume, decimals = 1) {
+  if (state.units === 'imperial') return (volume * 35.3147).toFixed(decimals) + ' ft³';
+  return Number(volume).toFixed(decimals) + ' მ³';
+}
+
+function fmtFlow(flow, decimals = 2) {
+  if (state.units === 'imperial') return PHYSICS_U.m3s_to_cfm(flow).toFixed(decimals) + ' cfm';
+  return Number(flow).toFixed(decimals) + ' მ³/წმ';
+}
+
+function fmtPa(pa) {
+  if (state.units === 'imperial') return PHYSICS_U.pa_to_inwc(pa).toFixed(3) + ' in w.c.';
+  const decimals = Math.abs(pa - Math.round(pa)) < 0.05 ? 0 : 1;
+  return Number(pa).toFixed(decimals) + ' Pa';
+}
+
+function fmtVel(mps) {
+  if (state.units === 'imperial') return PHYSICS_U.m_to_ft(mps).toFixed(2) + ' ft/s';
+  return Number(mps).toFixed(2) + ' მ/წმ';
+}
+
+function fmtForce(force) {
+  if (state.units === 'imperial') return PHYSICS_U.n_to_lbf(force).toFixed(1) + ' lbf';
+  return Number(force).toFixed(Math.abs(force) >= 100 ? 0 : 1) + ' N';
+}
+
+function roomLayout() {
+  const startX = 130;
+  const corridorY = 250;
+  const corridorW = 700;
+  const corridorH = 120;
+  const roomDepth = 92;
+  const topCount = Math.ceil(state.roomCount / 2);
+  const bottomCount = state.roomCount - topCount;
+  const rooms = [];
+
+  function addSide(count, side, offset) {
+    if (!count) return;
+    const span = corridorW / count;
+    for (let i = 0; i < count; i += 1) {
+      const index = offset + i;
+      const x = startX + i * span + 6;
+      const w = span - 12;
+      const doorWidth = Math.max(18, Math.min(34, w * 0.24));
+      const doorX = x + w / 2 - doorWidth / 2;
+      const y = side === 'top' ? corridorY - roomDepth : corridorY + corridorH;
+      const doorY = side === 'top' ? corridorY - 7 : corridorY + corridorH - 3;
+      rooms.push({
+        index,
+        side,
+        x,
+        y,
+        w,
+        h: roomDepth,
+        doorX,
+        doorY,
+        doorWidth
+      });
+    }
+  }
+
+  addSide(topCount, 'top', 0);
+  addSide(bottomCount, 'bottom', topCount);
+
+  return {
+    startX,
+    corridorY,
+    corridorW,
+    corridorH,
+    roomDepth,
+    stair: {x: 36, y: corridorY + 18, w: 70, h: 84},
+    lift: {x: startX + corridorW + 24, y: corridorY + 18, w: 70, h: 84},
+    rooms
+  };
+}
+
+function computeResults() {
+  const cls = currentClass();
+  const context = contextPressures();
+  const corridorArea = state.corridorL * state.corridorW;
+  const volume = corridorArea * state.corridorH;
+  const wallArea = 2 * (state.corridorL + state.corridorW) * state.corridorH;
+  const openRooms = state.roomDoors.size;
+  const closedRooms = Math.max(0, state.roomCount - openRooms);
+  const leakageArea = closedRooms * state.doorCrackArea + 2 * state.doorCrackArea + wallArea * state.wallLeakFactor;
+  const effectiveDp = state.systemMode === 'failure' ? 0 : state.dp;
+  const leakQTotal = leakageFlow(leakageArea, effectiveDp);
+  const openDoorQ = openRooms * cls.velocity * doorAreaM2();
+  const requiredSupplyQ = requiredSupplyFlow(leakQTotal, openDoorQ, 1.1);
+  const actualSupplyQ = state.systemMode === 'failure' ? 0 : requiredSupplyQ;
+  const ach = airChangeRate(actualSupplyQ, volume);
+  const roomDoorForce = doorOpeningForce(state.doorW / 1000, state.doorH / 1000, effectiveDp, 30, 0.07);
+  const maxDpAllowed = maxDpForDoor(state.doorW / 1000, state.doorH / 1000, cls.force, 30, 0.07);
+  const stairMargin = context.stairDp - state.dp;
+  const liftMargin = context.liftDp - state.dp;
+  const stairAssistQ = stairMargin > 0 ? leakageFlow(doorAreaM2() * 0.08, stairMargin) : 0;
+
+  state.results = {
+    corridorArea,
+    volume,
+    wallArea,
+    openRooms,
+    closedRooms,
+    leakageArea,
+    effectiveDp,
+    leakQTotal,
+    openDoorQ,
+    requiredSupplyQ,
+    actualSupplyQ,
+    ach,
+    roomDoorForce,
+    maxDpAllowed,
+    stairMargin,
+    liftMargin,
+    stairAssistQ,
+    context,
+    doorArea: doorAreaM2(),
+    reverseFlowRisk: stairMargin <= 0,
+    liftDominant: liftMargin > stairMargin
+  };
+}
+
+function serializeState() {
+  return {
+    simulator: SIMULATOR_ID,
+    version: EXPORT_VERSION,
+    standard: {
+      id: state.standard,
+      class: state.stdClass
+    },
+    units: state.units,
+    params: {
+      corridorL: state.corridorL,
+      corridorW: state.corridorW,
+      corridorH: state.corridorH,
+      roomCount: state.roomCount,
+      doorW: state.doorW,
+      doorH: state.doorH,
+      doorCrackArea: state.doorCrackArea,
+      wallLeakFactor: state.wallLeakFactor,
+      dp: state.dp,
+      flowViz: state.flowViz,
+      systemMode: state.systemMode,
+      roomDoors: openRoomIndices(),
+      activeRoom: state.activeRoom
+    },
+    results: state.results,
+    meta: {
+      savedAt: new Date().toISOString(),
+      type: 'floor-pressurization-state'
+    }
+  };
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+
+function katexBlock(expression) {
+  if (window.katex?.renderToString) {
+    try {
+      return window.katex.renderToString(expression, {displayMode: true, throwOnError: false});
+    } catch {}
+  }
+  return `<pre class="formula-fallback">${escapeHtml(expression)}</pre>`;
+}
+
+function refLabel(ref) {
+  if (!ref) return 'Reference pending';
+  return `${ref.std} · ${ref.sec} · ${ref.eq}`;
+}
+
+function renderStdClasses() {
+  const seg = $('#seg-std-class');
+  const std = currentStd();
+  seg.innerHTML = '';
+  Object.values(std.classes).forEach(cls => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.val = cls.id;
+    button.textContent = cls.name;
+    if (cls.id === state.stdClass) button.classList.add('active');
+    seg.appendChild(button);
+  });
+}
+
+function renderDpButtons() {
+  const seg = $('#seg-dp');
+  const cls = currentClass();
+  seg.innerHTML = '';
+  cls.dpValues.forEach(value => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.val = value;
+    button.textContent = fmtPa(value);
+    if (Number(value) === Number(state.dp)) button.classList.add('active');
+    seg.appendChild(button);
+  });
+}
+
+function renderTemplates() {
+  const grid = $('#tpl-grid');
+  const active = TEMPLATES.find(template =>
+    template.preset.roomCount === state.roomCount &&
+    Math.abs(template.preset.corridorL - state.corridorL) < 0.1 &&
+    template.preset.standard === state.standard &&
+    template.preset.stdClass === state.stdClass
+  )?.id;
+
+  grid.innerHTML = TEMPLATES.map(template => `
+    <button type="button" class="tpl-card ${template.id === active ? 'active' : ''}" data-template="${template.id}">
+      <b>${template.name}</b>
+      <span>${template.meta}</span>
+    </button>
+  `).join('');
+}
+
+function reflectInputsFromState() {
+  $('#inp-corridor-l').value = state.corridorL;
+  $('#inp-corridor-w').value = state.corridorW;
+  $('#inp-corridor-h').value = state.corridorH;
+  $('#inp-room-count').value = state.roomCount;
+  $('#inp-door-w').value = state.doorW;
+  $('#inp-door-h').value = state.doorH;
+  $('#inp-door-crack').value = state.doorCrackArea;
+  $('#inp-wall-leak').value = state.wallLeakFactor;
+}
+
+function syncSegmentsFromState() {
+  $$('[data-group]').forEach(group => {
+    const key = group.dataset.group;
+    const match = key === 'systemMode' ? state.systemMode : key === 'flowViz' ? state.flowViz : state[key];
+    $$('button', group).forEach(button => {
+      button.classList.toggle('active', String(button.dataset.val) === String(match));
+    });
+  });
+  $$('button', $('#seg-std-class')).forEach(button => {
+    button.classList.toggle('active', button.dataset.val === state.stdClass);
+  });
+  $$('button', $('#seg-dp')).forEach(button => {
+    button.classList.toggle('active', Number(button.dataset.val) === Number(state.dp));
+  });
+}
+
+function applyTemplate(id) {
+  const template = TEMPLATES.find(item => item.id === id);
+  if (!template) return;
+  const preset = template.preset;
+  Object.assign(state, {
+    ...defaultStateValues(),
+    ...preset,
+    roomDoors: new Set(),
+    activeRoom: 0,
+    dp: STANDARDS[preset.standard].classes[preset.stdClass].dpDefault
+  });
+  reflectInputsFromState();
+  renderStdClasses();
+  renderDpButtons();
+  syncSegmentsFromState();
+  redraw();
+}
+
+function updateContextCards() {
+  const context = contextPressures();
+  $('#ctx-stair-dp').textContent = fmtPa(context.stairDp);
+  $('#ctx-lift-dp').textContent = fmtPa(context.liftDp);
+}
+
+function syncSummary() {
+  computeResults();
+  const results = state.results;
+  const std = currentStd();
+  const cls = currentClass();
+  $('#sm-length').textContent = fmtLen(state.corridorL, 1);
+  $('#sm-rooms').textContent = String(state.roomCount);
+  $('#sm-open').textContent = String(results.openRooms);
+  $('#sm-flow').textContent = fmtFlow(results.requiredSupplyQ);
+  $('#hdr-std-badge').textContent = `${std.name} · ${cls.name}`;
+  $('#hdr-std-badge').style.background = std.region === 'US' ? 'var(--red-lt)' : std.region === 'RU' ? 'var(--ora-lt)' : 'var(--blue-lt)';
+  $('#hdr-std-badge').style.color = std.region === 'US' ? 'var(--red)' : std.region === 'RU' ? 'var(--ora)' : 'var(--blue)';
+  $('#std-region-hint').textContent = std.regionLabel;
+  $('#lbl-std-class').textContent = std.classLabel;
+  $('#dp-hint').textContent = `დიაპაზონი: ${fmtPa(Math.min(...cls.dpValues))} – ${fmtPa(Math.max(...cls.dpValues))} · v ≥ ${fmtVel(cls.velocity)}`;
+  updateContextCards();
+  renderStdInfo();
+  renderFormulas();
+}
+
+function renderStdInfo() {
+  const std = currentStd();
+  const cls = currentClass();
+  const results = state.results || (computeResults(), state.results);
+  const regionClass = std.region === 'US' ? 'us' : std.region === 'RU' ? 'ru' : 'eu';
+  const openRooms = openRoomIndices().length ? openRoomIndices().map(roomLabel).join(', ') : 'არა';
+  $('#std-info').innerHTML = `
+    <div class="std-title">
+      ${std.name}
+      <span class="region ${regionClass}">${std.region}</span>
+    </div>
+    <p class="std-sub">${std.full}</p>
+    <div class="spec-grid">
+      <span>${std.classLabel}:</span><b>${cls.name}</b>
+      <span>Δp target:</span><b>${fmtPa(state.dp)}</b>
+      <span>Door size:</span><b>${fmtMm(state.doorW)} × ${fmtMm(state.doorH)}</b>
+      <span>Open doors:</span><b>${openRooms}</b>
+      <span>Corridor area:</span><b>${fmtArea(results.corridorArea, 1)}</b>
+      <span>Volume:</span><b>${fmtVol(results.volume, 0)}</b>
+      <span>Leakage area:</span><b>${fmtArea(results.leakageArea, 3)}</b>
+      <span>Leak flow:</span><b>${fmtFlow(results.leakQTotal)}</b>
+      <span>Open-door flow:</span><b>${fmtFlow(results.openDoorQ)}</b>
+      <span>Required supply:</span><b>${fmtFlow(results.requiredSupplyQ)}</b>
+      <span>Actual supply:</span><b>${fmtFlow(results.actualSupplyQ)}</b>
+      <span>ACH:</span><b>${results.ach.toFixed(1)}</b>
+      <span>Door force:</span><b>${fmtForce(results.roomDoorForce)}</b>
+      <span>Stair margin:</span><b>${fmtPa(results.stairMargin)}</b>
+      <span>Lift margin:</span><b>${fmtPa(results.liftMargin)}</b>
+      <span style="grid-column:1/-1;color:var(--text-3)">${cls.note}</span>
+    </div>
+    <div class="status-row">
+      ${results.reverseFlowRisk ? '<span class="status-badge warn">⚠ corridor Δp ≥ stair context</span>' : '<span class="status-badge ok">stair context maintains positive reserve</span>'}
+      ${results.roomDoorForce > cls.force ? '<span class="status-badge warn">⚠ door force აჭარბებს ლიმიტს</span>' : '<span class="status-badge ok">door force ლიმიტშია</span>'}
+      ${state.systemMode === 'failure' ? '<span class="status-badge warn">⚠ system failure</span>' : '<span class="status-badge">system active</span>'}
+    </div>
+  `;
+}
+
+function renderLegend(view) {
+  const content = {
+    plan: `
+      <div class="row"><span class="sw" style="background:var(--sur-2);border-color:var(--text)"></span> ოთახი</div>
+      <div class="row"><span class="sw" style="background:var(--blue-lt);border-color:var(--navy)"></span> კორიდორი</div>
+      <div class="row"><span class="sw" style="background:var(--blue-lt);border-color:var(--blue)"></span> ღია კარი</div>
+      <div class="row"><span class="sw" style="background:var(--ora-lt);border-color:var(--ora)"></span> stair / lift context</div>
+    `,
+    section: `
+      <div class="row"><span class="sw" style="background:var(--sur);border-color:var(--navy)"></span> corridor shell</div>
+      <div class="row"><span class="sw" style="background:var(--blue-lt);border-color:var(--blue)"></span> supply path</div>
+      <div class="row"><span class="sw" style="background:var(--ora-lt);border-color:var(--ora)"></span> leak / relief</div>
+    `,
+    d3: `
+      <div class="row"><span class="sw" style="background:#5ac8ff"></span> airflow particles</div>
+      <div class="row"><span class="sw" style="background:var(--blue-lt);border-color:var(--blue)"></span> open room doors</div>
+      <div class="row"><span class="sw" style="background:var(--ora-lt);border-color:var(--ora)"></span> stair / lift cores</div>
+    `,
+    formulas: `
+      <div class="row"><span class="sw" style="background:var(--blue-lt);border-color:var(--blue)"></span> live inputs</div>
+      <div class="row"><span class="sw" style="background:var(--sur);border-color:var(--text-3)"></span> citation</div>
+      <div class="row"><span class="sw" style="background:var(--red-lt);border-color:var(--red)"></span> warning state</div>
+    `
+  };
+  $('#legend-panel').innerHTML = content[view] || content.plan;
+}
+
+function renderFormulaCard({title, subtitle, expression, ref, values, resultLabel, resultValue, note = '', warn = false}) {
+  return `
+    <article class="card formula-card ${warn ? 'warn' : ''}">
+      <div class="formula-head">
+        <div>
+          <h3>${escapeHtml(title)}</h3>
+          <div class="formula-sub">${escapeHtml(subtitle)}</div>
+        </div>
+        <div class="formula-ref">${escapeHtml(refLabel(ref))}</div>
+      </div>
+      <div class="formula-math">${katexBlock(expression)}</div>
+      <div class="formula-grid">
+        ${values.map(({label, value}) => `
+          <div class="kv">
+            <span>${escapeHtml(label)}</span>
+            <b>${escapeHtml(value)}</b>
+          </div>
+        `).join('')}
+      </div>
+      <div class="formula-result">
+        <strong>${escapeHtml(resultLabel)}: ${escapeHtml(resultValue)}</strong>
+        <div class="formula-note">${escapeHtml(note)}</div>
+      </div>
+    </article>
+  `;
+}
+
+function renderFormulas() {
+  const results = state.results || (computeResults(), state.results);
+  const cls = currentClass();
+  const panel = $('#formulas-panel');
+  panel.innerHTML = `
+    <section class="card formula-intro">
+      <h2>აქტიური გამოთვლები</h2>
+      <p>Task 011 corridor მოდელი ითვლის ჯამურ leakage-ს, room door force-ს, required supply-ს და მეზობელ stair/lift context margin-ს. Plan-ზე door click პირდაპირ ცვლის ქვემოთ მოცემულ რიცხვებს.</p>
+    </section>
+    ${renderFormulaCard({
+      title: 'ჯამური გაჟონვა',
+      subtitle: 'closed room doors + wall crack + interface doors',
+      expression: String.raw`Q_{leak} = 0.827 \cdot A_{leak,\Sigma} \cdot \sqrt{\Delta p}`,
+      ref: PHYSICS_REFS.leakageFlow,
+      values: [
+        {label: 'A_leak,Σ', value: fmtArea(results.leakageArea, 3)},
+        {label: 'Δp', value: fmtPa(results.effectiveDp)},
+        {label: 'closed rooms', value: String(results.closedRooms)},
+        {label: 'wall area', value: fmtArea(results.wallArea, 1)}
+      ],
+      resultLabel: 'Q_leak',
+      resultValue: fmtFlow(results.leakQTotal),
+      note: 'კედლის crack factor და room door crack area ორივე ერთდება leakage area-ში.'
+    })}
+    ${renderFormulaCard({
+      title: 'კარის გაღების ძალა',
+      subtitle: 'pressure + door closer resistance',
+      expression: String.raw`F_{open} = F_{dc} + \frac{A \cdot \Delta p \cdot W}{2(W-d_h)}`,
+      ref: PHYSICS_REFS.doorOpeningForce,
+      values: [
+        {label: 'W', value: fmtLen(state.doorW / 1000, 2)},
+        {label: 'H', value: fmtLen(state.doorH / 1000, 2)},
+        {label: 'Δp', value: fmtPa(results.effectiveDp)},
+        {label: 'limit', value: fmtForce(cls.force)}
+      ],
+      resultLabel: 'F_open',
+      resultValue: fmtForce(results.roomDoorForce),
+      note: results.roomDoorForce > cls.force ? 'pressure target or door strategy needs reduction.' : `force stays below ${fmtForce(cls.force)}.`,
+      warn: results.roomDoorForce > cls.force
+    })}
+    ${renderFormulaCard({
+      title: 'საჭირო მიწოდება',
+      subtitle: 'leakage + open room doors + safety factor',
+      expression: String.raw`Q_{supply} = 1.1 \cdot \left(Q_{leak} + n_{open} \cdot v_{min} \cdot A_{door}\right)`,
+      ref: PHYSICS_REFS.requiredSupplyFlow,
+      values: [
+        {label: 'Q_leak', value: fmtFlow(results.leakQTotal)},
+        {label: 'n_open', value: String(results.openRooms)},
+        {label: 'v_min', value: fmtVel(cls.velocity)},
+        {label: 'A_door', value: fmtArea(results.doorArea, 2)}
+      ],
+      resultLabel: 'Q_supply',
+      resultValue: fmtFlow(results.requiredSupplyQ),
+      note: state.systemMode === 'failure' ? 'Failure mode currently drives actual supply to zero.' : `Actual ACH with current supply = ${results.ach.toFixed(1)}.`,
+      warn: state.systemMode === 'failure'
+    })}
+    ${renderFormulaCard({
+      title: 'Cross-shaft margin',
+      subtitle: 'corridor target must stay below stair context',
+      expression: String.raw`\Delta p_{margin} = \Delta p_{stair} - \Delta p_{corridor}`,
+      ref: PHYSICS_REFS.requiredSupplyFlow,
+      values: [
+        {label: 'Δp_stair', value: fmtPa(results.context.stairDp)},
+        {label: 'Δp_lift', value: fmtPa(results.context.liftDp)},
+        {label: 'Δp_corridor', value: fmtPa(state.dp)},
+        {label: 'assist flow', value: fmtFlow(results.stairAssistQ)}
+      ],
+      resultLabel: 'margin',
+      resultValue: fmtPa(results.stairMargin),
+      note: results.reverseFlowRisk ? 'corridor target reached or exceeded stair context; reverse flow risk.' : 'positive reserve remains relative to stair context.',
+      warn: results.reverseFlowRisk
+    })}
+  `;
+}
+
+function drawPlan() {
+  const svg = $('#svg-plan');
+  svg.innerHTML = '';
+  svg.setAttribute('viewBox', '0 0 980 640');
+  const layout = roomLayout();
+  const results = state.results || (computeResults(), state.results);
+
+  const defs = el('defs');
+  defs.innerHTML = `
+    <marker id="arrow-blue-plan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--blue)"/>
+    </marker>
+    <marker id="arrow-ora-plan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ora)"/>
+    </marker>
+  `;
+  svg.appendChild(defs);
+
+  svg.appendChild(el('rect', {x: layout.stair.x, y: layout.stair.y, width: layout.stair.w, height: layout.stair.h, rx: 10, class: 'plan-core'}));
+  svg.appendChild(el('rect', {x: layout.lift.x, y: layout.lift.y, width: layout.lift.w, height: layout.lift.h, rx: 10, class: 'plan-lift'}));
+  svg.appendChild(el('text', {x: layout.stair.x + layout.stair.w / 2, y: layout.stair.y + 34, 'text-anchor': 'middle', class: 'plan-label-b'})).textContent = 'Stair';
+  svg.appendChild(el('text', {x: layout.stair.x + layout.stair.w / 2, y: layout.stair.y + 54, 'text-anchor': 'middle', class: 'plan-label'})).textContent = fmtPa(results.context.stairDp);
+  svg.appendChild(el('text', {x: layout.lift.x + layout.lift.w / 2, y: layout.lift.y + 34, 'text-anchor': 'middle', class: 'plan-label-b'})).textContent = 'Lift';
+  svg.appendChild(el('text', {x: layout.lift.x + layout.lift.w / 2, y: layout.lift.y + 54, 'text-anchor': 'middle', class: 'plan-label'})).textContent = fmtPa(results.context.liftDp);
+
+  svg.appendChild(el('rect', {
+    x: layout.startX,
+    y: layout.corridorY,
+    width: layout.corridorW,
+    height: layout.corridorH,
+    rx: 18,
+    class: 'plan-corridor'
+  }));
+
+  svg.appendChild(el('text', {x: layout.startX + 10, y: layout.corridorY - 18, class: 'plan-label-b'})).textContent =
+    `Plan · ${fmtLen(state.corridorL, 1)} × ${fmtLen(state.corridorW, 1)} · door click = toggle`;
+  svg.appendChild(el('text', {x: layout.startX + 10, y: layout.corridorY - 2, class: 'plan-label'})).textContent =
+    `Target Δp ${fmtPa(state.dp)} · required supply ${fmtFlow(results.requiredSupplyQ)}`;
+
+  layout.rooms.forEach(room => {
+    const open = state.roomDoors.has(room.index);
+    svg.appendChild(el('rect', {x: room.x, y: room.y, width: room.w, height: room.h, rx: 10, class: 'plan-room'}));
+    const roomTextY = room.side === 'top' ? room.y + room.h - 14 : room.y + 18;
+    svg.appendChild(el('text', {x: room.x + 10, y: roomTextY, class: 'plan-label-b'})).textContent = roomLabel(room.index);
+    svg.appendChild(el('text', {x: room.x + 10, y: roomTextY + 16, class: 'plan-label'})).textContent = open ? 'Door open' : 'Door closed';
+
+    const door = el('rect', {
+      x: room.doorX,
+      y: room.doorY,
+      width: room.doorWidth,
+      height: 10,
+      rx: 4,
+      class: `plan-door${open ? ' open' : ''}`,
+      'data-room-door': room.index
+    });
+    svg.appendChild(door);
+
+    if (open) {
+      const doorCenterX = room.doorX + room.doorWidth / 2;
+      const doorBaseY = room.side === 'top' ? layout.corridorY + 10 : layout.corridorY + layout.corridorH - 10;
+      const reliefY = room.side === 'top' ? room.y + 18 : room.y + room.h - 18;
+      svg.appendChild(el('path', {
+        d: `M ${doorCenterX} ${doorBaseY} C ${doorCenterX} ${(doorBaseY + reliefY) / 2}, ${doorCenterX} ${(doorBaseY + reliefY) / 2}, ${doorCenterX} ${reliefY}`,
+        class: 'plan-leak'
+      }));
+    }
+  });
+
+  if (state.flowViz === 'on' && state.systemMode === 'normal') {
+    const yMid = layout.corridorY + layout.corridorH / 2;
+    [0, 1, 2].forEach(index => {
+      const y = yMid - 24 + index * 24;
+      svg.appendChild(el('path', {
+        d: `M ${layout.stair.x + layout.stair.w + 8} ${y} L ${layout.lift.x - 18} ${y}`,
+        class: 'plan-flow'
+      }));
+    });
+    svg.appendChild(el('text', {x: layout.startX + layout.corridorW / 2, y: yMid + 46, 'text-anchor': 'middle', class: 'plan-tip'})).textContent =
+      `stair reserve ${fmtPa(results.stairMargin)}`;
+  }
+}
+
+function drawSection() {
+  const svg = $('#svg-section');
+  svg.innerHTML = '';
+  svg.setAttribute('viewBox', '0 0 980 520');
+  const results = state.results || (computeResults(), state.results);
+  const corridorX = 210;
+  const corridorY = 176;
+  const corridorW = 560;
+  const corridorH = 170;
+  const roomW = 150;
+  const roomH = 118;
+  const sampleRooms = roomLayout().rooms.slice(0, Math.min(4, state.roomCount));
+
+  const defs = el('defs');
+  defs.innerHTML = `
+    <marker id="arrow-blue-sec" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--blue)"/>
+    </marker>
+    <marker id="arrow-ora-sec" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ora)"/>
+    </marker>
+  `;
+  svg.appendChild(defs);
+
+  svg.appendChild(el('text', {x: corridorX, y: corridorY - 28, class: 'plan-label-b'})).textContent =
+    `Section · H = ${fmtLen(state.corridorH, 1)} · ACH = ${results.ach.toFixed(1)} · Qreq ${fmtFlow(results.requiredSupplyQ)}`;
+  svg.appendChild(el('rect', {x: corridorX, y: corridorY, width: corridorW, height: corridorH, rx: 18, class: 'sec-shell'}));
+  svg.appendChild(el('rect', {x: corridorX - 82, y: corridorY + 30, width: 56, height: 80, rx: 10, class: 'plan-core'}));
+  svg.appendChild(el('rect', {x: corridorX + corridorW + 26, y: corridorY + 30, width: 56, height: 80, rx: 10, class: 'plan-lift'}));
+
+  svg.appendChild(el('line', {x1: corridorX + 80, y1: corridorY + 18, x2: corridorX + 80, y2: corridorY + 82, class: 'sec-air'}));
+  svg.appendChild(el('text', {x: corridorX + 58, y: corridorY + 10, class: 'plan-label'})).textContent = 'Supply';
+  svg.appendChild(el('line', {x1: corridorX + corridorW - 80, y1: corridorY + 84, x2: corridorX + corridorW + 4, y2: corridorY + 84, class: 'sec-leak'}));
+  svg.appendChild(el('text', {x: corridorX + corridorW - 88, y: corridorY + 108, class: 'plan-label'})).textContent = 'Relief';
+
+  sampleRooms.forEach((room, index) => {
+    const open = state.roomDoors.has(room.index);
+    const x = corridorX + 44 + index * 122;
+    const topY = corridorY - roomH;
+    const bottomY = corridorY + corridorH;
+    svg.appendChild(el('rect', {x, y: topY, width: roomW, height: roomH, rx: 10, class: 'sec-room'}));
+    svg.appendChild(el('rect', {x, y: bottomY, width: roomW, height: roomH, rx: 10, class: 'sec-room'}));
+    svg.appendChild(el('rect', {x: x + 54, y: corridorY - 8, width: 42, height: 10, rx: 4, class: `sec-door${open ? ' open' : ''}`}));
+    svg.appendChild(el('rect', {x: x + 54, y: corridorY + corridorH - 2, width: 42, height: 10, rx: 4, class: `sec-door${open ? ' open' : ''}`}));
+    svg.appendChild(el('text', {x: x + 8, y: topY + 18, class: 'plan-label'})).textContent = roomLabel(room.index);
+    if (open) {
+      svg.appendChild(el('path', {d: `M ${x + 75} ${corridorY + 16} L ${x + 75} ${topY + 18}`, class: 'sec-leak'}));
+      svg.appendChild(el('path', {d: `M ${x + 75} ${corridorY + corridorH - 16} L ${x + 75} ${bottomY + roomH - 18}`, class: 'sec-leak'}));
+    }
+  });
+}
+
+let scene;
+let camera;
+let renderer;
+let controls;
+let corridorGroup;
+let particleGroup;
+let airParticles = [];
+let sideParticles = [];
+let threeGround;
+let threeGrid;
+
+const SCENE_COLORS = {
+  light: {fog: 0xdbe6f5, ground: 0xeaf0fa, gridMain: 0xa7b7d1, gridSub: 0xc4d4e8, ambient: 0.85, fill: 0x6ba6ff},
+  dark: {fog: 0x0a1020, ground: 0x232f48, gridMain: 0x4a6080, gridSub: 0x2a3a55, ambient: 0.55, fill: 0x4a9eff}
+};
+
+function isDarkMode() {
+  return document.documentElement.classList.contains('dark');
+}
+
+function currentSceneColors() {
+  return isDarkMode() ? SCENE_COLORS.dark : SCENE_COLORS.light;
+}
+
+function init3D() {
+  const mount = $('#canvas-3d');
+  scene = new THREE.Scene();
+  const colors = currentSceneColors();
+  scene.fog = new THREE.Fog(colors.fog, 16, 80);
+
+  const width = mount.clientWidth || 900;
+  const height = mount.clientHeight || 600;
+  camera = new THREE.PerspectiveCamera(46, width / height, 0.1, 300);
+  camera.position.set(14, 11, 16);
+
+  renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(width, height, false);
+  renderer.shadowMap.enabled = true;
+  mount.appendChild(renderer.domElement);
+
+  const ambient = new THREE.AmbientLight(0xffffff, colors.ambient);
+  ambient.name = 'scene-ambient';
+  scene.add(ambient);
+
+  const dir = new THREE.DirectionalLight(0xffffff, 0.92);
+  dir.position.set(18, 24, 16);
+  dir.castShadow = true;
+  scene.add(dir);
+
+  const fill = new THREE.PointLight(colors.fill, 0.42, 80);
+  fill.name = 'scene-fill';
+  fill.position.set(-10, 8, -10);
+  scene.add(fill);
+
+  threeGround = new THREE.Mesh(new THREE.CircleGeometry(56, 64), new THREE.MeshStandardMaterial({color: colors.ground, roughness: 0.95}));
+  threeGround.rotation.x = -Math.PI / 2;
+  threeGround.receiveShadow = true;
+  scene.add(threeGround);
+
+  threeGrid = new THREE.GridHelper(54, 26, colors.gridMain, colors.gridSub);
+  threeGrid.material.opacity = 0.45;
+  threeGrid.material.transparent = true;
+  scene.add(threeGrid);
+
+  corridorGroup = new THREE.Group();
+  particleGroup = new THREE.Group();
+  scene.add(corridorGroup);
+  scene.add(particleGroup);
+
+  controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.target.set(0, 1.3, 0);
+  controls.minDistance = 9;
+  controls.maxDistance = 42;
+  controls.maxPolarAngle = Math.PI * 0.48;
+
+  window.addEventListener('resize', onResize3D);
+  const ro = new ResizeObserver(onResize3D);
+  ro.observe(mount);
+  animate3D();
+}
+
+function onResize3D() {
+  const mount = $('#canvas-3d');
+  if (!mount || !renderer || !camera) return;
+  const width = mount.clientWidth || 900;
+  const height = mount.clientHeight || 600;
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height, false);
+}
+
+function clearGroup(group) {
+  while (group.children.length) {
+    const child = group.children[0];
+    group.remove(child);
+    child.traverse?.(node => {
+      node.geometry?.dispose?.();
+      if (Array.isArray(node.material)) node.material.forEach(item => item?.dispose?.());
+      else node.material?.dispose?.();
+    });
+  }
+}
+
+function build3D() {
+  if (!scene) return;
+  clearGroup(corridorGroup);
+  clearGroup(particleGroup);
+  airParticles = [];
+  sideParticles = [];
+
+  const results = state.results || (computeResults(), state.results);
+  const length = Math.max(8, state.corridorL * 0.34);
+  const width = Math.max(1.8, state.corridorW * 0.8);
+  const height = Math.max(2.2, state.corridorH * 0.55);
+  const topCount = Math.ceil(state.roomCount / 2);
+  const bottomCount = state.roomCount - topCount;
+  const roomDepth = 1.7;
+  const wallMat = new THREE.MeshStandardMaterial({color: 0xdde6f2, roughness: 0.85, transparent: true, opacity: 0.22, side: THREE.DoubleSide});
+  const floorMat = new THREE.MeshStandardMaterial({color: 0xeff4fb, roughness: 0.94});
+  const roomMat = new THREE.MeshStandardMaterial({color: 0x263d62, roughness: 0.6, metalness: 0.05});
+  const openDoorMat = new THREE.MeshStandardMaterial({color: 0x6ba6ff, emissive: 0x1f6fd4, emissiveIntensity: 0.35, roughness: 0.4});
+  const closedDoorMat = new THREE.MeshStandardMaterial({color: 0xb7c7de, roughness: 0.6});
+
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(length + 5, 0.18, width + roomDepth * 2 + 2.2), floorMat);
+  floor.receiveShadow = true;
+  corridorGroup.add(floor);
+
+  const shell = new THREE.Mesh(new THREE.BoxGeometry(length, height, width), wallMat);
+  shell.position.y = height / 2;
+  corridorGroup.add(shell);
+
+  const stairCore = new THREE.Mesh(new THREE.BoxGeometry(1.1, height * 0.82, width * 0.8), new THREE.MeshStandardMaterial({color: 0xc05010, roughness: 0.7, transparent: true, opacity: 0.48}));
+  stairCore.position.set(-length / 2 - 1.2, height * 0.41, 0);
+  corridorGroup.add(stairCore);
+
+  const liftCore = new THREE.Mesh(new THREE.BoxGeometry(1.1, height * 0.82, width * 0.8), new THREE.MeshStandardMaterial({color: 0xc0201a, roughness: 0.7, transparent: true, opacity: 0.42}));
+  liftCore.position.set(length / 2 + 1.2, height * 0.41, 0);
+  corridorGroup.add(liftCore);
+
+  function addRooms(count, side, offset) {
+    if (!count) return;
+    const span = length / count;
+    for (let index = 0; index < count; index += 1) {
+      const roomIndex = offset + index;
+      const x = -length / 2 + span * index + span / 2;
+      const z = side === 'top' ? -(width / 2 + roomDepth / 2 + 0.25) : width / 2 + roomDepth / 2 + 0.25;
+      const room = new THREE.Mesh(new THREE.BoxGeometry(span * 0.88, height * 0.86, roomDepth), roomMat.clone());
+      room.position.set(x, height * 0.43, z);
+      room.castShadow = true;
+      corridorGroup.add(room);
+
+      const open = state.roomDoors.has(roomIndex);
+      const leaf = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.1, 0.06), open ? openDoorMat.clone() : closedDoorMat.clone());
+      leaf.position.set(x, 0.6, side === 'top' ? -width / 2 - 0.02 : width / 2 + 0.02);
+      leaf.rotation.y = open ? (side === 'top' ? -0.95 : 0.95) : 0;
+      leaf.castShadow = true;
+      corridorGroup.add(leaf);
+    }
+  }
+
+  addRooms(topCount, 'top', 0);
+  addRooms(bottomCount, 'bottom', topCount);
+
+  const particleGeo = new THREE.SphereGeometry(0.045, 8, 6);
+  for (let index = 0; index < 96; index += 1) {
+    const particle = new THREE.Mesh(particleGeo, new THREE.MeshBasicMaterial({color: 0x5ac8ff, transparent: true, opacity: state.flowViz === 'on' ? 0.62 : 0.12}));
+    particle.position.set((Math.random() - 0.5) * length * 0.88, 0.35 + Math.random() * (height - 0.4), (Math.random() - 0.5) * width * 0.75);
+    particle.userData = {
+      drift: Math.random() * Math.PI * 2,
+      baseZ: particle.position.z,
+      speed: 0.015 + Math.random() * 0.022
+    };
+    particleGroup.add(particle);
+    airParticles.push(particle);
+  }
+
+  openRoomIndices().forEach((roomIndex, index) => {
+    const side = roomIndex < topCount ? 'top' : 'bottom';
+    const sideParticle = new THREE.Mesh(particleGeo, new THREE.MeshBasicMaterial({color: 0xff9b5e, transparent: true, opacity: 0.42}));
+    const count = side === 'top' ? topCount : bottomCount;
+    const localIndex = side === 'top' ? roomIndex : roomIndex - topCount;
+    const span = length / Math.max(count, 1);
+    sideParticle.position.set(-length / 2 + span * localIndex + span / 2, 0.55, side === 'top' ? -width / 2 : width / 2);
+    sideParticle.userData = {
+      side,
+      anchorX: sideParticle.position.x,
+      anchorZ: sideParticle.position.z,
+      drift: index * 0.4
+    };
+    particleGroup.add(sideParticle);
+    sideParticles.push(sideParticle);
+  });
+}
+
+const clock = new THREE.Clock();
+function animate3D() {
+  if (!renderer) return;
+  requestAnimationFrame(animate3D);
+  const dt = clock.getDelta();
+  const results = state.results;
+
+  airParticles.forEach((particle, index) => {
+    particle.userData.drift += dt * (0.8 + index * 0.004);
+    particle.position.x += particle.userData.speed * dt * 18;
+    particle.position.z = particle.userData.baseZ + Math.sin(particle.userData.drift) * 0.18;
+    if (particle.position.x > state.corridorL * 0.18) particle.position.x = -state.corridorL * 0.18;
+  });
+
+  sideParticles.forEach((particle, index) => {
+    particle.userData.drift += dt * (1 + index * 0.03);
+    particle.position.x = particle.userData.anchorX + Math.sin(particle.userData.drift) * 0.12;
+    particle.position.z += (particle.userData.side === 'top' ? -1 : 1) * dt * 0.35;
+    if (Math.abs(particle.position.z - particle.userData.anchorZ) > 0.9) {
+      particle.position.z = particle.userData.anchorZ;
+    }
+  });
+
+  if (results?.reverseFlowRisk) {
+    sideParticles.forEach(particle => {
+      particle.material.color.setHex(0xc0201a);
+    });
+  }
+
+  controls?.update();
+  renderer.render(scene, camera);
+}
+
+function apply3DTheme() {
+  if (!scene) return;
+  const colors = currentSceneColors();
+  scene.fog.color.setHex(colors.fog);
+  if (threeGround) threeGround.material.color.setHex(colors.ground);
+  if (threeGrid) {
+    scene.remove(threeGrid);
+    threeGrid.geometry.dispose();
+    threeGrid.material.dispose();
+    threeGrid = new THREE.GridHelper(54, 26, colors.gridMain, colors.gridSub);
+    threeGrid.material.opacity = 0.45;
+    threeGrid.material.transparent = true;
+    scene.add(threeGrid);
+  }
+  const ambient = scene.getObjectByName('scene-ambient');
+  if (ambient) ambient.intensity = colors.ambient;
+  const fill = scene.getObjectByName('scene-fill');
+  if (fill) fill.color.setHex(colors.fill);
+}
+
+function numberOr(value, fallback) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+}
+
+function extractImportedParams(payload) {
+  if (!payload || typeof payload !== 'object') throw new Error('JSON ფაილი ცარიელია ან ვერ იკითხება.');
+  if (payload.simulator && payload.simulator !== SIMULATOR_ID) throw new Error('ეს JSON სხვა სიმულატორს ეკუთვნის.');
+  if (payload.params && typeof payload.params === 'object') {
+    return {
+      standard: payload.standard?.id ?? payload.params.standard,
+      stdClass: payload.standard?.class ?? payload.params.stdClass,
+      units: payload.units ?? payload.params.units,
+      ...payload.params
+    };
+  }
+  throw new Error('უცნობი JSON სქემა.');
+}
+
+function applyImportedState(snapshot) {
+  const standard = STANDARDS[snapshot.standard] ? snapshot.standard : 'EN';
+  const classes = STANDARDS[standard].classes;
+  const stdClass = classes[snapshot.stdClass] ? snapshot.stdClass : defaultClassForStandard(standard);
+  const cls = classes[stdClass];
+  Object.assign(state, {
+    ...defaultStateValues(),
+    standard,
+    stdClass,
+    units: snapshot.units === 'imperial' ? 'imperial' : 'metric',
+    corridorL: Math.max(8, Math.min(60, numberOr(snapshot.corridorL, 24))),
+    corridorW: Math.max(1.6, Math.min(6, numberOr(snapshot.corridorW, 2.4))),
+    corridorH: Math.max(2.4, Math.min(4.5, numberOr(snapshot.corridorH, 3))),
+    roomCount: Math.max(2, Math.min(24, Math.round(numberOr(snapshot.roomCount, 12)))),
+    doorW: Math.max(700, Math.min(1800, Math.round(numberOr(snapshot.doorW, 900)))),
+    doorH: Math.max(1900, Math.min(2400, Math.round(numberOr(snapshot.doorH, 2100)))),
+    doorCrackArea: Math.max(0.002, Math.min(0.04, numberOr(snapshot.doorCrackArea, 0.01))),
+    wallLeakFactor: Math.max(0.0001, Math.min(0.01, numberOr(snapshot.wallLeakFactor, 0.001))),
+    dp: cls.dpValues.includes(Math.round(numberOr(snapshot.dp, cls.dpDefault))) ? Math.round(numberOr(snapshot.dp, cls.dpDefault)) : cls.dpDefault,
+    flowViz: snapshot.flowViz === 'off' ? 'off' : 'on',
+    systemMode: snapshot.systemMode === 'failure' ? 'failure' : 'normal',
+    roomDoors: new Set(Array.isArray(snapshot.roomDoors) ? snapshot.roomDoors.map(item => Number(item)).filter(Number.isFinite) : []),
+    activeRoom: Math.max(0, Math.min(23, Math.round(numberOr(snapshot.activeRoom, 0)))),
+    results: null
+  });
+  sanitizeRoomState();
+  reflectInputsFromState();
+  renderStdClasses();
+  renderDpButtons();
+  syncSegmentsFromState();
+  redraw();
+}
+
+async function importJsonFile(file) {
+  if (!file) return;
+  const text = await file.text();
+  const payload = JSON.parse(text);
+  applyImportedState(extractImportedParams(payload));
+}
+
+function importStateFromQuery() {
+  const encodedState = new URLSearchParams(window.location.search).get('state');
+  if (!encodedState) return false;
+  const payload = JSON.parse(atob(encodedState.replaceAll(' ', '+')));
+  applyImportedState(extractImportedParams(payload));
+  return true;
+}
+
+function downloadStateJson() {
+  syncSummary();
+  const payload = serializeState();
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const stamp = new Date().toISOString().replaceAll(':', '-').slice(0, 19);
+  link.href = url;
+  link.download = `${SIMULATOR_ID}-${stamp}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function printReport() {
+  syncSummary();
+  window.print();
+}
+
+function toggleRoomDoor(roomIndex) {
+  if (state.roomDoors.has(roomIndex)) state.roomDoors.delete(roomIndex);
+  else state.roomDoors.add(roomIndex);
+  state.activeRoom = roomIndex;
+  redraw();
+}
+
+function redraw() {
+  sanitizeRoomState();
+  renderTemplates();
+  syncSummary();
+  drawPlan();
+  drawSection();
+  build3D();
+}
+
+function onInputChange() {
+  state.corridorL = Math.max(8, Math.min(60, numberOr($('#inp-corridor-l').value, 24)));
+  state.corridorW = Math.max(1.6, Math.min(6, numberOr($('#inp-corridor-w').value, 2.4)));
+  state.corridorH = Math.max(2.4, Math.min(4.5, numberOr($('#inp-corridor-h').value, 3)));
+  state.roomCount = Math.max(2, Math.min(24, Math.round(numberOr($('#inp-room-count').value, 12))));
+  state.doorW = Math.max(700, Math.min(1800, Math.round(numberOr($('#inp-door-w').value, 900))));
+  state.doorH = Math.max(1900, Math.min(2400, Math.round(numberOr($('#inp-door-h').value, 2100))));
+  state.doorCrackArea = Math.max(0.002, Math.min(0.04, numberOr($('#inp-door-crack').value, 0.01)));
+  state.wallLeakFactor = Math.max(0.0001, Math.min(0.01, numberOr($('#inp-wall-leak').value, 0.001)));
+  reflectInputsFromState();
+  sanitizeRoomState();
+  redraw();
+}
+
+function resetState() {
+  Object.assign(state, defaultStateValues());
+  reflectInputsFromState();
+  renderStdClasses();
+  renderDpButtons();
+  syncSegmentsFromState();
+  redraw();
+}
+
+function wireUI() {
+  ['inp-corridor-l', 'inp-corridor-w', 'inp-corridor-h', 'inp-room-count', 'inp-door-w', 'inp-door-h', 'inp-door-crack', 'inp-wall-leak'].forEach(id => {
+    $('#' + id).addEventListener('input', onInputChange);
+    $('#' + id).addEventListener('change', onInputChange);
+  });
+
+  $('#seg-standard').addEventListener('click', event => {
+    const button = event.target.closest('button');
+    if (!button) return;
+    state.standard = button.dataset.val;
+    state.stdClass = defaultClassForStandard(state.standard);
+    state.dp = currentClass().dpDefault;
+    renderStdClasses();
+    renderDpButtons();
+    syncSegmentsFromState();
+    redraw();
+  });
+
+  $('#seg-std-class').addEventListener('click', event => {
+    const button = event.target.closest('button');
+    if (!button) return;
+    state.stdClass = button.dataset.val;
+    state.dp = currentClass().dpDefault;
+    renderDpButtons();
+    syncSegmentsFromState();
+    redraw();
+  });
+
+  $('#seg-dp').addEventListener('click', event => {
+    const button = event.target.closest('button');
+    if (!button) return;
+    state.dp = Number(button.dataset.val);
+    syncSegmentsFromState();
+    redraw();
+  });
+
+  $$('[data-group="units"] button, [data-group="systemMode"] button, [data-group="flowViz"] button').forEach(button => {
+    button.addEventListener('click', () => {
+      const group = button.closest('[data-group]').dataset.group;
+      if (group === 'units') state.units = button.dataset.val;
+      if (group === 'systemMode') state.systemMode = button.dataset.val;
+      if (group === 'flowViz') state.flowViz = button.dataset.val;
+      syncSegmentsFromState();
+      redraw();
+    });
+  });
+
+  $('#tpl-grid').addEventListener('click', event => {
+    const card = event.target.closest('[data-template]');
+    if (!card) return;
+    applyTemplate(card.dataset.template);
+  });
+
+  $('#svg-plan').addEventListener('click', event => {
+    const target = event.target.closest?.('[data-room-door]');
+    if (!target) return;
+    toggleRoomDoor(Number(target.dataset.roomDoor));
+  });
+
+  $('#btn-seal').addEventListener('click', () => {
+    state.roomDoors = new Set();
+    redraw();
+  });
+  $('#btn-reset').addEventListener('click', resetState);
+  $('#btn-rebuild').addEventListener('click', redraw);
+  $('#btn-import-json').addEventListener('click', () => $('#json-import').click());
+  $('#btn-export-json').addEventListener('click', downloadStateJson);
+  $('#btn-export-pdf').addEventListener('click', printReport);
+  $('#json-import').addEventListener('change', async event => {
+    const input = event.currentTarget;
+    const [file] = input.files || [];
+    try {
+      await importJsonFile(file);
+    } catch (error) {
+      console.error(error);
+      window.alert(error?.message || 'JSON იმპორტი ვერ შესრულდა.');
+    } finally {
+      input.value = '';
+    }
+  });
+
+  $$('.fp-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      $$('.fp-tab').forEach(node => node.classList.remove('active'));
+      $$('.fp-view').forEach(node => node.classList.toggle('active', node.dataset.view === tab.dataset.view));
+      tab.classList.add('active');
+      renderLegend(tab.dataset.view);
+      if (tab.dataset.view === 'd3') setTimeout(onResize3D, 20);
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderStdClasses();
+  renderDpButtons();
+  renderTemplates();
+  reflectInputsFromState();
+  syncSegmentsFromState();
+  renderLegend('plan');
+  wireUI();
+  init3D();
+
+  try {
+    if (!importStateFromQuery()) {
+      syncSummary();
+      drawPlan();
+      drawSection();
+      build3D();
+    }
+  } catch (error) {
+    console.error(error);
+    window.alert(error?.message || 'URL state ვერ ჩაიტვირთა.');
+    syncSummary();
+    drawPlan();
+    drawSection();
+    build3D();
+  }
+});
+
+window.addEventListener('beforeprint', syncSummary);
+
+const mo = new MutationObserver(apply3DTheme);
+mo.observe(document.documentElement, {attributes: true, attributeFilter: ['class']});
+
+(function initResizer() {
+  const resizer = $('#fp-resizer');
+  if (!resizer) return;
+  const root = document.documentElement;
+  const rootEl = document.querySelector('.fp-root');
+  const MIN = 250;
+  const MAX_FRAC = 0.55;
+  try {
+    const stored = parseInt(localStorage.getItem('eng_floor_side_w') || '', 10);
+    if (Number.isFinite(stored) && stored >= MIN) root.style.setProperty('--fp-side-w', stored + 'px');
+  } catch {}
+
+  let dragging = false;
+  function onDown(event) {
+    dragging = true;
+    resizer.classList.add('active');
+    document.body.classList.add('fp-resizing');
+    event.preventDefault();
+  }
+  function onMove(event) {
+    if (!dragging || !rootEl) return;
+    const rect = rootEl.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const max = Math.max(MIN, Math.floor(rect.width * MAX_FRAC));
+    const width = Math.min(max, Math.max(MIN, Math.round(x)));
+    root.style.setProperty('--fp-side-w', width + 'px');
+  }
+  function onUp() {
+    if (!dragging) return;
+    dragging = false;
+    resizer.classList.remove('active');
+    const current = parseInt(getComputedStyle(root).getPropertyValue('--fp-side-w'), 10);
+    if (Number.isFinite(current)) {
+      try { localStorage.setItem('eng_floor_side_w', String(current)); } catch {}
+    }
+    setTimeout(onResize3D, 0);
+  }
+
+  resizer.addEventListener('pointerdown', onDown);
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onUp);
+})();
+</script>
+</body>
+</html>

@@ -1,83 +1,40 @@
 import {Container} from './container';
 import {CALCULATORS} from '@/lib/calculators';
 import {formatGel} from '@/lib/hero-ads';
+import {getHomeStats, type HomeStatsData} from '@/lib/home-stats';
 
 type StatCard = {
   title: string;
   value: string;
   interval: string;
   trend: 'up' | 'down' | 'neutral';
-  series: number[];
 };
 
-const statCards: StatCard[] = [
-  {
-    title: 'უნიკალური ვიზიტორები',
-    value: '14k',
-    interval: 'ბოლო 30 დღე',
-    trend: 'up',
-    series: [
-      200, 240, 220, 260, 240, 380, 300, 340, 380, 420, 400, 460, 480, 520, 540,
-      560, 600, 640, 680, 720, 760, 800, 820, 840, 860, 890, 910, 940, 980, 1020
-    ]
-  },
-  {
-    title: 'კალკულაციები',
-    value: '2,418',
-    interval: 'ბოლო 30 დღე',
-    trend: 'up',
-    series: [
-      40, 52, 48, 61, 55, 70, 63, 58, 72, 66, 80, 75, 82, 78, 85, 91, 86, 94,
-      88, 102, 96, 108, 104, 115, 110, 120, 118, 125, 130, 138
-    ]
-  },
-  {
-    title: 'აქტიური კალკულატორი',
-    value: `${CALCULATORS.length}`,
-    interval: 'ხელმისაწვდომი',
-    trend: 'neutral',
-    series: Array(30).fill(7)
-  }
-];
-
-const calcUsage = [
-  {slug: 'heat-loss', count: 892, pct: 37},
-  {slug: 'wall-thermal', count: 523, pct: 22},
-  {slug: 'hvac', count: 412, pct: 17},
-  {slug: 'silencer', count: 256, pct: 11},
-  {slug: 'ahu-ashrae', count: 198, pct: 8},
-  {slug: 'silencer-kaya', count: 85, pct: 4},
-  {slug: 'procurement', count: 52, pct: 2}
-] as const;
-
-function Sparkline({series, trend}: {series: number[]; trend: StatCard['trend']}) {
-  const max = Math.max(...series);
-  const min = Math.min(...series);
-  const span = max - min || 1;
-  const w = 120;
-  const h = 28;
-  const step = series.length > 1 ? w / (series.length - 1) : 0;
-  const points = series
-    .map((v, i) => {
-      const x = i * step;
-      const y = h - ((v - min) / span) * h;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(' ');
-  const color =
-    trend === 'up' ? 'var(--grn)' : trend === 'down' ? 'var(--red)' : 'var(--text-3)';
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="h-7 w-full">
-      <polyline
-        fill="none"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        points={points}
-      />
-    </svg>
-  );
+function buildCards(stats: HomeStatsData): StatCard[] {
+  const formatShort = (n: number) => {
+    if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
+    return formatGel(n);
+  };
+  return [
+    {
+      title: 'უნიკალური ვიზიტორები',
+      value: formatShort(stats.uniqueVisitors30d),
+      interval: 'ბოლო 30 დღე',
+      trend: stats.uniqueVisitors30d > 0 ? 'up' : 'neutral'
+    },
+    {
+      title: 'კალკულაციები',
+      value: formatGel(stats.calcEvents30d),
+      interval: 'ბოლო 30 დღე',
+      trend: stats.calcEvents30d > 0 ? 'up' : 'neutral'
+    },
+    {
+      title: 'აქტიური კალკულატორი',
+      value: `${CALCULATORS.length}`,
+      interval: 'ხელმისაწვდომი',
+      trend: 'neutral'
+    }
+  ];
 }
 
 function TrendPill({trend}: {trend: StatCard['trend']}) {
@@ -113,75 +70,109 @@ function StatCardView({card}: {card: StatCard}) {
         {card.value}
       </p>
       <p className="mt-1 text-[10px] text-text-3">{card.interval}</p>
-      <div className="mt-2 flex-1">
-        <Sparkline series={card.series} trend={card.trend} />
-      </div>
     </div>
   );
 }
 
-function BarChart() {
-  const labels = ['ორშ', 'სამ', 'ოთხ', 'ხუთ', 'პარ', 'შაბ', 'კვ'];
-  const data = [820, 1120, 940, 1340, 1080, 620, 480];
-  const max = Math.max(...data);
+function BarChart({days}: {days: {label: string; count: number}[]}) {
+  const total = days.reduce((a, b) => a + b.count, 0);
+  const max = Math.max(1, ...days.map((d) => d.count));
+  const hasData = total > 0;
   return (
     <div className="flex h-full flex-col rounded-card border border-bdr bg-sur p-3.5 shadow-card">
       <p className="text-[11px] font-semibold text-text-2">გვერდების ნახვები</p>
       <p className="mt-0.5 text-[10px] text-text-3">ბოლო 7 დღე</p>
-      <div className="mt-3 flex h-40 items-end gap-2">
-        {data.map((v, i) => {
-          const h = Math.round((v / max) * 100);
+      <div className="relative mt-3 flex h-40 items-end gap-2">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-bdr" />
+        {days.map((d, i) => {
+          const h = hasData
+            ? Math.max(4, Math.round((d.count / max) * 100))
+            : 4;
+          const active = d.count > 0;
           return (
             <div key={i} className="flex flex-1 flex-col items-center gap-1">
-              <div
-                className="w-full rounded-[4px] bg-blue"
-                style={{height: `${h}%`, opacity: 0.85}}
-                title={`${labels[i]}: ${v}`}
-              />
-              <span className="font-mono text-[9px] text-text-3">{labels[i]}</span>
+              <div className="relative flex w-full flex-1 items-end">
+                {active && (
+                  <span className="absolute -top-4 left-1/2 -translate-x-1/2 font-mono text-[9px] font-semibold text-navy">
+                    {d.count}
+                  </span>
+                )}
+                <div
+                  className={`w-full rounded-[4px] transition-all ${
+                    active ? 'bg-blue' : 'bg-bdr'
+                  }`}
+                  style={{height: `${h}%`, opacity: active ? 0.9 : 0.6}}
+                  title={`${d.label}: ${d.count}`}
+                />
+              </div>
+              <span className="font-mono text-[9px] text-text-3">{d.label}</span>
             </div>
           );
         })}
+        {!hasData && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <span className="rounded-pill border border-bdr bg-sur-2 px-2.5 py-[3px] font-mono text-[10px] font-semibold text-text-3">
+              მონაცემები ჯერ არ არის
+            </span>
+          </div>
+        )}
       </div>
       <div className="mt-2 flex items-center justify-between border-t border-bdr pt-2 text-[10px] text-text-3">
-        <span>ჯამი: {formatGel(data.reduce((a, b) => a + b, 0))}</span>
-        <span className="font-mono">max {formatGel(max)}</span>
+        <span>ჯამი: {formatGel(total)}</span>
+        <span className="font-mono">max {formatGel(hasData ? max : 0)}</span>
       </div>
     </div>
   );
 }
 
-function TopCalcCard() {
-  const topCalc = CALCULATORS.find((c) => c.slug === calcUsage[0].slug);
+function TopCalcCard({usage}: {usage: {slug: string; count: number}[]}) {
+  const top = usage[0];
+  const topCalc = top ? CALCULATORS.find((c) => c.slug === top.slug) : null;
+  if (!top || !topCalc) {
+    return (
+      <div className="flex h-full flex-col rounded-card border border-bdr bg-sur p-3.5 shadow-card">
+        <p className="text-[11px] font-semibold text-text-2">ყველაზე პოპულარული</p>
+        <p className="mt-3 text-[12px] text-text-3">მონაცემი ჯერ არ არის</p>
+      </div>
+    );
+  }
   return (
     <div className="flex h-full flex-col rounded-card border border-bdr bg-sur p-3.5 shadow-card">
       <p className="text-[11px] font-semibold text-text-2">ყველაზე პოპულარული</p>
       <div className="mt-2 flex items-center gap-2">
         <span className="text-[22px]" aria-hidden>
-          {topCalc?.icon}
+          {topCalc.icon}
         </span>
-        <p className="text-[15px] font-bold leading-tight text-navy">
-          {topCalc?.title ?? 'თბოდანაკარგი'}
-        </p>
+        <p className="text-[15px] font-bold leading-tight text-navy">{topCalc.title}</p>
       </div>
       <span className="mt-2 inline-flex w-fit items-center gap-1 rounded-pill border border-grn-bd bg-grn-lt px-2 py-[2px] font-mono text-[10px] font-bold text-grn">
-        ▲ {calcUsage[0].count} / 30 დღე
+        ▲ {top.count} / 30 დღე
       </span>
-      {topCalc?.standard && (
+      {topCalc.standard && (
         <p className="mt-2 font-mono text-[10px] text-text-3">{topCalc.standard}</p>
       )}
     </div>
   );
 }
 
-function UsageRanking() {
+function UsageRanking({usage}: {usage: {slug: string; count: number}[]}) {
+  if (usage.length === 0) {
+    return (
+      <div className="flex h-full flex-col rounded-card border border-bdr bg-sur p-3.5 shadow-card">
+        <p className="text-[11px] font-semibold text-text-2">გამოყენების რეიტინგი</p>
+        <p className="mt-3 text-[12px] text-text-3">მონაცემი ჯერ არ არის — კალკულაციები როცა დაიწყება, აქ გამოჩნდება.</p>
+      </div>
+    );
+  }
+  const max = Math.max(1, ...usage.map((u) => u.count));
   return (
     <div className="flex h-full flex-col rounded-card border border-bdr bg-sur p-3.5 shadow-card">
       <p className="text-[11px] font-semibold text-text-2">გამოყენების რეიტინგი</p>
       <p className="mt-0.5 text-[10px] text-text-3">ბოლო 30 დღის განმავლობაში</p>
       <ul className="mt-3 space-y-2.5">
-        {calcUsage.map((u, i) => {
+        {usage.slice(0, 7).map((u, i) => {
           const calc = CALCULATORS.find((c) => c.slug === u.slug);
+          const pct = Math.round((u.count / max) * 100);
           return (
             <li key={u.slug}>
               <div className="flex items-center justify-between gap-2">
@@ -190,7 +181,7 @@ function UsageRanking() {
                     #{String(i + 1).padStart(2, '0')}
                   </span>
                   <span className="text-sm" aria-hidden>
-                    {calc?.icon}
+                    {calc?.icon ?? '•'}
                   </span>
                   <span className="truncate text-[12px] font-medium text-text">
                     {calc?.title ?? u.slug}
@@ -203,7 +194,7 @@ function UsageRanking() {
               <div className="mt-1 h-1 overflow-hidden rounded-pill bg-sur-2">
                 <div
                   className={i < 3 ? 'h-full bg-blue' : 'h-full bg-blue-bd'}
-                  style={{width: `${u.pct}%`, transition: 'width .3s ease'}}
+                  style={{width: `${pct}%`, transition: 'width .3s ease'}}
                 />
               </div>
             </li>
@@ -214,32 +205,46 @@ function UsageRanking() {
   );
 }
 
-export function HomeStats() {
+export async function HomeStats() {
+  const stats = await getHomeStats();
+  const cards = buildCards(stats);
+  const days =
+    stats.pageViewsByDay7d.length === 7
+      ? stats.pageViewsByDay7d
+      : ['ორშ', 'სამ', 'ოთხ', 'ხუთ', 'პარ', 'შაბ', 'კვ'].map((label) => ({label, count: 0}));
+
   return (
-    <section className="border-t border-bdr bg-bg py-10 md:py-14">
+    <section className="border-t border-bdr bg-bg py-6 md:py-10 lg:py-14">
       <Container>
-        <header className="mb-4">
-          <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-navy">
-            USAGE · 30D
-          </p>
-          <h2 className="mt-0.5 text-[15px] font-bold text-navy md:text-[18px]">
-            ხშირად გამოყენებადი კალკულატორები
-          </h2>
+        <header className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-navy">
+              USAGE · 30D
+            </p>
+            <h2 className="mt-0.5 text-[15px] font-bold text-navy md:text-[18px]">
+              ხშირად გამოყენებადი კალკულატორები
+            </h2>
+          </div>
+          {!stats.available && (
+            <span className="rounded-pill border border-bdr bg-sur-2 px-2 py-[2px] font-mono text-[9px] font-bold text-text-3">
+              DB OFFLINE
+            </span>
+          )}
         </header>
 
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4 md:gap-3">
-          {statCards.map((c) => (
+          {cards.map((c) => (
             <StatCardView key={c.title} card={c} />
           ))}
-          <TopCalcCard />
+          <TopCalcCard usage={stats.calcUsage30d} />
         </div>
 
         <div className="mt-2 grid grid-cols-1 gap-2 md:mt-3 md:grid-cols-12 md:gap-3">
           <div className="md:col-span-7">
-            <BarChart />
+            <BarChart days={days} />
           </div>
           <div className="md:col-span-5">
-            <UsageRanking />
+            <UsageRanking usage={stats.calcUsage30d} />
           </div>
         </div>
       </Container>

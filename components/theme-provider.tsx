@@ -2,66 +2,64 @@
 
 import {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react';
 
-export type Theme = 'light' | 'dark' | 'system';
-type Resolved = 'light' | 'dark';
+const TINT_KEY = 'bg-tint';
+const DARK_THRESHOLD = 50;
+const DEFAULT_LIGHT = 80;
+const DEFAULT_DARK = 20;
 
 type Ctx = {
-  theme: Theme;
-  resolvedTheme: Resolved;
-  setTheme: (t: Theme) => void;
+  tint: number;
+  isDark: boolean;
+  setTint: (n: number) => void;
+  toggleTheme: () => void;
 };
 
-const STORAGE_KEY = 'theme';
 const ThemeCtx = createContext<Ctx | null>(null);
 
-function systemPrefersDark() {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+function apply(tint: number) {
+  const r = document.documentElement;
+  r.style.setProperty('--bg-tint', String(tint));
+  const dark = tint < DARK_THRESHOLD;
+  r.classList.toggle('dark', dark);
+  r.style.colorScheme = dark ? 'dark' : 'light';
 }
 
-function applyClass(resolved: Resolved) {
-  const root = document.documentElement;
-  root.classList.toggle('dark', resolved === 'dark');
-  root.style.colorScheme = resolved;
-  root.setAttribute('data-mui-color-scheme', resolved);
+function readStored(): number {
+  try {
+    const raw = localStorage.getItem(TINT_KEY);
+    if (raw === null) return DEFAULT_LIGHT;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return DEFAULT_LIGHT;
+    return Math.min(100, Math.max(0, n));
+  } catch {
+    return DEFAULT_LIGHT;
+  }
 }
 
 export function ThemeProvider({children}: {children: React.ReactNode}) {
-  const [theme, setThemeState] = useState<Theme>('system');
-  const [resolved, setResolved] = useState<Resolved>('light');
+  const [tint, setTintState] = useState<number>(() =>
+    typeof window === 'undefined' ? DEFAULT_LIGHT : readStored()
+  );
 
   useEffect(() => {
-    const stored = (localStorage.getItem(STORAGE_KEY) as Theme | null) ?? 'system';
-    setThemeState(stored);
-  }, []);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: dark)');
-    const compute = (): Resolved =>
-      theme === 'system' ? (mq.matches ? 'dark' : 'light') : theme;
-    const next = compute();
-    setResolved(next);
-    applyClass(next);
-    if (theme !== 'system') return;
-    const onChange = () => {
-      const n = compute();
-      setResolved(n);
-      applyClass(n);
-    };
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, [theme]);
-
-  const setTheme = useCallback((t: Theme) => {
-    setThemeState(t);
+    apply(tint);
     try {
-      localStorage.setItem(STORAGE_KEY, t);
+      localStorage.setItem(TINT_KEY, String(tint));
     } catch {}
+  }, [tint]);
+
+  const setTint = useCallback((n: number) => {
+    setTintState(Math.min(100, Math.max(0, Math.round(n))));
   }, []);
 
+  const toggleTheme = useCallback(() => {
+    setTintState((prev) => (prev < DARK_THRESHOLD ? DEFAULT_LIGHT : DEFAULT_DARK));
+  }, []);
+
+  const isDark = tint < DARK_THRESHOLD;
   const value = useMemo<Ctx>(
-    () => ({theme, resolvedTheme: resolved, setTheme}),
-    [theme, resolved, setTheme]
+    () => ({tint, isDark, setTint, toggleTheme}),
+    [tint, isDark, setTint, toggleTheme]
   );
 
   return <ThemeCtx.Provider value={value}>{children}</ThemeCtx.Provider>;
@@ -70,9 +68,9 @@ export function ThemeProvider({children}: {children: React.ReactNode}) {
 export function useTheme(): Ctx {
   const v = useContext(ThemeCtx);
   if (!v) {
-    return {theme: 'system', resolvedTheme: 'light', setTheme: () => {}};
+    return {tint: DEFAULT_LIGHT, isDark: false, setTint: () => {}, toggleTheme: () => {}};
   }
   return v;
 }
 
-export const THEME_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem('${STORAGE_KEY}')||'system';var d=s==='dark'||(s==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;if(d)r.classList.add('dark');r.style.colorScheme=d?'dark':'light';}catch(e){}})();`;
+export const THEME_INIT_SCRIPT = `(function(){try{var raw=localStorage.getItem('${TINT_KEY}');var t=raw===null?${DEFAULT_LIGHT}:Number(raw);if(!isFinite(t))t=${DEFAULT_LIGHT};t=Math.min(100,Math.max(0,t));var r=document.documentElement;r.style.setProperty('--bg-tint',String(t));var d=t<${DARK_THRESHOLD};if(d)r.classList.add('dark');r.style.colorScheme=d?'dark':'light';}catch(e){}})();`;

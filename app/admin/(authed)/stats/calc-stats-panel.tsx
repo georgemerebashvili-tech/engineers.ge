@@ -7,8 +7,7 @@ const CALC_LABELS: Record<string, string> = {
   hvac: 'HVAC კონდიცირება',
   'ahu-ashrae': 'AHU სელექცია',
   silencer: 'ხმაურდამხშობი',
-  'silencer-kaya': 'KAYA ხმაურდამხშობი',
-  procurement: 'მოლაპარაკება / შესყიდვა'
+  'silencer-kaya': 'KAYA ხმაურდამხშობი'
 };
 
 function formatDate(iso: string | null) {

@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#1a3a6b">
 <title>KAYA — ხმაურდამხშობის კალკულატორი — FINAL</title>
 <script src="/calc/_theme-sync.js"></script>
+<script src="/calc/_draft-store.js"></script>
 <link rel="stylesheet" href="/calc/_base.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1938,6 +1939,17 @@ document.addEventListener("DOMContentLoaded",()=>{
   setupMobileNav();
   try{init3D();}catch(err){console.warn("3D init skipped:", err);}
   try{calc();}catch(err){console.error("Calculation init failed:", err);}
+
+  // Draft autosave (localStorage + cookie fallback)
+  if (typeof DraftStore !== 'undefined') {
+    try {
+      const d = DraftStore.create('silencer');
+      const touched = d.restoreInputs();
+      d.autosaveInputs({debounce: 400});
+      if (touched > 0) { try { calc(); } catch(_) {} }
+      window.__DRAFT_SILENCER__ = d;
+    } catch (e) { console.warn('draft-store init failed', e); }
+  }
 });
 </script>
 </body>

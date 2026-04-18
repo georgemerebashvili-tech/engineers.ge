@@ -35,7 +35,40 @@
     "error": "Məlumatlar yanlışdır",
     "banners": "Bannerlər",
     "stats": "Statistika",
+    "users": "İstifadəçilər",
     "logout": "Çıxış"
+  },
+  "register": {
+    "cta": "Qeydiyyat",
+    "title": "Pulsuz hesab yarat",
+    "name": "Ad Soyad",
+    "email": "E-poçt",
+    "password": "Şifrə (8+)",
+    "language": "Dil",
+    "country": "Ölkə",
+    "profession": "Peşə / Maraq",
+    "search_country": "Axtar və ya əlavə et",
+    "add_country": "Əlavə et",
+    "submit": "Qeydiyyatdan keç",
+    "back": "Geri",
+    "later": "Sonra",
+    "success_title": "Təşəkkürlər!",
+    "success_body": "Qeydiyyat uğurla tamamlandı.",
+    "email_taken": "Bu e-poçt artıq qeydiyyatdan keçib"
+  },
+  "users": {
+    "title": "Qeydiyyatdan keçmiş istifadəçilər",
+    "subtitle": "Hesab yaradan ziyarətçilər",
+    "search": "E-poçt və ya adla axtar",
+    "all_countries": "Bütün ölkələr",
+    "all_langs": "Bütün dillər",
+    "clear": "Təmizlə",
+    "total": "Cəmi hesab",
+    "countries_count": "Ölkələr",
+    "verified": "E-poçt təsdiqlənib",
+    "top_country": "Ən çox ölkə",
+    "empty": "Hələ heç bir qeydiyyat yoxdur",
+    "no_match": "Filtrə uyğun qeyd yoxdur"
   },
   "loader": {
     "loading": "Yüklənir..."

@@ -10,21 +10,37 @@ type Props = {
 };
 
 type ShareSettings = {
+  visible: boolean;
+  intro_text: string;
   facebook: boolean;
   x: boolean;
   linkedin: boolean;
   telegram: boolean;
   whatsapp: boolean;
   copy_link: boolean;
+  facebook_url: string;
+  x_url: string;
+  linkedin_url: string;
+  telegram_url: string;
+  whatsapp_url: string;
 };
 
+const DEFAULT_INTRO = 'აცნობე ყველას 👉';
+
 const ALL_ON: ShareSettings = {
+  visible: true,
+  intro_text: DEFAULT_INTRO,
   facebook: true,
   x: true,
   linkedin: true,
   telegram: true,
   whatsapp: true,
-  copy_link: true
+  copy_link: true,
+  facebook_url: '',
+  x_url: '',
+  linkedin_url: '',
+  telegram_url: '',
+  whatsapp_url: ''
 };
 
 export function ShareBar({url, title = ''}: Props) {
@@ -55,36 +71,51 @@ export function ShareBar({url, title = ''}: Props) {
   const encoded = encodeURIComponent(href);
   const encodedTitle = encodeURIComponent(title);
 
+  const pick = (override: string, fallback: string) =>
+    override.trim() ? override.trim() : fallback;
+
   const allTargets = [
     {
       key: 'facebook' as const,
       name: 'Facebook',
       icon: Facebook,
-      href: `https://www.facebook.com/sharer/sharer.php?u=${encoded}`
+      href: pick(
+        settings.facebook_url,
+        `https://www.facebook.com/sharer/sharer.php?u=${encoded}`
+      )
     },
     {
       key: 'x' as const,
       name: 'X',
       icon: XIcon,
-      href: `https://twitter.com/intent/tweet?url=${encoded}&text=${encodedTitle}`
+      href: pick(
+        settings.x_url,
+        `https://twitter.com/intent/tweet?url=${encoded}&text=${encodedTitle}`
+      )
     },
     {
       key: 'linkedin' as const,
       name: 'LinkedIn',
       icon: Linkedin,
-      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encoded}`
+      href: pick(
+        settings.linkedin_url,
+        `https://www.linkedin.com/sharing/share-offsite/?url=${encoded}`
+      )
     },
     {
       key: 'telegram' as const,
       name: 'Telegram',
       icon: Send,
-      href: `https://t.me/share/url?url=${encoded}&text=${encodedTitle}`
+      href: pick(
+        settings.telegram_url,
+        `https://t.me/share/url?url=${encoded}&text=${encodedTitle}`
+      )
     },
     {
       key: 'whatsapp' as const,
       name: 'WhatsApp',
       icon: WhatsAppIcon,
-      href: `https://wa.me/?text=${encodedTitle}%20${encoded}`
+      href: pick(settings.whatsapp_url, `https://wa.me/?text=${encodedTitle}%20${encoded}`)
     }
   ] as const;
 
@@ -98,31 +129,45 @@ export function ShareBar({url, title = ''}: Props) {
     } catch {}
   }
 
+  if (!settings.visible) return null;
+
+  const intro = settings.intro_text?.trim() || DEFAULT_INTRO;
+
   return (
-    <div className="flex items-center gap-1 md:gap-2" aria-label={t('label')}>
-      {targets.map(({name, icon: Icon, href}) => (
-        <a
-          key={name}
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={name}
-          className="inline-flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-lg border hover:bg-surface-alt transition-colors"
-        >
-          <Icon size={18} />
-        </a>
-      ))}
-      {settings.copy_link && (
-        <button
-          type="button"
-          onClick={copy}
-          aria-label={t('copy')}
-          title={copied ? t('copied') : t('copy')}
-          className="inline-flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-lg border hover:bg-surface-alt transition-colors"
-        >
-          {copied ? <Check size={18} /> : <LinkIcon size={18} />}
-        </button>
+    <div
+      className="flex items-center gap-1.5 md:gap-2"
+      aria-label={t('label')}
+    >
+      {intro && (
+        <span className="hidden items-center text-xs font-semibold text-text-2 xl:inline-flex">
+          {intro}
+        </span>
       )}
+      <div className="flex items-center gap-1 md:gap-2">
+        {targets.map(({name, icon: Icon, href}) => (
+          <a
+            key={name}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={name}
+            className="inline-flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-lg border hover:bg-surface-alt transition-colors"
+          >
+            <Icon size={18} />
+          </a>
+        ))}
+        {settings.copy_link && (
+          <button
+            type="button"
+            onClick={copy}
+            aria-label={t('copy')}
+            title={copied ? t('copied') : t('copy')}
+            className="inline-flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-lg border hover:bg-surface-alt transition-colors"
+          >
+            {copied ? <Check size={18} /> : <LinkIcon size={18} />}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

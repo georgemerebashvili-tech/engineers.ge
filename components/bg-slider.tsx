@@ -1,63 +1,21 @@
 'use client';
 
-import {useEffect, useState} from 'react';
-import Box from '@mui/material/Box';
-import Slider from '@mui/material/Slider';
-
-const STORAGE_KEY = 'bg-tint';
-const DEFAULT = 50;
+import {useTheme} from './theme-provider';
 
 export function BgSlider() {
-  const [value, setValue] = useState<number>(DEFAULT);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const saved = raw === null ? DEFAULT : Number(raw);
-    const clamped = Number.isFinite(saved) ? Math.min(100, Math.max(0, saved)) : DEFAULT;
-    setValue(clamped);
-    document.documentElement.style.setProperty('--bg-tint', String(clamped));
-    setMounted(true);
-  }, []);
-
-  function onChange(_: Event, next: number | number[]) {
-    const n = Array.isArray(next) ? next[0] : next;
-    setValue(n);
-    document.documentElement.style.setProperty('--bg-tint', String(n));
-    localStorage.setItem(STORAGE_KEY, String(n));
-  }
-
+  const {tint, setTint} = useTheme();
   return (
-    <Box sx={{width: {xs: 64, md: 90}, display: {xs: 'none', sm: 'flex'}, alignItems: 'center', px: 1}}>
-      <Slider
-        size="small"
-        value={mounted ? value : DEFAULT}
-        onChange={onChange}
-        aria-label="ფონის ტონი"
-        valueLabelDisplay="auto"
-        sx={{
-          color: 'var(--blue)',
-          '& .MuiSlider-thumb': {
-            width: 14,
-            height: 14,
-            backgroundColor: 'var(--blue)',
-            '&:hover, &.Mui-focusVisible': {
-              boxShadow: '0 0 0 6px color-mix(in srgb, var(--blue) 18%, transparent)'
-            },
-            '&.Mui-active': {
-              boxShadow: '0 0 0 10px color-mix(in srgb, var(--blue) 22%, transparent)'
-            }
-          },
-          '& .MuiSlider-rail': {
-            opacity: 1,
-            backgroundColor: 'var(--bdr)'
-          },
-          '& .MuiSlider-track': {
-            border: 'none',
-            backgroundColor: 'var(--blue)'
-          }
-        }}
+    <div className="hidden w-16 items-center px-1 sm:flex md:w-[90px]">
+      <input
+        type="range"
+        min={0}
+        max={100}
+        step={1}
+        value={tint}
+        onChange={(e) => setTint(Number(e.target.value))}
+        aria-label="სიკაშკაშე"
+        className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-bdr accent-blue [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue"
       />
-    </Box>
+    </div>
   );
 }

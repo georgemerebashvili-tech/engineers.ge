@@ -103,8 +103,8 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 /* ══ ROOM CARD (Tab1) ══ */
 .rc{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:10px;box-shadow:var(--shadow);overflow:hidden;animation:fu .18s ease}
 @keyframes fu{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-.rc-h{display:flex;align-items:center;gap:8px;padding:9px 15px;background:linear-gradient(90deg,var(--sur-2),#fff);border-bottom:1px solid var(--bdr);cursor:pointer;user-select:none}
-.rc-h:hover{background:linear-gradient(90deg,#e8eef8,#f8fafc)}
+.rc-h{display:flex;align-items:center;gap:8px;padding:9px 15px;background:linear-gradient(90deg,var(--sur-2),var(--sur));border-bottom:1px solid var(--bdr);cursor:pointer;user-select:none}
+.rc-h:hover{background:linear-gradient(90deg,var(--sur-2),var(--sur-2))}
 .rc-n{font-family:var(--mono);font-size:10px;font-weight:700;background:var(--navy);color:#fff;padding:3px 9px;border-radius:5px;letter-spacing:.5px;flex-shrink:0}
 .rc-name{flex:1;border:none;background:transparent;font-family:var(--sans);font-size:13px;font-weight:700;color:var(--navy);outline:none;border-bottom:2px solid transparent;transition:border-color .12s;padding:1px 4px;cursor:text}
 .rc-name:focus{border-color:var(--bdr2)}
@@ -380,8 +380,8 @@ td.dim{color:var(--t3);font-size:10px;font-style:italic;font-family:var(--sans)}
 
 /* warn */
 .wbox{border-radius:6px;padding:8px 12px;font-size:11px;display:flex;gap:6px;align-items:flex-start}
-.wbox.mold{background:var(--olt);border:1px solid var(--obd);color:#7a3000}
-.wbox.cond{background:var(--rlt);border:1px solid var(--rbd);color:#7a0010}
+.wbox.mold{background:var(--olt);border:1px solid var(--obd);color:var(--ora)}
+.wbox.cond{background:var(--rlt);border:1px solid var(--rbd);color:var(--red)}
 
 /* ═══ MODAL ═══ */
 .moverlay{position:fixed;inset:0;background:rgba(20,30,60,.48);z-index:600;display:none;align-items:center;justify-content:center}
@@ -394,8 +394,8 @@ td.dim{color:var(--t3);font-size:10px;font-style:italic;font-family:var(--sans)}
 .msrch{padding:8px 13px;border-bottom:1px solid var(--bdr);flex-shrink:0;grid-column:1/-1}
 .msrch input{width:100%;border:1.5px solid var(--bdr);border-radius:6px;padding:7px 10px;font-size:13px;outline:none;background:var(--sur2);font-family:var(--sans)}
 .msrch input:focus{border-color:var(--blue)}
-.mcat{grid-column:1/-1;padding:9px 14px 9px 16px;font-size:12px;font-weight:700;color:var(--navy);letter-spacing:.03em;text-transform:uppercase;background:linear-gradient(90deg,var(--blue-lt),var(--sur-2));border-top:2px solid var(--bdr2);border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:2;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;transition:background .12s;white-space:nowrap;flex-wrap:nowrap}.mcat:hover{background:linear-gradient(90deg,#dce8f8,var(--blue-lt))}.mcat-icon{font-size:16px;margin-right:8px}.mcat-cnt{font-size:10px;font-weight:400;color:var(--blue);font-family:var(--mono);background:var(--blue-lt);padding:1px 7px;border-radius:8px}
-.mmat{padding:10px 14px 10px 44px;border-bottom:1px solid #eff2f8;cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .1s}
+.mcat{grid-column:1/-1;padding:9px 14px 9px 16px;font-size:12px;font-weight:700;color:var(--navy);letter-spacing:.03em;text-transform:uppercase;background:linear-gradient(90deg,var(--blue-lt),var(--sur-2));border-top:2px solid var(--bdr2);border-bottom:1px solid var(--bdr);position:sticky;top:0;z-index:2;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none;transition:background .12s;white-space:nowrap;flex-wrap:nowrap}.mcat:hover{background:linear-gradient(90deg,var(--bdr),var(--blue-lt))}.mcat-icon{font-size:16px;margin-right:8px}.mcat-cnt{font-size:10px;font-weight:400;color:var(--blue);font-family:var(--mono);background:var(--blue-lt);padding:1px 7px;border-radius:8px}
+.mmat{padding:10px 14px 10px 44px;border-bottom:1px solid var(--bdr);cursor:pointer;display:flex;align-items:center;justify-content:space-between;transition:background .1s}
 .mmat:hover{background:var(--blt)}
 .mmat-n{font-size:14px;font-weight:600;color:var(--text)}
 .mmat-m{font-size:11px;color:var(--t3);font-family:var(--mono);margin-top:2px}
@@ -417,12 +417,48 @@ td.dim{color:var(--t3);font-size:10px;font-style:italic;font-family:var(--sans)}
 }
 
 /* ═══ RESPONSIVE ═══ */
-@media(max-width:760px){
-  
-  .layout{flex-direction:column;height:auto;overflow:auto}
-  #tw_sb{width:100%;min-width:100%;height:auto;position:static}
-  #tw_main{overflow:visible;height:auto}
-  .sgrid{grid-template-columns:1fr}
+@media (max-width: 1200px) {
+  :root { --sb: 340px; }
+  .sgrid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 960px) {
+  :root { --sb: 100%; }
+  .layout, .tw-wrap .layout { flex-direction: column; align-items: stretch; }
+  #tw_sb { width: 100%; min-width: 0; max-height: none; position: static; }
+  #tw_main { width: 100%; }
+  .sgrid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .vs-stats { flex-wrap: wrap; }
+  .vs-st { flex: 1 1 120px; }
+  .eq-topbar { flex-wrap: wrap; gap: 8px; }
+  .top-totals { flex-wrap: wrap; }
+  .tt { flex: 1 1 140px; }
+  .pp { flex-direction: column; gap: 10px; }
+  .tab-nav { overflow-x: auto; }
+  .tab-btn { flex-shrink: 0; padding: 0 14px; height: 38px; }
+  table.mt, table.eq-tbl, table.fcu-db { font-size: 10.5px; }
+  .main { padding: 10px 12px 60px; }
+  .vs-row1 { flex-wrap: wrap; gap: 6px; padding: 8px 12px; }
+}
+@media (max-width: 760px) {
+  .layout { flex-direction: column; height: auto; overflow: auto; }
+  #tw_sb { width: 100%; min-width: 100%; height: auto; position: static; }
+  #tw_main { overflow: visible; height: auto; }
+  .sgrid { grid-template-columns: 1fr; }
+  .fc-head, .rc-h { flex-wrap: wrap; gap: 6px; }
+  .fc-pills { flex-wrap: wrap; }
+  .modal { max-width: 100vw; }
+}
+@media (max-width: 640px) {
+  html { font-size: 12px; }
+  .topbar, .vs-topbar { padding: 0; }
+  .top-totals, .eq-topbar { flex-wrap: wrap; gap: 6px; padding: 6px; }
+  .tt, .eq-stat { flex: 1 1 45%; padding: 5px 8px; }
+  .vs-title { font-size: 12px; }
+  .main { padding: 8px 10px 50px; }
+  .tbl-scroll { margin: 0 -10px; padding: 0 10px; }
+  .btn-primary, .btn-secondary, .btn-danger, .eng-btn { font-size: 11px; padding: 5px 10px; }
+  .sgrid, .sgrid { grid-template-columns: 1fr !important; }
+  .scard-v { font-size: 15px; }
 }
 
 /* ═══ CTYPES PANEL ═══ */
@@ -454,15 +490,15 @@ td.dim{color:var(--t3);font-size:10px;font-style:italic;font-family:var(--sans)}
 /* ─── CLIMATE GROUPS ─── */
 .clim-group{border-bottom:2px solid var(--bdr2);margin-bottom:2px}
 .cg-head{display:flex;align-items:center;gap:5px;padding:7px 10px;background:var(--sur2);border-bottom:1px solid var(--bdr2);cursor:pointer;user-select:none}
-.cg-head:hover{background:#e8eef8}
+.cg-head:hover{background:var(--sur-2)}
 .cg-arr{color:var(--blue);font-size:11px;flex-shrink:0;font-weight:700}
 .cg-name{flex:1;background:transparent;border:none;color:var(--navy);font-family:var(--sans);font-size:12px;font-weight:700;outline:none;min-width:0;border-bottom:1px solid transparent}
 .cg-name:focus{border-color:var(--blue)}
 .cg-badge{font-family:var(--mono);font-size:9px;color:var(--blue);background:var(--blue-lt);border:1px solid var(--blue-bd);padding:2px 7px;border-radius:10px;flex-shrink:0;white-space:nowrap}
-.cg-btn-edit{background:none;border:1px solid #334466;color:#6b7e9e;padding:2px 6px;border-radius:3px;cursor:pointer;font-size:10px;flex-shrink:0}
-.cg-btn-edit:hover{border-color:#4a85d8;color:#64a8f8}
-.cg-btn-del{background:none;border:1px solid #334466;color:#6b7e9e;padding:2px 6px;border-radius:3px;cursor:pointer;font-size:12px;flex-shrink:0}
-.cg-btn-del:hover{border-color:#e05252;color:#e05252}
+.cg-btn-edit{background:none;border:1px solid var(--navy);color:var(--text-2);padding:2px 6px;border-radius:3px;cursor:pointer;font-size:10px;flex-shrink:0}
+.cg-btn-edit:hover{border-color:var(--blue);color:var(--blue)}
+.cg-btn-del{background:none;border:1px solid var(--navy);color:var(--text-2);padding:2px 6px;border-radius:3px;cursor:pointer;font-size:12px;flex-shrink:0}
+.cg-btn-del:hover{border-color:var(--red);color:var(--red)}
 .cg-cond-row{background:var(--sur-2);border-bottom:1px solid var(--bdr);padding:8px 10px}
 .cg-cond-grid{display:grid;grid-template-columns:auto 1fr auto;gap:4px 6px;align-items:center;font-size:10px;color:var(--text2)}
 .cg-cond-grid label{font-weight:700;color:var(--navy)}
@@ -510,8 +546,8 @@ button{cursor:pointer;font-family:var(--sans)}
 .vs-sv{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--navy)}
 .vs-su{font-size:9px;color:var(--text3);font-family:var(--mono)}
 .std-strip{padding:4px 18px;font-size:10px;font-weight:600;display:flex;align-items:center;gap:8px;border-top:1px solid var(--bdr)}
-.std-strip.ashrae{background:linear-gradient(90deg,var(--blue-lt),#fafcff);color:var(--blue)}
-.std-strip.gost{background:linear-gradient(90deg,#e8edf8,#fafcff);color:var(--navy)}
+.std-strip.ashrae{background:linear-gradient(90deg,var(--blue-lt),var(--sur-2));color:var(--blue)}
+.std-strip.gost{background:linear-gradient(90deg,var(--sur-2),var(--sur-2));color:var(--navy)}
 .std-strip-ref{font-weight:400;opacity:.75}
 
 /* ══ MAIN ══ */
@@ -520,8 +556,8 @@ button{cursor:pointer;font-family:var(--sans)}
 /* ══ FLOOR CARD ══ */
 .fc{background:var(--sur);border:1px solid var(--bdr);border-radius:var(--r);margin-bottom:10px;box-shadow:var(--shadow);overflow:hidden;animation:fadeup .18s ease}
 @keyframes fadeup{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-.fc-head{display:flex;align-items:center;gap:8px;padding:9px 14px;background:linear-gradient(90deg,#edf1fb,#fff);border-bottom:1px solid var(--bdr);cursor:pointer;user-select:none}
-.fc-head:hover{background:linear-gradient(90deg,#e2eaf8,#f8fafc)}
+.fc-head{display:flex;align-items:center;gap:8px;padding:9px 14px;background:linear-gradient(90deg,var(--blue-lt),var(--sur));border-bottom:1px solid var(--bdr);cursor:pointer;user-select:none}
+.fc-head:hover{background:linear-gradient(90deg,var(--sur-2),var(--sur-2))}
 .fc-badge{font-family:var(--mono);font-size:10px;font-weight:700;background:var(--navy);color:#fff;padding:3px 9px;border-radius:5px;letter-spacing:.5px;flex-shrink:0}
 .fc-name-inp{flex:1;border:none;background:transparent;font-family:var(--sans);font-size:13px;font-weight:700;color:var(--navy);outline:none;border-bottom:2px solid transparent;transition:border-color .12s;padding:1px 4px;cursor:text;min-width:0}
 .fc-name-inp:focus{border-color:var(--bdr2)}
@@ -558,7 +594,7 @@ table.vt tbody td.ro-e{font-family:var(--mono);font-size:11px;font-weight:600;co
 table.vt tbody td.del{background:var(--sur2);padding:0;vertical-align:middle}
 table.vt tbody td.fn-cell{padding:2px 3px;display:flex;align-items:center;gap:4px}
 
-table.vt tbody tr.vt-sum td{background:#eef2fb;font-family:var(--mono);font-size:11px;font-weight:600;border-top:2px solid var(--bdr2);padding:3px 5px;color:var(--text3)}
+table.vt tbody tr.vt-sum td{background:var(--sur-2);font-family:var(--mono);font-size:11px;font-weight:600;border-top:2px solid var(--bdr-2);padding:3px 5px;color:var(--text-3)}
 table.vt tbody tr.vt-sum td.s-o{color:var(--ora);text-align:right}
 table.vt tbody tr.vt-sum td.s-s{color:var(--blue);text-align:right}
 table.vt tbody tr.vt-sum td.s-e{color:var(--ora);text-align:right}
@@ -616,15 +652,15 @@ table.vt th.c90{width:90px} table.vt th.c110{width:110px} table.vt th.c160{width
 .panel-wrap{overflow:visible}
 
 .panel-inner{
-  background:#fffef7;
+  background:var(--ora-lt);
   border-top:2px solid var(--blue-bd);
   border-bottom:1px solid var(--bdr);
   padding:0;
   display:grid;grid-template-columns:1fr 1fr;gap:0;
 }
-.panel-section{padding:10px 16px;border-right:1px solid #e8e4d0}
+.panel-section{padding:10px 16px;border-right:1px solid var(--ora-bd)}
 .panel-section:last-child{border-right:none}
-.panel-section.full{grid-column:1/-1;border-right:none;border-top:1px solid #e8e4d0;padding:8px 16px;background:#f9f7ee}
+.panel-section.full{grid-column:1/-1;border-right:none;border-top:1px solid var(--ora-bd);padding:8px 16px;background:var(--sur-2)}
 .panel-section-title{
   font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
   color:var(--text3);border-bottom:1px solid var(--bdr2);padding-bottom:4px;margin-bottom:8px;
@@ -642,7 +678,7 @@ table.vt th.c90{width:90px} table.vt th.c110{width:110px} table.vt th.c160{width
 
 /* formula display */
 .formula-box{
-  background:#fff8e8;border:1px solid #e8d89a;border-radius:6px;
+  background:var(--ora-lt);border:1px solid var(--ora-bd);border-radius:6px;
   padding:5px 8px;margin:6px 0;font-family:var(--mono);font-size:10px;
   color:var(--text2);line-height:1.6
 }
@@ -652,11 +688,11 @@ table.vt th.c90{width:90px} table.vt th.c110{width:110px} table.vt th.c160{width
 /* Q result badge */
 .q-result{
   display:flex;align-items:center;gap:8px;
-  background:linear-gradient(90deg,var(--blue-lt),#f5f9ff);
+  background:linear-gradient(90deg,var(--blue-lt),var(--sur-2));
   border:1.5px solid var(--blue-bd);border-radius:6px;
   padding:5px 10px;margin-top:8px
 }
-.q-result.exhaust{background:linear-gradient(90deg,var(--ora-lt),#fff9f5);border-color:var(--ora-bd)}
+.q-result.exhaust{background:linear-gradient(90deg,var(--ora-lt),var(--ora-lt));border-color:var(--ora-bd)}
 .q-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3)}
 .q-value{font-family:var(--mono);font-size:16px;font-weight:700;color:var(--blue)}
 .q-result.exhaust .q-value{color:var(--ora)}
@@ -751,7 +787,7 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
 }
 #hl-nav-panel{
   position:fixed;left:0;top:52px;width:258px;height:calc(100vh - 52px);
-  background:#fdfdff;border-right:1px solid #e4edf8;
+  background:var(--sur);border-right:1px solid var(--sur-2);
   box-shadow:2px 0 18px rgba(30,60,120,.07);
   display:flex;flex-direction:column;
   transform:translateX(-100%);
@@ -762,7 +798,7 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
 #hl-nav-head{
   display:flex;align-items:center;gap:5px;
   padding:6px 8px 5px;border-bottom:1px solid var(--sur-2);
-  flex-shrink:0;background:#f8fafd
+  flex-shrink:0;background:var(--sur-2)
 }
 #hl-nav-search{
   flex:1;font-family:inherit;font-size:11px;
@@ -776,7 +812,7 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
   background:none;cursor:pointer;font-size:12px;display:flex;align-items:center;
   justify-content:center;color:var(--text-3);transition:all .12s;flex-shrink:0
 }
-#hl-nav-pin.active{background:#e8f2fd;border-color:var(--blue);color:var(--navy-2);transform:rotate(-20deg)}
+#hl-nav-pin.active{background:var(--blue-lt);border-color:var(--blue);color:var(--navy-2);transform:rotate(-20deg)}
 #hl-nav-close{
   width:22px;height:22px;border:none;border-radius:5px;background:none;
   cursor:pointer;font-size:13px;color:var(--text-3);flex-shrink:0;
@@ -784,13 +820,13 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
 }
 #hl-nav-close:hover{color:var(--ora);background:var(--ora-lt)}
 #hl-nav-stats{
-  display:flex;border-bottom:1px solid var(--sur-2);flex-shrink:0;background:#f8fafd
+  display:flex;border-bottom:1px solid var(--sur-2);flex-shrink:0;background:var(--sur-2)
 }
 .hl-bns{flex:1;display:flex;flex-direction:column;align-items:center;
   padding:4px 2px;border-right:1px solid var(--sur-2)}
 .hl-bns:last-child{border-right:none}
 .hl-bns-v{font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:var(--navy);line-height:1.2}
-.hl-bns-l{font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#aabbd0;margin-top:1px}
+.hl-bns-l{font-size:7.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--text-3);margin-top:1px}
 #hl-nav-tree{
   flex:1;overflow-y:auto;padding:3px 0 8px;
   scrollbar-width:thin;scrollbar-color:var(--bdr) transparent
@@ -801,26 +837,26 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
 .hlt-floor{display:flex;align-items:center;gap:0;cursor:pointer;
   border-bottom:1px solid var(--sur-2);min-height:28px;
   transition:background .1s;user-select:none;padding-right:6px}
-.hlt-floor:hover{background:#f3f7fd}
+.hlt-floor:hover{background:var(--sur-2)}
 .hlt-chev{width:20px;height:28px;display:flex;align-items:center;justify-content:center;
-  font-size:8px;color:#c0d0e0;flex-shrink:0;transition:transform .15s}
+  font-size:8px;color:var(--bdr-2);flex-shrink:0;transition:transform .15s}
 .hlt-chev.open{transform:rotate(90deg);color:var(--blue)}
 .hlt-mark{font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:700;
-  background:#eef4fd;color:#6090c0;padding:1px 5px;border-radius:4px;flex-shrink:0;margin:0 4px}
+  background:var(--blue-lt);color:var(--blue-bd);padding:1px 5px;border-radius:4px;flex-shrink:0;margin:0 4px}
 .hlt-name{flex:1;font-size:11px;font-weight:700;color:var(--navy);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hlt-cnt{font-family:'IBM Plex Mono',monospace;font-size:9px;
-  background:#eef4fd;color:#7090b8;padding:1px 5px;border-radius:8px;flex-shrink:0}
-.hlt-rooms{display:none;background:#f7fafd}
+  background:var(--blue-lt);color:var(--text-3);padding:1px 5px;border-radius:8px;flex-shrink:0}
+.hlt-rooms{display:none;background:var(--sur-2)}
 .hlt-rooms.open{display:block}
 .hlt-room{display:flex;align-items:center;gap:4px;
-  padding:4px 6px 4px 24px;border-bottom:1px solid #eef4fd;
+  padding:4px 6px 4px 24px;border-bottom:1px solid var(--blue-lt);
   cursor:pointer;transition:background .1s}
-.hlt-room:hover{background:#e0f5e8}
-.hlt-room-dot{width:5px;height:5px;border-radius:50%;background:#b0d8c0;flex-shrink:0}
-.hlt-room-no{font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:700;color:#7090b8;flex-shrink:0;min-width:24px}
-.hlt-room-name{flex:1;font-size:10px;color:#2a4060;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hlt-hl{background:#fff4c2;border-radius:2px;padding:0 1px}
+.hlt-room:hover{background:var(--grn-lt)}
+.hlt-room-dot{width:5px;height:5px;border-radius:50%;background:var(--grn-bd);flex-shrink:0}
+.hlt-room-no{font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:700;color:var(--text-3);flex-shrink:0;min-width:24px}
+.hlt-room-name{flex:1;font-size:10px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hlt-hl{background:var(--ora-lt);border-radius:2px;padding:0 1px}
 #vs-app.nav-pinned .vs-topbar,
 #vs-app.nav-pinned .main,
 #vs-app.nav-pinned #view-ashrae,
@@ -830,7 +866,7 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
 
 #bld-nav-panel{
   position:fixed;left:0;top:52px;width:258px;height:calc(100vh - 52px);
-  background:#fdfdff;border-right:1px solid #e4edf8;
+  background:var(--sur);border-right:1px solid var(--sur-2);
   box-shadow:2px 0 18px rgba(30,60,120,.07);
   display:flex;flex-direction:column;
   transform:translateX(-100%);
@@ -844,7 +880,7 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
   display:flex;align-items:center;gap:5px;
   padding:6px 8px 5px;
   border-bottom:1px solid var(--sur-2);
-  flex-shrink:0;background:#f8fafd
+  flex-shrink:0;background:var(--sur-2)
 }
 #bld-nav-search{
   flex:1;font-family:inherit;font-size:11px;
@@ -858,7 +894,7 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
   background:none;cursor:pointer;font-size:12px;display:flex;align-items:center;
   justify-content:center;color:var(--text-3);transition:all .12s;flex-shrink:0
 }
-#bld-nav-pin.active{background:#e8f2fd;border-color:var(--blue);color:var(--blue);transform:rotate(-20deg)}
+#bld-nav-pin.active{background:var(--blue-lt);border-color:var(--blue);color:var(--blue);transform:rotate(-20deg)}
 #bld-nav-pin:hover{border-color:var(--blue);color:var(--blue)}
 #bld-nav-close{
   width:22px;height:22px;border:none;border-radius:5px;background:none;
@@ -870,7 +906,7 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
 /* stats bar */
 #bld-nav-stats{
   display:flex;border-bottom:1px solid var(--sur-2);flex-shrink:0;
-  background:#f8fafd
+  background:var(--sur-2)
 }
 .bns{flex:1;display:flex;flex-direction:column;align-items:center;
   padding:4px 2px;border-right:1px solid var(--sur-2)}
@@ -890,33 +926,33 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
 /* floor row */
 .bnt-floor{
   display:flex;align-items:center;gap:0;cursor:pointer;
-  border-bottom:1px solid #f1f5fb;min-height:28px;
+  border-bottom:1px solid var(--sur-2);min-height:28px;
   transition:background .1s;user-select:none;padding-right:6px
 }
-.bnt-floor:hover{background:#f3f7fd}
+.bnt-floor:hover{background:var(--sur-2)}
 .bnt-floor-toggle{
   width:20px;height:28px;display:flex;align-items:center;justify-content:center;
-  font-size:8px;color:#c0d0e0;flex-shrink:0;transition:transform .15s
+  font-size:8px;color:var(--bdr-2);flex-shrink:0;transition:transform .15s
 }
 .bnt-floor-toggle.open{transform:rotate(90deg);color:var(--blue)}
 .bnt-floor-icon{font-size:12px;flex-shrink:0;margin-right:4px;opacity:.8}
 .bnt-floor-mark{
   font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:700;
-  background:#eef4fd;color:#6090c0;padding:1px 5px;border-radius:4px;
+  background:var(--blue-lt);color:var(--blue-bd);padding:1px 5px;border-radius:4px;
   flex-shrink:0;margin-right:5px;letter-spacing:.2px
 }
 .bnt-floor-name{
-  flex:1;font-size:11px;font-weight:700;color:#2a4060;
+  flex:1;font-size:11px;font-weight:700;color:var(--navy);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis
 }
 .bnt-floor-cnt{
   font-family:'IBM Plex Mono',monospace;font-size:9px;
-  background:#f0f5fc;color:#90a8c0;padding:1px 5px;border-radius:8px;
+  background:var(--sur-2);color:var(--text-3);padding:1px 5px;border-radius:8px;
   flex-shrink:0;font-weight:600
 }
 
 /* rooms container */
-.bnt-rooms{display:none;background:#f7fafd}
+.bnt-rooms{display:none;background:var(--sur-2)}
 .bnt-rooms.open{display:block}
 
 /* room row */
@@ -926,18 +962,18 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
   border-bottom:1px solid var(--sur-2);
   cursor:pointer;transition:background .1s
 }
-.bnt-room:hover{background:#eaf2fd}
+.bnt-room:hover{background:var(--blue-lt)}
 .bnt-room:last-child{border-bottom:none}
-.bnt-room-dot{width:5px;height:5px;border-radius:50%;background:#c8daf0;flex-shrink:0}
+.bnt-room-dot{width:5px;height:5px;border-radius:50%;background:var(--bdr-2);flex-shrink:0}
 .bnt-room-no{
   font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:700;
-  color:#88a8c8;flex-shrink:0;min-width:24px
+  color:var(--text-3);flex-shrink:0;min-width:24px
 }
-.bnt-room-name{flex:1;font-size:10px;color:#3a5070;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.bnt-room-qs{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#4a90d0;flex-shrink:0}
+.bnt-room-name{flex:1;font-size:10px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bnt-room-qs{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:var(--blue);flex-shrink:0}
 
 /* search highlight */
-.bnt-hl{background:#fff4c2;border-radius:2px;padding:0 1px}
+.bnt-hl{background:var(--ora-lt);border-radius:2px;padding:0 1px}
 .bnt-no-match{display:none!important}
 
 /* pinned → shift content */
@@ -956,10 +992,10 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
 }
 .hl-floor-hdr{
   display:flex;align-items:center;gap:6px;padding:9px 14px;
-  background:linear-gradient(90deg,#edf2fb,#f5f8fd);
+  background:linear-gradient(90deg,var(--blue-lt),var(--sur-2));
   cursor:pointer;user-select:none;transition:background .12s
 }
-.hl-floor-hdr:hover{background:linear-gradient(90deg,#e0eaf8,#edf3fb)}
+.hl-floor-hdr:hover{background:linear-gradient(90deg,var(--sur-2),var(--blue-lt))}
 .hl-chev{font-size:9px;color:var(--text3);transition:transform .18s;flex-shrink:0}
 .hl-chev.open{transform:rotate(90deg);color:var(--blue)}
 .hl-mark{
@@ -989,7 +1025,7 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
 .hl-empty-grp{
   padding:10px 14px;font-size:10px;color:var(--text3);
   border:1.5px dashed var(--bdr2);border-radius:7px;
-  text-align:center;background:#fafcff
+  text-align:center;background:var(--sur-2)
 }
 
 /* ══ TAB3 WINDOWS SECTION ══ */
@@ -1085,23 +1121,23 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
     <div style="display:flex;align-items:center;gap:6px;padding:0 14px;border-left:1px solid var(--bdr)">
       <button onclick="saveProject()" title="პროექტის შენახვა JSON ფაილად"
         style="display:flex;align-items:center;gap:5px;height:32px;padding:0 12px;border:1.5px solid var(--grn-bd);border-radius:6px;background:var(--grn-lt);color:var(--grn);font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap"
-        onmouseover="this.style.background='#d0f5e5'" onmouseout="this.style.background='var(--grn-lt)'">
+        onmouseover="this.style.background='var(--grn-lt)'" onmouseout="this.style.background='var(--grn-lt)'">
         <span class="dirty-dot" id="dirtyDot"></span>💾 შენახვა
       </button>
       <button onclick="document.getElementById('loadFileInput').click()" title="პროექტის ჩატვირთვა JSON ფაილიდან"
         style="display:flex;align-items:center;gap:5px;height:32px;padding:0 12px;border:1.5px solid var(--blue-bd);border-radius:6px;background:var(--blue-lt);color:var(--blue);font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap"
-        onmouseover="this.style.background='#d8ebfc'" onmouseout="this.style.background='var(--blue-lt)'">
+        onmouseover="this.style.background='var(--blue-lt)'" onmouseout="this.style.background='var(--blue-lt)'">
         📂 გახსნა
       </button>
       <input type="file" id="loadFileInput" accept=".json" style="display:none" onchange="loadProject(this)">
       <button onclick="generateEPC()" title="EPC მაჩვენებელი — GEECB Style"
-        style="display:flex;align-items:center;gap:5px;height:32px;padding:0 12px;border:1.5px solid #059669;border-radius:6px;background:#ecfdf5;color:#047857;font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap"
-        onmouseover="this.style.background='#d1fae5'" onmouseout="this.style.background='#ecfdf5'">
+        style="display:flex;align-items:center;gap:5px;height:32px;padding:0 12px;border:1.5px solid var(--grn);border-radius:6px;background:var(--grn-lt);color:var(--grn);font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap"
+        onmouseover="this.style.background='var(--grn-lt)'" onmouseout="this.style.background='var(--grn-lt)'">
         📄 EPC
       </button>
       <button onclick="printHeatLoadReport()" title="EN 12831 + ASHRAE სრული PDF ანგარიში"
-        style="display:flex;align-items:center;gap:5px;height:32px;padding:0 12px;border:1.5px solid #8b5cf6;border-radius:6px;background:#f5f0ff;color:#6d28d9;font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap"
-        onmouseover="this.style.background='#ede9fe'" onmouseout="this.style.background='#f5f0ff'">
+        style="display:flex;align-items:center;gap:5px;height:32px;padding:0 12px;border:1.5px solid var(--pur);border-radius:6px;background:var(--pur-lt);color:var(--pur);font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap"
+        onmouseover="this.style.background='var(--pur-lt)'" onmouseout="this.style.background='var(--pur-lt)'">
         🖨 PDF ანგარიში
       </button>
       <!-- ══ UNDO / REDO ══ -->
@@ -1122,7 +1158,7 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
           💾 Auto-Save
         </button>
         <button onclick="showHelpModal()" title="დახმარება / ვიდეო გზამკვლევი"
-          style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border:1.5px solid #60a5fa;border-radius:6px;background:linear-gradient(135deg,#eff6ff,#dbeafe);color:#1d4ed8;font-size:14px;cursor:pointer;transition:all .15s"
+          style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border:1.5px solid var(--blue);border-radius:6px;background:linear-gradient(135deg,var(--blue-lt),var(--blue-lt));color:var(--blue);font-size:14px;cursor:pointer;transition:all .15s"
           onmouseover="this.style.transform='scale(1.08)';this.style.boxShadow='0 2px 8px rgba(30,64,175,.3)'" onmouseout="this.style.transform='';this.style.boxShadow=''">🎬</button>
         <span id="asCountdown" style="font-size:10px;font-family:var(--mono);color:var(--text3);min-width:32px;text-align:center"></span>
         <span id="asStatus" style="font-size:10px;font-weight:600;min-width:60px"></span>
@@ -1140,7 +1176,7 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
       <div class="tt" style="display:none"><span class="tt-l">სპეც. 🔴</span><span class="tt-v h" id="T_sh">—</span><span class="tt-u">W/m²</span></div>
       <div class="tt" style="display:none"><span class="tt-l">სპეც. 🔵</span><span class="tt-v c" id="T_sc">—</span><span class="tt-u">W/m²</span></div>
       <div class="tt" style="flex:0;padding-right:8px">
-        <button onclick="openCtypesModal()" style="display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:11px;font-weight:700;padding:4px 12px;border:1.5px solid #f0a8a8;border-radius:6px;background:linear-gradient(135deg,var(--red-lt),#ffebeb);color:var(--red);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--red)';this.style.transform='translateY(-1px)';this.style.boxShadow='0 2px 6px rgba(192,48,32,.2)'" onmouseout="this.style.borderColor='#f0a8a8';this.style.transform='';this.style.boxShadow=''"><span style="font-size:13px">⚙</span>მართვა</button>
+        <button onclick="openCtypesModal()" style="display:inline-flex;align-items:center;gap:5px;font-family:var(--sans);font-size:11px;font-weight:700;padding:4px 12px;border:1.5px solid var(--red);border-radius:6px;background:linear-gradient(135deg,var(--red-lt),var(--red-lt));color:var(--red);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--red)';this.style.transform='translateY(-1px)';this.style.boxShadow='0 2px 6px rgba(192,48,32,.2)'" onmouseout="this.style.borderColor='var(--red)';this.style.transform='';this.style.boxShadow=''"><span style="font-size:13px">⚙</span>მართვა</button>
       </div>
       <div class="tt" style="flex:0;padding-right:16px"><button class="tt-tog" id="togBtn" onclick="togglePP()">✕ დახურე პარამეტრების ფანჯარა</button></div>
     </div>
@@ -1502,7 +1538,7 @@ function roomHTML(r,ri){
       const isSol=e.ti==='window'||(window.tw_windows||[]).some(w=>w.id===e.ti);
       const isFloor=_isFloorCt(e.ti);
       const litWmEmpty=isFloor&&!(e.litWm>0);
-      const _litWmStyle='min-width:40px;text-align:center;'+(litWmEmpty?'border-color:#e05050;background:var(--red-lt)':'');
+      const _litWmStyle='min-width:40px;text-align:center;'+(litWmEmpty?'border-color:var(--red);background:var(--red-lt)':'');
       const _litWmTd=isFloor
         ?'<input type="number" class="w48" value="'+(e.litWm||'')+'" placeholder="0" step="1" min="0" style="'+_litWmStyle+'" oninput="sv('+r.id+','+ei+',\'litWm\',+this.value);recalc()">'
         :'<span style="color:var(--text3);font-size:10px">—</span>';
@@ -1579,7 +1615,7 @@ function roomHTML(r,ri){
       </thead>
       <tbody>${dataRows}
         <tr class="tr-sum">
-          <td style="text-align:center;font-size:10px;font-weight:700;color:var(--text2);background:#fef0f3" colspan="11">სულ</td>
+          <td style="text-align:center;font-size:10px;font-weight:700;color:var(--text2);background:var(--red-lt)" colspan="11">სულ</td>
           <td class="sum-h" id="sumQhk_${r.id}">—</td>
           <td colspan="3"></td><td class="sum-c" id="sumQcs_${r.id}">—</td>
           <td colspan="3"></td><td class="sum-c" id="sumQsol_${r.id}">—</td>
@@ -2248,8 +2284,8 @@ function openCalcLog(roomId) {
     Qvent_h = 0.335 * qs * (Ti_w - Te_w);
     Qvent_c = 0.335 * qs * (Te_s - Ti_s);
     ventHtml = `
-      <tr style="background:#f0f8ff;border-top:2px dashed var(--bdr2)">
-        <td style="text-align:left;padding:5px 8px;font-weight:600;color:#1a5080">
+      <tr style="background:var(--blue-lt);border-top:2px dashed var(--bdr2)">
+        <td style="text-align:left;padding:5px 8px;font-weight:600;color:var(--navy)">
           💨 ვენტილაცია
           <div style="font-size:9px;color:var(--text3);font-weight:400">0.335 × ${qs} m³/h</div>
         </td>
@@ -2275,15 +2311,15 @@ function openCalcLog(roomId) {
             <th style="padding:7px 8px;font-size:10px;font-weight:700;text-align:right;white-space:nowrap">ფართობი m²</th>
             <th style="padding:7px 8px;font-size:10px;font-weight:700;text-align:right">U W/m²K</th>
             <th style="padding:7px 8px;font-size:10px;font-weight:700;text-align:right">ΔT °C</th>
-            <th style="padding:7px 8px;font-size:10px;font-weight:700;text-align:right;background:#4a2a10">🔴 გათბ. W</th>
-            <th style="padding:7px 8px;font-size:10px;font-weight:700;text-align:right;background:#102a4a">🔵 გაგრ. W</th>
+            <th style="padding:7px 8px;font-size:10px;font-weight:700;text-align:right;background:var(--ora)">🔴 გათბ. W</th>
+            <th style="padding:7px 8px;font-size:10px;font-weight:700;text-align:right;background:var(--navy)">🔵 გაგრ. W</th>
             <th style="padding:7px 8px;font-size:10px;font-weight:700;text-align:left">კოეფ.</th>
           </tr>
         </thead>
         <tbody>
           ${compRows}
           ${ventHtml}
-          <tr style="background:linear-gradient(90deg,#fff8f0,#f0f4ff);border-top:2px solid var(--bdr2)">
+          <tr style="background:linear-gradient(90deg,var(--ora-lt),var(--sur-2));border-top:2px solid var(--bdr2)">
             <td colspan="4" style="padding:8px 10px;font-size:12px;font-weight:700;color:var(--navy)">
               სულ პირდაპირი
               <span style="font-size:10px;font-weight:400;color:var(--text3);margin:0 4px">+</span>
@@ -2305,7 +2341,7 @@ function openCalcLog(roomId) {
     <div class="cl-summary">
       <span>📐 Ti_w=${Ti_w}°C &nbsp; Te_w=${Te_w}°C &nbsp; Tg=${Tg}°C</span>
       <span>Ti_s=${Ti_s}°C &nbsp; Te_s=${Te_s}°C &nbsp; f_tb=${f_tb}</span>
-      ${qs>0?`<span style="color:#1a5080">💨 ${qs} m³/h</span>`:''}
+      ${qs>0?`<span style="color:var(--navy)">💨 ${qs} m³/h</span>`:''}
       <span style="color:var(--ora);font-weight:700">∑🔴 env: ${(totalH/1000).toFixed(3)} kW ${qs>0?`+ vent: ${(Qvent_h/1000).toFixed(3)} kW`:''}</span>
       <span style="color:var(--blue);font-weight:700">∑🔵 ${(totalCfull/1000).toFixed(3)} kW</span>
     </div>`;
@@ -2893,7 +2929,7 @@ function tw_renderAnalysis(){
         <span>⚠️ შეტყობინებები</span>
         <button onclick="toggleWarningsInfo()" style="font-size:9px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:#fff;padding:1px 7px;border-radius:3px;cursor:pointer">▾ შეს. გაფ.</button>
       </div>
-      <div id="tw_warn_info" style="display:none;background:#f8fafd;border-bottom:1px solid var(--bdr);padding:8px 10px;font-size:10px;color:var(--text2)">
+      <div id="tw_warn_info" style="display:none;background:var(--sur-2);border-bottom:1px solid var(--bdr);padding:8px 10px;font-size:10px;color:var(--text2)">
         <b style="color:var(--navy);display:block;margin-bottom:4px">შეძლებელი გაფრთხილებები:</b>
         <div style="display:flex;flex-direction:column;gap:3px">
           <div style="padding:2px 0">🌊 <b>კონდენსაციის რისკი</b> — ორთქლის წნევა აღემატება ნაჯერ წნევას (p > pₛₐₜ) ერთ ან მეტ ინტერფეისზე</div>
@@ -3384,7 +3420,7 @@ function tw_doPrint(){
     // Chart image — render for every wall
     const wallChartUrl = renderWallChartToDataUrl(wall);
     const chartHTML = wallChartUrl ?
-      `<img src="${wallChartUrl}" style="width:100%;display:block;margin:8px auto;border:1px solid #dde;border-radius:4px">` :
+      `<img src="${wallChartUrl}" style="width:100%;display:block;margin:8px auto;border:1px solid var(--bdr);border-radius:4px">` :
       `<div class="no-chart">ჭრილი ვერ ჩაიტვირთა</div>`;
 
     wallsHTML+=`
@@ -3465,9 +3501,9 @@ function tw_doPrint(){
     .wall-sub{font-size:8pt;color:var(--text-2);margin-top:1mm}
     .u-badge{text-align:center;font-size:12pt;font-weight:700;padding:2mm 4mm;border-radius:4px;min-width:22mm}
     .u-badge.excellent{background:var(--grn-lt);color:var(--grn);border:1.5px solid var(--grn-bd)}
-    .u-badge.good{background:#edf9f4;color:var(--grn);border:1.5px solid var(--grn-bd)}
-    .u-badge.ok{background:#fff8e6;color:var(--ora);border:1.5px solid var(--ora-bd)}
-    .u-badge.poor{background:var(--red-lt);color:var(--red);border:1.5px solid #f0b0a8}
+    .u-badge.good{background:var(--grn-lt);color:var(--grn);border:1.5px solid var(--grn-bd)}
+    .u-badge.ok{background:var(--ora-lt);color:var(--ora);border:1.5px solid var(--ora-bd)}
+    .u-badge.poor{background:var(--red-lt);color:var(--red);border:1.5px solid var(--red)}
     .two-col{display:grid;grid-template-columns:55% 43%;gap:4mm}
     table{width:100%;border-collapse:collapse;font-size:8.5pt;margin-bottom:3mm}
     th{background:var(--navy);color:#fff;padding:2mm 2.5mm;text-align:center;font-size:8pt}
@@ -3478,10 +3514,10 @@ function tw_doPrint(){
     td.heat{color:var(--blue);font-weight:600}
     tr.surface-row td{background:var(--sur-2);font-style:italic;color:var(--text-2)}
     tr.sum-row td{background:var(--blue-lt);font-weight:700;border-top:1.5pt solid var(--navy)}
-    tr:nth-child(even) td{background:#f9fbff}
+    tr:nth-child(even) td{background:var(--sur-2)}
     .layer-table tr:nth-child(even) td{background:var(--sur-2)}
     .result-table td:first-child,.result-table td:nth-child(3){font-weight:600;color:var(--text-2);background:var(--sur-2)}
-    .std-table tr.pass td{background:#f0faf5}
+    .std-table tr.pass td{background:var(--grn-lt)}
     .std-table tr.fail td{background:var(--red-lt)}
     .std-table td:first-child{text-align:center;font-size:11pt;font-weight:700}
     .pass td:first-child{color:var(--grn)}
@@ -3492,20 +3528,20 @@ function tw_doPrint(){
     .box-title{background:var(--navy);color:#fff;font-size:8pt;font-weight:700;padding:2mm 3mm}
     .no-chart{padding:8mm;text-align:center;color:var(--text-3);font-size:8pt}
     .warn-box{padding:2mm 3mm;border-radius:3px;margin-bottom:2mm;font-size:8.5pt;font-weight:600}
-    .warn-box.cond{background:#fff5e0;border:1pt solid var(--ora-bd);color:var(--ora)}
-    .warn-box.mold{background:var(--red-lt);border:1pt solid #f0b0a8;color:var(--red)}
+    .warn-box.cond{background:var(--ora-lt);border:1pt solid var(--ora-bd);color:var(--ora)}
+    .warn-box.mold{background:var(--red-lt);border:1pt solid var(--red);color:var(--red)}
     .formulas-section{page-break-before:always;padding-top:6mm}
     .formulas-section h2{font-size:11pt;font-weight:700;color:var(--text);border-bottom:1.5pt solid var(--text);padding-bottom:2mm;margin-bottom:4mm}
     .formula-grid{display:grid;grid-template-columns:1fr 1fr;gap:3mm;margin-bottom:4mm}
     .formula-box{background:var(--sur-2);border:1pt solid var(--bdr-2);border-radius:4px;padding:3mm}
     .formula-box .f-name{font-size:8pt;font-weight:700;color:var(--navy);margin-bottom:1mm}
-    .formula-box .f-eq{font-family:monospace;font-size:9pt;color:var(--text);background:var(--sur);padding:1.5mm;border-radius:3px;border:0.5pt solid #dde}
+    .formula-box .f-eq{font-family:monospace;font-size:9pt;color:var(--text);background:var(--sur);padding:1.5mm;border-radius:3px;border:0.5pt solid var(--bdr)}
     .formula-box .f-desc{font-size:7.5pt;color:var(--text-3);margin-top:1mm}
     .symbols-table td{font-size:8pt}
     .symbols-table td:first-child{font-family:monospace;font-weight:700;color:var(--navy);width:16mm}
     .refs-section h3{font-size:9pt;font-weight:700;color:var(--navy);margin:3mm 0 1mm}
     .refs-section ul{list-style:none;padding-left:4mm}
-    .refs-section li{font-size:8pt;color:var(--text-2);padding:0.5mm 0;border-bottom:0.5pt solid #eef}
+    .refs-section li{font-size:8pt;color:var(--text-2);padding:0.5mm 0;border-bottom:0.5pt solid var(--sur-2)}
     .refs-section li::before{content:"→ ";color:var(--navy);font-weight:700}
     @media print{
       @page{size:A4;margin:15mm 12mm}
@@ -3770,7 +3806,7 @@ function buildUGrid(){
       +`<span style="flex:1;font-size:10px;font-weight:600;color:${isTh?'var(--blue)':'var(--text2)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.name}">${c.name}</span>`
       +`<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;background:${orHasSol?'var(--ora-lt)':'var(--sur2)'};color:${orHasSol?'var(--ora)':'var(--text3)'};border:1px solid ${orHasSol?'var(--ora-bd)':'var(--bdr)'};flex-shrink:0;white-space:nowrap">${orLabel}${orHasSol&&orSolVal?' · '+orSolVal+' W/m²':''}</span>`
       +(isTh
-        ?`<span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--grn);background:#edfaf3;border:1.5px solid var(--grn-bd);padding:2px 6px;border-radius:4px;flex-shrink:0">U=${c.u.toFixed(3)} W/m²K</span>`
+        ?`<span style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--grn);background:var(--grn-lt);border:1.5px solid var(--grn-bd);padding:2px 6px;border-radius:4px;flex-shrink:0">U=${c.u.toFixed(3)} W/m²K</span>`
         :`<span style="display:inline-flex;align-items:center;gap:2px;flex-shrink:0"><input class="uv" type="number" value="${c.u}" step=".05" min=".01" max="10" oninput="setManualU('${c.id}',+this.value)" style="width:52px"><span style="font-size:8px;color:var(--text3)">W/m²K</span></span>`);
     g.appendChild(d);
   });
@@ -3845,7 +3881,7 @@ function _buildSolModalTable(){
     const diff=total-direct;
     const curI=(SOLAR.find(s=>s.id===k)||{I:total}).I;
     const rowStyle=isRoof
-      ?'background:linear-gradient(90deg,#fff8f0,#fff);border-top:2px solid var(--ora-bd)'
+      ?'background:linear-gradient(90deg,var(--ora-lt),var(--sur));border-top:2px solid var(--ora-bd)'
       :(idx%2===0?'':'background:var(--sur2)');
     rows+=`<tr style="${rowStyle}">
       <td style="padding:6px 10px;font-weight:700;color:var(--navy)">${isRoof?'📐 ':''}${OR_NAMES[k]}</td>
@@ -3975,7 +4011,7 @@ function renderCtypesModal(){
     if(tw.sol===undefined) tw.sol=true;
     const isSol=tw.sol!==false;
     return `<tr>
-      <td><span class="tbadge" style="background:#eef4fd;color:var(--blue);border:1px solid var(--bdr)">🪟 ვიტ./კარი</span></td>
+      <td><span class="tbadge" style="background:var(--blue-lt);color:var(--blue);border:1px solid var(--bdr)">🪟 ვიტ./კარი</span></td>
       <td><input value="${(tw.name||'').replace(/"/g,'&quot;')}" style="width:130px"
         oninput="if(typeof setTwWinName!=='undefined')setTwWinName('${c.winRef}',this.value)"></td>
       <td><input type="number" value="${(tw.u||2.8).toFixed(3)}" step=".05" min=".1" max="20"
@@ -4093,7 +4129,7 @@ function drawChartVertical(res, wall, cv){
   const yp=d=>P.t+(d/totD)*CH; // layer1 always at top, matching sidebar order
   const xpT=t=>P.l+((t-tMn)/tR)*CW; // temp → x
   const xpRH=rh=>P.l+(rh/100)*CW;    // rh% → x
-  const bgc=['#f0f4fa','#fdf5ec','#f0f8f0','#f5f0fa','#faf0f5','#f0f5f8','#f5f8f0','#fafaf0'];
+  const bgc=['var(--sur-2)','var(--ora-lt)','var(--grn-lt)','var(--pur-lt)','var(--sur-2)','var(--sur-2)','var(--sur-2)','var(--sur-2)'];
   const bgColors=['rgba(230,240,255,0.7)','rgba(255,245,230,0.7)','rgba(230,250,240,0.7)',
     'rgba(245,235,255,0.7)','rgba(255,240,245,0.7)','rgba(235,248,255,0.7)','rgba(245,255,235,0.7)','rgba(255,255,230,0.7)'];
   const hatchColors=['rgba(100,120,180,0.18)','rgba(180,130,80,0.18)','rgba(80,160,110,0.18)',
@@ -4480,23 +4516,23 @@ function updateLayerMeta(wid, lid){
 const U_STANDARDS = {
   wall: [
     {name:'Passive House',      max:0.15, color:'var(--grn)', label:'პასიური სახლი'},
-    {name:'EPBD 2021 (A enerġ)',max:0.20, color:'#1a8f50', label:'EPBD 2021 — A კლასი'},
-    {name:'EPBD 2021 (B enerġ)',max:0.30, color:'#2da860', label:'EPBD 2021 — B კლასი'},
-    {name:'EPBD 2010',          max:0.45, color:'#f0a020', label:'EPBD 2010'},
+    {name:'EPBD 2021 (A enerġ)',max:0.20, color:'var(--grn)', label:'EPBD 2021 — A კლასი'},
+    {name:'EPBD 2021 (B enerġ)',max:0.30, color:'var(--grn)', label:'EPBD 2021 — B კლასი'},
+    {name:'EPBD 2010',          max:0.45, color:'var(--ora)', label:'EPBD 2010'},
     {name:'BNBG 2022 (GE)',     max:0.60, color:'var(--ora)', label:'საქ.მთ.დადგ. №354/2021 — ენ.ეფ.მ-ვ.'},
   ],
   roof: [
     {name:'Passive House',      max:0.10, color:'var(--grn)', label:'პასიური სახლი'},
-    {name:'EPBD 2021 (A)',      max:0.15, color:'#1a8f50', label:'EPBD 2021 — A კლასი'},
-    {name:'EPBD 2021 (B)',      max:0.20, color:'#2da860', label:'EPBD 2021 — B კლასი'},
-    {name:'EPBD 2010',          max:0.25, color:'#f0a020', label:'EPBD 2010'},
+    {name:'EPBD 2021 (A)',      max:0.15, color:'var(--grn)', label:'EPBD 2021 — A კლასი'},
+    {name:'EPBD 2021 (B)',      max:0.20, color:'var(--grn)', label:'EPBD 2021 — B კლასი'},
+    {name:'EPBD 2010',          max:0.25, color:'var(--ora)', label:'EPBD 2010'},
     {name:'BNBG 2022 (GE)',     max:0.35, color:'var(--ora)', label:'საქ.მთ.დადგ. №354/2021 — ენ.ეფ.მ-ვ.'},
   ],
   floor: [
     {name:'Passive House',      max:0.10, color:'var(--grn)', label:'პასიური სახლი'},
-    {name:'EPBD 2021 (A)',      max:0.15, color:'#1a8f50', label:'EPBD 2021 — A კლასი'},
-    {name:'EPBD 2021 (B)',      max:0.25, color:'#2da860', label:'EPBD 2021 — B კლასი'},
-    {name:'EPBD 2010',          max:0.35, color:'#f0a020', label:'EPBD 2010'},
+    {name:'EPBD 2021 (A)',      max:0.15, color:'var(--grn)', label:'EPBD 2021 — A კლასი'},
+    {name:'EPBD 2021 (B)',      max:0.25, color:'var(--grn)', label:'EPBD 2021 — B კლასი'},
+    {name:'EPBD 2010',          max:0.35, color:'var(--ora)', label:'EPBD 2010'},
     {name:'BNBG 2022 (GE)',     max:0.50, color:'var(--ora)', label:'საქ.მთ.დადგ. №354/2021 — ენ.ეფ.მ-ვ.'},
   ],
 };
@@ -4517,11 +4553,11 @@ function renderUAssess(wall, U){
   // Overall rating
   let rating,ratingColor,ratingIcon;
   if(U<=stds[0].max){rating='პასიური სახლის სტანდარტი';ratingColor='var(--grn)';ratingIcon='🏆';}
-  else if(U<=stds[1].max){rating='ძალიან კარგი (A კლასი)';ratingColor='#1a8f50';ratingIcon='✅';}
-  else if(U<=stds[2].max){rating='კარგი (B კლასი)';ratingColor='#2da860';ratingIcon='👍';}
-  else if(U<=stds[3].max){rating='დამაკმ. (EPBD 2010)';ratingColor='#d08010';ratingIcon='⚠️';}
+  else if(U<=stds[1].max){rating='ძალიან კარგი (A კლასი)';ratingColor='var(--grn)';ratingIcon='✅';}
+  else if(U<=stds[2].max){rating='კარგი (B კლასი)';ratingColor='var(--grn)';ratingIcon='👍';}
+  else if(U<=stds[3].max){rating='დამაკმ. (EPBD 2010)';ratingColor='var(--ora)';ratingIcon='⚠️';}
   else if(U<=stds[4].max){rating='მიღებული (საქ.№354)';ratingColor='var(--red)';ratingIcon='⚠️';}
-  else{rating='არ შეესაბამება სტანდარტს';ratingColor='#a00000';ratingIcon='🚫';}
+  else{rating='არ შეესაბამება სტანდარტს';ratingColor='var(--red)';ratingIcon='🚫';}
 
   // Build gradient bar zones
   const zones=stds.map((s,i)=>{
@@ -4693,7 +4729,7 @@ function renderGe354Selectors(wall, U){
       <!-- Cities hint -->
       <div style="font-size:8.5px;color:var(--t3);font-style:italic">${zoneInfo?.cities||''}</div>
       <!-- Result -->
-      <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;background:${pass?'var(--grn-lt)':'var(--red-lt)'};border:1.5px solid ${pass?'var(--grn-bd)':'#f0b0a8'}">
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;background:${pass?'var(--grn-lt)':'var(--red-lt)'};border:1.5px solid ${pass?'var(--grn-bd)':'var(--red)'}">
         <span style="font-size:18px">${pass?'✅':'❌'}</span>
         <div style="flex:1">
           <div style="font-size:11px;font-weight:700;color:${pass?'var(--grn)':'var(--red)'}">
@@ -4712,7 +4748,7 @@ function renderGe354Selectors(wall, U){
           ${GE_DECREE354.zones.map(z=>{
             const l=GE_DECREE354.limits[z.id]?.[_ge354Cat];
             const cur=z.id===_ge354Zone;
-            return l?`<tr style="background:${cur?'#fdf9e6':''}"><td style="padding:2px 4px;font-weight:${cur?700:400}">${z.name}</td><td style="text-align:center;color:${U>l.wall?'var(--red)':'var(--grn)'}">${l.wall}</td><td style="text-align:center;color:${U>l.roof?'var(--red)':'var(--grn)'}">${l.roof}</td><td style="text-align:center;color:${U>l.floor?'var(--red)':'var(--grn)'}">${l.floor}</td></tr>`:''
+            return l?`<tr style="background:${cur?'var(--ora-lt)':''}"><td style="padding:2px 4px;font-weight:${cur?700:400}">${z.name}</td><td style="text-align:center;color:${U>l.wall?'var(--red)':'var(--grn)'}">${l.wall}</td><td style="text-align:center;color:${U>l.roof?'var(--red)':'var(--grn)'}">${l.roof}</td><td style="text-align:center;color:${U>l.floor?'var(--red)':'var(--grn)'}">${l.floor}</td></tr>`:''
           }).join('')}
         </table>
         <div style="font-size:7.5px;color:var(--t3);margin-top:3px">წყ.: matsne.gov.ge · საქ.მთ.დადგ.№354/2021 · II თ. ცხ.2</div>
@@ -5085,7 +5121,7 @@ initAll();
             </tr>
           </thead>
           <tbody>
-            <tr style="background:#f0faf5"><td style="padding:5px 8px;border:1px solid var(--bdr-2);font-weight:700;color:var(--grn)">🏆 Passive House (PHI)</td><td style="text-align:center;border:1px solid var(--bdr-2);font-weight:700;color:var(--grn)">≤ 0.15</td><td style="text-align:center;border:1px solid var(--bdr-2);font-weight:700;color:var(--grn)">≤ 0.10</td><td style="text-align:center;border:1px solid var(--bdr-2);font-weight:700;color:var(--grn)">≤ 0.10</td><td style="border:1px solid var(--bdr-2);font-size:9px;color:var(--text-3)">Passivhaus Institut, Darmstadt</td></tr>
+            <tr style="background:var(--grn-lt)"><td style="padding:5px 8px;border:1px solid var(--bdr-2);font-weight:700;color:var(--grn)">🏆 Passive House (PHI)</td><td style="text-align:center;border:1px solid var(--bdr-2);font-weight:700;color:var(--grn)">≤ 0.15</td><td style="text-align:center;border:1px solid var(--bdr-2);font-weight:700;color:var(--grn)">≤ 0.10</td><td style="text-align:center;border:1px solid var(--bdr-2);font-weight:700;color:var(--grn)">≤ 0.10</td><td style="border:1px solid var(--bdr-2);font-size:9px;color:var(--text-3)">Passivhaus Institut, Darmstadt</td></tr>
             <tr><td style="padding:5px 8px;border:1px solid var(--bdr-2);font-weight:600">EPBD 2021 — A კლ.</td><td style="text-align:center;border:1px solid var(--bdr-2)">≤ 0.20</td><td style="text-align:center;border:1px solid var(--bdr-2)">≤ 0.15</td><td style="text-align:center;border:1px solid var(--bdr-2)">≤ 0.15</td><td style="border:1px solid var(--bdr-2);font-size:9px;color:var(--text-3)">EU Dir.2021/1275 — A ენ.კლასი</td></tr>
             <tr style="background:var(--sur-2)"><td style="padding:5px 8px;border:1px solid var(--bdr-2);font-weight:600">EPBD 2021 — B კლ.</td><td style="text-align:center;border:1px solid var(--bdr-2)">≤ 0.30</td><td style="text-align:center;border:1px solid var(--bdr-2)">≤ 0.20</td><td style="text-align:center;border:1px solid var(--bdr-2)">≤ 0.25</td><td style="border:1px solid var(--bdr-2);font-size:9px;color:var(--text-3)">EU Dir.2021/1275 — B ენ.კლასი</td></tr>
             <tr><td style="padding:5px 8px;border:1px solid var(--bdr-2);font-weight:600">EPBD 2010</td><td style="text-align:center;border:1px solid var(--bdr-2)">≤ 0.45</td><td style="text-align:center;border:1px solid var(--bdr-2)">≤ 0.25</td><td style="text-align:center;border:1px solid var(--bdr-2)">≤ 0.35</td><td style="border:1px solid var(--bdr-2);font-size:9px;color:var(--text-3)">EU Dir.2010/31/EU</td></tr>
@@ -5162,15 +5198,15 @@ function closeStdsInfoModal(){ document.getElementById('stds_modal_overlay').sty
 
       <!-- Zone legend -->
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px">
-        <div style="background:#fef6f4;border:1.5px solid #f0b0a0;border-radius:6px;padding:7px 9px;font-size:9.5px">
+        <div style="background:var(--red-lt);border:1.5px solid var(--red);border-radius:6px;padding:7px 9px;font-size:9.5px">
           <b style="color:var(--red)">ზონა 1 — თბილი-ნოტიო</b><br>
           <span style="color:var(--text-2)">ბათუმი, ფოთი, ზუგდიდი, ქუთაისი,<br>სენაკი, ოზურგეთი, სამტრედია...</span>
         </div>
-        <div style="background:#fff8f0;border:1.5px solid #f0c880;border-radius:6px;padding:7px 9px;font-size:9.5px">
-          <b style="color:#b07010">ზონა 2 — ზომიერი</b><br>
+        <div style="background:var(--ora-lt);border:1.5px solid var(--ora-bd);border-radius:6px;padding:7px 9px;font-size:9.5px">
+          <b style="color:var(--ora)">ზონა 2 — ზომიერი</b><br>
           <span style="color:var(--text-2)">თბილისი, გორი, თელავი, ლაგოდეხი,<br>რუსთავი, მცხეთა, გარდაბანი...</span>
         </div>
-        <div style="background:var(--sur-2);border:1.5px solid #a0b8d8;border-radius:6px;padding:7px 9px;font-size:9.5px">
+        <div style="background:var(--sur-2);border:1.5px solid var(--bdr-2);border-radius:6px;padding:7px 9px;font-size:9.5px">
           <b style="color:var(--navy)">ზონა 3 — ცივი</b><br>
           <span style="color:var(--text-2)">დუშეთი, ბორჯომი, ახალციხე,<br>მესტია, ყაზბეგი, ახალქალაქი...</span>
         </div>
@@ -5188,16 +5224,16 @@ function closeStdsInfoModal(){ document.getElementById('stds_modal_overlay').sty
           </tr>
         </thead>
         <tbody>
-          <tr style="background:#fef6f4"><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">1</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);font-weight:600">🧱 გარე ჰაერთან შეხებ. გარე კედლები</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.50</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.38</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.25</td></tr>
+          <tr style="background:var(--red-lt)"><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">1</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);font-weight:600">🧱 გარე ჰაერთან შეხებ. გარე კედლები</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.50</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.38</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.25</td></tr>
           <tr><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">2</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);color:var(--text-3)">თ.კონდ. სივრცის გარე კედ. (მ.შ. გამთბ.სარდ.)</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.65</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.50</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.30</td></tr>
           <tr style="background:var(--sur-2)"><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">3</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);color:var(--text-3)">თ.არაკონდ. სივრცის შიგა კედ. (კიბ-ჯ., სხვენი, გარ.)</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.65</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.50</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.40</td></tr>
           <tr><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">4</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);color:var(--text-3)">თ.არაკონდ. მიწ/ქვ. სივრცის გარ.კედ. (გაუმთ.სარდ.)</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.80</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.70</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.60</td></tr>
-          <tr style="background:#fef6f4"><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">5</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);font-weight:600">🏠 გარე ჰაერთან შეხებ. სახ.კონსტ. / ვენტ.სახ.ჭერი</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.40</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.30</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.20</td></tr>
+          <tr style="background:var(--red-lt)"><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">5</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);font-weight:600">🏠 გარე ჰაერთან შეხებ. სახ.კონსტ. / ვენტ.სახ.ჭერი</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.40</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.30</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.20</td></tr>
           <tr style="background:var(--sur-2)"><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">6</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);color:var(--text-3)">სახ.კონსტ. თ.არაკონდ. სივრცის ზემოთ (&gt;5°C)</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.50</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.38</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.25</td></tr>
-          <tr style="background:#fef6f4"><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">7</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);font-weight:600">🏗 გრუნტ-შეხებ. თ.კონდ. სათ. იატაკი</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.50</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.38</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.25</td></tr>
+          <tr style="background:var(--red-lt)"><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">7</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);font-weight:600">🏗 გრუნტ-შეხებ. თ.კონდ. სათ. იატაკი</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.50</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.38</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px">0.25</td></tr>
           <tr style="background:var(--sur-2)"><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">8</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);color:var(--text-3)">გ.ჰ-შეხებ. თ.კონდ. სათ. იატ. (თაღ.შეს., ღია პარკ.)</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.40</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.30</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.20</td></tr>
           <tr><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">9</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);color:var(--text-3)">არაკონდ. სივრც-შეხ.იატ. (გ.სარდ., გარ.)</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.60</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.45</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">0.30</td></tr>
-          <tr style="background:#f0f8ff"><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">10</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);font-weight:700;color:var(--navy)">🪟 გარე ფანჯარა და შემინული კარი</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px;color:var(--navy)">2.20</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px;color:var(--navy)">1.80</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px;color:var(--navy)">1.80</td></tr>
+          <tr style="background:var(--blue-lt)"><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">10</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);font-weight:700;color:var(--navy)">🪟 გარე ფანჯარა და შემინული კარი</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px;color:var(--navy)">2.20</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px;color:var(--navy)">1.80</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace;font-weight:700;font-size:12px;color:var(--navy)">1.80</td></tr>
           <tr style="background:var(--sur-2)"><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">11</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);color:var(--text-3)">შეკიდ. კედ-შირმები / ფართო შემ.ფასადი (≥60°)</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">1.80</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">1.80</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">1.80</td></tr>
           <tr><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">12</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);color:var(--text-3)">სხვა გ.ჰორ/დახ. შუქგამტარი კომპ.</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">2.50</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">2.00</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">1.80</td></tr>
           <tr style="background:var(--sur-2)"><td style="padding:5px 7px;text-align:center;border:1px solid var(--bdr-2);font-weight:700">13</td><td style="padding:5px 8px;border:1px solid var(--bdr-2);color:var(--text-3)">შუქგაუმტარი გ.კარები (მყარი)</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">2.75</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">2.20</td><td style="text-align:center;border:1px solid var(--bdr-2);font-family:monospace">2.20</td></tr>
@@ -5228,7 +5264,7 @@ function openPrintSel(){
     gWalls.forEach(w=>{
       const cond=getWallCond(w); const res=compute(w,...cond);
       const U=res?res.U.toFixed(3):'—';
-      html+=`<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;cursor:pointer;background:#fff">
+      html+=`<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;cursor:pointer;background:var(--sur)">
         <input type="checkbox" id="pchk_${w.id}" checked style="width:16px;height:16px;cursor:pointer">
         <div style="flex:1">
           <div style="font-size:11px;font-weight:600;color:var(--navy)">${w.name}</div>
@@ -5245,7 +5281,7 @@ function openPrintSel(){
     unassigned.forEach(w=>{
       const cond=getWallCond(w); const res=compute(w,...cond);
       const U=res?res.U.toFixed(3):'—';
-      html+=`<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;cursor:pointer;background:#fff">
+      html+=`<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--bdr);border-radius:6px;cursor:pointer;background:var(--sur)">
         <input type="checkbox" id="pchk_${w.id}" checked style="width:16px;height:16px;cursor:pointer">
         <div style="flex:1"><div style="font-size:11px;font-weight:600">${w.name}</div><div style="font-size:9px;color:var(--t2);font-family:var(--mono)">U=${U} W/m²K</div></div>
         <span style="font-size:10px;font-weight:700;font-family:var(--mono)">${U}</span>
@@ -5333,7 +5369,7 @@ function closeUmaxModal(){ document.getElementById('umax_modal_overlay').style.d
   style="display:none;position:fixed;inset:0;background:rgba(20,30,60,.6);z-index:800;align-items:center;justify-content:center">
   <div style="background:var(--sur);border-radius:12px;box-shadow:0 12px 48px rgba(0,0,0,.3);width:min(520px,94vw);overflow:hidden;max-height:90vh;display:flex;flex-direction:column">
     <!-- header -->
-    <div style="background:#6d28d9;color:#fff;padding:13px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+    <div style="background:var(--pur);color:#fff;padding:13px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
       <div>
         <div style="font-size:13px;font-weight:700">🖨 PDF ანგარიში — სექციების არჩევა</div>
         <div style="font-size:9px;opacity:.75;margin-top:1px">მონიშნეთ რა უნდა შევიდეს ანგარიშში</div>
@@ -5344,7 +5380,7 @@ function closeUmaxModal(){ document.getElementById('umax_modal_overlay').style.d
     <div style="padding:16px 18px;overflow-y:auto;flex:1">
 
       <!-- section checks -->
-      <div style="font-size:10px;font-weight:700;color:#6d28d9;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📄 სექციები</div>
+      <div style="font-size:10px;font-weight:700;color:var(--pur);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📄 სექციები</div>
       <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px" id="hl_sec_list">
         <label class="hl-chk"><input type="checkbox" id="hlp_cover"    checked> <span>🏠 Cover გვერდი — პროექტის ინფო</span></label>
         <label class="hl-chk"><input type="checkbox" id="hlp_summary"  checked> <span>📊 Summary — სულ kW, სპეც. W/m²</span></label>
@@ -5359,7 +5395,7 @@ function closeUmaxModal(){ document.getElementById('umax_modal_overlay').style.d
 
       <!-- rooms selector -->
       <div id="hlp_rooms_filter_wrap">
-        <div style="font-size:10px;font-weight:700;color:#6d28d9;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🏢 სივრცეების ფილტრი</div>
+        <div style="font-size:10px;font-weight:700;color:var(--pur);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🏢 სივრცეების ფილტრი</div>
         <div style="display:flex;gap:6px;margin-bottom:6px">
           <button onclick="hlSelRooms(true)"  style="flex:1;font-size:10px;padding:5px;border:1.5px solid var(--bdr-2);border-radius:5px;background:var(--sur-2);cursor:pointer;font-family:inherit">☑ ყველა</button>
           <button onclick="hlSelRooms(false)" style="flex:1;font-size:10px;padding:5px;border:1.5px solid var(--bdr-2);border-radius:5px;background:var(--sur-2);cursor:pointer;font-family:inherit">☐ არცერთი</button>
@@ -5369,7 +5405,7 @@ function closeUmaxModal(){ document.getElementById('umax_modal_overlay').style.d
 
       <!-- wall selector -->
       <div id="hlp_walls_filter_wrap">
-        <div style="font-size:10px;font-weight:700;color:#6d28d9;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🧱 კედლები — ISO 6946 (კლიმ. ჯგუფებით)</div>
+        <div style="font-size:10px;font-weight:700;color:var(--pur);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🧱 კედლები — ISO 6946 (კლიმ. ჯგუფებით)</div>
         <div style="display:flex;gap:6px;margin-bottom:6px">
           <button onclick="hlSelWalls(true)"  style="flex:1;font-size:10px;padding:5px;border:1.5px solid var(--bdr-2);border-radius:5px;background:var(--sur-2);cursor:pointer;font-family:inherit">☑ ყველა</button>
           <button onclick="hlSelWalls(false)" style="flex:1;font-size:10px;padding:5px;border:1.5px solid var(--bdr-2);border-radius:5px;background:var(--sur-2);cursor:pointer;font-family:inherit">☐ არცერთი</button>
@@ -5379,7 +5415,7 @@ function closeUmaxModal(){ document.getElementById('umax_modal_overlay').style.d
 
       <!-- cover inputs -->
       <div id="hlp_cover_inputs">
-        <div style="font-size:10px;font-weight:700;color:#6d28d9;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🏠 Cover ინფო</div>
+        <div style="font-size:10px;font-weight:700;color:var(--pur);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">🏠 Cover ინფო</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px">
           <div><div style="font-size:9px;color:var(--text-3);margin-bottom:2px">პროექტის სახელი</div><input id="hlp_proj" type="text" placeholder="მაგ. ოფისი N1" style="width:100%;padding:5px 8px;border:1.5px solid var(--bdr-2);border-radius:5px;font-size:11px;font-family:inherit"></div>
           <div><div style="font-size:9px;color:var(--text-3);margin-bottom:2px">ინჟინერი</div><input id="hlp_eng" type="text" placeholder="სახელი გვარი" style="width:100%;padding:5px 8px;border:1.5px solid var(--bdr-2);border-radius:5px;font-size:11px;font-family:inherit"></div>
@@ -5390,17 +5426,17 @@ function closeUmaxModal(){ document.getElementById('umax_modal_overlay').style.d
     </div>
 
     <!-- footer -->
-    <div style="padding:12px 18px;border-top:1px solid #e8edf5;background:#f9fafb;display:flex;gap:8px;flex-shrink:0">
+    <div style="padding:12px 18px;border-top:1px solid var(--sur-2);background:var(--sur-2);display:flex;gap:8px;flex-shrink:0">
       <button onclick="closeHlPrintSel()" style="flex:1;padding:9px;border:1.5px solid var(--bdr-2);border-radius:7px;font-size:12px;font-weight:600;background:var(--sur);cursor:pointer;font-family:inherit;color:var(--text-3)">გაუქმება</button>
-      <button onclick="doHlPrint()" style="flex:2;padding:9px;background:#6d28d9;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">🖨 PDF-ის გენერაცია</button>
+      <button onclick="doHlPrint()" style="flex:2;padding:9px;background:var(--pur);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">🖨 PDF-ის გენერაცია</button>
     </div>
   </div>
 </div>
 
 <style>
-.hl-chk{display:flex;align-items:center;gap:8px;font-size:11px;padding:6px 8px;border:1px solid #e8edf5;border-radius:6px;cursor:pointer;transition:background .1s}
-.hl-chk:hover{background:#f5f0ff}
-.hl-chk input[type=checkbox]{accent-color:#6d28d9;width:14px;height:14px;cursor:pointer;flex-shrink:0}
+.hl-chk{display:flex;align-items:center;gap:8px;font-size:11px;padding:6px 8px;border:1px solid var(--sur-2);border-radius:6px;cursor:pointer;transition:background .1s}
+.hl-chk:hover{background:var(--pur-lt)}
+.hl-chk input[type=checkbox]{accent-color:var(--pur);width:14px;height:14px;cursor:pointer;flex-shrink:0}
 </style>
 
 
@@ -5909,7 +5945,7 @@ function togglePanel(fid,rid){
     eb.style.cssText=r.vent_open
       ?'border-color:var(--blue);color:var(--blue);background:var(--blue-lt)'
       :hasWp?'border-color:var(--grn);color:var(--grn);background:var(--grn-lt)'
-      :'border-color:var(--ora-bd);color:var(--ora);background:#fefce8';
+      :'border-color:var(--ora-bd);color:var(--ora);background:var(--ora-lt)';
   }
 }
 
@@ -5930,7 +5966,7 @@ function refreshMainRow(fid,rid){
     eb.style.cssText=r.vent_open
       ?'border-color:var(--blue);color:var(--blue);background:var(--blue-lt)'
       :hasWp?'border-color:var(--grn);color:var(--grn);background:var(--grn-lt)'
-      :'border-color:var(--ora-bd);color:var(--ora);background:#fefce8';
+      :'border-color:var(--ora-bd);color:var(--ora);background:var(--ora-lt)';
   }
 }
 function refreshPanel(fid,rid){
@@ -6022,7 +6058,7 @@ function buildRow(fl, r, idx){
     ?'border-color:var(--blue);color:var(--blue);background:var(--blue-lt)'
     :hasWp
       ?'border-color:var(--grn);color:var(--grn);background:var(--grn-lt)'
-      :'border-color:var(--ora-bd);color:var(--ora);background:#fefce8';
+      :'border-color:var(--ora-bd);color:var(--ora);background:var(--ora-lt)';
 
   const isCustom=rt&&rt.isCustom;
   const isMyCfg=state.std==='myconf';
@@ -6038,7 +6074,7 @@ function buildRow(fl, r, idx){
   <td class="fn-cell">
     <select onchange="onFuncChange('${fid}','${rid}',this.value)">${funcOpts(r.func_id)}</select>
     <span class="fn-badge ${badgeColCls}">${badgeLabel}</span>
-    ${(isCustom||isMyCfg)?`<span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:8px;background:#fff3e0;color:#b35a00;border:1px solid var(--ora-bd);margin-left:2px">ხელ.</span>`:''}
+    ${(isCustom||isMyCfg)?`<span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:8px;background:var(--ora-lt);color:var(--ora);border:1px solid var(--ora-bd);margin-left:2px">ხელ.</span>`:''}
   </td>
   <td>${ni('area',r.area,0.5,0)}</td>
   <td>${ni('height',r.height,0.1,0)}</td>
@@ -6430,7 +6466,7 @@ function renderMyTypes(){
 
   tbody.innerHTML=types.map((t,i)=>{
     const used=usageMap[t.id]||0;
-    return `<tr style="background:${i%2===0?'#fff':'var(--sur2)'}">
+    return `<tr style="background:${i%2===0?'var(--sur)':'var(--sur-2)'}">
       <td style="padding:7px 10px;border:1px solid var(--bdr);font-family:var(--mono);font-size:10px;color:var(--text3)">${i+1}</td>
       <td style="padding:7px 10px;border:1px solid var(--bdr);min-width:220px">
         <div style="font-weight:700;color:var(--navy)">${t.ka}</div>
@@ -6668,7 +6704,7 @@ const REF_SP60=[
 ];
 
 /* ══ RENDER FUNCTIONS ══ */
-const acBadgeRef=(n)=>`<span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;display:inline-block;background:${['','var(--grn-lt)','var(--blue-lt)','var(--ora-lt)','var(--red-lt)'][n]};color:${['','var(--grn)','var(--blue)','var(--ora)','var(--red)'][n]};border:1px solid ${['','var(--grn-bd)','var(--blue-bd)','var(--ora-bd)','#f0a0a0'][n]}">${n}</span>`;
+const acBadgeRef=(n)=>`<span style="font-family:var(--mono);font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;display:inline-block;background:${['','var(--grn-lt)','var(--blue-lt)','var(--ora-lt)','var(--red-lt)'][n]};color:${['','var(--grn)','var(--blue)','var(--ora)','var(--red)'][n]};border:1px solid ${['','var(--grn-bd)','var(--blue-bd)','var(--ora-bd)','var(--red)'][n]}">${n}</span>`;
 
 function renderRefAshrae(){
   // supply
@@ -6678,7 +6714,7 @@ function renderRefAshrae(){
       html+=`<tr style="background:var(--navy)"><td colspan="8" style="padding:4px 8px;color:#fff;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;border:1px solid var(--bdr)">${r.cat}</td></tr>`;
       lastCat=r.cat;
     }
-    const bg=i%2===0?'#fff':'var(--sur2)';
+    const bg=i%2===0?'var(--sur)':'var(--sur-2)';
     html+=`<tr class="aref-sup" data-cat="${r.cat}" data-name="${r.ka.toLowerCase()} ${r.en.toLowerCase()}" style="background:${bg}">
       <td style="padding:3px 7px;border:1px solid var(--bdr);font-family:var(--mono);font-size:9px;color:var(--text3)">${r.id}</td>
       <td style="padding:3px 7px;border:1px solid var(--bdr);font-size:9px;color:var(--text3)">${r.cat}</td>
@@ -6698,7 +6734,7 @@ function renderRefAshrae(){
   // exhaust
   html='';
   REF_ASHRAE_EXH.forEach((r,i)=>{
-    const bg=i%2===0?'#fff':'var(--sur2)';
+    const bg=i%2===0?'var(--sur)':'var(--sur-2)';
     html+=`<tr class="aref-exh" data-name="${r.ka.toLowerCase()} ${r.en.toLowerCase()}" style="background:${bg}">
       <td style="padding:3px 7px;border:1px solid var(--bdr);font-family:var(--mono);font-size:9px;color:var(--text3)">${r.id}</td>
       <td style="padding:3px 7px;border:1px solid var(--bdr);text-align:left">
@@ -6728,7 +6764,7 @@ function renderRefSp60(){
       html+=`<tr style="background:var(--navy)"><td colspan="13" style="padding:4px 8px;color:#fff;font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;border:1px solid var(--bdr)">${r.cat}</td></tr>`;
       lastCat=r.cat;
     }
-    const bg=i%2===0?'#fff':'var(--sur2)';
+    const bg=i%2===0?'var(--sur)':'var(--sur-2)';
     html+=`<tr class="sp60ref" data-cat="${r.cat}" data-name="${r.ka.toLowerCase()} ${r.ru.toLowerCase()}" style="background:${bg}">
       <td style="padding:3px 7px;border:1px solid var(--bdr);font-family:var(--mono);font-size:9px;color:var(--text3)">${r.id}</td>
       <td style="padding:3px 7px;border:1px solid var(--bdr);font-size:9px;color:var(--text3)">${r.cat}</td>
@@ -7217,7 +7253,7 @@ function bldInit(){
             const b=document.createElement('span');
             b.className='bld-sync-badge';
             b.title='შენობის შექმნასთან სინქრ.';
-            b.style.cssText='font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:#eef6fd;color:var(--blue);border:1px solid #b8d4f4;flex-shrink:0';
+            b.style.cssText='font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:var(--blue-lt);color:var(--blue);border:1px solid var(--blue-bd);flex-shrink:0';
             b.textContent='🔗';
             head.insertBefore(b,del||null);
           }
@@ -7385,8 +7421,8 @@ function bldInit(){
           html+=`<div style="font-size:9px;font-weight:700;color:var(--text-3);padding:8px 8px 4px;text-transform:uppercase;letter-spacing:.4px">ხელით დამატებული</div>`;
           flt.forEach(r=>{
             html+=`<div class="hlt-room" onclick="hlNavGoRoom(${r.id})">
-              <span class="hlt-room-dot" style="background:#d0d0e0"></span>
-              <span class="hlt-room-name" style="color:#3a5070">${_hl(r.name||'სივრცე',q)}</span>
+              <span class="hlt-room-dot" style="background:var(--bdr-2)"></span>
+              <span class="hlt-room-name" style="color:var(--text-2)">${_hl(r.name||'სივრცე',q)}</span>
             </div>`;
           });
         }
@@ -7636,7 +7672,7 @@ async function _asDoSave() {
     console.log('%c💾 Auto-saved → config.json + projectdata.json @ ' + new Date().toLocaleTimeString(), 'color:var(--grn);font-weight:600');
   } catch(e) {
     const el = document.getElementById('asStatus');
-    if (el) { el.textContent = '✗ შეცდომა'; el.style.color = '#c0392b'; }
+    if (el) { el.textContent = '✗ შეცდომა'; el.style.color = 'var(--red)'; }
     console.error('Auto-save failed:', e);
   }
 }
@@ -7677,8 +7713,8 @@ async function autoSaveSetup() {
     _asStartCountdown();
     if (btn) {
       btn.textContent = '✅ Auto-Save';
-      btn.style.borderColor = '#27ae60';
-      btn.style.color = '#27ae60';
+      btn.style.borderColor = 'var(--grn)';
+      btn.style.color = 'var(--grn)';
       btn.title = 'ხელახლა დაყენება';
     }
     console.log('%c✅ Auto-Save ჩართულია — 60 წამი', 'color:var(--grn);font-weight:700');
@@ -7857,10 +7893,10 @@ function _generateHeatLoadPDF(sec, selRoomIds, selWallIds, info){
       }).join('');
       const stdsRows=stds.map(s=>{const ok=U<=s.max;return `<tr><td style="text-align:center;color:${ok?'var(--grn)':'var(--red)'};font-weight:700">${ok?'✓':'✗'}</td><td>${s.label}</td><td class="td-n">≤${s.max}</td><td style="text-align:center;font-weight:700;color:${ok?'var(--grn)':'var(--red)'}">${ok?'შეესაბამება':'ვერ'}</td></tr>`;}).join('');
       const wallChartUrl=renderWallChartToDataUrl(wall);
-      const warnH=hasCond?'<div style="background:#fff5e0;border:1pt solid var(--ora-bd);border-radius:3px;padding:2mm 3mm;font-size:8pt;color:var(--ora);margin-bottom:3mm">⚠️ კონდენსაციის რისკი</div>':'';
-      const moldH=sfWarn?`<div style="background:var(--red-lt);border:1pt solid #f0b0a8;border-radius:3px;padding:2mm 3mm;font-size:8pt;color:var(--red);margin-bottom:3mm">⚠️ ობის საფრთხე — Tsi=${Tsi.toFixed(1)}°C</div>`:'';
+      const warnH=hasCond?'<div style="background:var(--ora-lt);border:1pt solid var(--ora-bd);border-radius:3px;padding:2mm 3mm;font-size:8pt;color:var(--ora);margin-bottom:3mm">⚠️ კონდენსაციის რისკი</div>':'';
+      const moldH=sfWarn?`<div style="background:var(--red-lt);border:1pt solid var(--red);border-radius:3px;padding:2mm 3mm;font-size:8pt;color:var(--red);margin-bottom:3mm">⚠️ ობის საფრთხე — Tsi=${Tsi.toFixed(1)}°C</div>`:'';
       wallsHTML+=`<div class="room-block${wi>0?' pb':''}">
-        <div class="room-hdr" style="background:linear-gradient(135deg,#0f4c8a,#1e6abf)">
+        <div class="room-hdr" style="background:linear-gradient(135deg,var(--blue),var(--blue))">
           <div><span class="room-num">${String(wi+1).padStart(2,'0')}</span><span class="room-name">${wall.name} — ${wtypeName}</span></div>
           <div style="background:rgba(255,255,255,.15);border-radius:5px;padding:3mm 5mm;text-align:center">
             <div style="font-size:7pt;opacity:.8">U-ფაქტ.</div>
@@ -7946,8 +7982,8 @@ function _generateHeatLoadPDF(sec, selRoomIds, selWallIds, info){
             ${String(ri+1).padStart(2,'0')}. ${r.name}
           </td>
           <td colspan="7" style="background:var(--navy);color:#fff;text-align:center;font-size:7.5pt">🔴 გათბობა</td>
-          <td colspan="5" style="background:#6b3a1a;color:#fff;text-align:center;font-size:7.5pt">☀ მზე</td>
-          <td colspan="4" style="background:#1a6b3a;color:#fff;text-align:center;font-size:7.5pt">🔵 შიდა</td>
+          <td colspan="5" style="background:var(--ora);color:#fff;text-align:center;font-size:7.5pt">☀ მზე</td>
+          <td colspan="4" style="background:var(--grn);color:#fff;text-align:center;font-size:7.5pt">🔵 შიდა</td>
           <td colspan="3" style="background:var(--navy);color:#fff;text-align:center;font-size:7.5pt">სულ</td>
         </tr>
         ${elRows}
@@ -7967,15 +8003,15 @@ function _generateHeatLoadPDF(sec, selRoomIds, selWallIds, info){
         <tr style="background:var(--navy-2);color:#fff">
           <th rowspan="2" style="text-align:left;padding:2mm;min-width:22mm">კონსტ. ტიპი</th>
           <th colspan="3" style="background:var(--navy);padding:1.5mm">🔴 გათბ. პარ.</th>
-          <th colspan="3" style="background:#2a4a7b;padding:1.5mm">განზ.</th>
+          <th colspan="3" style="background:var(--navy);padding:1.5mm">განზ.</th>
           <th rowspan="2" style="background:var(--navy);padding:1.5mm">A<br>m²</th>
           <th rowspan="2" style="background:var(--navy);padding:1.5mm">U<br>W/m²K</th>
           <th rowspan="2" style="background:var(--navy);padding:1.5mm">f</th>
           <th colspan="2" style="background:var(--navy);padding:1.5mm">🔴 გათბობა</th>
           <th colspan="4" style="background:var(--ora);padding:1.5mm">🔵 კონდ. გაგრ.</th>
-          <th colspan="4" style="background:#7a4a00;padding:1.5mm">☀ მზე</th>
-          <th colspan="4" style="background:#0a5a2a;padding:1.5mm">🔵 შიდა სითბ.</th>
-          <th style="background:#2a5a0a;padding:1.5mm">განათ.</th>
+          <th colspan="4" style="background:var(--ora);padding:1.5mm">☀ მზე</th>
+          <th colspan="4" style="background:var(--grn);padding:1.5mm">🔵 შიდა სითბ.</th>
+          <th style="background:var(--grn);padding:1.5mm">განათ.</th>
           <th colspan="2" style="background:var(--navy-2);padding:1.5mm">სულ</th>
         </tr>
         <tr style="background:var(--navy);color:#fff;font-size:6.5pt">
@@ -8051,8 +8087,8 @@ function _generateHeatLoadPDF(sec, selRoomIds, selWallIds, info){
     .sm-v{font-size:14pt;font-weight:700;font-family:monospace;margin:1mm 0}.sm-v.h{color:var(--blue)}.sm-v.c{color:var(--ora)}.sm-u{font-size:7pt;color:var(--text-3)}
     .params{display:grid;grid-template-columns:1fr 1fr;gap:3mm;margin-bottom:5mm}
     .param-box{background:var(--sur);border:1pt solid var(--bdr-2);border-radius:5px;padding:3mm}
-    .param-box h3{font-size:8pt;font-weight:700;color:var(--navy);border-bottom:1pt solid #dde8f8;padding-bottom:1mm;margin-bottom:2mm}
-    .param-row{display:flex;justify-content:space-between;font-size:8pt;padding:.6mm 0;border-bottom:.5pt solid #eef}
+    .param-box h3{font-size:8pt;font-weight:700;color:var(--navy);border-bottom:1pt solid var(--bdr);padding-bottom:1mm;margin-bottom:2mm}
+    .param-row{display:flex;justify-content:space-between;font-size:8pt;padding:.6mm 0;border-bottom:.5pt solid var(--sur-2)}
     .param-row b{font-family:monospace;color:var(--navy)}
     .room-block{margin-bottom:5mm}.pb{page-break-before:always;padding-top:4mm}
     .room-hdr{display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;border-radius:6px 6px 0 0;padding:3mm 4mm}
@@ -8062,12 +8098,12 @@ function _generateHeatLoadPDF(sec, selRoomIds, selWallIds, info){
     .elem-table{width:100%;border-collapse:collapse;font-size:8pt}
     .elem-table thead tr{background:var(--blue);color:#fff}
     .elem-table th{padding:1.5mm 2mm;text-align:center;font-size:7.5pt;border-right:.5pt solid rgba(255,255,255,.2)}
-    .th-name{text-align:left!important;width:26%}.th-h{background:var(--navy)}.th-c{background:#6b3a1a}
+    .th-name{text-align:left!important;width:26%}.th-h{background:var(--navy)}.th-c{background:var(--ora)}
     .elem-table tbody tr:nth-child(even){background:var(--sur-2)}
     td{padding:1.5mm 2mm;border:.5pt solid var(--bdr-2);vertical-align:middle}
     .td-name{font-weight:500;text-align:left}.td-n{text-align:right;font-family:monospace}
     .td-h{text-align:right;font-family:monospace;color:var(--blue);font-weight:600;background:var(--sur-2)}
-    .td-c{text-align:right;font-family:monospace;color:var(--ora);background:#fff5f0}.td-sm{font-size:7.5pt}
+    .td-c{text-align:right;font-family:monospace;color:var(--ora);background:var(--ora-lt)}.td-sm{font-size:7.5pt}
     .sum-row td{background:var(--blue-lt);font-weight:700;border-top:1.5pt solid var(--navy)}
     .sec-hdr{font-size:10pt;font-weight:700;color:var(--navy);border-bottom:1.5pt solid var(--navy);padding-bottom:2mm;margin:5mm 0 3mm}
     .ct-table{width:100%;border-collapse:collapse;font-size:8.5pt}
@@ -8078,13 +8114,13 @@ function _generateHeatLoadPDF(sec, selRoomIds, selWallIds, info){
     .formula-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:3mm;margin-bottom:4mm}
     .fb{background:var(--sur-2);border:1pt solid var(--bdr-2);border-radius:4px;padding:2.5mm}
     .fb-n{font-size:7.5pt;font-weight:700;color:var(--navy);margin-bottom:1mm}
-    .fb-eq{font-family:monospace;font-size:8.5pt;background:var(--sur);padding:1.5mm;border-radius:3px;border:.5pt solid #dde}
+    .fb-eq{font-family:monospace;font-size:8.5pt;background:var(--sur);padding:1.5mm;border-radius:3px;border:.5pt solid var(--bdr)}
     .fb-d{font-size:7pt;color:var(--text-3);margin-top:1mm}
     .std-grid{display:grid;grid-template-columns:1fr 1fr;gap:3mm;margin-bottom:3mm}
     .std-box{border:1pt solid var(--bdr-2);border-radius:5px;overflow:hidden}
     .std-box-hdr{background:var(--navy);color:#fff;font-size:8pt;font-weight:700;padding:2mm 3mm}
     .std-box-body{font-size:7.5pt;padding:2.5mm;line-height:1.7;list-style:none}
-    .std-box-body li{padding:.5mm 0;border-bottom:.5pt solid #eef}.std-box-body li:last-child{border:none}
+    .std-box-body li{padding:.5mm 0;border-bottom:.5pt solid var(--sur-2)}.std-box-body li:last-child{border:none}
     .std-box-body li::before{content:"→ ";color:var(--navy);font-weight:700}
     .sign-page{page-break-before:always;padding-top:5mm}
     .sign-grid{display:grid;grid-template-columns:1fr 1fr;gap:12mm;margin-top:12mm}
@@ -8094,11 +8130,11 @@ function _generateHeatLoadPDF(sec, selRoomIds, selWallIds, info){
     .footer{margin-top:5mm;padding-top:2mm;border-top:1pt solid var(--bdr-2);display:flex;justify-content:space-between;font-size:7pt;color:var(--text-3)}
     @media print{@page{size:A4 landscape;margin:10mm 8mm}body{padding:0}.pb,.sign-page{page-break-before:always}}
     .ft-row td{padding:1mm 1.5mm;border:.5pt solid var(--bdr-2);vertical-align:middle}
-    .ft-row:nth-child(even) td{background:#f9fbff}
+    .ft-row:nth-child(even) td{background:var(--sur-2)}
     .ft-ct{text-align:left;font-size:7pt;font-weight:500;min-width:20mm}
-    .ft-n{text-align:right;font-family:monospace;font-size:7pt;color:#445}
+    .ft-n{text-align:right;font-family:monospace;font-size:7pt;color:var(--text-2)}
     .ft-h{text-align:right;font-family:monospace;font-size:7pt;color:var(--blue);background:var(--sur-2)}
-    .ft-c{text-align:right;font-family:monospace;font-size:7pt;color:var(--ora);background:#fff5f0}
+    .ft-c{text-align:right;font-family:monospace;font-size:7pt;color:var(--ora);background:var(--ora-lt)}
     .ft-kw{font-weight:700;font-size:7.5pt}
     .ft-room-hdr td{border:none}
     .ft-sum td{background:var(--blue-lt);border-top:1.5pt solid var(--navy)}`;
@@ -8222,7 +8258,7 @@ function _generateHeatLoadPDF(sec, selRoomIds, selWallIds, info){
         <div>
           <div style="font-size:8.5pt;font-weight:700;color:var(--navy)">კომპანიის ბეჭედი</div>
           <div style="border:1.5pt dashed var(--bdr-2);border-radius:50%;width:40mm;height:40mm;margin:4mm auto;display:flex;align-items:center;justify-content:center">
-            <span style="font-size:8pt;color:#bbb">${info.co||''}</span>
+            <span style="font-size:8pt;color:var(--text-3)">${info.co||''}</span>
           </div>
         </div>
       </div>
@@ -8246,14 +8282,14 @@ function _generateHeatLoadPDF(sec, selRoomIds, selWallIds, info){
 // ====================== EPC CERTIFICATE GENERATOR (GEECB — ადაპტირებული) ======================
 const EPC_DEGREE_HOURS={heat:1750,cool:550};
 const EPC_THRESHOLDS=[
-  {cls:'A+',max:30, color:'#006b3c',bg:'var(--grn-lt)'},
-  {cls:'A', max:50, color:'var(--grn)',bg:'#edf9f4'},
-  {cls:'B', max:75, color:'var(--blue)',bg:'#edf3fd'},
-  {cls:'C', max:110,color:'#2e7d32',bg:'#f0f9f0'},
-  {cls:'D', max:150,color:'var(--ora)',bg:'#fff8e6'},
-  {cls:'E', max:200,color:'#bf5c00',bg:'#fff5e0'},
-  {cls:'F', max:250,color:'#b71c1c',bg:'var(--red-lt)'},
-  {cls:'G', max:9999,color:'#7b0000',bg:'#fde8e8'},
+  {cls:'A+',max:30, color:'var(--grn)',bg:'var(--grn-lt)'},
+  {cls:'A', max:50, color:'var(--grn)',bg:'var(--grn-lt)'},
+  {cls:'B', max:75, color:'var(--blue)',bg:'var(--blue-lt)'},
+  {cls:'C', max:110,color:'var(--grn)',bg:'var(--grn-lt)'},
+  {cls:'D', max:150,color:'var(--ora)',bg:'var(--ora-lt)'},
+  {cls:'E', max:200,color:'var(--ora)',bg:'var(--ora-lt)'},
+  {cls:'F', max:250,color:'var(--red)',bg:'var(--red-lt)'},
+  {cls:'G', max:9999,color:'var(--red)',bg:'var(--red-lt)'},
 ];
 function _epcGetClass(score){
   return EPC_THRESHOLDS.find(t=>score<t.max)||EPC_THRESHOLDS[EPC_THRESHOLDS.length-1];
@@ -8330,7 +8366,7 @@ function generateEPC(){
     .sec{font-size:9pt;font-weight:700;color:var(--navy);border-bottom:1.5pt solid var(--navy);padding-bottom:1.5mm;margin:4mm 0 2.5mm}
     .fb{background:var(--sur-2);border:1pt solid var(--bdr-2);border-radius:4px;padding:2.5mm;margin-bottom:2mm}
     .fb-n{font-size:8pt;font-weight:700;color:var(--navy);margin-bottom:1mm}
-    .fb-eq{font-family:monospace;font-size:8.5pt;background:var(--sur);padding:1.5mm 2mm;border-radius:3px;border:.5pt solid #dde;display:block}
+    .fb-eq{font-family:monospace;font-size:8.5pt;background:var(--sur);padding:1.5mm 2mm;border-radius:3px;border:.5pt solid var(--bdr);display:block}
     .fb-d{font-size:7.5pt;color:var(--text-3);margin-top:1mm}
     @media print{@page{size:A4;margin:10mm}body{padding:0}}`;
 
@@ -8580,8 +8616,8 @@ function generateEPC(){
           <tr style="background:var(--navy);color:#fff">
             <th style="padding:7px 10px;text-align:left;font-size:10px;letter-spacing:.4px;white-space:nowrap">მხარე</th>
             ${MONTHS.map(m=>`<th style="padding:7px 8px;text-align:center;font-size:10px">${m}</th>`).join('')}
-            <th style="padding:7px 10px;text-align:center;font-size:10px;background:#2a4a80">ზაფ.<br>პიკი</th>
-            <th style="padding:7px 10px;text-align:center;font-size:10px;background:#2a4a80">ზამ.<br>პიკი</th>
+            <th style="padding:7px 10px;text-align:center;font-size:10px;background:var(--navy)">ზაფ.<br>პიკი</th>
+            <th style="padding:7px 10px;text-align:center;font-size:10px;background:var(--navy)">ზამ.<br>პიკი</th>
           </tr>
         </thead>
         <tbody>
@@ -8605,7 +8641,7 @@ function generateEPC(){
       <div style="overflow-x:auto;margin-bottom:24px">
       <table style="border-collapse:collapse;font-size:11px;min-width:700px;width:100%">
         <thead>
-          <tr style="background:#4a6080;color:#fff">
+          <tr style="background:var(--text-2);color:#fff">
             <th style="padding:7px 10px;text-align:left;font-size:10px;white-space:nowrap">მხარე</th>
             ${MONTHS.map(m=>`<th style="padding:7px 8px;text-align:center;font-size:10px">${m}</th>`).join('')}
           </tr>
@@ -8644,7 +8680,7 @@ function generateEPC(){
             <text x="36" y="140" text-anchor="middle" font-size="9" fill="var(--text3)">SW</text>
             <text x="36" y="28" text-anchor="middle" font-size="9" fill="var(--text3)">NW</text>
             <!-- sun icon summer -->
-            <circle cx="80" cy="80" r="10" fill="#f5c518" opacity=".9"/>
+            <circle cx="80" cy="80" r="10" fill="var(--ora)" opacity=".9"/>
             <text x="80" y="84" text-anchor="middle" font-size="12">☀</text>
             <!-- S arrow -->
             <line x1="80" y1="80" x2="80" y2="130" stroke="var(--ora)" stroke-width="2.5" marker-end="url(#arr)"/>

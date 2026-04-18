@@ -17,6 +17,11 @@
       }
     } catch (e) {}
     try {
+      var tint = localStorage.getItem('bg-tint');
+      if (tint !== null) {
+        var n = Number(tint);
+        if (isFinite(n)) return n < 50;
+      }
       var stored = localStorage.getItem('theme') || 'system';
       if (stored === 'dark') return true;
       if (stored === 'light') return false;

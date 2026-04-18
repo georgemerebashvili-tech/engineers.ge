@@ -17,14 +17,22 @@ type DonationInfo = {
   recipient_name: string;
   recipient_surname: string;
   banks: Bank[];
+  heading_text: string;
+  description_text: string;
 };
+
+const DEFAULT_HEADING = 'მხარდაჭერა';
+const DEFAULT_DESCRIPTION =
+  'engineers.ge უფასოა ყველასთვის. ყოველი ლარი გვეხმარება ახალი ინსტრუმენტების და ქართული საინჟინრო კონტენტის აშენებაში.';
 
 const FALLBACK: DonationInfo = {
   recipient_name: 'გიორგი',
   recipient_surname: 'მერებაშვილი',
   banks: [
     {name: 'Bank of Georgia', iban: 'GE00BG0000000000000000', account: null, code: 'bog', pay_link: null}
-  ]
+  ],
+  heading_text: DEFAULT_HEADING,
+  description_text: DEFAULT_DESCRIPTION
 };
 
 const AMOUNT_PRESETS = [5, 10, 25, 50, 100];
@@ -57,7 +65,7 @@ export function DonateModal({open, onClose}: {open: boolean; onClose: () => void
     let cancelled = false;
     fetch('/api/donate/info')
       .then((r) => (r.ok ? r.json() : null))
-      .then((data: DonationInfo | null) => {
+      .then((data: Partial<DonationInfo> | null) => {
         if (cancelled) return;
         if (!data || !data.banks || data.banks.length === 0) {
           setInfo(FALLBACK);
@@ -65,7 +73,9 @@ export function DonateModal({open, onClose}: {open: boolean; onClose: () => void
           setInfo({
             recipient_name: data.recipient_name || FALLBACK.recipient_name,
             recipient_surname: data.recipient_surname || FALLBACK.recipient_surname,
-            banks: data.banks
+            banks: data.banks,
+            heading_text: data.heading_text || DEFAULT_HEADING,
+            description_text: data.description_text || DEFAULT_DESCRIPTION
           });
         }
       })
@@ -143,11 +153,10 @@ export function DonateModal({open, onClose}: {open: boolean; onClose: () => void
             Donate
           </div>
           <h2 id="donate-title" className="text-xl font-bold tracking-tight text-navy">
-            მხარდაჭერა
+            {data.heading_text || DEFAULT_HEADING}
           </h2>
-          <p className="mt-2 text-xs leading-relaxed text-text-2">
-            engineers.ge უფასოა ყველასთვის. ყოველი ლარი გვეხმარება ახალი ინსტრუმენტების
-            და ქართული საინჟინრო კონტენტის აშენებაში.
+          <p className="mt-2 text-xs leading-relaxed text-text-2 whitespace-pre-line">
+            {data.description_text || DEFAULT_DESCRIPTION}
           </p>
 
           <div className="mt-4 rounded-[var(--radius-card)] border bg-sur-2 p-3">

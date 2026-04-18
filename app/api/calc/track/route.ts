@@ -12,8 +12,7 @@ const CALC_SLUGS = [
   'hvac',
   'ahu-ashrae',
   'silencer',
-  'silencer-kaya',
-  'procurement'
+  'silencer-kaya'
 ] as const;
 
 const Body = z.object({

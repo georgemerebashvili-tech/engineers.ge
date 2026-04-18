@@ -5,7 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>სადარბაზოს დაწნეხვა — 3D სიმულატორი</title>
 <link rel="stylesheet" href="/calc/_base.css">
+<link rel="stylesheet" href="/calc/_editor-ui.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <script src="/calc/_theme-sync.js"></script>
+<script src="/calc/_editor-panels.js"></script>
+<script src="/calc/_project-bridge.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script type="importmap">
 {
   "imports": {
@@ -20,6 +25,7 @@
 
   .sp-header {
     display: flex; align-items: center; gap: 12px;
+    flex-wrap: wrap;
     padding: 10px 16px;
     background: var(--sur);
     border-bottom: 1px solid var(--bdr);
@@ -50,10 +56,21 @@
     display: flex; gap: 10px; align-items: center;
   }
   .sp-header .summary b { color: var(--navy); font-weight: 700; }
+  .sp-header .header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .sp-header .header-actions .btn {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    font-size: 10px;
+  }
 
   .sp-root {
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: var(--sp-side-w, 280px) 6px 1fr;
     flex: 1 1 0;
     min-height: 0;
   }
@@ -64,6 +81,112 @@
     border-right: 1px solid var(--bdr);
     overflow-y: auto;
     padding: 12px;
+    min-width: 0;
+  }
+
+  /* ==== Resizable divider ==== */
+  .sp-resizer {
+    background: var(--bdr);
+    cursor: col-resize;
+    position: relative;
+    transition: background .15s;
+    user-select: none;
+  }
+  .sp-resizer:hover,
+  .sp-resizer.active { background: var(--blue); }
+  .sp-resizer::after {
+    content: '';
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 2px; height: 36px;
+    background: var(--text-3);
+    border-radius: 2px;
+    opacity: .5;
+    transition: opacity .15s, background .15s;
+  }
+  .sp-resizer:hover::after,
+  .sp-resizer.active::after { background: #fff; opacity: 1; }
+  body.sp-resizing { cursor: col-resize !important; user-select: none !important; }
+  body.sp-resizing iframe { pointer-events: none; }
+
+  /* ==== Template gallery ==== */
+  .tpl-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  .tpl-card {
+    background: var(--sur-2);
+    border: 1.5px solid var(--bdr);
+    border-radius: 6px;
+    padding: 6px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, transform .15s;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+    font-family: var(--font-sans);
+  }
+  .tpl-card:hover {
+    border-color: var(--blue);
+    background: var(--blue-lt);
+    transform: translateY(-1px);
+  }
+  .tpl-card.active {
+    border-color: var(--blue);
+    background: var(--blue-lt);
+    box-shadow: 0 0 0 2px rgba(31,111,212,.15);
+  }
+  .tpl-thumb {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    background: var(--sur);
+    border: 1px solid var(--bdr);
+    border-radius: 4px;
+    display: block;
+  }
+  .tpl-card.active .tpl-thumb { border-color: var(--blue-bd); }
+  .tpl-name {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+  }
+  .tpl-card.active .tpl-name { color: var(--blue); }
+  .dark .tpl-card.active .tpl-name { color: var(--blue); }
+  .tpl-meta {
+    font-family: var(--font-mono);
+    font-size: 8.5px;
+    color: var(--text-3);
+    letter-spacing: 0.02em;
+  }
+  .tpl-hand-btn {
+    grid-column: 1 / -1;
+    border: 1.5px dashed var(--bdr-2);
+    background: transparent;
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-3);
+    cursor: not-allowed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: border-color .15s, color .15s;
+  }
+  .tpl-hand-btn .coming {
+    font-family: var(--font-mono);
+    font-size: 8px;
+    background: var(--sur-2);
+    padding: 2px 6px;
+    border-radius: 8px;
+    color: var(--text-3);
+    letter-spacing: 0.05em;
   }
   .sp-side .group { margin-bottom: 14px; }
   .sp-side .group-title {
@@ -213,9 +336,20 @@
   }
   .sp-tab .icon { width: 14px; height: 14px; opacity: .9; }
 
+  /* Stage = proportional row: view-area (flex 1) + info-aside (fixed).
+     No overlays ontop of content per DESIGN_RULES §13.2 */
   .sp-stage {
     flex: 1 1 0;
+    display: flex;
+    flex-direction: row;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .sp-view-area {
+    flex: 1 1 0;
     position: relative;
+    min-width: 0;
+    min-height: 0;
     overflow: hidden;
   }
   .sp-view {
@@ -223,6 +357,21 @@
     display: none;
   }
   .sp-view.active { display: block; }
+  .sp-view.formulas-view {
+    overflow: auto;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--blue-lt) 36%, white) 0%, var(--bg) 32%);
+  }
+  .sp-info-aside {
+    flex: 0 0 var(--sp-aside-w, 280px);
+    background: var(--sur);
+    border-left: 1px solid var(--bdr);
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+  }
 
   /* SVG wrapper */
   .sp-svg-wrap {
@@ -238,18 +387,16 @@
 
   .sp-3d {
     width: 100%; height: 100%;
-    background: radial-gradient(circle at 30% 20%, #2a3a55 0%, #0f1724 70%);
+    background: radial-gradient(circle at 30% 20%, #eef3fb 0%, #cedbee 75%);
   }
   .dark .sp-3d {
     background: radial-gradient(circle at 30% 20%, #1a2540 0%, #05080f 70%);
   }
   .sp-3d canvas { display: block; width: 100% !important; height: 100% !important; }
 
+  /* Legend — block inside info-aside, not overlay */
   .legend {
-    position: absolute;
-    left: 12px; bottom: 12px;
-    background: rgba(255,255,255,.92);
-    backdrop-filter: blur(6px);
+    background: var(--sur-2);
     border: 1px solid var(--bdr);
     border-radius: 8px;
     padding: 8px 10px;
@@ -257,25 +404,264 @@
     font-family: var(--font-mono);
     color: var(--text-2);
     display: flex; flex-direction: column; gap: 4px;
-    z-index: 5;
-    box-shadow: var(--shadow-card);
   }
-  .dark .legend { background: rgba(20,30,50,.92); color: var(--text); }
   .legend .row { display: flex; align-items: center; gap: 6px; }
-  .legend .sw { width: 14px; height: 10px; border-radius: 2px; display: inline-block; border: 1px solid rgba(0,0,0,.2); }
+  .legend .sw { width: 14px; height: 10px; border-radius: 2px; display: inline-block; border: 1px solid rgba(0,0,0,.2); flex: 0 0 auto; }
 
+  /* Helper 3D — small keyboard hint only (<180px, non-content info) */
   .helper-3d {
-    position: absolute; right: 12px; top: 12px;
-    background: rgba(255,255,255,.92);
+    position: absolute; right: 10px; top: 10px;
+    background: rgba(255,255,255,.88);
     border: 1px solid var(--bdr);
-    border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 10px;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 9px;
     color: var(--text-2);
     font-family: var(--font-mono);
     z-index: 5;
+    pointer-events: none;
   }
-  .dark .helper-3d { background: rgba(20,30,50,.92); color: var(--text); }
+  .dark .helper-3d { background: rgba(20,30,50,.88); color: var(--text); }
+
+  /* Standard info — block inside info-aside, not overlay.
+     Rule DESIGN_RULES §13.2 — no absolute overlays over content */
+  .std-info {
+    background: var(--sur-2);
+    border: 1px solid var(--bdr);
+    border-left: 3px solid var(--blue);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-2);
+  }
+  .dark .std-info { background: var(--sur-2); color: var(--text); }
+  .std-info .title {
+    font-size: 11px; font-weight: 700; color: var(--navy);
+    letter-spacing: 0.03em;
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 2px;
+  }
+  .std-info .region {
+    font-size: 9px;
+    background: var(--blue);
+    color: #fff;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .std-info .region.us { background: var(--red); }
+  .std-info .region.ru { background: var(--ora); }
+  .std-info .region.eu { background: var(--blue); }
+  .std-info .sub { font-size: 9px; color: var(--text-3); margin-bottom: 6px; }
+  .std-info .specs { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; font-size: 10px; }
+  .std-info .specs b { color: var(--navy); }
+  .std-info .meta-line {
+    grid-column: 1 / -1;
+    margin-top: 4px;
+    font-size: 9px;
+    color: var(--text-3);
+    line-height: 1.45;
+  }
+  .std-info .status-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 7px;
+  }
+  .std-info .status-badge,
+  .std-info .floor-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .04em;
+  }
+  .std-info .status-badge {
+    background: var(--sur-2);
+    color: var(--text-2);
+    border: 1px solid var(--bdr);
+  }
+  .std-info .status-badge.warn {
+    background: var(--red-lt);
+    color: var(--red);
+    border-color: color-mix(in srgb, var(--red) 22%, white);
+  }
+  .std-info .status-badge.smoke {
+    background: color-mix(in srgb, var(--text-3) 12%, white);
+    color: var(--text);
+    border-color: color-mix(in srgb, var(--text-3) 20%, white);
+  }
+  .std-info .floor-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 7px;
+  }
+  .std-info .floor-pill {
+    background: var(--blue-lt);
+    color: var(--blue);
+    border: 1px solid var(--blue-bd);
+  }
+  .dark .std-info .specs b { color: #e6ecf5; }
+  .dark .std-info .title { color: #e6ecf5; }
+  .dark .std-info .status-badge.smoke {
+    background: rgba(255,255,255,.08);
+    border-color: rgba(255,255,255,.14);
+  }
+
+  .sp-tooltip {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 8;
+    padding: 6px 8px;
+    border-radius: 8px;
+    background: rgba(255,255,255,.94);
+    border: 1px solid var(--bdr);
+    box-shadow: var(--shadow-card);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text);
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-9999px, -9999px);
+    transition: opacity .12s ease;
+    max-width: 200px;
+  }
+  .sp-tooltip.show { opacity: 1; }
+  .dark .sp-tooltip { background: rgba(20,30,50,.94); }
+
+  .sp-formulas {
+    padding: 20px;
+    display: grid;
+    gap: 14px;
+    align-content: start;
+  }
+  .formula-intro {
+    background: var(--sur);
+    border: 1px solid var(--bdr);
+    border-radius: 10px;
+    padding: 12px 14px;
+    box-shadow: var(--shadow-card);
+  }
+  .formula-intro h2 {
+    margin: 0 0 6px;
+    font-size: 14px;
+    color: var(--navy);
+  }
+  .formula-intro p {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.55;
+    color: var(--text-2);
+  }
+  .formula-card {
+    background: var(--sur);
+    border: 1px solid var(--bdr);
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: var(--shadow-card);
+    display: grid;
+    gap: 10px;
+  }
+  .formula-card.warn {
+    border-color: color-mix(in srgb, var(--red) 38%, white);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--red) 12%, transparent);
+  }
+  .formula-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .formula-head h3 {
+    margin: 0;
+    font-size: 12px;
+    color: var(--navy);
+  }
+  .formula-sub {
+    margin: 3px 0 0;
+    font-size: 10px;
+    color: var(--text-3);
+    font-family: var(--font-mono);
+  }
+  .formula-ref {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--bdr);
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 9px;
+    color: var(--text-2);
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    background: var(--sur-2);
+  }
+  .formula-math {
+    background: color-mix(in srgb, var(--blue-lt) 46%, white);
+    border: 1px solid color-mix(in srgb, var(--blue) 16%, white);
+    border-radius: 10px;
+    padding: 10px 12px;
+    overflow-x: auto;
+  }
+  .formula-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+  }
+  .formula-grid .kv {
+    background: var(--sur-2);
+    border: 1px solid var(--bdr);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .formula-grid .kv span {
+    display: block;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-3);
+    font-family: var(--font-mono);
+    margin-bottom: 4px;
+  }
+  .formula-grid .kv b {
+    display: block;
+    font-size: 12px;
+    color: var(--navy);
+  }
+  .formula-result {
+    border-top: 1px dashed var(--bdr);
+    padding-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .formula-result strong {
+    color: var(--navy);
+    font-size: 12px;
+  }
+  .formula-note {
+    font-size: 10px;
+    line-height: 1.5;
+    color: var(--text-2);
+  }
+  .formula-fallback {
+    margin: 0;
+    white-space: pre-wrap;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--navy);
+  }
+  .screen-only { display: inline-flex; }
 
   /* SVG styles */
   .s-wall { fill: var(--sur-2); stroke: var(--text); stroke-width: 2; }
@@ -303,6 +689,10 @@
   .dark .s-label { fill: #a7b7d1; stroke: none; }
   .dark .s-label-b { fill: #e6ecf5; }
 
+  @media (max-width: 1100px) {
+    /* Collapse the extra ep-panel below 1100px to preserve room for 3D + info */
+    .sp-stage .ep-panel#ctx-panel { display: none; }
+  }
   @media (max-width: 820px) {
     .sp-root { grid-template-columns: 1fr; }
     .sp-side {
@@ -310,14 +700,127 @@
       border-bottom: 1px solid var(--bdr);
       max-height: 45vh;
     }
+    .sp-resizer { display: none; }
+    .sp-stage { flex-direction: column; }
+    .sp-info-aside {
+      flex: 0 0 auto;
+      border-left: 0;
+      border-top: 1px solid var(--bdr);
+      max-height: 35vh;
+    }
+  }
+
+  @media print {
+    @page {
+      size: A4 landscape;
+      margin: 10mm;
+    }
+
+    html, body {
+      overflow: visible !important;
+      height: auto !important;
+      background: #fff !important;
+    }
+
+    body {
+      display: block;
+      color: #111;
+    }
+
+    .sp-side,
+    .sp-resizer,
+    .sp-tabs,
+    .helper-3d,
+    .sp-tooltip,
+    .legend,
+    .screen-only,
+    .ep-panel#ctx-panel {
+      display: none !important;
+    }
+
+    .sp-root,
+    .sp-main,
+    .sp-stage,
+    .sp-view-area,
+    .sp-info-aside {
+      display: block !important;
+      min-height: auto !important;
+      overflow: visible !important;
+      border: 0 !important;
+      background: #fff !important;
+      padding: 0 !important;
+    }
+
+    .sp-header {
+      padding: 0 0 10px;
+      border-bottom: 1px solid #bbb;
+      margin-bottom: 10px;
+      background: #fff !important;
+    }
+
+    .sp-header .summary {
+      width: 100%;
+      border-color: #bbb;
+      background: #fff !important;
+    }
+
+    .sp-header .badge {
+      border: 1px solid #bbb;
+    }
+
+    .sp-view {
+      position: static !important;
+      inset: auto !important;
+      display: none !important;
+      overflow: visible !important;
+      background: #fff !important;
+    }
+
+    .sp-view[data-view="section"],
+    .sp-view[data-view="formulas"] {
+      display: block !important;
+    }
+
+    .sp-svg-wrap {
+      padding: 0 0 10px;
+      justify-content: flex-start;
+      overflow: visible !important;
+      page-break-inside: avoid;
+    }
+
+    .sp-svg-wrap svg {
+      max-height: none;
+      width: 100%;
+      height: auto;
+    }
+
+    .sp-formulas {
+      padding: 12px 0 0;
+      gap: 10px;
+    }
+
+    .formula-card,
+    .formula-intro,
+    .std-info {
+      box-shadow: none !important;
+      break-inside: avoid;
+      page-break-inside: avoid;
+      border-color: #bbb !important;
+    }
+
+    .formula-math {
+      background: #f7f9fc !important;
+    }
   }
 </style>
 </head>
 <body>
 
+<input type="file" id="json-import" accept=".json,application/json" hidden>
+
 <div class="sp-header">
   <h1>სადარბაზოს დაწნეხვის სიმულატორი</h1>
-  <span class="badge">EN 12101-6 · ვიზუალი</span>
+  <span class="badge" id="hdr-std-badge">EN 12101-6 · Class A</span>
   <div class="spacer"></div>
   <div class="summary" id="summary">
     <span>სართული: <b id="sm-floors">5</b></span>
@@ -328,12 +831,57 @@
     <span>·</span>
     <span>კარი: <b id="sm-door">900 × 2100</b></span>
   </div>
+  <div class="header-actions screen-only">
+    <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--text-3);font-family:var(--font-mono);padding:4px 8px;background:var(--sur-2);border:1px solid var(--bdr);border-radius:6px">
+      <span style="color:var(--text-2)">📁</span>
+      <span id="project-badge" style="color:var(--navy);font-weight:700;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">— (legacy)</span>
+    </span>
+    <button class="btn" id="btn-save-as" type="button" title="შენახვა როგორც ახალი პროექტი">💾 Save as</button>
+    <button class="btn" id="btn-rename" type="button" title="სახელის შეცვლა">✎</button>
+    <button class="btn" id="btn-import-json" type="button">⬆ JSON</button>
+    <button class="btn" id="btn-export-json" type="button">⬇ JSON</button>
+    <button class="btn primary" id="btn-export-pdf" type="button">⬇ PDF</button>
+    <button class="btn" id="btn-gate" type="button" title="ყველა პროექტი">🗂</button>
+  </div>
 </div>
 
 <div class="sp-root">
 
   <!-- ========= SIDEBAR ========= -->
   <aside class="sp-side">
+
+    <div class="group">
+      <div class="group-title">⚡ სწრაფი შაბლონი</div>
+      <div class="tpl-grid" id="tpl-grid">
+        <!-- dynamic -->
+      </div>
+    </div>
+
+    <div class="group">
+      <div class="group-title">სტანდარტი · რეგიონი</div>
+      <div class="field">
+        <label>ნორმატიული ბაზა</label>
+        <div class="seg" data-group="standard">
+          <button type="button" data-val="EN" class="active">EN 12101</button>
+          <button type="button" data-val="NFPA">NFPA 92</button>
+          <button type="button" data-val="SP">СП 7.13130</button>
+        </div>
+        <div class="hint" id="std-region-hint">ევროკავშირი · CEN TC 191</div>
+      </div>
+      <div class="field">
+        <label id="lbl-std-class">კლასი</label>
+        <div class="seg" data-group="std-class" id="seg-std-class">
+          <!-- dynamic -->
+        </div>
+      </div>
+      <div class="field">
+        <label>ერთეულების სისტემა</label>
+        <div class="seg" data-group="units">
+          <button type="button" data-val="metric" class="active">მეტრი</button>
+          <button type="button" data-val="imperial">ფუტი / დიუიმი</button>
+        </div>
+      </div>
+    </div>
 
     <div class="group">
       <div class="group-title">სართულები</div>
@@ -418,11 +966,17 @@
         <div class="hint" id="supply-hint">მოდული ქვემოთ, გაშვება ზემოთ · EN 12101-6 Class A</div>
       </div>
       <div class="field">
-        <label>მიზნობრივი წნევა Δp</label>
-        <div class="seg" data-group="dp">
-          <button type="button" data-val="30">30 Pa</button>
-          <button type="button" data-val="50" class="active">50 Pa</button>
-          <button type="button" data-val="60">60 Pa</button>
+        <label id="lbl-dp">მიზნობრივი წნევა Δp</label>
+        <div class="seg" data-group="dp" id="seg-dp">
+          <!-- dynamic per standard -->
+        </div>
+        <div class="hint" id="dp-hint"></div>
+      </div>
+      <div class="field">
+        <label>სისტემის რეჟიმი</label>
+        <div class="seg" data-group="system-mode">
+          <button type="button" data-val="normal" class="active">ნორმა</button>
+          <button type="button" data-val="failure">ავარია</button>
         </div>
       </div>
     </div>
@@ -436,6 +990,14 @@
           <button type="button" data-val="off">გამორთ</button>
         </div>
       </div>
+      <div class="field">
+        <label>კვამლის სცენარი</label>
+        <div class="seg" data-group="smoke-mode">
+          <button type="button" data-val="off" class="active">გათიშ.</button>
+          <button type="button" data-val="slow">ნელი</button>
+          <button type="button" data-val="fast">სწრაფი</button>
+        </div>
+      </div>
     </div>
 
     <div class="actions">
@@ -445,46 +1007,70 @@
 
   </aside>
 
+  <!-- ========= RESIZER ========= -->
+  <div class="sp-resizer" id="sp-resizer" role="separator" aria-orientation="vertical"
+       tabindex="0" aria-label="სიდებარის ზომის ცვლილება"></div>
+
   <!-- ========= MAIN ========= -->
   <main class="sp-main">
     <div class="sp-tabs">
       <button class="sp-tab active" data-view="section">ჭრილი</button>
       <button class="sp-tab" data-view="plan">გეგმა</button>
       <button class="sp-tab" data-view="d3">3D სცენა</button>
+      <button class="sp-tab" data-view="formulas">ფორმულები</button>
     </div>
 
     <div class="sp-stage">
 
-      <!-- SECTION -->
-      <div class="sp-view active" data-view="section">
-        <div class="sp-svg-wrap">
-          <svg id="svg-section" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet"></svg>
+      <!-- VIEW AREA — proportional flex-1 -->
+      <div class="sp-view-area">
+        <!-- SECTION -->
+        <div class="sp-view active" data-view="section">
+          <div class="sp-svg-wrap">
+            <svg id="svg-section" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet"></svg>
+          </div>
         </div>
-        <div class="legend">
-          <div class="row"><span class="sw" style="background:var(--bdr-2)"></span> კედელი / გადახურვა</div>
-          <div class="row"><span class="sw" style="background:var(--blue-lt);border-color:var(--blue)"></span> ღია კარი (ინჟინრული)</div>
-          <div class="row"><span class="sw" style="background:var(--blue)"></span> ჰაერის მიწოდება</div>
-          <div class="row"><span class="sw" style="background:var(--ora)"></span> გამონაბოლქვი / გაჟონვა</div>
+
+        <!-- PLAN -->
+        <div class="sp-view" data-view="plan">
+          <div class="sp-svg-wrap">
+            <svg id="svg-plan" viewBox="0 0 700 520" preserveAspectRatio="xMidYMid meet"></svg>
+          </div>
+        </div>
+
+        <!-- 3D -->
+        <div class="sp-view" data-view="d3">
+          <div class="sp-3d" id="canvas-3d"></div>
+          <div class="helper-3d">🖱 drag · 🎯 wheel zoom</div>
+          <div class="sp-tooltip" id="door-tooltip"></div>
+        </div>
+
+        <div class="sp-view formulas-view" data-view="formulas">
+          <div class="sp-formulas" id="formulas-panel"></div>
         </div>
       </div>
 
-      <!-- PLAN -->
-      <div class="sp-view" data-view="plan">
-        <div class="sp-svg-wrap">
-          <svg id="svg-plan" viewBox="0 0 700 520" preserveAspectRatio="xMidYMid meet"></svg>
-        </div>
-        <div class="legend">
-          <div class="row"><span class="sw" style="background:var(--sur-2);border-color:var(--text)"></span> სადარბაზოს კედელი</div>
-          <div class="row"><span class="sw" style="background:var(--bdr-2)"></span> საფეხურები</div>
-          <div class="row"><span class="sw" style="background:var(--blue-lt)"></span> კარი</div>
-        </div>
-      </div>
+      <!-- INFO ASIDE — proportional fixed-width, std-info + legend stacked -->
+      <aside class="sp-info-aside">
+        <div class="std-info" id="std-info"></div>
+        <div class="legend" id="legend-panel"></div>
+      </aside>
 
-      <!-- 3D -->
-      <div class="sp-view" data-view="d3">
-        <div class="sp-3d" id="canvas-3d"></div>
-        <div class="helper-3d">🖱 გადაადგილება: drag · 🎯 zoom: wheel · 🖱 pan: right-drag</div>
-      </div>
+      <!-- EP-PANEL — portable EditorPanels context panel (Task 027 §9 proof-of-portability) -->
+      <aside class="ep-panel" id="ctx-panel" style="flex:0 0 var(--ep-aside-w);min-width:0;">
+        <div class="ep-panel-head">
+          <span class="ep-icon" id="ctx-panel-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+            </svg>
+          </span>
+          <h2 id="ctx-panel-title">პარამეტრები</h2>
+          <span class="ep-panel-sub" id="ctx-panel-sub">stair</span>
+        </div>
+        <div class="ep-panel-body" id="ctx-panel-body">
+          <!-- EditorPanels.render(ctxPanelBody, ctx, handlers) populates this -->
+        </div>
+      </aside>
 
     </div>
   </main>
@@ -493,22 +1079,439 @@
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import {
+  doorOpeningForce,
+  leakageFlow,
+  maxDpForDoor,
+  REFS as PHYSICS_REFS,
+  requiredSupplyFlow,
+  smokeLayerHeight,
+  U as PHYSICS_U
+} from './_physics-engine.js';
+
+// ============== STAIRWELL TEMPLATES ==============
+// Phase 1 · preset gallery · click → applies to state + triggers redraw
+const TEMPLATES = [
+  {
+    id: 'u-residential',
+    name: 'U · საცხოვრ.',
+    meta: '2.4×5.2 · 5 სართ.',
+    preset: { shaftW: 2.4, shaftD: 5.2, stairType: 'switchback', doorPos: 'front', floors: 5, floorH: 3.0, basement: 0 }
+  },
+  {
+    id: 'straight-narrow',
+    name: 'სწორი · ვიწრო',
+    meta: '1.4×4.8 · 3 სართ.',
+    preset: { shaftW: 1.4, shaftD: 4.8, stairType: 'straight', doorPos: 'front', floors: 3, floorH: 3.0, basement: 0 }
+  },
+  {
+    id: 'straight-office',
+    name: 'სწორი · ოფისი',
+    meta: '3.0×5.5 · 8+სარდ.',
+    preset: { shaftW: 3.0, shaftD: 5.5, stairType: 'straight', doorPos: 'side', floors: 8, floorH: 3.2, basement: 1 }
+  },
+  {
+    id: 'spiral-tower',
+    name: 'ხვეული',
+    meta: '2.6×2.6 · 4 სართ.',
+    preset: { shaftW: 2.6, shaftD: 2.6, stairType: 'spiral', doorPos: 'front', floors: 4, floorH: 3.0, basement: 0 }
+  },
+  {
+    id: 'u-highrise',
+    name: 'U · მაღლივი',
+    meta: '3.0×6.5 · 15+სარდ.',
+    preset: { shaftW: 3.0, shaftD: 6.5, stairType: 'switchback', doorPos: 'alternate', floors: 15, floorH: 3.2, basement: 1 }
+  },
+  {
+    id: 'u-compact',
+    name: 'U · კომპაქტ.',
+    meta: '2.0×4.2 · 3 სართ.',
+    preset: { shaftW: 2.0, shaftD: 4.2, stairType: 'switchback', doorPos: 'front', floors: 3, floorH: 2.8, basement: 0 }
+  }
+];
+
+function tplThumbSvg(tpl) {
+  // Small plan-view preview — 80x50 viewBox
+  const W = 80, H = 50;
+  const px = 6; // wall thickness
+  const p = tpl.preset;
+  const aspect = p.shaftD / Math.max(p.shaftW, 0.1);
+  let bw, bh;
+  if (aspect > 1) { bw = W - 16; bh = bw / aspect; }
+  else { bh = H - 12; bw = bh * aspect; }
+  if (bh > H - 12) { bh = H - 12; bw = bh * aspect; }
+  if (bw > W - 16) { bw = W - 16; bh = bw / aspect; }
+  const x0 = (W - bw) / 2;
+  const y0 = (H - bh) / 2;
+
+  let inside = '';
+  // door on front (right) side
+  const doorY = y0 + bh / 2 - 3;
+  if (p.doorPos !== 'side') {
+    inside += `<rect x="${x0 + bw - 1}" y="${doorY}" width="3" height="6" fill="var(--blue)" />`;
+  } else {
+    inside += `<rect x="${x0 + bw/2 - 3}" y="${y0 + bh - 1}" width="6" height="3" fill="var(--blue)" />`;
+  }
+
+  if (p.stairType === 'switchback') {
+    const midX = x0 + bw / 2;
+    // flight lines
+    let lines = '';
+    for (let i = 0; i < 6; i++) {
+      const sx = x0 + 2 + (midX - x0 - 4) * (i / 5);
+      lines += `<line x1="${sx}" y1="${y0 + 2}" x2="${sx}" y2="${y0 + bh * 0.42}" stroke="var(--text-3)" stroke-width=".4"/>`;
+    }
+    for (let i = 0; i < 6; i++) {
+      const sx = midX + 2 + (bw/2 - 4) * (i / 5);
+      lines += `<line x1="${sx}" y1="${y0 + bh * 0.58}" x2="${sx}" y2="${y0 + bh - 2}" stroke="var(--text-3)" stroke-width=".4"/>`;
+    }
+    inside += lines;
+    inside += `<rect x="${x0 + 1}" y="${y0 + bh*0.42}" width="${bw - 2}" height="${bh*0.16}" fill="var(--bdr-2)" opacity=".6"/>`;
+  } else if (p.stairType === 'straight') {
+    let lines = '';
+    for (let i = 0; i < 9; i++) {
+      const sx = x0 + 2 + (bw - 4) * (i / 8);
+      lines += `<line x1="${sx}" y1="${y0 + 2}" x2="${sx}" y2="${y0 + bh - 2}" stroke="var(--text-3)" stroke-width=".4"/>`;
+    }
+    inside += lines;
+  } else { // spiral
+    const cx = x0 + bw / 2;
+    const cy = y0 + bh / 2;
+    const r = Math.min(bw, bh) / 2 - 2;
+    inside += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--text-3)" stroke-width=".5"/>`;
+    inside += `<circle cx="${cx}" cy="${cy}" r="${r * 0.3}" fill="var(--bdr-2)"/>`;
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4;
+      inside += `<line x1="${cx + Math.cos(a) * r * 0.3}" y1="${cy + Math.sin(a) * r * 0.3}" x2="${cx + Math.cos(a) * r}" y2="${cy + Math.sin(a) * r}" stroke="var(--text-3)" stroke-width=".4"/>`;
+    }
+  }
+
+  return `<svg viewBox="0 0 ${W} ${H}" class="tpl-thumb" preserveAspectRatio="xMidYMid meet">
+    <rect x="${x0}" y="${y0}" width="${bw}" height="${bh}" fill="none" stroke="var(--navy)" stroke-width="1.2"/>
+    ${inside}
+  </svg>`;
+}
+
+function templateMatchesState() {
+  // Find a template whose preset all match current state
+  return TEMPLATES.find(t =>
+    Math.abs(t.preset.shaftW - state.shaftW) < 0.05 &&
+    Math.abs(t.preset.shaftD - state.shaftD) < 0.05 &&
+    t.preset.stairType === state.stairType &&
+    t.preset.doorPos === state.doorPos &&
+    t.preset.floors === state.floors &&
+    Math.abs(t.preset.floorH - state.floorH) < 0.05 &&
+    t.preset.basement === state.basement
+  );
+}
+
+function renderTemplates() {
+  const grid = document.getElementById('tpl-grid');
+  if (!grid) return;
+  const activeId = templateMatchesState()?.id;
+  grid.innerHTML = TEMPLATES.map(t => `
+    <button type="button" class="tpl-card ${t.id === activeId ? 'active' : ''}" data-tpl="${t.id}" title="${t.name} — ${t.meta}">
+      ${tplThumbSvg(t)}
+      <span class="tpl-name">${t.name}</span>
+      <span class="tpl-meta">${t.meta}</span>
+    </button>
+  `).join('') +
+  `<button type="button" class="tpl-hand-btn" disabled title="Phase 2 — ხელით ნახაზის რედაქტორი">
+    🖊 ხელით დახაზე <span class="coming">მალე</span>
+  </button>`;
+}
+
+function applyTemplate(id) {
+  const t = TEMPLATES.find(x => x.id === id);
+  if (!t) return;
+  Object.assign(state, t.preset);
+  state.openDoors = new Set();
+  state.activeFloor = 0;
+  // Reflect into inputs
+  $('#inp-floors').value = state.floors;
+  $('#inp-floor-h').value = state.floorH;
+  $('#inp-shaft-w').value = state.shaftW;
+  $('#inp-shaft-d').value = state.shaftD;
+  // Sync seg buttons
+  $$('.seg').forEach(seg => {
+    const group = seg.dataset.group;
+    const k = groupToKey(group);
+    const match = state[k];
+    $$('button', seg).forEach(b => {
+      b.classList.toggle('active', String(b.dataset.val) === String(match));
+    });
+  });
+  redraw();
+}
+
+// ============== STANDARDS ==============
+// Visual simulator — values are illustrative references to published tiers.
+// Not a certified calculation. Δp and velocity limits per common design practice.
+const STANDARDS = {
+  EN: {
+    id: 'EN',
+    name: 'EN 12101-6',
+    full: 'Pressure differential systems · CEN',
+    region: 'EU',
+    regionLabel: 'ევროკავშირი · CEN TC 191',
+    classLabel: 'კლასი',
+    doorDefault: {w: 900, h: 2100},
+    classes: {
+      A: {id: 'A', name: 'Class A · მხოლოდ ევაკ.', dpValues: [40, 50, 60], dpDefault: 50, openDoors: 1, velocity: 0.75, force: 100, note: 'ევაკუაცია სართულიდან, 1 კარი ღია'},
+      B: {id: 'B', name: 'Class B · ხანძრობრივი', dpValues: [40, 50, 60], dpDefault: 50, openDoors: 2, velocity: 2.0, force: 100, note: '2 კარი ღია, v ≥ 2.0 მ/წმ'},
+      C: {id: 'C', name: 'Class C · სრული ევაკ.', dpValues: [40, 50, 60], dpDefault: 50, openDoors: 1, velocity: 0.75, force: 100, note: 'ყველა გადის, 1 კარი ღია'},
+      D: {id: 'D', name: 'Class D · საწოლი', dpValues: [10, 30, 50], dpDefault: 30, openDoors: 1, velocity: 0.75, force: 100, note: 'საავადმყოფო / სასტუმრო'},
+      E: {id: 'E', name: 'Class E · ფაზური', dpValues: [40, 50, 60], dpDefault: 50, openDoors: 1, velocity: 0.75, force: 100, note: 'ცალ-ცალკე ფაზური ევაკ.'},
+      F: {id: 'F', name: 'Class F · ქრობა', dpValues: [40, 50, 60], dpDefault: 50, openDoors: 1, velocity: 2.0, force: 100, note: 'სახანძრო ხელმძღვანელი'}
+    }
+  },
+  NFPA: {
+    id: 'NFPA',
+    name: 'NFPA 92',
+    full: 'Smoke Control Systems',
+    region: 'US',
+    regionLabel: 'აშშ · NFPA / IBC',
+    classLabel: 'ტიპი',
+    doorDefault: {w: 915, h: 2135}, // 36" × 84"
+    classes: {
+      'stair-min': {id: 'stair-min', name: 'Stairwell · Min', dpValues: [12, 25, 50], dpDefault: 12, openDoors: 1, velocity: 1.02, force: 133, note: 'NFPA 92 min 12.5 Pa (0.05 in w.c.)'},
+      'stair-std': {id: 'stair-std', name: 'Stairwell · Std', dpValues: [25, 37, 50], dpDefault: 37, openDoors: 1, velocity: 1.02, force: 133, note: 'IBC 909 · typical 0.15 in w.c.'},
+      'stair-max': {id: 'stair-max', name: 'Stairwell · Max', dpValues: [50, 60, 87], dpDefault: 60, openDoors: 1, velocity: 1.02, force: 133, note: 'Max 0.35 in w.c., force ≤ 30 lbf'},
+      'elevator': {id: 'elevator', name: 'Elevator Shaft', dpValues: [25, 37, 62], dpDefault: 37, openDoors: 0, velocity: 1.02, force: 133, note: 'Hoistway press. · ASME A17.1'},
+      'refuge': {id: 'refuge', name: 'Refuge Area', dpValues: [12, 25, 50], dpDefault: 25, openDoors: 0, velocity: 1.02, force: 133, note: 'Area of refuge · IBC 1009'}
+    }
+  },
+  SP: {
+    id: 'SP',
+    name: 'СП 7.13130',
+    full: 'Приточная противодымная вентиляция · ГОСТ Р 53300',
+    region: 'RU',
+    regionLabel: 'რუსეთი / СНГ · МЧС',
+    classLabel: 'ტიპი (подкл.)',
+    doorDefault: {w: 900, h: 2100},
+    classes: {
+      'tip1': {id: 'tip1', name: 'Тип 1 · Н1', dpValues: [20, 50, 150], dpDefault: 50, openDoors: 1, velocity: 1.3, force: 150, note: 'Незадымляемая Н1 · через воздушн. зону'},
+      'tip2': {id: 'tip2', name: 'Тип 2 · Н2', dpValues: [20, 50, 150], dpDefault: 50, openDoors: 1, velocity: 1.3, force: 150, note: 'Н2 · подпор при пожаре'},
+      'tip3': {id: 'tip3', name: 'Тип 3 · Н3', dpValues: [20, 50, 150], dpDefault: 50, openDoors: 1, velocity: 1.3, force: 150, note: 'Н3 · тамбур-шлюз с подпором'},
+      'lift': {id: 'lift', name: 'Лифт. шахта', dpValues: [20, 50, 150], dpDefault: 50, openDoors: 0, velocity: 1.3, force: 150, note: 'Лифт для пожарн. · ГОСТ Р 52382'},
+      'tambur': {id: 'tambur', name: 'Тамбур-шлюз', dpValues: [20, 50, 150], dpDefault: 50, openDoors: 1, velocity: 1.3, force: 150, note: 'Двойная преграда'}
+    }
+  }
+};
 
 // ============== STATE ==============
-const state = {
-  floors: 5,
-  floorH: 3.0,
-  basement: 0,
-  shaftW: 2.4,
-  shaftD: 5.2,
-  stairType: 'switchback',
-  doorW: 900,
-  doorH: 2100,
-  doorPos: 'front',
-  supply: 'bottom',
-  dp: 50,
-  flowViz: 'on'
-};
+const SIMULATOR_ID = 'stair-pressurization';
+const DOOR_CRACK_GAP_M = 0.003;
+const EXPORT_VERSION = 1;
+
+function defaultStateValues() {
+  return {
+    standard: 'EN',
+    stdClass: 'A',
+    units: 'metric',
+    floors: 5,
+    floorH: 3.0,
+    basement: 0,
+    shaftW: 2.4,
+    shaftD: 5.2,
+    stairType: 'switchback',
+    doorW: 900,
+    doorH: 2100,
+    doorPos: 'front',
+    supply: 'bottom',
+    dp: 50,
+    flowViz: 'on',
+    systemMode: 'normal',
+    smokeMode: 'off',
+    openDoors: new Set(),
+    activeFloor: 0,
+    results: null,
+  };
+}
+
+const state = defaultStateValues();
+
+function currentStd() { return STANDARDS[state.standard]; }
+function currentClass() { return currentStd().classes[state.stdClass]; }
+function validFloorKeys() {
+  const floors = [];
+  for (let floorKey = -state.basement; floorKey < state.floors; floorKey++) floors.push(floorKey);
+  return floors;
+}
+function isValidFloorKey(floorKey) {
+  return floorKey >= -state.basement && floorKey < state.floors;
+}
+function sanitizeScenarioState() {
+  const next = new Set();
+  for (const floorKey of state.openDoors) {
+    if (isValidFloorKey(floorKey)) next.add(floorKey);
+  }
+  state.openDoors = next;
+  if (!isValidFloorKey(state.activeFloor)) {
+    state.activeFloor = next.size ? [...next].sort((a, b) => a - b)[0] : 0;
+  }
+}
+function getDoorSideForFloor(floorKey) {
+  const idx = floorKey + state.basement;
+  if (state.doorPos === 'alternate') return idx % 2 === 0 ? 'right' : 'left';
+  if (state.doorPos === 'side') return 'left';
+  return 'right';
+}
+function formatFloorLabel(floorKey) {
+  if (floorKey > 0) return `სართული ${floorKey}`;
+  if (floorKey === 0) return 'G დონე';
+  return `B${Math.abs(floorKey)}`;
+}
+function formatFloorShort(floorKey) {
+  if (floorKey > 0) return `${floorKey}`;
+  if (floorKey === 0) return 'G';
+  return `B${Math.abs(floorKey)}`;
+}
+function openDoorKeys() {
+  return [...state.openDoors].sort((a, b) => a - b);
+}
+function pressureDropPa() {
+  if (state.systemMode === 'failure') return state.dp;
+  return Math.min(state.dp, state.openDoors.size * 5);
+}
+function effectivePressurePa() {
+  return Math.max(0, state.dp - pressureDropPa());
+}
+function computeDoorForce(floorKey) {
+  const cls = currentClass();
+  const doorAreaM2 = (state.doorW / 1000) * (state.doorH / 1000);
+  // `*1000` keeps the visual gauge in a readable range; this is intentionally illustrative.
+  const rawForce = effectivePressurePa() * (doorAreaM2 * 1000) * 0.0015;
+  const sharedBudget = state.openDoors.size > 0 ? Math.max(0.55, 1 - state.openDoors.size * 0.12) : 1;
+  const localizedBoost = state.openDoors.has(floorKey) ? 0.78 : 1;
+  const forceN = state.systemMode === 'failure' ? 0 : rawForce * sharedBudget * localizedBoost;
+  const pct = cls.force ? Math.min(1, forceN / cls.force) : 0;
+  let color = 0x0f6e3a;
+  if (pct >= 0.9) color = 0xc0201a;
+  else if (pct >= 0.5) color = 0xc05010;
+  return { forceN, pct, limitN: cls.force, color };
+}
+function primaryOpenFloor() {
+  if (isValidFloorKey(state.activeFloor) && state.openDoors.has(state.activeFloor)) return state.activeFloor;
+  const [first] = openDoorKeys();
+  return first ?? 0;
+}
+function smokeSourceFloors() {
+  const open = openDoorKeys();
+  return open.length ? open : [primaryOpenFloor()];
+}
+function floorDoorCenterY(floorKey) {
+  const doorHm = state.doorH / 1000;
+  return floorKey * state.floorH + state.basement * state.floorH + 0.02 + doorHm / 2;
+}
+function doorAreaM2() {
+  return (state.doorW / 1000) * (state.doorH / 1000);
+}
+function closedDoorCount() {
+  return Math.max(0, validFloorKeys().length - state.openDoors.size);
+}
+function perDoorLeakAreaM2() {
+  const width = state.doorW / 1000;
+  const height = state.doorH / 1000;
+  const perimeter = 2 * (width + height);
+  return perimeter * DOOR_CRACK_GAP_M;
+}
+function computeResults() {
+  const cls = currentClass();
+  const effectiveDp = state.systemMode === 'failure' ? 0 : effectivePressurePa();
+  const leakPerDoor = leakageFlow(perDoorLeakAreaM2(), effectiveDp);
+  const leakQTotal = leakPerDoor * closedDoorCount();
+  const openDoorQ = state.openDoors.size * cls.velocity * doorAreaM2();
+  const requiredSupplyQ = requiredSupplyFlow(leakQTotal, openDoorQ, 1.1);
+  const maxDpAllowed = maxDpForDoor(state.doorW / 1000, state.doorH / 1000, cls.force);
+  const totalHeight = (state.floors + state.basement) * state.floorH;
+  const shaftArea = Math.max(1, state.shaftW * state.shaftD);
+  const shaftVolume = shaftArea * totalHeight;
+  const smokeTime = state.smokeMode === 'fast' ? 120 : 60;
+  const smokeFire = state.smokeMode === 'fast' ? 900 : 450;
+  const doorForces = Object.fromEntries(
+    validFloorKeys().map((floorKey) => [
+      floorKey,
+      doorOpeningForce(state.doorW / 1000, state.doorH / 1000, effectiveDp, 30, 0.07),
+    ]),
+  );
+  const worstDoorForce = Math.max(0, ...Object.values(doorForces));
+  const smokeInterfaceHeight = state.smokeMode === 'off'
+    ? null
+    : smokeLayerHeight(smokeFire, shaftArea, state.floorH, smokeTime);
+
+  state.results = {
+    effectiveDp,
+    leakPerDoor,
+    leakQTotal,
+    openDoorQ,
+    requiredSupplyQ,
+    maxDpAllowed,
+    doorForces,
+    worstDoorForce,
+    smokeInterfaceHeight,
+    exceedsDoorForce: worstDoorForce > cls.force,
+    closedDoors: closedDoorCount(),
+    openDoors: state.openDoors.size,
+    leakAreaPerDoor: perDoorLeakAreaM2(),
+    doorArea: doorAreaM2(),
+    shaftArea,
+    shaftVolume,
+    totalHeight,
+    safetyFactor: 1.1,
+    targetVelocity: cls.velocity,
+    smokeTime,
+    smokeFire,
+  };
+}
+function serializeState() {
+  return {
+    simulator: SIMULATOR_ID,
+    version: EXPORT_VERSION,
+    standard: {
+      id: state.standard,
+      class: state.stdClass,
+    },
+    units: state.units,
+    params: {
+      floors: state.floors,
+      floorH: state.floorH,
+      basement: state.basement,
+      shaftW: state.shaftW,
+      shaftD: state.shaftD,
+      stairType: state.stairType,
+      doorW: state.doorW,
+      doorH: state.doorH,
+      doorPos: state.doorPos,
+      supply: state.supply,
+      dp: state.dp,
+      flowViz: state.flowViz,
+      systemMode: state.systemMode,
+      smokeMode: state.smokeMode,
+      openDoors: openDoorKeys(),
+      activeFloor: state.activeFloor,
+    },
+    results: state.results,
+    meta: {
+      savedAt: new Date().toISOString(),
+      type: 'stair-pressurization-state',
+    },
+  };
+}
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+function katexBlock(expression) {
+  if (window.katex?.renderToString) {
+    try {
+      return window.katex.renderToString(expression, { displayMode: true, throwOnError: false });
+    } catch {}
+  }
+  return `<pre class="formula-fallback">${escapeHtml(expression)}</pre>`;
+}
 
 // ============== HELPERS ==============
 const $ = (s, r=document) => r.querySelector(s);
@@ -528,14 +1531,404 @@ function supplyHintText() {
   return 'თითოეულ სართულზე ცალ-ცალკე · Class B-C';
 }
 
+function fmtLen(m, decimals = 2) {
+  if (state.units === 'imperial') return PHYSICS_U.m_to_ft(m).toFixed(decimals) + ' ft';
+  return m.toFixed(decimals) + ' მ';
+}
+function fmtMm(mm) {
+  if (state.units === 'imperial') return PHYSICS_U.mm_to_in(mm).toFixed(1) + ' in';
+  return mm + ' მმ';
+}
+function fmtPa(pa) {
+  if (state.units === 'imperial') return PHYSICS_U.pa_to_inwc(pa).toFixed(3) + ' in w.c.';
+  const decimals = Math.abs(pa - Math.round(pa)) < 0.05 ? 0 : 1;
+  return Number(pa).toFixed(decimals) + ' Pa';
+}
+function fmtVel(mps) {
+  if (state.units === 'imperial') return PHYSICS_U.m_to_ft(mps).toFixed(2) + ' ft/s';
+  return mps.toFixed(2) + ' მ/წმ';
+}
+function fmtForce(n) {
+  const decimals = Math.abs(n) >= 100 ? 0 : 1;
+  if (state.units === 'imperial') return PHYSICS_U.n_to_lbf(n).toFixed(1) + ' lbf';
+  return Number(n).toFixed(decimals) + ' N';
+}
+function fmtFlow(m3s, decimals = 2) {
+  if (state.units === 'imperial') return PHYSICS_U.m3s_to_cfm(m3s).toFixed(decimals) + ' cfm';
+  return m3s.toFixed(decimals) + ' მ³/წმ';
+}
+function fmtArea(areaM2, decimals = 2) {
+  if (state.units === 'imperial') return (areaM2 * 10.7639).toFixed(decimals) + ' ft²';
+  return areaM2.toFixed(decimals) + ' მ²';
+}
+function refLabel(ref) {
+  if (!ref) return 'Reference pending';
+  return `${ref.std} · ${ref.sec} · ${ref.eq}`;
+}
+
 function syncSummary() {
+  sanitizeScenarioState();
+  computeResults();
   const totalFl = state.floors + state.basement;
   const totalH = totalFl * state.floorH;
   $('#sm-floors').textContent = state.floors + (state.basement ? ` +${state.basement} სარდ.` : '');
-  $('#sm-height').textContent = totalH.toFixed(1) + ' მ';
-  $('#sm-shaft').textContent = `${state.shaftW} × ${state.shaftD} მ`;
-  $('#sm-door').textContent = `${state.doorW} × ${state.doorH}`;
+  $('#sm-height').textContent = fmtLen(totalH, 1);
+  $('#sm-shaft').textContent = `${fmtLen(state.shaftW, 1)} × ${fmtLen(state.shaftD, 1)}`;
+  $('#sm-door').textContent = `${fmtMm(state.doorW)} × ${fmtMm(state.doorH)}`;
   $('#supply-hint').textContent = supplyHintText();
+  // Header badge
+  const std = currentStd();
+  const cls = currentClass();
+  $('#hdr-std-badge').textContent = `${std.name} · ${cls.name.split(' · ')[0]}`;
+  $('#hdr-std-badge').style.background = std.region === 'US' ? 'var(--red-lt)' :
+    std.region === 'RU' ? 'var(--ora-lt)' : 'var(--blue-lt)';
+  $('#hdr-std-badge').style.color = std.region === 'US' ? 'var(--red)' :
+    std.region === 'RU' ? 'var(--ora)' : 'var(--blue)';
+  $('#std-region-hint').textContent = std.regionLabel;
+  $('#lbl-std-class').textContent = std.classLabel;
+  // Dp hint
+  $('#dp-hint').textContent =
+    `დიაპაზონი: ${fmtPa(Math.min(...cls.dpValues))} – ${fmtPa(Math.max(...cls.dpValues))} · სიჩქარე v ≥ ${fmtVel(cls.velocity)}`;
+  renderStdInfo();
+  renderFormulas();
+}
+
+function renderStdClasses() {
+  const std = currentStd();
+  const seg = $('#seg-std-class');
+  seg.innerHTML = '';
+  Object.values(std.classes).forEach(c => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.val = c.id;
+    b.textContent = c.name.split(' · ')[0];
+    b.title = c.name + ' — ' + c.note;
+    if (c.id === state.stdClass) b.classList.add('active');
+    seg.appendChild(b);
+  });
+}
+
+function renderDpButtons() {
+  const cls = currentClass();
+  const seg = $('#seg-dp');
+  seg.innerHTML = '';
+  cls.dpValues.forEach(v => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.dataset.val = v;
+    b.textContent = fmtPa(v);
+    if (v === state.dp) b.classList.add('active');
+    seg.appendChild(b);
+  });
+}
+
+function renderStdInfo() {
+  const std = currentStd();
+  const cls = currentClass();
+  const results = state.results || (computeResults(), state.results);
+  const regionClass = std.region === 'US' ? 'us' : std.region === 'RU' ? 'ru' : 'eu';
+  const openKeys = openDoorKeys();
+  const openSummary = openKeys.length ? openKeys.map(formatFloorShort).join(', ') : 'არა';
+  const smokeLabel = state.smokeMode === 'slow' ? 'კვამლი · ნელი' : state.smokeMode === 'fast' ? 'კვამლი · სწრაფი' : '';
+  const smokeLine = results.smokeInterfaceHeight == null
+    ? ''
+    : `<span>კვამლის შრე:</span><b>${fmtLen(results.smokeInterfaceHeight, 2)}</b>`;
+  const floorPills = openKeys.length
+    ? `<div class="floor-pills">${openKeys.map(floorKey => `<span class="floor-pill">${formatFloorLabel(floorKey)} · ღია</span>`).join('')}</div>`
+    : '';
+  const html = `
+    <div class="title">
+      ${std.name}
+      <span class="region ${regionClass}">${std.region}</span>
+    </div>
+    <div class="sub">${std.full}</div>
+    <div class="specs">
+      <span>${std.classLabel}:</span><b>${cls.name}</b>
+      <span>Δp:</span><b>${fmtPa(state.dp)}</b>
+      <span>ჰაერის სიჩქარე:</span><b>≥ ${fmtVel(cls.velocity)}</b>
+      <span>ღია კარი (ნორმა):</span><b>${cls.openDoors}</b>
+      <span>კარის ძალა:</span><b>≤ ${fmtForce(cls.force)}</b>
+      <span>აქტიური ღია:</span><b>${openSummary}</b>
+      <span>ეფექტური Δp:</span><b>${fmtPa(results.effectiveDp)}</b>
+      <span>გაჟონვა / კარი:</span><b>${fmtFlow(results.leakPerDoor)}</b>
+      <span>გაჟონვა ჯამი:</span><b>${fmtFlow(results.leakQTotal)}</b>
+      <span>ღია კარის ნაკადი:</span><b>${fmtFlow(results.openDoorQ)}</b>
+      <span>მოთხოვნილი მიწოდება:</span><b>${fmtFlow(results.requiredSupplyQ)}</b>
+      <span>უდიდესი door force:</span><b>${fmtForce(results.worstDoorForce)}</b>
+      <span>Δp max force-ით:</span><b>${fmtPa(results.maxDpAllowed)}</b>
+      ${smokeLine}
+      <span class="meta-line">${cls.note}</span>
+      <span class="meta-line">დახურული კარები: ${results.closedDoors} · გაჟონვის ფართობი ერთ კარზე: ${fmtArea(results.leakAreaPerDoor, 3)}</span>
+    </div>
+    <div class="status-row">
+      ${state.systemMode === 'failure' ? '<span class="status-badge warn">⚠ სისტემა გათიშულია</span>' : '<span class="status-badge">სისტემა · აქტიური</span>'}
+      ${smokeLabel ? `<span class="status-badge smoke">${smokeLabel}</span>` : ''}
+      ${results.exceedsDoorForce ? `<span class="status-badge warn">⚠ door force აჭარბებს ლიმიტს (${fmtForce(cls.force)})</span>` : '<span class="status-badge">door force ლიმიტშია</span>'}
+    </div>
+    ${floorPills}
+  `;
+  const target = document.getElementById('std-info');
+  if (target) target.innerHTML = html;
+}
+
+function renderLegend(view) {
+  const panel = document.getElementById('legend-panel');
+  if (!panel) return;
+  const content = {
+    section: `
+      <div class="row"><span class="sw" style="background:var(--bdr-2)"></span> კედელი / გადახურვა</div>
+      <div class="row"><span class="sw" style="background:var(--blue-lt);border-color:var(--blue)"></span> ღია კარი</div>
+      <div class="row"><span class="sw" style="background:var(--blue)"></span> ჰაერის მიწოდება</div>
+      <div class="row"><span class="sw" style="background:var(--ora)"></span> გამონაბოლქვი / გაჟონვა</div>
+    `,
+    plan: `
+      <div class="row"><span class="sw" style="background:var(--sur-2);border-color:var(--text)"></span> სადარბაზოს კედელი</div>
+      <div class="row"><span class="sw" style="background:var(--bdr-2)"></span> საფეხურები</div>
+      <div class="row"><span class="sw" style="background:var(--blue-lt)"></span> კარი</div>
+    `,
+    d3: `
+      <div class="row"><span class="sw" style="background:var(--blue)"></span> ჰაერის ნაკადი</div>
+      <div class="row"><span class="sw" style="background:#5ac8ff"></span> airflow particles</div>
+      <div class="row"><span class="sw" style="background:var(--bdr-2)"></span> კედლები (transp.)</div>
+    `,
+    formulas: `
+      <div class="row"><span class="sw" style="background:var(--blue-lt);border-color:var(--blue)"></span> live inputs ფორმულებში</div>
+      <div class="row"><span class="sw" style="background:var(--sur-2);border-color:var(--text-3)"></span> reference citation</div>
+      <div class="row"><span class="sw" style="background:var(--red-lt);border-color:var(--red)"></span> limit warning</div>
+    `
+  };
+  panel.innerHTML = content[view] || content.section;
+}
+
+function renderFormulaCard({title, subtitle, expression, ref, values, resultLabel, resultValue, note = '', warn = false}) {
+  const refText = refLabel(ref);
+  const valuesHtml = values.map(({label, value}) => `
+    <div class="kv">
+      <span>${escapeHtml(label)}</span>
+      <b>${escapeHtml(value)}</b>
+    </div>
+  `).join('');
+
+  return `
+    <article class="formula-card ${warn ? 'warn' : ''}">
+      <div class="formula-head">
+        <div>
+          <h3>${escapeHtml(title)}</h3>
+          <div class="formula-sub">${escapeHtml(subtitle)}</div>
+        </div>
+        <div class="formula-ref">${escapeHtml(refText)}</div>
+      </div>
+      <div class="formula-math">${katexBlock(expression)}</div>
+      <div class="formula-grid">${valuesHtml}</div>
+      <div class="formula-result">
+        <strong>${escapeHtml(resultLabel)}: ${escapeHtml(resultValue)}</strong>
+        <div class="formula-note">${escapeHtml(note)}</div>
+      </div>
+    </article>
+  `;
+}
+
+function renderFormulas() {
+  const panel = document.getElementById('formulas-panel');
+  if (!panel) return;
+  const cls = currentClass();
+  const results = state.results || (computeResults(), state.results);
+  const cards = [
+    renderFormulaCard({
+      title: 'გაჟონვა ერთ კარზე',
+      subtitle: 'დახურული კარის crack leakage',
+      expression: String.raw`Q_{leak,1} = 0.827 \cdot A_{leak} \cdot \sqrt{\Delta p_{eff}}`,
+      ref: PHYSICS_REFS.leakageFlow,
+      values: [
+        {label: 'A_leak', value: fmtArea(results.leakAreaPerDoor, 3)},
+        {label: 'Δp_eff', value: fmtPa(results.effectiveDp)},
+        {label: 'დახურული კარები', value: String(results.closedDoors)},
+        {label: 'Q_leak,1', value: fmtFlow(results.leakPerDoor)},
+      ],
+      resultLabel: 'Q_leak,Σ',
+      resultValue: fmtFlow(results.leakQTotal),
+      note: 'ჯამური leakage მიიღება დახურული კარების რაოდენობაზე გამრავლებით.',
+    }),
+    renderFormulaCard({
+      title: 'კარის გაღების ძალა',
+      subtitle: 'door pressure + closer resistance',
+      expression: String.raw`F_{open} = F_{dc} + \frac{A \cdot \Delta p_{eff} \cdot W}{2 (W - d_h)}`,
+      ref: PHYSICS_REFS.doorOpeningForce,
+      values: [
+        {label: 'W', value: fmtLen(state.doorW / 1000, 2)},
+        {label: 'H', value: fmtLen(state.doorH / 1000, 2)},
+        {label: 'Δp_eff', value: fmtPa(results.effectiveDp)},
+        {label: 'limit', value: fmtForce(cls.force)},
+      ],
+      resultLabel: 'უდიდესი F_open',
+      resultValue: fmtForce(results.worstDoorForce),
+      note: results.exceedsDoorForce
+        ? 'ლიმიტი გადაჭარბებულია; საჭიროა Δp-ის ან door strategy-ის კორექტირება.'
+        : `მაქსიმალური დასაშვები Δp ამ კარზე არის ${fmtPa(results.maxDpAllowed)}.`,
+      warn: results.exceedsDoorForce,
+    }),
+    renderFormulaCard({
+      title: 'საჭირო მიწოდების ხარჯი',
+      subtitle: 'fan sizing with safety factor',
+      expression: String.raw`Q_{supply} = 1.1 \cdot \left(Q_{leak,\Sigma} + Q_{open}\right)`,
+      ref: PHYSICS_REFS.requiredSupplyFlow,
+      values: [
+        {label: 'Q_leak,Σ', value: fmtFlow(results.leakQTotal)},
+        {label: 'Q_open', value: fmtFlow(results.openDoorQ)},
+        {label: 'v_min', value: fmtVel(results.targetVelocity)},
+        {label: 'A_door', value: fmtArea(results.doorArea)},
+      ],
+      resultLabel: 'Q_supply',
+      resultValue: fmtFlow(results.requiredSupplyQ),
+      note: 'ღია კარის ნაკადი ითვლება v_min × A_door × open_doors ფორმით.',
+    }),
+  ];
+
+  if (results.smokeInterfaceHeight != null) {
+    cards.push(renderFormulaCard({
+      title: 'კვამლის შრის სიმაღლე',
+      subtitle: 'one-zone smoke estimate for fire floor',
+      expression: String.raw`z = H - \frac{\dot{m}_p \cdot t}{\rho_s \cdot A}`,
+      ref: PHYSICS_REFS.smokeLayerHeight,
+      values: [
+        {label: 'Q_fire', value: `${results.smokeFire} kW`},
+        {label: 'A_floor', value: fmtArea(results.shaftArea)},
+        {label: 'H', value: fmtLen(state.floorH, 2)},
+        {label: 't', value: `${results.smokeTime} წმ`},
+      ],
+      resultLabel: 'z_interface',
+      resultValue: fmtLen(results.smokeInterfaceHeight, 2),
+      note: 'ეს არის სწრაფი საინჟინრო შეფასება და არა CFD სიმულაცია.',
+    }));
+  }
+
+  panel.innerHTML = `
+    <section class="formula-intro">
+      <h2>აქტიური გამოთვლები</h2>
+      <p>ქვემოთ ყველა რიცხვი პირდაპირ მიმდინარე state-იდან ითვლება. Δp, ღია კარები, ერთეულები და smoke რეჟიმი შეიცვლება თუ sidebar-ში პარამეტრს შეცვლი.</p>
+    </section>
+    ${cards.join('')}
+  `;
+}
+
+function reflectInputsFromState() {
+  $('#inp-floors').value = state.floors;
+  $('#inp-floor-h').value = state.floorH;
+  $('#inp-shaft-w').value = state.shaftW;
+  $('#inp-shaft-d').value = state.shaftD;
+  $('#inp-door-w').value = state.doorW;
+  $('#inp-door-h').value = state.doorH;
+}
+
+function syncSegmentsFromState() {
+  $$('.seg').forEach(seg => {
+    const group = seg.dataset.group;
+    const match = state[groupToKey(group)];
+    $$('button', seg).forEach(button => {
+      button.classList.toggle('active', String(button.dataset.val) === String(match));
+    });
+  });
+}
+
+function numberOr(value, fallback) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+}
+
+function extractImportedParams(payload) {
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('JSON ფაილი ცარიელია ან ვერ იკითხება.');
+  }
+  if (payload.simulator && payload.simulator !== SIMULATOR_ID) {
+    throw new Error('ეს JSON სხვა სიმულატორს ეკუთვნის.');
+  }
+  if (payload.params && typeof payload.params === 'object') {
+    return {
+      standard: payload.standard?.id ?? payload.params.standard,
+      stdClass: payload.standard?.class ?? payload.params.stdClass,
+      units: payload.units ?? payload.params.units,
+      ...payload.params,
+    };
+  }
+  if (payload.state && typeof payload.state === 'object') {
+    return {...payload.state};
+  }
+  throw new Error('უცნობი JSON სქემა.');
+}
+
+function applyImportedState(snapshot) {
+  const defaults = defaultStateValues();
+  const standard = STANDARDS[snapshot.standard] ? snapshot.standard : defaults.standard;
+  const classes = STANDARDS[standard].classes;
+  const stdClass = classes[snapshot.stdClass] ? snapshot.stdClass : Object.keys(classes)[0];
+  const classDefaults = classes[stdClass];
+  const parsedDp = Math.round(numberOr(snapshot.dp, classDefaults.dpDefault));
+
+  Object.assign(state, {
+    ...defaults,
+    standard,
+    stdClass,
+    units: snapshot.units === 'imperial' ? 'imperial' : 'metric',
+    floors: clamp(Math.round(numberOr(snapshot.floors, defaults.floors)), 2, 40),
+    floorH: clamp(numberOr(snapshot.floorH, defaults.floorH), 2.2, 6),
+    basement: clamp(Math.round(numberOr(snapshot.basement, defaults.basement)), 0, 2),
+    shaftW: clamp(numberOr(snapshot.shaftW, defaults.shaftW), 1.5, 8),
+    shaftD: clamp(numberOr(snapshot.shaftD, defaults.shaftD), 2.5, 10),
+    stairType: ['switchback', 'straight', 'spiral'].includes(snapshot.stairType) ? snapshot.stairType : defaults.stairType,
+    doorW: clamp(Math.round(numberOr(snapshot.doorW, defaults.doorW)), 700, 1800),
+    doorH: clamp(Math.round(numberOr(snapshot.doorH, defaults.doorH)), 1900, 2400),
+    doorPos: ['front', 'side', 'alternate'].includes(snapshot.doorPos) ? snapshot.doorPos : defaults.doorPos,
+    supply: ['bottom', 'top', 'both', 'per-floor'].includes(snapshot.supply) ? snapshot.supply : defaults.supply,
+    dp: classDefaults.dpValues.includes(parsedDp) ? parsedDp : classDefaults.dpDefault,
+    flowViz: snapshot.flowViz === 'off' ? 'off' : 'on',
+    systemMode: snapshot.systemMode === 'failure' ? 'failure' : 'normal',
+    smokeMode: ['off', 'slow', 'fast'].includes(snapshot.smokeMode) ? snapshot.smokeMode : defaults.smokeMode,
+    openDoors: new Set(Array.isArray(snapshot.openDoors) ? snapshot.openDoors.map(value => Number.parseInt(value, 10)).filter(Number.isFinite) : []),
+    activeFloor: Math.round(numberOr(snapshot.activeFloor, defaults.activeFloor)),
+    results: null,
+  });
+
+  sanitizeScenarioState();
+  reflectInputsFromState();
+  renderStdClasses();
+  renderDpButtons();
+  syncSegmentsFromState();
+  redraw();
+}
+
+async function importJsonFile(file) {
+  if (!file) return;
+  const text = await file.text();
+  const payload = JSON.parse(text);
+  applyImportedState(extractImportedParams(payload));
+}
+
+function importStateFromQuery() {
+  const encodedState = new URLSearchParams(window.location.search).get('state');
+  if (!encodedState) return false;
+  const payload = JSON.parse(atob(encodedState.replaceAll(' ', '+')));
+  applyImportedState(extractImportedParams(payload));
+  return true;
+}
+
+function downloadStateJson() {
+  syncSummary();
+  const payload = serializeState();
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  const stamp = new Date().toISOString().replaceAll(':', '-').slice(0, 19);
+  link.href = url;
+  link.download = `${SIMULATOR_ID}-${stamp}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function printReport() {
+  syncSummary();
+  window.print();
 }
 
 // ============== SECTION (ჭრილი) ==============
@@ -650,18 +2043,15 @@ function drawSection() {
   const doorWpx = Math.max(10, state.doorW / 1000 * pxPerM);
   const doorHpx = Math.max(12, state.doorH / 1000 * pxPerM);
   for (let f = -state.basement; f < state.floors; f++) {
+    const isOpen = state.openDoors.has(f);
     // door sits on slab at floor f (bottom) going up
     const bottomY = groundY - f * state.floorH * pxPerM;
     const topDoorY = bottomY - doorHpx;
-    // alternate positions
-    let alt = 'right';
-    if (state.doorPos === 'alternate') alt = f % 2 === 0 ? 'right' : 'left';
-    if (state.doorPos === 'side') alt = 'left';
-    if (state.doorPos === 'front') alt = 'right';
+    const alt = getDoorSideForFloor(f);
     const dx = alt === 'right' ? shaftX1 - doorWpx - 8 : shaftX0 + 8;
     svg.appendChild(el('rect', {
       x: dx, y: topDoorY, width: doorWpx, height: doorHpx,
-      class: 's-door-open', rx: 1
+      class: isOpen ? 's-door-open' : 's-door', rx: 1
     }));
     // door swing arc hint
     const arcStart = alt === 'right' ? dx + doorWpx : dx;
@@ -669,8 +2059,19 @@ function drawSection() {
       d: alt === 'right'
         ? `M ${arcStart} ${bottomY} q ${doorWpx*0.7} -${doorWpx*0.5} ${doorWpx*0.7} -${doorWpx*1.0}`
         : `M ${arcStart} ${bottomY} q -${doorWpx*0.7} -${doorWpx*0.5} -${doorWpx*0.7} -${doorWpx*1.0}`,
-      fill: 'none', stroke: 'var(--blue)', 'stroke-width': .7, 'stroke-dasharray': '2 2'
+      fill: 'none',
+      stroke: isOpen ? 'var(--blue)' : 'var(--text-3)',
+      'stroke-width': isOpen ? 1.2 : .7,
+      'stroke-dasharray': '2 2'
     }));
+    if (isOpen) {
+      svg.appendChild(el('text', {
+        x: alt === 'right' ? dx + doorWpx + 10 : dx - 10,
+        y: topDoorY + 12,
+        class: 's-label-b',
+        'text-anchor': alt === 'right' ? 'start' : 'end'
+      })).textContent = 'OPEN';
+    }
   }
 
   // stair representation (diagonal zig-zag inside shaft)
@@ -680,10 +2081,10 @@ function drawSection() {
   if (state.flowViz === 'on') drawSectionAirflow(svg, shaftX0, shaftX1, groundY, topY, pxPerM);
 
   // total dimension on left
-  drawDimensionVertical(svg, shaftX0 - 50, topY, groundY, `+${(state.floors*state.floorH).toFixed(1)} მ`);
+  drawDimensionVertical(svg, shaftX0 - 50, topY, groundY, `+${fmtLen(state.floors*state.floorH, 1)}`);
   if (state.basement) {
     drawDimensionVertical(svg, shaftX0 - 50, groundY, groundY + state.basement*state.floorH*pxPerM,
-      `-${(state.basement*state.floorH).toFixed(1)} მ`);
+      `-${fmtLen(state.basement*state.floorH, 1)}`);
   }
 
   // door dim small
@@ -691,7 +2092,7 @@ function drawSection() {
   const dimBottomY = groundY;
   svg.appendChild(el('text', {
     x: dimX, y: dimBottomY - doorHpx/2, class: 's-label'
-  })).textContent = `${state.doorH} მმ`;
+  })).textContent = fmtMm(state.doorH);
   svg.appendChild(el('line', {
     x1: dimX - 4, y1: dimBottomY - doorHpx, x2: dimX - 4, y2: dimBottomY,
     class: 's-dim'
@@ -700,7 +2101,7 @@ function drawSection() {
   // Title
   svg.appendChild(el('text', {
     x: leftX, y: topY - 15, class: 's-label-b', 'font-size': 13
-  })).textContent = `ჭრილი A–A · ${state.floors + state.basement} სართული · ${(totalH).toFixed(1)} მ`;
+  })).textContent = `ჭრილი A–A · ${state.floors + state.basement} სართული · ${fmtLen(totalH, 1)} · ღია: ${openDoorKeys().length || 0}`;
 }
 
 function drawSectionStairs(svg, x0, x1, groundY, pxPerM) {
@@ -731,15 +2132,15 @@ function drawSectionStairs(svg, x0, x1, groundY, pxPerM) {
 function drawSectionAirflow(svg, x0, x1, groundY, topY, pxPerM) {
   const g = el('g');
   const midX = (x0 + x1) / 2;
-  const totalH = (state.floors + state.basement) * state.floorH * pxPerM;
   const bottomY = groundY + state.basement * state.floorH * pxPerM;
+  const systemActive = state.systemMode === 'normal';
 
-  if (state.supply === 'bottom' || state.supply === 'both') {
+  if (systemActive && (state.supply === 'bottom' || state.supply === 'both')) {
     // fan at bottom
     drawFan(g, midX, bottomY + 30, 14, 'up');
     // label
     const lbl = el('text', {x: midX + 24, y: bottomY + 36, class: 's-label-b', fill: 'var(--blue)'});
-    lbl.textContent = `Δp ${state.dp} Pa`;
+    lbl.textContent = `Δp ${fmtPa(state.dp)}`;
     g.appendChild(lbl);
     // main arrow up center
     for (let i = 0; i < 4; i++) {
@@ -751,11 +2152,11 @@ function drawSectionAirflow(svg, x0, x1, groundY, topY, pxPerM) {
     }
   }
 
-  if (state.supply === 'top' || state.supply === 'both') {
+  if (systemActive && (state.supply === 'top' || state.supply === 'both')) {
     // fan at top
     drawFan(g, midX, topY - 22, 14, 'down');
     const lbl = el('text', {x: midX + 24, y: topY - 18, class: 's-label-b', fill: 'var(--blue)'});
-    lbl.textContent = `Δp ${state.dp} Pa`;
+    lbl.textContent = `Δp ${fmtPa(state.dp)}`;
     g.appendChild(lbl);
     for (let i = 0; i < 4; i++) {
       const dx = (i - 1.5) * 14;
@@ -766,7 +2167,7 @@ function drawSectionAirflow(svg, x0, x1, groundY, topY, pxPerM) {
     }
   }
 
-  if (state.supply === 'per-floor') {
+  if (systemActive && state.supply === 'per-floor') {
     for (let f = 0; f < state.floors; f++) {
       const y = groundY - f * state.floorH * pxPerM - state.floorH * pxPerM * 0.5;
       drawFan(g, x0 - 22, y, 9, 'right');
@@ -778,20 +2179,25 @@ function drawSectionAirflow(svg, x0, x1, groundY, topY, pxPerM) {
   }
 
   // out-flow arrows (pressure relief to corridor through doors)
-  for (let f = 0; f < state.floors; f++) {
+  for (let f = -state.basement; f < state.floors; f++) {
+    if (!state.openDoors.has(f)) continue;
     const y = groundY - f * state.floorH * pxPerM - 12;
-    const alt = state.doorPos === 'alternate' ? (f % 2 === 0 ? 'right' : 'left')
-              : state.doorPos === 'side' ? 'left' : 'right';
+    const alt = getDoorSideForFloor(f);
+    const pathAttrs = {
+      d: alt === 'right'
+        ? `M ${x1 - 30} ${y} L ${x1 + 48} ${y}`
+        : `M ${x0 + 30} ${y} L ${x0 - 48} ${y}`,
+      class: 's-airflow-out',
+      'stroke-width': systemActive ? 3 : 1.4
+    };
     if (alt === 'right') {
-      g.appendChild(el('path', {
-        d: `M ${x1 - 30} ${y} L ${x1 + 35} ${y}`,
-        class: 's-airflow-out'
-      }));
+      g.appendChild(el('path', pathAttrs));
+      g.appendChild(el('text', {x: x1 + 56, y: y + 4, class: 's-label', fill: 'var(--ora)'}))
+        .textContent = systemActive ? `v ≈ ${fmtVel(currentClass().velocity)}` : 'წნევა დაცემულია';
     } else {
-      g.appendChild(el('path', {
-        d: `M ${x0 + 30} ${y} L ${x0 - 35} ${y}`,
-        class: 's-airflow-out'
-      }));
+      g.appendChild(el('path', pathAttrs));
+      g.appendChild(el('text', {x: x0 - 56, y: y + 4, class: 's-label', fill: 'var(--ora)', 'text-anchor': 'end'}))
+        .textContent = systemActive ? `v ≈ ${fmtVel(currentClass().velocity)}` : 'წნევა დაცემულია';
     }
   }
 
@@ -829,6 +2235,8 @@ function drawDimensionVertical(svg, x, y0, y1, label) {
 function drawPlan() {
   const svg = $('#svg-plan');
   svg.innerHTML = '';
+  const activeFloor = primaryOpenFloor();
+  const activeFloorOpen = state.openDoors.has(activeFloor);
 
   const defs = el('defs');
   defs.innerHTML = `
@@ -870,60 +2278,47 @@ function drawPlan() {
 
   // door — one door per representative floor (plan shows one floor)
   const doorWpx = Math.max(12, state.doorW / 1000 * pxPerM);
-  let doorX, doorY, doorSide;
-  if (state.doorPos === 'front') {
-    doorSide = 'right';
+  let doorX, doorY;
+  if (state.doorPos === 'front' || (state.doorPos === 'alternate' && getDoorSideForFloor(activeFloor) === 'right')) {
     doorX = cx1 - wallT;
     doorY = cy0 + shaftWpx/2 - doorWpx/2;
     svg.appendChild(el('rect', {
       x: doorX, y: doorY, width: wallT + 2, height: doorWpx,
-      fill: 'var(--sur)', stroke: 'var(--blue)', 'stroke-width': 1.5
+      fill: activeFloorOpen ? 'var(--blue-lt)' : 'var(--sur)',
+      stroke: activeFloorOpen ? 'var(--blue)' : 'var(--navy)',
+      'stroke-width': activeFloorOpen ? 2 : 1.5
     }));
     // swing
     svg.appendChild(el('path', {
       d: `M ${cx1 + 2} ${doorY + doorWpx} A ${doorWpx} ${doorWpx} 0 0 0 ${cx1 + doorWpx + 2} ${doorY}`,
-      fill: 'none', stroke: 'var(--blue)', 'stroke-width': .8, 'stroke-dasharray': '3 2'
+      fill: 'none', stroke: activeFloorOpen ? 'var(--blue)' : 'var(--text-3)', 'stroke-width': activeFloorOpen ? 1.1 : .8, 'stroke-dasharray': '3 2'
     }));
     // door leaf open
     svg.appendChild(el('line', {
       x1: cx1 + 2, y1: doorY + doorWpx, x2: cx1 + 2, y2: doorY + doorWpx - doorWpx,
-      stroke: 'var(--blue)', 'stroke-width': 2
+      stroke: activeFloorOpen ? 'var(--blue)' : 'var(--navy)', 'stroke-width': 2
     }));
     svg.appendChild(el('text', {x: cx1 + doorWpx + 12, y: doorY + doorWpx/2 + 3, class: 's-label'}))
-      .textContent = `კარი ${state.doorW}×${state.doorH}`;
-  } else if (state.doorPos === 'side') {
-    doorSide = 'bottom';
+      .textContent = `${formatFloorLabel(activeFloor)} · ${activeFloorOpen ? 'ღია' : 'დახურული'}`;
+  } else if (state.doorPos === 'side' || (state.doorPos === 'alternate' && getDoorSideForFloor(activeFloor) === 'left')) {
     doorX = cx0 + shaftDpx/2 - doorWpx/2;
     doorY = cy1 - wallT;
     svg.appendChild(el('rect', {
       x: doorX, y: doorY, width: doorWpx, height: wallT + 2,
-      fill: 'var(--sur)', stroke: 'var(--blue)', 'stroke-width': 1.5
+      fill: activeFloorOpen ? 'var(--blue-lt)' : 'var(--sur)',
+      stroke: activeFloorOpen ? 'var(--blue)' : 'var(--navy)',
+      'stroke-width': activeFloorOpen ? 2 : 1.5
     }));
     svg.appendChild(el('path', {
       d: `M ${doorX} ${cy1 + 2} A ${doorWpx} ${doorWpx} 0 0 1 ${doorX + doorWpx} ${cy1 + doorWpx + 2}`,
-      fill: 'none', stroke: 'var(--blue)', 'stroke-width': .8, 'stroke-dasharray': '3 2'
+      fill: 'none', stroke: activeFloorOpen ? 'var(--blue)' : 'var(--text-3)', 'stroke-width': activeFloorOpen ? 1.1 : .8, 'stroke-dasharray': '3 2'
     }));
     svg.appendChild(el('text', {x: doorX + doorWpx/2, y: cy1 + doorWpx + 22, class: 's-label', 'text-anchor': 'middle'}))
-      .textContent = `კარი ${state.doorW}×${state.doorH}`;
-  } else {
-    // alternate — show both sides
-    const dy = cy0 + shaftWpx/2 - doorWpx/2;
-    svg.appendChild(el('rect', {
-      x: cx1 - wallT, y: dy, width: wallT + 2, height: doorWpx,
-      fill: 'var(--sur)', stroke: 'var(--blue)', 'stroke-width': 1.5
-    }));
-    svg.appendChild(el('text', {x: cx1 + 12, y: dy - 4, class: 's-label'})).textContent = 'კარი (ლუწი სართ.)';
-    const dx2 = cx0 + shaftDpx/2 - doorWpx/2;
-    svg.appendChild(el('rect', {
-      x: dx2, y: cy1 - wallT, width: doorWpx, height: wallT + 2,
-      fill: 'var(--sur-2)', stroke: 'var(--blue)', 'stroke-width': 1.5, 'stroke-dasharray': '4 3'
-    }));
-    svg.appendChild(el('text', {x: dx2 + doorWpx/2, y: cy1 + 22, class: 's-label', 'text-anchor': 'middle'}))
-      .textContent = 'კარი (კენტი სართ.)';
+      .textContent = `${formatFloorLabel(activeFloor)} · ${activeFloorOpen ? 'ღია' : 'დახურული'}`;
   }
 
   // airflow
-  if (state.flowViz === 'on') {
+  if (state.flowViz === 'on' && state.systemMode === 'normal') {
     if (state.supply === 'bottom' || state.supply === 'top' || state.supply === 'both') {
       // arrow from center up (representing shaft injection direction in plan = rising from center)
       const mcx = cx0 + shaftDpx/2;
@@ -935,7 +2330,7 @@ function drawPlan() {
         .textContent = state.supply === 'top' ? '↓' : '↑';
       svg.appendChild(el('text', {x: mcx, y: mcy + 38, class: 's-label',
         'text-anchor': 'middle'}))
-        .textContent = `Δp ${state.dp} Pa`;
+        .textContent = `Δp ${fmtPa(state.dp)}`;
     }
   }
 
@@ -946,7 +2341,7 @@ function drawPlan() {
   svg.appendChild(el('line', {x1: cx0, y1: dimY-4, x2: cx0, y2: dimY+4, class: 's-dim-tick'}));
   svg.appendChild(el('line', {x1: cx1, y1: dimY-4, x2: cx1, y2: dimY+4, class: 's-dim-tick'}));
   svg.appendChild(el('text', {x: (cx0+cx1)/2, y: dimY - 4, class: 's-label', 'text-anchor': 'middle'}))
-    .textContent = `D = ${state.shaftD} მ`;
+    .textContent = `D = ${fmtLen(state.shaftD, 1)}`;
 
   const dimX = cx0 - 50;
   svg.appendChild(el('line', {x1: dimX, y1: cy0, x2: dimX, y2: cy1, class: 's-dim'}));
@@ -954,12 +2349,17 @@ function drawPlan() {
   svg.appendChild(el('line', {x1: dimX-4, y1: cy1, x2: dimX+4, y2: cy1, class: 's-dim-tick'}));
   const tt = el('text', {x: dimX - 8, y: (cy0+cy1)/2, class: 's-label', 'text-anchor': 'middle',
     transform: `rotate(-90 ${dimX-8} ${(cy0+cy1)/2})`});
-  tt.textContent = `W = ${state.shaftW} მ`;
+  tt.textContent = `W = ${fmtLen(state.shaftW, 1)}`;
   svg.appendChild(tt);
 
   // title
   svg.appendChild(el('text', {x: cx0, y: cy0 - 25, class: 's-label-b', 'font-size': 13}))
-    .textContent = `გეგმა · ტიპური სართული · ${state.shaftW}×${state.shaftD} მ`;
+    .textContent = `გეგმა · ${formatFloorLabel(activeFloor)} · ${activeFloorOpen ? 'ღია' : 'ტიპური'} · ${fmtLen(state.shaftW, 1)} × ${fmtLen(state.shaftD, 1)}`;
+
+  const openText = openDoorKeys().length
+    ? `ღია კარები: ${openDoorKeys().map(formatFloorShort).join(', ')}`
+    : 'ღია კარები: არა';
+  svg.appendChild(el('text', {x: cx0, y: cy0 - 8, class: 's-label'})).textContent = openText;
 
   // north arrow
   const nx = 640, ny = 70;
@@ -1045,14 +2445,33 @@ function drawPlanStairs(svg, x0, y0, x1, y1) {
 // ============== 3D ==============
 let scene, camera, renderer, controls;
 let shaftGroup, particleGroup;
-const particles = [];
+const airParticles = [];
+const smokeParticles = [];
+const doorLeaves = [];
+const doorFlows = [];
+const forceBars = [];
+const hoverTargets = [];
+const fanRotors = [];
+const fanHousings = [];
+let threeGround, threeGrid, hoverTooltip;
+let pointerStart = null;
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+
+// Theme-aware 3D palette
+const SCENE_COLORS = {
+  light: { fog: 0xdbe6f5, ground: 0xeaf0fa, gridMain: 0xa7b7d1, gridSub: 0xc4d4e8, ambient: 0.85, fill: 0x6ba6ff },
+  dark:  { fog: 0x0a1020, ground: 0x232f48, gridMain: 0x4a6080, gridSub: 0x2a3a55, ambient: 0.55, fill: 0x4a9eff }
+};
+function isDarkMode() { return document.documentElement.classList.contains('dark'); }
+function currentSceneColors() { return isDarkMode() ? SCENE_COLORS.dark : SCENE_COLORS.light; }
 
 function init3D() {
   const mount = $('#canvas-3d');
   scene = new THREE.Scene();
-  const isDark = document.documentElement.classList.contains('dark');
+  const c = currentSceneColors();
   scene.background = null;
-  scene.fog = new THREE.Fog(isDark ? 0x0a1020 : 0x1a2438, 40, 120);
+  scene.fog = new THREE.Fog(c.fog, 40, 120);
 
   const w = mount.clientWidth || 800;
   const h = mount.clientHeight || 600;
@@ -1064,10 +2483,11 @@ function init3D() {
   renderer.setSize(w, h, false);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.domElement.style.cursor = 'grab';
   mount.appendChild(renderer.domElement);
 
-  // lights
-  const amb = new THREE.AmbientLight(0xffffff, 0.55);
+  const amb = new THREE.AmbientLight(0xffffff, c.ambient);
+  amb.name = 'scene-ambient';
   scene.add(amb);
   const dir = new THREE.DirectionalLight(0xffffff, 0.9);
   dir.position.set(20, 35, 25);
@@ -1078,25 +2498,23 @@ function init3D() {
   dir.shadow.camera.top = 30;
   dir.shadow.camera.bottom = -30;
   scene.add(dir);
-  const fill = new THREE.PointLight(0x4a9eff, 0.5, 60);
+  const fill = new THREE.PointLight(c.fill, 0.5, 60);
+  fill.name = 'scene-fill';
   fill.position.set(-10, 10, -10);
   scene.add(fill);
 
-  // ground
-  const groundMat = new THREE.MeshStandardMaterial({color: 0x232f48, roughness: .9, metalness: .1});
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(60, 64), groundMat);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = 0;
-  ground.receiveShadow = true;
-  scene.add(ground);
+  const groundMat = new THREE.MeshStandardMaterial({color: c.ground, roughness: .9, metalness: .05});
+  threeGround = new THREE.Mesh(new THREE.CircleGeometry(60, 64), groundMat);
+  threeGround.rotation.x = -Math.PI / 2;
+  threeGround.position.y = 0;
+  threeGround.receiveShadow = true;
+  scene.add(threeGround);
 
-  // grid
-  const grid = new THREE.GridHelper(60, 30, 0x4a6080, 0x2a3a55);
-  grid.material.opacity = 0.4;
-  grid.material.transparent = true;
-  scene.add(grid);
+  threeGrid = new THREE.GridHelper(60, 30, c.gridMain, c.gridSub);
+  threeGrid.material.opacity = 0.45;
+  threeGrid.material.transparent = true;
+  scene.add(threeGrid);
 
-  // controls
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.08;
@@ -1109,10 +2527,12 @@ function init3D() {
   scene.add(shaftGroup);
   particleGroup = new THREE.Group();
   scene.add(particleGroup);
+  hoverTooltip = $('#door-tooltip');
 
   window.addEventListener('resize', onResize3D);
   const ro = new ResizeObserver(onResize3D);
   ro.observe(mount);
+  wire3DInteractions();
 
   animate3D();
 }
@@ -1128,15 +2548,142 @@ function onResize3D() {
   camera.updateProjectionMatrix();
 }
 
+function disposeObject(obj) {
+  while (obj.children?.length) {
+    const child = obj.children[0];
+    obj.remove(child);
+    disposeObject(child);
+  }
+  obj.geometry?.dispose?.();
+  if (obj.material) {
+    if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose?.());
+    else obj.material.dispose?.();
+  }
+}
+
 function clearGroup(g) {
   while (g.children.length) {
     const c = g.children[0];
     g.remove(c);
-    if (c.geometry) c.geometry.dispose?.();
-    if (c.material) {
-      if (Array.isArray(c.material)) c.material.forEach(m => m.dispose?.());
-      else c.material.dispose?.();
+    disposeObject(c);
+  }
+}
+
+function hideTooltip() {
+  if (!hoverTooltip) return;
+  hoverTooltip.classList.remove('show');
+  hoverTooltip.style.transform = 'translate(-9999px, -9999px)';
+}
+
+function placeTooltip(event, text) {
+  if (!hoverTooltip) return;
+  const hostRect = hoverTooltip.parentElement?.getBoundingClientRect();
+  if (!hostRect) return;
+  hoverTooltip.textContent = text;
+  hoverTooltip.classList.add('show');
+  const x = Math.min(hostRect.width - 16, Math.max(12, event.clientX - hostRect.left + 14));
+  const y = Math.min(hostRect.height - 16, Math.max(12, event.clientY - hostRect.top - 10));
+  hoverTooltip.style.transform = `translate(${x}px, ${y}px)`;
+}
+
+function setPointerFromEvent(event) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+}
+
+function getDoorHit(event) {
+  if (!doorLeaves.length) return null;
+  setPointerFromEvent(event);
+  return raycaster.intersectObjects(doorLeaves, false)[0] ?? null;
+}
+
+function getForceBarHit(event) {
+  if (!hoverTargets.length) return null;
+  setPointerFromEvent(event);
+  return raycaster.intersectObjects(hoverTargets, false)[0] ?? null;
+}
+
+function toggleDoor(floorKey) {
+  if (!isValidFloorKey(floorKey)) return;
+  if (state.openDoors.has(floorKey)) {
+    state.openDoors.delete(floorKey);
+    if (state.activeFloor === floorKey) state.activeFloor = primaryOpenFloor();
+  } else {
+    state.openDoors.add(floorKey);
+    state.activeFloor = floorKey;
+  }
+  syncSummary();
+  drawSection();
+  drawPlan();
+  build3D();
+  try { renderCtxPanel(); } catch {}
+  try { if (typeof autosave === 'function') autosave(); } catch {}
+}
+
+function wire3DInteractions() {
+  const canvas = renderer?.domElement;
+  if (!canvas) return;
+
+  canvas.addEventListener('pointerdown', event => {
+    pointerStart = {x: event.clientX, y: event.clientY};
+  });
+
+  canvas.addEventListener('pointerup', event => {
+    if (!pointerStart) return;
+    const travel = Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y);
+    pointerStart = null;
+    if (travel > 6) return;
+    const hit = getDoorHit(event);
+    if (hit?.object?.userData?.floorKey !== undefined) toggleDoor(hit.object.userData.floorKey);
+  });
+
+  canvas.addEventListener('pointermove', event => {
+    const forceHit = getForceBarHit(event);
+    if (forceHit?.object?.userData?.tooltip) {
+      canvas.style.cursor = 'pointer';
+      placeTooltip(event, forceHit.object.userData.tooltip());
+      return;
     }
+
+    hideTooltip();
+    const doorHit = getDoorHit(event);
+    canvas.style.cursor = doorHit ? 'pointer' : 'grab';
+  });
+
+  canvas.addEventListener('pointerleave', () => {
+    hideTooltip();
+    canvas.style.cursor = 'grab';
+    pointerStart = null;
+  });
+}
+
+function update3DScenarioVisuals() {
+  for (const leaf of doorLeaves) {
+    const isOpen = state.openDoors.has(leaf.userData.floorKey);
+    leaf.userData.targetRot = isOpen ? leaf.userData.openRot : leaf.userData.closedRot;
+    leaf.material.emissiveIntensity = isOpen ? 0.58 : 0.35;
+    leaf.material.opacity = isOpen ? 0.92 : 0.75;
+  }
+
+  for (const flow of doorFlows) {
+    const isActive = state.flowViz === 'on' && state.openDoors.has(flow.userData.floorKey) && state.systemMode === 'normal';
+    flow.visible = isActive;
+    flow.setLength(isActive ? flow.userData.length : 0.01, 0.32, 0.16);
+  }
+
+  for (const bar of forceBars) {
+    const metrics = computeDoorForce(bar.floorKey);
+    const scaleY = state.systemMode === 'failure' ? 0 : Math.max(0.04, metrics.pct);
+    bar.fill.visible = state.systemMode !== 'failure';
+    bar.fill.scale.y = scaleY;
+    bar.fill.position.y = 0.3 * scaleY;
+    bar.fill.material.color.setHex(metrics.color);
+    const tooltip = () => `${formatFloorLabel(bar.floorKey)} · ~${fmtForce(Math.round(metrics.forceN))} / max ${fmtForce(metrics.limitN)}`;
+    bar.track.userData.tooltip = tooltip;
+    bar.fill.userData.tooltip = tooltip;
+    bar.track.material.emissiveIntensity = state.openDoors.has(bar.floorKey) ? 0.22 : 0.08;
   }
 }
 
@@ -1144,16 +2691,23 @@ function build3D() {
   if (!scene) return;
   clearGroup(shaftGroup);
   clearGroup(particleGroup);
-  particles.length = 0;
+  airParticles.length = 0;
+  smokeParticles.length = 0;
+  doorLeaves.length = 0;
+  doorFlows.length = 0;
+  forceBars.length = 0;
+  hoverTargets.length = 0;
+  fanRotors.length = 0;
+  fanHousings.length = 0;
+  hideTooltip();
 
   const W = state.shaftW;
   const D = state.shaftD;
   const floorH = state.floorH;
   const floors = state.floors;
   const basements = state.basement;
-  const wallT = 0.25;
+  const totalH = (floors + basements) * floorH;
 
-  // Materials
   const wallMat = new THREE.MeshStandardMaterial({
     color: 0xdde6f2,
     roughness: .85,
@@ -1171,78 +2725,64 @@ function build3D() {
   });
   const wallEdgeMat = new THREE.LineBasicMaterial({color: 0x1a3a6b, opacity: .7, transparent: true});
   const doorMat = new THREE.MeshStandardMaterial({
-    color: 0x1f6fd4, emissive: 0x0a3370, emissiveIntensity: .35,
-    roughness: .5, metalness: .2,
-    transparent: true, opacity: .75
+    color: 0x1f6fd4,
+    emissive: 0x0a3370,
+    emissiveIntensity: .35,
+    roughness: .5,
+    metalness: .2,
+    transparent: true,
+    opacity: .75
   });
   const doorFrameMat = new THREE.MeshStandardMaterial({color: 0xe8f1fd, emissive: 0x4a9eff, emissiveIntensity: .15});
   const stairMat = new THREE.MeshStandardMaterial({color: 0x7a96b8, roughness: .85});
   const fanMat = new THREE.MeshStandardMaterial({color: 0x1f6fd4, emissive: 0x1f6fd4, emissiveIntensity: .5});
   const fanHousingMat = new THREE.MeshStandardMaterial({color: 0x3d5470, roughness: .6, metalness: .4});
+  const forceTrackMat = new THREE.MeshStandardMaterial({
+    color: 0xe8eef8,
+    roughness: .7,
+    metalness: .08,
+    emissive: 0x183154,
+    emissiveIntensity: .08
+  });
 
-  const groundLevel = basements * floorH;
-
-  // Outer shell — 4 walls with door openings
-  const totalH = (floors + basements) * floorH;
-  const shaftGeo = new THREE.BoxGeometry(D, totalH, W);
-  // We'll fake "open shell" by using an outline + 4 wall panels
-  // Build 4 wall panels each with door-shaped holes cut via ShapeGeometry
-
-  // LEFT wall (x = -D/2), plane in z×y
-  const buildWallWithDoors = (side) => {
-    // side: 'right' | 'left' | 'front' | 'back'
-    // create a big rectangle with holes for doors on each floor if matches doorPos
-    const isHoleFloor = (f, side) => {
-      if (state.doorPos === 'front') return side === 'right';
-      if (state.doorPos === 'side') return side === 'left';
-      if (state.doorPos === 'alternate') {
-        return (f % 2 === 0 && side === 'right') || (f % 2 === 1 && side === 'left');
-      }
-      return false;
-    };
-
+  const buildWallWithDoors = side => {
     let width, height, pos, rot;
     if (side === 'right') {
       width = W; height = totalH;
-      pos = new THREE.Vector3(D/2, totalH/2, 0);
-      rot = [0, -Math.PI/2, 0];
+      pos = new THREE.Vector3(D / 2, totalH / 2, 0);
+      rot = [0, -Math.PI / 2, 0];
     } else if (side === 'left') {
       width = W; height = totalH;
-      pos = new THREE.Vector3(-D/2, totalH/2, 0);
-      rot = [0, Math.PI/2, 0];
+      pos = new THREE.Vector3(-D / 2, totalH / 2, 0);
+      rot = [0, Math.PI / 2, 0];
     } else if (side === 'back') {
       width = D; height = totalH;
-      pos = new THREE.Vector3(0, totalH/2, -W/2);
+      pos = new THREE.Vector3(0, totalH / 2, -W / 2);
       rot = [0, 0, 0];
     } else {
       width = D; height = totalH;
-      pos = new THREE.Vector3(0, totalH/2, W/2);
+      pos = new THREE.Vector3(0, totalH / 2, W / 2);
       rot = [0, Math.PI, 0];
     }
 
-    // Shape of wall
     const shape = new THREE.Shape();
-    shape.moveTo(-width/2, -height/2);
-    shape.lineTo(width/2, -height/2);
-    shape.lineTo(width/2, height/2);
-    shape.lineTo(-width/2, height/2);
-    shape.lineTo(-width/2, -height/2);
+    shape.moveTo(-width / 2, -height / 2);
+    shape.lineTo(width / 2, -height / 2);
+    shape.lineTo(width / 2, height / 2);
+    shape.lineTo(-width / 2, height / 2);
+    shape.lineTo(-width / 2, -height / 2);
 
-    // Punch door holes
     const doorWm = state.doorW / 1000;
     const doorHm = state.doorH / 1000;
-    for (let f = -basements; f < floors; f++) {
-      if (!isHoleFloor(f + basements, side)) continue;
-      const floorBaseY = f * floorH - totalH/2 + basements * floorH;
-      const doorBottom = floorBaseY;
-      const doorTop = doorBottom + doorHm;
-      const doorX = 0;
+    for (const floorKey of validFloorKeys()) {
+      if (getDoorSideForFloor(floorKey) !== side) continue;
+      const floorBaseY = floorKey * floorH - totalH / 2 + basements * floorH;
       const hole = new THREE.Path();
-      hole.moveTo(doorX - doorWm/2, doorBottom);
-      hole.lineTo(doorX + doorWm/2, doorBottom);
-      hole.lineTo(doorX + doorWm/2, doorTop);
-      hole.lineTo(doorX - doorWm/2, doorTop);
-      hole.lineTo(doorX - doorWm/2, doorBottom);
+      hole.moveTo(-doorWm / 2, floorBaseY);
+      hole.lineTo(doorWm / 2, floorBaseY);
+      hole.lineTo(doorWm / 2, floorBaseY + doorHm);
+      hole.lineTo(-doorWm / 2, floorBaseY + doorHm);
+      hole.lineTo(-doorWm / 2, floorBaseY);
       shape.holes.push(hole);
     }
 
@@ -1254,7 +2794,6 @@ function build3D() {
     wall.receiveShadow = true;
     shaftGroup.add(wall);
 
-    // edges
     const edges = new THREE.EdgesGeometry(geo, 20);
     const line = new THREE.LineSegments(edges, wallEdgeMat);
     line.position.copy(pos);
@@ -1267,66 +2806,90 @@ function build3D() {
   buildWallWithDoors('front');
   buildWallWithDoors('back');
 
-  // Slabs per floor
-  for (let f = 0; f <= floors + basements; f++) {
-    const y = f * floorH - basements * floorH;
-    if (y < 0.01 && y > -0.01 && f === basements) {
-      // ground slab — slightly emphasized
-    }
+  for (let idx = 0; idx <= floors + basements; idx++) {
     const slab = new THREE.Mesh(
       new THREE.BoxGeometry(D - 0.05, 0.08, W - 0.05),
       slabMat
     );
-    slab.position.set(0, y, 0);
+    slab.position.set(0, idx * floorH - basements * floorH, 0);
     slab.receiveShadow = true;
-    // leave a small rectangular void for stair (represented visually)
     shaftGroup.add(slab);
   }
 
-  // Door panels (in doorway openings) — semi-open
   const doorWm = state.doorW / 1000;
   const doorHm = state.doorH / 1000;
-  for (let f = -basements; f < floors; f++) {
-    const fIdx = f + basements;
-    let side;
-    if (state.doorPos === 'alternate') side = fIdx % 2 === 0 ? 'right' : 'left';
-    else if (state.doorPos === 'side') side = 'left';
-    else side = 'right';
+  for (const floorKey of validFloorKeys()) {
+    const side = getDoorSideForFloor(floorKey);
+    const floorBaseY = floorKey * floorH + basements * floorH + 0.02;
+    const doorCenterY = floorBaseY + doorHm / 2;
 
-    const floorBaseY = f * floorH + basements * floorH + 0.02;
-    const doorCenterY = floorBaseY + doorHm/2;
-
-    // frame
     const frame = new THREE.Mesh(
       new THREE.BoxGeometry(doorWm + 0.1, doorHm + 0.08, 0.08),
       doorFrameMat
     );
-    // leaf (slightly rotated open to show airflow direction)
     const leaf = new THREE.Mesh(
-      new THREE.BoxGeometry(doorWm, doorHm, 0.04),
-      doorMat
+      new THREE.BoxGeometry(0.04, doorHm, doorWm),
+      doorMat.clone()
     );
 
     if (side === 'right') {
-      frame.position.set(D/2 + 0.02, doorCenterY, 0);
-      frame.rotation.y = Math.PI/2;
-      leaf.position.set(D/2 + 0.05, doorCenterY, -doorWm/2 * 0.1);
-      leaf.rotation.y = Math.PI/2 + 0.15;
+      frame.position.set(D / 2 + 0.02, doorCenterY, 0);
+      frame.rotation.y = Math.PI / 2;
+      leaf.position.set(D / 2 + 0.05, doorCenterY, 0);
+      leaf.userData.openRot = -Math.PI * 0.42;
     } else {
-      frame.position.set(-D/2 - 0.02, doorCenterY, 0);
-      frame.rotation.y = -Math.PI/2;
-      leaf.position.set(-D/2 - 0.05, doorCenterY, doorWm/2 * 0.1);
-      leaf.rotation.y = -Math.PI/2 - 0.15;
+      frame.position.set(-D / 2 - 0.02, doorCenterY, 0);
+      frame.rotation.y = -Math.PI / 2;
+      leaf.position.set(-D / 2 - 0.05, doorCenterY, 0);
+      leaf.userData.openRot = Math.PI * 0.42;
     }
+    leaf.userData.floorKey = floorKey;
+    leaf.userData.closedRot = 0;
+    leaf.userData.targetRot = 0;
+    leaf.castShadow = true;
     shaftGroup.add(frame);
     shaftGroup.add(leaf);
+    doorLeaves.push(leaf);
+
+    const arrow = new THREE.ArrowHelper(
+      new THREE.Vector3(side === 'right' ? 1 : -1, 0, 0),
+      new THREE.Vector3(side === 'right' ? D / 2 + 0.18 : -D / 2 - 0.18, doorCenterY, 0),
+      0.01,
+      0xc05010,
+      0.32,
+      0.16
+    );
+    arrow.userData.floorKey = floorKey;
+    arrow.userData.length = 1.5;
+    arrow.visible = false;
+    shaftGroup.add(arrow);
+    doorFlows.push(arrow);
+
+    const barGroup = new THREE.Group();
+    barGroup.position.set(side === 'right' ? D / 2 + 0.52 : -D / 2 - 0.52, floorBaseY, doorWm / 2 + 0.18);
+    const track = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.6, 0.08), forceTrackMat.clone());
+    track.position.y = 0.3;
+    const fill = new THREE.Mesh(
+      new THREE.BoxGeometry(0.06, 0.6, 0.06),
+      new THREE.MeshStandardMaterial({
+        color: 0x0f6e3a,
+        roughness: .35,
+        metalness: .1,
+        emissive: 0x0f6e3a,
+        emissiveIntensity: .14
+      })
+    );
+    fill.position.y = 0.3;
+    barGroup.add(track);
+    barGroup.add(fill);
+    shaftGroup.add(barGroup);
+    forceBars.push({group: barGroup, track, fill, floorKey});
+    hoverTargets.push(track, fill);
   }
 
-  // Stairs — simplified switchback ramp per floor
-  for (let f = -basements; f < floors; f++) {
-    const y0 = f * floorH + basements * floorH;
+  for (let floorKey = -basements; floorKey < floors; floorKey++) {
+    const y0 = floorKey * floorH + basements * floorH;
     if (state.stairType === 'switchback') {
-      // upper flight (left half going up-forward)
       const flight1 = new THREE.Mesh(
         new THREE.BoxGeometry(D * 0.42, 0.12, W * 0.38),
         stairMat
@@ -1335,22 +2898,21 @@ function build3D() {
       flight1.rotation.z = Math.atan2(floorH * 0.5, D * 0.42);
       flight1.castShadow = true;
       shaftGroup.add(flight1);
-      // landing
+
       const landing = new THREE.Mesh(
         new THREE.BoxGeometry(D * 0.42, 0.1, W * 0.38),
         stairMat
       );
       landing.position.set(D * 0.22, y0 + floorH * 0.5, W * 0.25);
       shaftGroup.add(landing);
-      // lower flight (right half)
+
       const flight2 = new THREE.Mesh(
         new THREE.BoxGeometry(D * 0.42, 0.12, W * 0.38),
         stairMat
       );
-      flight2.position.set(-D * 0.0, y0 + floorH * 0.75, -W * 0.22);
+      flight2.position.set(0, y0 + floorH * 0.75, -W * 0.22);
       flight2.rotation.z = -Math.atan2(floorH * 0.5, D * 0.42);
       flight2.castShadow = true;
-      // (kept simple, acceptable for visual simulator)
       shaftGroup.add(flight2);
     } else if (state.stairType === 'straight') {
       const flight = new THREE.Mesh(
@@ -1362,7 +2924,6 @@ function build3D() {
       flight.castShadow = true;
       shaftGroup.add(flight);
     } else {
-      // spiral — helical steps
       const nSteps = 12;
       for (let i = 0; i < nSteps; i++) {
         const a = i * (Math.PI * 2 / nSteps);
@@ -1382,34 +2943,30 @@ function build3D() {
     }
   }
 
-  // Fan(s)
   const placeFan = (y, direction) => {
     const housing = new THREE.Mesh(
       new THREE.CylinderGeometry(0.65, 0.65, 0.35, 16),
-      fanHousingMat
+      fanHousingMat.clone()
     );
     housing.position.set(0, y, 0);
     shaftGroup.add(housing);
-    const fanRotor = new THREE.Group();
+    fanHousings.push(housing);
+
+    const rotor = new THREE.Group();
     for (let i = 0; i < 4; i++) {
       const blade = new THREE.Mesh(
         new THREE.BoxGeometry(0.55, 0.05, 0.12),
         fanMat
       );
       blade.rotation.y = i * Math.PI / 2;
-      blade.position.set(
-        Math.cos(i * Math.PI / 2) * 0.3, 0,
-        Math.sin(i * Math.PI / 2) * 0.3
-      );
-      // adjust: blades should fan out from center
       blade.position.set(0, 0, 0);
       blade.translateX(0.3);
-      fanRotor.add(blade);
+      rotor.add(blade);
     }
-    fanRotor.position.set(0, y, 0);
-    fanRotor.userData.spin = direction === 'up' ? 1 : -1;
-    fanRotor.name = 'fan-rotor';
-    shaftGroup.add(fanRotor);
+    rotor.position.set(0, y, 0);
+    rotor.userData.spin = direction === 'up' ? 1 : -1;
+    shaftGroup.add(rotor);
+    fanRotors.push(rotor);
   };
 
   const fanYBottom = -basements * floorH - 0.2;
@@ -1417,56 +2974,86 @@ function build3D() {
   if (state.supply === 'bottom' || state.supply === 'both') placeFan(fanYBottom, 'up');
   if (state.supply === 'top' || state.supply === 'both') placeFan(fanYTop, 'down');
   if (state.supply === 'per-floor') {
-    for (let f = 0; f < floors; f++) {
-      // side duct fan (wall-mounted, shown near left wall)
-      const fan = new THREE.Mesh(
+    for (let idx = 0; idx < floors; idx++) {
+      const sideFan = new THREE.Mesh(
         new THREE.BoxGeometry(0.5, 0.5, 0.5),
-        fanHousingMat
+        fanHousingMat.clone()
       );
-      fan.position.set(-D/2 + 0.3, f * floorH + floorH/2, -W/2 + 0.3);
-      shaftGroup.add(fan);
+      sideFan.position.set(-D / 2 + 0.3, idx * floorH + floorH / 2, -W / 2 + 0.3);
+      shaftGroup.add(sideFan);
+      fanHousings.push(sideFan);
     }
   }
 
-  // particles (airflow)
-  if (state.flowViz === 'on') {
-    spawnParticles();
-  }
+  if (state.flowViz === 'on') spawnAirParticles();
+  if (state.smokeMode !== 'off') spawnSmokeParticles();
+  update3DScenarioVisuals();
 }
 
-function spawnParticles() {
+function spawnAirParticles() {
   const count = Math.min(240, Math.max(60, state.floors * 12));
   const totalH = (state.floors + state.basement) * state.floorH;
-  const D = state.shaftD;
-  const W = state.shaftW;
   const startBottom = state.supply === 'bottom' || state.supply === 'both' || state.supply === 'per-floor';
   const startTop = state.supply === 'top' || state.supply === 'both';
-
   const geo = new THREE.SphereGeometry(0.08, 8, 6);
+
   for (let i = 0; i < count; i++) {
-    const mat = new THREE.MeshBasicMaterial({
-      color: 0x5ac8ff,
-      transparent: true,
-      opacity: 0.75
-    });
-    const s = new THREE.Mesh(geo, mat);
-    const x = (Math.random() - 0.5) * D * 0.8;
-    const z = (Math.random() - 0.5) * W * 0.8;
+    const mat = new THREE.MeshBasicMaterial({color: 0x5ac8ff, transparent: true, opacity: 0.75});
+    const particle = new THREE.Mesh(geo, mat);
+    const x = (Math.random() - 0.5) * state.shaftD * 0.8;
+    const z = (Math.random() - 0.5) * state.shaftW * 0.8;
     let fromBottom;
     if (startBottom && startTop) fromBottom = Math.random() < 0.5;
     else fromBottom = startBottom;
-    const y = fromBottom ? -state.basement * state.floorH + Math.random() * totalH
-                          : -state.basement * state.floorH + totalH - Math.random() * totalH * 0.2;
-    s.position.set(x, y, z);
-    s.userData = {
+    const y = fromBottom
+      ? -state.basement * state.floorH + Math.random() * totalH
+      : -state.basement * state.floorH + totalH - Math.random() * totalH * 0.2;
+    particle.position.set(x, y, z);
+    particle.userData = {
       vy: fromBottom ? (0.02 + Math.random() * 0.03) : -(0.02 + Math.random() * 0.03),
-      x0: x, z0: z,
+      x0: x,
+      z0: z,
       wobble: Math.random() * Math.PI * 2,
       wobbleSpeed: 0.5 + Math.random(),
       fromBottom
     };
-    particleGroup.add(s);
-    particles.push(s);
+    particleGroup.add(particle);
+    airParticles.push(particle);
+  }
+}
+
+function spawnSmokeParticles() {
+  const speedFactor = state.smokeMode === 'fast' ? 1.5 : 0.9;
+  const countPerFloor = state.smokeMode === 'fast' ? 14 : 8;
+  const geo = new THREE.SphereGeometry(0.11, 10, 8);
+
+  for (const floorKey of smokeSourceFloors()) {
+    const side = getDoorSideForFloor(floorKey);
+    for (let i = 0; i < countPerFloor; i++) {
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0x626874,
+        transparent: true,
+        opacity: 0.28,
+        roughness: 1
+      });
+      const smoke = new THREE.Mesh(geo, mat);
+      const y = floorDoorCenterY(floorKey) + (Math.random() - 0.5) * 0.7;
+      const x = side === 'right'
+        ? state.shaftD / 2 + 0.5 + Math.random() * 0.8
+        : -state.shaftD / 2 - 0.5 - Math.random() * 0.8;
+      const z = (Math.random() - 0.5) * state.shaftW * 0.6;
+      smoke.position.set(x, y, z);
+      smoke.userData = {
+        floorKey,
+        side,
+        baseY: y,
+        drift: Math.random() * Math.PI * 2,
+        driftSpeed: 0.4 + Math.random(),
+        speed: (0.02 + Math.random() * 0.02) * speedFactor
+      };
+      particleGroup.add(smoke);
+      smokeParticles.push(smoke);
+    }
   }
 }
 
@@ -1475,23 +3062,76 @@ function animate3D() {
   if (!renderer) return;
   requestAnimationFrame(animate3D);
   const dt = clock.getDelta();
+  const systemFactor = state.systemMode === 'failure' ? 0.1 : 1;
 
-  // spin fans
-  shaftGroup.children.forEach(c => {
-    if (c.name === 'fan-rotor') c.rotation.y += (c.userData.spin || 1) * dt * 20;
-  });
+  for (const rotor of fanRotors) {
+    rotor.rotation.y += (rotor.userData.spin || 1) * dt * 20 * (state.systemMode === 'failure' ? 0 : 1);
+  }
 
-  // particles
-  const totalH = (state.floors + state.basement) * state.floorH;
+  const pulse = 0.35 + Math.sin(clock.elapsedTime * 6) * 0.2;
+  for (const housing of fanHousings) {
+    if (!housing.material?.emissive) continue;
+    if (state.systemMode === 'failure') {
+      housing.material.emissive.setHex(0xc0201a);
+      housing.material.emissiveIntensity = pulse;
+    } else {
+      housing.material.emissive.setHex(0x000000);
+      housing.material.emissiveIntensity = 0;
+    }
+  }
+
+  for (const leaf of doorLeaves) {
+    leaf.rotation.y = THREE.MathUtils.lerp(leaf.rotation.y, leaf.userData.targetRot, Math.min(1, dt * 8));
+  }
+
   const bottomLimit = -state.basement * state.floorH - 0.3;
   const topLimit = state.floors * state.floorH + 0.3;
-  for (const p of particles) {
-    p.position.y += p.userData.vy * dt * 20;
-    p.userData.wobble += p.userData.wobbleSpeed * dt;
-    p.position.x = p.userData.x0 + Math.sin(p.userData.wobble) * 0.15;
-    p.position.z = p.userData.z0 + Math.cos(p.userData.wobble * 1.2) * 0.15;
-    if (p.userData.fromBottom && p.position.y > topLimit) p.position.y = bottomLimit;
-    if (!p.userData.fromBottom && p.position.y < bottomLimit) p.position.y = topLimit;
+  for (const particle of airParticles) {
+    particle.position.y += particle.userData.vy * dt * 20 * systemFactor;
+    particle.userData.wobble += particle.userData.wobbleSpeed * dt;
+    particle.position.x = particle.userData.x0 + Math.sin(particle.userData.wobble) * 0.15;
+    particle.position.z = particle.userData.z0 + Math.cos(particle.userData.wobble * 1.2) * 0.15;
+
+    if (state.systemMode === 'normal' && state.openDoors.size) {
+      for (const floorKey of state.openDoors) {
+        if (Math.abs(particle.position.y - floorDoorCenterY(floorKey)) > 0.75) continue;
+        const side = getDoorSideForFloor(floorKey);
+        particle.position.z *= 0.92;
+        if (side === 'right' && particle.position.x > state.shaftD / 2 - 0.35) particle.position.x += 0.08;
+        if (side === 'left' && particle.position.x < -state.shaftD / 2 + 0.35) particle.position.x -= 0.08;
+      }
+    }
+
+    if (particle.position.x > state.shaftD / 2 + 1.6 || particle.position.x < -state.shaftD / 2 - 1.6) {
+      particle.position.y = particle.userData.fromBottom ? bottomLimit : topLimit;
+      particle.position.x = particle.userData.x0;
+      particle.position.z = particle.userData.z0;
+    }
+    if (particle.userData.fromBottom && particle.position.y > topLimit) particle.position.y = bottomLimit;
+    if (!particle.userData.fromBottom && particle.position.y < bottomLimit) particle.position.y = topLimit;
+  }
+
+  for (const smoke of smokeParticles) {
+    const inward = smoke.userData.side === 'right' ? -1 : 1;
+    const targetDirection = state.systemMode === 'failure' ? inward : -inward;
+    smoke.userData.drift += smoke.userData.driftSpeed * dt;
+    smoke.position.x += targetDirection * smoke.userData.speed * dt * 20;
+    smoke.position.y += (state.systemMode === 'failure' ? 0.014 : 0.004) * dt * 20;
+    smoke.position.z += Math.sin(smoke.userData.drift) * 0.008;
+    smoke.material.opacity = state.systemMode === 'failure' ? 0.34 : 0.16;
+
+    if (state.systemMode === 'failure' && (smoke.position.y > topLimit || Math.abs(smoke.position.x) < 0.15)) {
+      smoke.position.x = smoke.userData.side === 'right'
+        ? state.shaftD / 2 + 0.5 + Math.random() * 0.8
+        : -state.shaftD / 2 - 0.5 - Math.random() * 0.8;
+      smoke.position.y = smoke.userData.baseY;
+    }
+    if (state.systemMode !== 'failure' && Math.abs(smoke.position.x) > state.shaftD / 2 + 2.2) {
+      smoke.position.x = smoke.userData.side === 'right'
+        ? state.shaftD / 2 + 0.35
+        : -state.shaftD / 2 - 0.35;
+      smoke.position.y = smoke.userData.baseY;
+    }
   }
 
   controls.update();
@@ -1512,38 +3152,29 @@ function onInputChange() {
   $('#inp-shaft-d').value = state.shaftD;
   $('#inp-door-w').value = state.doorW;
   $('#inp-door-h').value = state.doorH;
+  sanitizeScenarioState();
   redraw();
 }
 
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 
 function redraw() {
+  sanitizeScenarioState();
+  renderDpButtons();
+  renderTemplates();
   syncSummary();
   drawSection();
   drawPlan();
   build3D();
+  try { renderCtxPanel(); } catch {}
+  try { if (typeof autosave === 'function') autosave(); } catch {}
 }
 
 function resetState() {
-  Object.assign(state, {
-    floors: 5, floorH: 3.0, basement: 0,
-    shaftW: 2.4, shaftD: 5.2, stairType: 'switchback',
-    doorW: 900, doorH: 2100, doorPos: 'front',
-    supply: 'bottom', dp: 50, flowViz: 'on'
-  });
-  $('#inp-floors').value = state.floors;
-  $('#inp-floor-h').value = state.floorH;
-  $('#inp-shaft-w').value = state.shaftW;
-  $('#inp-shaft-d').value = state.shaftD;
-  $('#inp-door-w').value = state.doorW;
-  $('#inp-door-h').value = state.doorH;
-  $$('.seg').forEach(seg => {
-    const group = seg.dataset.group;
-    const match = state[groupToKey(group)];
-    $$('.seg[data-group="'+group+'"] button').forEach(b => {
-      b.classList.toggle('active', String(b.dataset.val) === String(match));
-    });
-  });
+  Object.assign(state, defaultStateValues());
+  reflectInputsFromState();
+  renderStdClasses();
+  syncSegmentsFromState();
   redraw();
 }
 
@@ -1554,7 +3185,12 @@ function groupToKey(g) {
     'door-pos': 'doorPos',
     supply: 'supply',
     dp: 'dp',
-    'flow-viz': 'flowViz'
+    'flow-viz': 'flowViz',
+    'system-mode': 'systemMode',
+    'smoke-mode': 'smokeMode',
+    standard: 'standard',
+    'std-class': 'stdClass',
+    units: 'units'
   })[g] || g;
 }
 
@@ -1585,14 +3221,58 @@ function wireUI() {
       b.classList.add('active');
       const k = groupToKey(seg.dataset.group);
       const v = b.dataset.val;
-      if (k === 'basement') state.basement = parseInt(v);
-      else if (k === 'dp') state.dp = parseInt(v);
-      else state[k] = v;
+
+      if (k === 'standard') {
+        state.standard = v;
+        const firstClass = Object.keys(STANDARDS[v].classes)[0];
+        state.stdClass = firstClass;
+        state.dp = STANDARDS[v].classes[firstClass].dpDefault;
+        const dd = STANDARDS[v].doorDefault;
+        state.doorW = dd.w;
+        state.doorH = dd.h;
+        $('#inp-door-w').value = dd.w;
+        $('#inp-door-h').value = dd.h;
+        renderStdClasses();
+      } else if (k === 'stdClass') {
+        state.stdClass = v;
+        state.dp = currentClass().dpDefault;
+      } else if (k === 'basement') {
+        state.basement = parseInt(v);
+      } else if (k === 'dp') {
+        state.dp = parseInt(v);
+      } else {
+        state[k] = v;
+      }
       redraw();
     });
   });
   $('#btn-reset').addEventListener('click', resetState);
   $('#btn-rebuild').addEventListener('click', redraw);
+  $('#btn-import-json')?.addEventListener('click', () => $('#json-import')?.click());
+  $('#btn-export-json')?.addEventListener('click', downloadStateJson);
+  $('#btn-export-pdf')?.addEventListener('click', printReport);
+  $('#json-import')?.addEventListener('change', async event => {
+    const input = event.currentTarget;
+    const [file] = input.files || [];
+    try {
+      await importJsonFile(file);
+    } catch (error) {
+      console.error(error);
+      window.alert(error?.message || 'JSON იმპორტი ვერ შესრულდა.');
+    } finally {
+      input.value = '';
+    }
+  });
+
+  // Template gallery click
+  const tplGrid = document.getElementById('tpl-grid');
+  if (tplGrid) {
+    tplGrid.addEventListener('click', (e) => {
+      const card = e.target.closest('.tpl-card');
+      if (!card || card.disabled) return;
+      applyTemplate(card.dataset.tpl);
+    });
+  }
 
   // tabs
   $$('.sp-tab').forEach(t => {
@@ -1601,28 +3281,660 @@ function wireUI() {
       t.classList.add('active');
       const v = t.dataset.view;
       $$('.sp-view').forEach(x => x.classList.toggle('active', x.dataset.view === v));
+      renderLegend(v);
       if (v === 'd3') setTimeout(onResize3D, 20);
     });
   });
 }
 
+// ============== EDITOR PANELS INTEGRATION (Task 027 §9) ==============
+// Register stair-specific ctx types with the portable EditorPanels module,
+// then drive a right-side .ep-panel body via renderCtxPanel(). All field/action
+// edits route back into `state` and trigger redraw(), keeping the existing
+// sidebar (templates/standards/inputs) the canonical primary editor.
+function registerStairPanels() {
+  if (!window.EditorPanels) return;
+  const B = EditorPanels.build;
+
+  // tool:stair-params — default context (no selection)
+  EditorPanels.registerType('tool:stair-params', function (container, ctx, hx) {
+    const d = ctx.data || {};
+    container.innerHTML = '';
+
+    // Geometry
+    container.appendChild(B.section({
+      title: 'გეომეტრია',
+      aux: `${d.floors || 0}+${d.basement || 0} სართ.`,
+      collapsed: false,
+      children: [
+        B.h('div', { class: 'ep-field-grid' },
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'სართულები ', B.h('span', { class: 'ep-unit' }, '(#)')),
+            B.numInput({ value: d.floors, min: 2, max: 40, step: 1,
+              onInput: v => hx.onField('floors', v) })
+          ),
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'სიმაღლე ', B.h('span', { class: 'ep-unit' }, '(მ)')),
+            B.numInput({ value: d.floorH, min: 2.2, max: 6, step: 0.05, unit: 'მ',
+              onInput: v => hx.onField('floorH', v) })
+          )
+        ),
+        B.field(
+          B.h('label', { class: 'ep-label' }, 'სარდაფი ', B.h('span', { class: 'ep-unit' }, '(დონე)')),
+          B.segControl({ value: String(d.basement || 0),
+            options: [
+              { value: '0', label: '−' },
+              { value: '1', label: '1' },
+              { value: '2', label: '2' }
+            ],
+            onChange: v => hx.onField('basement', parseInt(v) || 0) })
+        ),
+        B.h('div', { class: 'ep-field-grid' },
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'ჭრილი W ', B.h('span', { class: 'ep-unit' }, '(მ)')),
+            B.numInput({ value: d.shaftW, min: 1.5, max: 8, step: 0.1, unit: 'მ',
+              onInput: v => hx.onField('shaftW', v) })
+          ),
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'ჭრილი D ', B.h('span', { class: 'ep-unit' }, '(მ)')),
+            B.numInput({ value: d.shaftD, min: 2.5, max: 10, step: 0.1, unit: 'მ',
+              onInput: v => hx.onField('shaftD', v) })
+          )
+        ),
+        B.field('სქემა',
+          B.segControl({ value: d.stairType || 'switchback',
+            options: [
+              { value: 'switchback', label: 'U' },
+              { value: 'straight', label: 'სწორი' },
+              { value: 'spiral', label: 'ხვეული' }
+            ],
+            onChange: v => hx.onField('stairType', v) })
+        )
+      ]
+    }));
+
+    // Doors / leakage
+    container.appendChild(B.section({
+      title: 'კარები · გაჟონვა',
+      aux: `${d.doorW || 0}×${d.doorH || 0}`,
+      collapsed: false,
+      children: [
+        B.h('div', { class: 'ep-field-grid' },
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'W ', B.h('span', { class: 'ep-unit' }, '(მმ)')),
+            B.numInput({ value: d.doorW, min: 700, max: 1800, step: 10, unit: 'მმ',
+              onInput: v => hx.onField('doorW', v) })
+          ),
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'H ', B.h('span', { class: 'ep-unit' }, '(მმ)')),
+            B.numInput({ value: d.doorH, min: 1900, max: 2400, step: 10, unit: 'მმ',
+              onInput: v => hx.onField('doorH', v) })
+          )
+        ),
+        B.field('განლაგება',
+          B.segControl({ value: d.doorPos || 'front',
+            options: [
+              { value: 'front', label: 'წინა' },
+              { value: 'side', label: 'გვერდი' },
+              { value: 'alternate', label: 'მონაცვლე' }
+            ],
+            onChange: v => hx.onField('doorPos', v) })
+        ),
+        d.leakAreaPerDoor != null ? B.stat('leak area / კარი', d.leakAreaPerDoor.toFixed(4) + ' მ²') : null,
+        d.closedDoors != null ? B.stat('დახურული კარები', String(d.closedDoors)) : null
+      ].filter(Boolean)
+    }));
+
+    // Fan / pressurization scenario
+    container.appendChild(B.section({
+      title: 'დაწნეხვა · ფანი',
+      aux: d.supply ? String(d.supply) : null,
+      collapsed: false,
+      children: [
+        B.field('ჰაერის მიწოდება',
+          B.segControl({ value: d.supply || 'bottom',
+            options: [
+              { value: 'bottom', label: 'ქვემოდ.' },
+              { value: 'top', label: 'ზემოდ.' },
+              { value: 'both', label: 'ორივე' },
+              { value: 'per-floor', label: 'თითო' }
+            ],
+            onChange: v => hx.onField('supply', v) })
+        ),
+        B.field(
+          B.h('label', { class: 'ep-label' }, 'მიზნობრ. Δp ', B.h('span', { class: 'ep-unit' }, '(Pa)')),
+          B.numInput({ value: d.dp, min: 10, max: 150, step: 5, unit: 'Pa',
+            onInput: v => hx.onField('dp', v) })
+        ),
+        B.field('სისტემის რეჟიმი',
+          B.segControl({ value: d.systemMode || 'normal',
+            options: [
+              { value: 'normal', label: 'ნორმა' },
+              { value: 'failure', label: 'ავარია' }
+            ],
+            onChange: v => hx.onField('systemMode', v) })
+        ),
+        B.field('კვამლის სცენარი',
+          B.segControl({ value: d.smokeMode || 'off',
+            options: [
+              { value: 'off', label: 'გათიშ.' },
+              { value: 'slow', label: 'ნელი' },
+              { value: 'fast', label: 'სწრაფი' }
+            ],
+            onChange: v => hx.onField('smokeMode', v) })
+        ),
+        d.effectiveDp != null ? B.stat('ეფექტური Δp', d.effectiveDp.toFixed(1) + ' Pa') : null,
+        d.requiredSupplyQ != null ? B.stat('Q supply', d.requiredSupplyQ.toFixed(2) + ' მ³/წმ') : null,
+        d.worstDoorForce != null ? B.stat('max door force', d.worstDoorForce.toFixed(1) + ' N') : null
+      ].filter(Boolean)
+    }));
+
+    // Standard readout (read-only informational)
+    container.appendChild(B.section({
+      title: 'სტანდარტი',
+      aux: d.standard || '',
+      collapsed: true,
+      children: [
+        B.field('ნორმა',
+          B.segControl({ value: d.standard || 'EN',
+            options: [
+              { value: 'EN', label: 'EN' },
+              { value: 'NFPA', label: 'NFPA' },
+              { value: 'SP', label: 'СП' }
+            ],
+            onChange: v => hx.onField('standard', v) })
+        ),
+        d.className ? B.stat('კლასი', d.className) : null,
+        d.classNote ? B.h('div', { class: 'ep-hint' }, d.classNote) : null,
+        B.h('div', { class: 'ep-divider' }),
+        B.h('div', { class: 'ep-btn-row' },
+          B.h('button', { class: 'eng-btn', onclick: () => hx.onAction('reset') }, 'Reset'),
+          B.h('button', { class: 'eng-btn', onclick: () => hx.onAction('rebuild') }, 'Rebuild')
+        )
+      ].filter(Boolean)
+    }));
+  });
+
+  // sel:stair-fan — pressurization fan properties
+  EditorPanels.registerType('sel:stair-fan', function (container, ctx, hx) {
+    const d = ctx.data || {};
+    container.innerHTML = '';
+    container.appendChild(B.section({
+      title: 'დაწნეხვის ფანი',
+      aux: d.location || '',
+      collapsed: false,
+      children: [
+        B.field('ადგილმდებარეობა',
+          B.segControl({ value: d.location || 'bottom',
+            options: [
+              { value: 'bottom', label: 'ქვემოთ' },
+              { value: 'top', label: 'ზემოთ' },
+              { value: 'both', label: 'ორივე' },
+              { value: 'per-floor', label: 'თითო სართ.' }
+            ],
+            onChange: v => hx.onField('location', v) })
+        ),
+        B.field(
+          B.h('label', { class: 'ep-label' }, 'ხარჯი ', B.h('span', { class: 'ep-unit' }, '(მ³/წმ)')),
+          B.numInput({ value: d.flow, min: 0, max: 100, step: 0.1, unit: 'მ³/წმ',
+            onInput: v => hx.onField('flow', v) })
+        ),
+        B.field(
+          B.h('label', { class: 'ep-label' }, 'სტატ. წნევა ', B.h('span', { class: 'ep-unit' }, '(Pa)')),
+          B.numInput({ value: d.dp, min: 10, max: 150, step: 5, unit: 'Pa',
+            onInput: v => hx.onField('dp', v) })
+        ),
+        d.requiredSupplyQ != null ? B.stat('Q required', d.requiredSupplyQ.toFixed(2) + ' მ³/წმ') : null,
+        B.h('div', { class: 'ep-hint' },
+          'ფანის განლაგება ცვლის ჰაერის დინებას შახტაში. ქვემოდან – EN 12101-6 Class A default.')
+      ].filter(Boolean)
+    }));
+  });
+
+  // sel:stair-damper — damper class / leakage
+  EditorPanels.registerType('sel:stair-damper', function (container, ctx, hx) {
+    const d = ctx.data || {};
+    container.innerHTML = '';
+    container.appendChild(B.section({
+      title: 'Damper',
+      aux: d.cls || '',
+      collapsed: false,
+      children: [
+        B.field('კლასი',
+          B.selectInput({ value: d.cls || 'C3',
+            options: [
+              { value: 'C1', label: 'Class 1 (loose)' },
+              { value: 'C2', label: 'Class 2' },
+              { value: 'C3', label: 'Class 3 (standard)' },
+              { value: 'C4', label: 'Class 4 (tight)' }
+            ],
+            onChange: v => hx.onField('cls', v) })
+        ),
+        B.field(
+          B.h('label', { class: 'ep-label' }, 'leakage ', B.h('span', { class: 'ep-unit' }, '(m³/s/m²)')),
+          B.numInput({ value: d.leakage, min: 0, max: 50, step: 0.1, unit: 'm³/s/m²',
+            onInput: v => hx.onField('leakage', v) })
+        ),
+        B.field('მდგომარეობა',
+          B.segControl({ value: d.position || 'closed',
+            options: [
+              { value: 'closed', label: 'დახურ.' },
+              { value: 'open', label: 'ღია' },
+              { value: 'modulating', label: 'მოდ.' }
+            ],
+            onChange: v => hx.onField('position', v) })
+        )
+      ]
+    }));
+  });
+
+  // sel:door-level — door at specific floor
+  EditorPanels.registerType('sel:door-level', function (container, ctx, hx) {
+    const d = ctx.data || {};
+    container.innerHTML = '';
+    container.appendChild(B.section({
+      title: 'კარი · სართ. ' + (d.floorLabel || '?'),
+      aux: d.isOpen ? 'OPEN' : 'closed',
+      collapsed: false,
+      iconRow: [
+        B.h('button', { class: 'ep-iconbtn', 'data-tip': d.isOpen ? 'დახურვა' : 'გახსნა',
+          onclick: () => hx.onAction('toggle-open') },
+          B.mkIcon(d.isOpen ? 'lock' : 'unlock', 12))
+      ],
+      children: [
+        B.h('div', { class: 'ep-field-grid' },
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'W ', B.h('span', { class: 'ep-unit' }, '(მმ)')),
+            B.numInput({ value: d.w, min: 700, max: 1800, step: 10, unit: 'მმ',
+              onInput: v => hx.onField('w', v) })
+          ),
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'H ', B.h('span', { class: 'ep-unit' }, '(მმ)')),
+            B.numInput({ value: d.h, min: 1900, max: 2400, step: 10, unit: 'მმ',
+              onInput: v => hx.onField('h', v) })
+          )
+        ),
+        B.field(
+          B.h('label', { class: 'ep-label' }, 'closer torque ', B.h('span', { class: 'ep-unit' }, '(Nm)')),
+          B.numInput({ value: d.closer != null ? d.closer : 30, min: 5, max: 80, step: 1, unit: 'Nm',
+            onInput: v => hx.onField('closer', v) })
+        ),
+        d.floorIndex != null ? B.stat('სართულის index', String(d.floorIndex)) : null,
+        d.forceN != null ? B.stat('door force', d.forceN.toFixed(1) + ' N') : null,
+        d.limitN != null ? B.stat('ლიმიტი', d.limitN.toFixed(0) + ' N') : null,
+        B.h('div', { class: 'ep-hint' },
+          'გახსნა-დახურვა 3D სცენაზე კარზე დაწკაპებითაც მუშაობს.')
+      ].filter(Boolean)
+    }));
+  });
+}
+
+// Selection model — driven by state.activeFloor + clicks on 3D doors.
+// For this first-pass port we surface the active floor's door when one is open,
+// otherwise we show the default tool:stair-params panel.
+function buildCtxFromState() {
+  const results = state.results || (computeResults(), state.results);
+  const cls = currentClass();
+  // If a door is open we show its sel:door-level context
+  const activeFloor = state.activeFloor;
+  const hasOpenDoor = state.openDoors.size > 0 && isValidFloorKey(activeFloor) && state.openDoors.has(activeFloor);
+  if (hasOpenDoor) {
+    const forceMetrics = computeDoorForce(activeFloor);
+    return {
+      type: 'sel:door-level',
+      data: {
+        floorIndex: activeFloor,
+        floorLabel: formatFloorShort(activeFloor),
+        isOpen: true,
+        w: state.doorW,
+        h: state.doorH,
+        closer: 30,
+        forceN: forceMetrics.forceN,
+        limitN: forceMetrics.limitN
+      }
+    };
+  }
+  // default: overall params
+  return {
+    type: 'tool:stair-params',
+    data: {
+      floors: state.floors,
+      floorH: state.floorH,
+      basement: state.basement,
+      shaftW: state.shaftW,
+      shaftD: state.shaftD,
+      stairType: state.stairType,
+      doorW: state.doorW,
+      doorH: state.doorH,
+      doorPos: state.doorPos,
+      supply: state.supply,
+      dp: state.dp,
+      systemMode: state.systemMode,
+      smokeMode: state.smokeMode,
+      standard: state.standard,
+      className: cls ? cls.name : '',
+      classNote: cls ? cls.note : '',
+      effectiveDp: results ? results.effectiveDp : null,
+      requiredSupplyQ: results ? results.requiredSupplyQ : null,
+      worstDoorForce: results ? results.worstDoorForce : null,
+      leakAreaPerDoor: results ? results.leakAreaPerDoor : null,
+      closedDoors: results ? results.closedDoors : null
+    }
+  };
+}
+
+function onCtxField(key, value) {
+  const ctx = buildCtxFromState();
+  if (ctx.type === 'sel:door-level') {
+    // Edits on a specific door — currently we update global door dims (same as sidebar).
+    if (key === 'w') state.doorW = clamp(parseInt(value) || state.doorW, 700, 1800);
+    else if (key === 'h') state.doorH = clamp(parseInt(value) || state.doorH, 1900, 2400);
+    else if (key === 'closer') { /* closer torque — stored on ctx only; not in state yet */ }
+    else return;
+    // Reflect to sidebar inputs
+    $('#inp-door-w').value = state.doorW;
+    $('#inp-door-h').value = state.doorH;
+    redraw();
+    renderCtxPanel();
+    autosave();
+    return;
+  }
+  // tool:stair-params routing
+  if (key === 'floors') state.floors = clamp(parseInt(value) || state.floors, 2, 40);
+  else if (key === 'floorH') state.floorH = clamp(parseFloat(value) || state.floorH, 2.2, 6);
+  else if (key === 'basement') state.basement = clamp(parseInt(value) || 0, 0, 2);
+  else if (key === 'shaftW') state.shaftW = clamp(parseFloat(value) || state.shaftW, 1.5, 8);
+  else if (key === 'shaftD') state.shaftD = clamp(parseFloat(value) || state.shaftD, 2.5, 10);
+  else if (key === 'stairType') state.stairType = value;
+  else if (key === 'doorW') state.doorW = clamp(parseInt(value) || state.doorW, 700, 1800);
+  else if (key === 'doorH') state.doorH = clamp(parseInt(value) || state.doorH, 1900, 2400);
+  else if (key === 'doorPos') state.doorPos = value;
+  else if (key === 'supply') state.supply = value;
+  else if (key === 'dp') state.dp = Math.round(parseFloat(value) || state.dp);
+  else if (key === 'systemMode') state.systemMode = value;
+  else if (key === 'smokeMode') state.smokeMode = value;
+  else if (key === 'standard') {
+    if (STANDARDS[value]) {
+      state.standard = value;
+      const firstClass = Object.keys(STANDARDS[value].classes)[0];
+      state.stdClass = firstClass;
+      state.dp = STANDARDS[value].classes[firstClass].dpDefault;
+      const dd = STANDARDS[value].doorDefault;
+      state.doorW = dd.w;
+      state.doorH = dd.h;
+      renderStdClasses();
+    }
+  } else return;
+  // Reflect back to sidebar
+  reflectInputsFromState();
+  syncSegmentsFromState();
+  redraw();
+  renderCtxPanel();
+  autosave();
+}
+
+function onCtxAction(name) {
+  if (name === 'reset') { resetState(); renderCtxPanel(); return; }
+  if (name === 'rebuild') { redraw(); renderCtxPanel(); return; }
+  if (name === 'toggle-open') {
+    if (isValidFloorKey(state.activeFloor)) toggleDoor(state.activeFloor);
+    renderCtxPanel();
+    return;
+  }
+}
+
+function renderCtxPanel() {
+  if (!window.EditorPanels) return;
+  const container = document.getElementById('ctx-panel-body');
+  if (!container) return;
+  const ctx = buildCtxFromState();
+  // Update the panel head badges
+  const titleEl = document.getElementById('ctx-panel-title');
+  const subEl = document.getElementById('ctx-panel-sub');
+  if (titleEl) {
+    titleEl.textContent = ctx.type === 'sel:door-level' ? 'კარი' : 'პარამეტრები';
+  }
+  if (subEl) {
+    subEl.textContent = ctx.type === 'sel:door-level' && ctx.data.floorLabel
+      ? `F${ctx.data.floorLabel}`
+      : (currentStd() ? currentStd().name : 'stair');
+  }
+  EditorPanels.render(container, ctx, {
+    onField: onCtxField,
+    onAction: onCtxAction,
+    onLibPick: () => {}
+  });
+}
+
+// ============== PROJECT BRIDGE (Task 027 §9) ==============
+let _bridge = null;
+const LEGACY_BRIDGE_KEY = 'eng_stair_press_v1';
+
+function buildSnapshot() {
+  return {
+    standard: state.standard,
+    stdClass: state.stdClass,
+    units: state.units,
+    floors: state.floors,
+    floorH: state.floorH,
+    basement: state.basement,
+    shaftW: state.shaftW,
+    shaftD: state.shaftD,
+    stairType: state.stairType,
+    doorW: state.doorW,
+    doorH: state.doorH,
+    doorPos: state.doorPos,
+    supply: state.supply,
+    dp: state.dp,
+    flowViz: state.flowViz,
+    systemMode: state.systemMode,
+    smokeMode: state.smokeMode,
+    openDoors: [...state.openDoors],
+    activeFloor: state.activeFloor
+  };
+}
+
+function applyBridgeSnapshot(data) {
+  if (!data || typeof data !== 'object') return;
+  try {
+    applyImportedState(data);
+  } catch (e) { console.warn('stair-press: applySnapshot failed', e); }
+}
+
+function autosave() {
+  if (_bridge) _bridge.save();
+  updateProjectBadge();
+}
+
+function restoreAutosave() {
+  if (!window.ProjectBridge) return false;
+  _bridge = ProjectBridge.init({
+    slug: 'stair-pressurization',
+    legacyKey: LEGACY_BRIDGE_KEY,
+    getState: buildSnapshot,
+    applyState: applyBridgeSnapshot,
+    onProjectChange: updateProjectBadge
+  });
+  const r = _bridge.load();
+  return r.loaded;
+}
+
+function updateProjectBadge() {
+  const el = document.getElementById('project-badge');
+  if (!el || !_bridge) return;
+  const p = _bridge.currentProject();
+  el.textContent = p ? p.name : '— (legacy)';
+  el.title = p
+    ? `${p.name} · updated ${new Date(p.updatedAt).toLocaleString()}`
+    : 'პროექტის გარეშე — localStorage';
+}
+
+function wireBridgeButtons() {
+  document.getElementById('btn-save-as')?.addEventListener('click', () => {
+    if (!_bridge) return;
+    const cur = _bridge.currentProject();
+    const name = prompt('პროექტის სახელი', cur ? cur.name + ' (copy)' : 'სადარბაზო · ახალი');
+    if (!name) return;
+    _bridge.saveAs(name);
+    updateProjectBadge();
+  });
+  document.getElementById('btn-rename')?.addEventListener('click', () => {
+    if (!_bridge || !_bridge.projectId) { window.alert('ჯერ Save as-ით შექმენი პროექტი'); return; }
+    const cur = _bridge.currentProject();
+    const name = prompt('ახალი სახელი', cur ? cur.name : '');
+    if (!name) return;
+    _bridge.rename(name);
+    updateProjectBadge();
+  });
+  document.getElementById('btn-export-json')?.addEventListener('click', () => {
+    if (_bridge) _bridge.exportJSON();
+    else downloadStateJson();
+  });
+  document.getElementById('btn-export-pdf')?.addEventListener('click', () => {
+    if (_bridge) _bridge.printPDF();
+    else printReport();
+  });
+  document.getElementById('btn-gate')?.addEventListener('click', () => {
+    if (_bridge) _bridge.openGate();
+  });
+}
+
 // ============== BOOT ==============
 document.addEventListener('DOMContentLoaded', () => {
+  renderTemplates();
+  renderStdClasses();
+  renderDpButtons();
+  renderLegend('section');
+  registerStairPanels();
   wireUI();
-  syncSummary();
-  drawSection();
-  drawPlan();
+  wireBridgeButtons();
   init3D();
-  build3D();
+
+  // Try ProjectBridge first (?project=<id> or legacy key). If a state is loaded
+  // we skip default draw — applyBridgeSnapshot already calls redraw().
+  let loadedFromBridge = false;
+  try {
+    loadedFromBridge = restoreAutosave();
+  } catch (e) { console.warn('bridge init failed', e); }
+
+  try {
+    if (!loadedFromBridge && !importStateFromQuery()) {
+      syncSummary();
+      drawSection();
+      drawPlan();
+      build3D();
+    }
+  } catch (error) {
+    console.error(error);
+    window.alert(error?.message || 'URL state ვერ ჩაიტვირთა.');
+    syncSummary();
+    drawSection();
+    drawPlan();
+    build3D();
+  }
+  updateProjectBadge();
+  renderCtxPanel();
 });
 
+window.addEventListener('beforeprint', syncSummary);
+
 // re-theme 3D when parent theme changes
-const mo = new MutationObserver(() => {
+function apply3DTheme() {
   if (!scene) return;
-  const isDark = document.documentElement.classList.contains('dark');
-  scene.fog.color.setHex(isDark ? 0x0a1020 : 0x1a2438);
-});
+  const c = currentSceneColors();
+  scene.fog.color.setHex(c.fog);
+  if (threeGround) threeGround.material.color.setHex(c.ground);
+  if (threeGrid) {
+    // GridHelper has two colors baked in attributes — easiest: replace grid
+    const old = threeGrid;
+    scene.remove(old);
+    old.geometry.dispose();
+    old.material.dispose();
+    threeGrid = new THREE.GridHelper(60, 30, c.gridMain, c.gridSub);
+    threeGrid.material.opacity = 0.45;
+    threeGrid.material.transparent = true;
+    scene.add(threeGrid);
+  }
+  const amb = scene.getObjectByName('scene-ambient');
+  if (amb) amb.intensity = c.ambient;
+  const fill = scene.getObjectByName('scene-fill');
+  if (fill) fill.color.setHex(c.fill);
+}
+const mo = new MutationObserver(apply3DTheme);
 mo.observe(document.documentElement, {attributes: true, attributeFilter: ['class']});
+
+// ============== SIDEBAR RESIZER ==============
+(function initResizer() {
+  const resizer = document.getElementById('sp-resizer');
+  if (!resizer) return;
+  const root = document.documentElement;
+  const MIN = 220, MAX_FRAC = 0.55;
+
+  // restore persisted width
+  try {
+    const stored = parseInt(localStorage.getItem('eng_sp_side_w') || '');
+    if (Number.isFinite(stored) && stored >= MIN) {
+      root.style.setProperty('--sp-side-w', stored + 'px');
+    }
+  } catch {}
+
+  let dragging = false;
+  const rootEl = document.querySelector('.sp-root');
+
+  function onDown(e) {
+    dragging = true;
+    resizer.classList.add('active');
+    document.body.classList.add('sp-resizing');
+    e.preventDefault();
+  }
+  function onMove(e) {
+    if (!dragging || !rootEl) return;
+    const rect = rootEl.getBoundingClientRect();
+    const x = (e.clientX ?? (e.touches && e.touches[0].clientX) ?? 0) - rect.left;
+    const max = Math.max(MIN, Math.floor(rect.width * MAX_FRAC));
+    const w = Math.min(max, Math.max(MIN, Math.round(x)));
+    root.style.setProperty('--sp-side-w', w + 'px');
+  }
+  function onUp() {
+    if (!dragging) return;
+    dragging = false;
+    resizer.classList.remove('active');
+    document.body.classList.remove('sp-resizing');
+    const cur = getComputedStyle(root).getPropertyValue('--sp-side-w').trim();
+    const px = parseInt(cur);
+    if (Number.isFinite(px)) {
+      try { localStorage.setItem('eng_sp_side_w', String(px)); } catch {}
+    }
+    // 3D canvas width changed → resize
+    setTimeout(onResize3D, 0);
+    // SVG views auto-scale via viewBox; nothing to redraw
+  }
+  resizer.addEventListener('pointerdown', onDown);
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onUp);
+
+  // keyboard support
+  resizer.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const cur = parseInt(getComputedStyle(root).getPropertyValue('--sp-side-w')) || 280;
+    const delta = e.key === 'ArrowLeft' ? -16 : 16;
+    const rect = rootEl.getBoundingClientRect();
+    const max = Math.max(MIN, Math.floor(rect.width * MAX_FRAC));
+    const w = Math.min(max, Math.max(MIN, cur + delta));
+    root.style.setProperty('--sp-side-w', w + 'px');
+    try { localStorage.setItem('eng_sp_side_w', String(w)); } catch {}
+    setTimeout(onResize3D, 0);
+  });
+
+  // double-click → reset
+  resizer.addEventListener('dblclick', () => {
+    root.style.removeProperty('--sp-side-w');
+    try { localStorage.removeItem('eng_sp_side_w'); } catch {}
+    setTimeout(onResize3D, 0);
+  });
+})();
 
 </script>
 </body>

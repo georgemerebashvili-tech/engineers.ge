@@ -5,6 +5,7 @@ import {ThemeToggle} from './theme-toggle';
 import {BgSlider} from './bg-slider';
 import {NavLinks} from './nav-links';
 import {ShareBar} from './share-bar';
+import {LoginTrigger} from './login-trigger';
 
 export function NavBar() {
   return (
@@ -24,10 +25,8 @@ export function NavBar() {
         </div>
 
         <div className="flex shrink-0 items-center gap-1.5 md:gap-3">
-          <span className="hidden items-center gap-1 text-xs font-semibold text-text-2 xl:inline-flex">
-            აცნობე ყველას <span aria-hidden className="text-[22px] leading-none">👉</span>
-          </span>
           <ShareBar />
+          <LoginTrigger />
           <LangSwitch />
           <BgSlider />
           <ThemeToggle />

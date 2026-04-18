@@ -3,8 +3,17 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  /* Surfaces */
-  --bg: #f2f5fa;
+  /* Brightness slider drives --bg-tint (0..100).
+   *   Light mode (tint ≥ 50): white (tone-a) → cool gray (tone-b).
+   *     Intra-mode % = (tint − 50) × 2  →  0% at 50, 100% at 100.
+   *   Dark mode (tint < 50): near-black (tone-a) → dark navy blue (tone-b).
+   *     Intra-mode % = tint × 2  →  0% at 0, ~100% at 49 (see .dark override). */
+  --bg-tint: 80;
+  --bg-tone-a: #ffffff;
+  --bg-tone-b: #d8dfe8;
+
+  /* Surfaces — within light mode, tint 50→100 maps to 0→100% mix */
+  --bg: color-mix(in srgb, var(--bg-tone-a), var(--bg-tone-b) calc((var(--bg-tint) - 50) * 2%));
   --sur: #ffffff;
   --sur-2: #f7f9fd;
   --bdr: #dde6f2;
@@ -42,7 +51,11 @@
 }
 
 .dark {
-  --bg: #0f1724;
+  /* Dark-mode: tint 0→49 maps to 0→~100% mix of tone-a → tone-b.
+   * Palette: pure black → dark navy blue. */
+  --bg-tone-a: #000000;
+  --bg-tone-b: #0b1a3a;
+  --bg: color-mix(in srgb, var(--bg-tone-a), var(--bg-tone-b) calc(var(--bg-tint) * 2%));
   --sur: #151f2f;
   --sur-2: #1b2638;
   --bdr: #253349;
@@ -81,6 +94,18 @@
   --color-text: var(--text);
   --color-text-2: var(--text-2);
   --color-text-3: var(--text-3);
+
+  /* Aliases — bridge admin form classes to token system */
+  --color-surface: var(--sur);
+  --color-surface-alt: var(--sur-2);
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-border: var(--bdr);
+  --color-fg-muted: var(--text-3);
+  --color-muted: var(--text-3);
+  --color-accent: var(--blue);
+  --color-accent-fg: #ffffff;
+  --color-danger: var(--red);
 
   --shadow-card: var(--shadow-card);
   --shadow-sticky: var(--shadow-sticky);
@@ -135,20 +160,7 @@ input::-webkit-inner-spin-button {
   }
 }
 
-/* Background tint — driven by <BgSlider /> via --bg-tint (0..100) */
-:root {
-  --bg-tint: 20;
-  --bg-tone-a: #ffffff;
-  --bg-tone-b: #e4ebf5;
-}
-
-.dark {
-  --bg-tone-a: #05090f;
-  --bg-tone-b: #1a2740;
-}
-
 html, body {
-  background: color-mix(in srgb, var(--bg-tone-a), var(--bg-tone-b) calc(var(--bg-tint) * 1%));
   transition: background-color 160ms ease;
 }
 

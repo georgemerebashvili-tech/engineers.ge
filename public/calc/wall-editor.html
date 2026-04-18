@@ -1,0 +1,4437 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>გეგმის რედაქტორი — engineers.ge</title>
+<link rel="stylesheet" href="/calc/_base.css">
+<link rel="stylesheet" href="/calc/_editor-ui.css">
+<script src="/calc/_theme-sync.js"></script>
+<script src="/calc/_editor-panels.js"></script>
+<script src="/calc/_project-bridge.js"></script>
+<script src="/calc/_dxf-parser.js"></script>
+<script src="/calc/_dxf-export.js"></script>
+<script type="importmap">
+{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+               "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+</script>
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body { display: flex; flex-direction: column; font-family: var(--font-sans); }
+
+  /* ============ Topbar ============ */
+  .we-top {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px;
+    background: var(--sur);
+    border-bottom: 1px solid var(--bdr);
+    flex: 0 0 auto;
+    font-size: 11px;
+  }
+  .we-top h1 {
+    font-size: 13px; font-weight: 700; color: var(--navy);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .we-top .sep { width: 1px; height: 20px; background: var(--bdr); }
+  .we-top label { color: var(--text-2); font-weight: 500; display: flex; align-items: center; gap: 4px; }
+  .we-top input[type=number], .we-top input[type=text] {
+    width: 60px; padding: 3px 6px;
+    border: 1.5px solid var(--bdr);
+    background: var(--sur);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text);
+    border-radius: 4px;
+  }
+  .we-top input[type=text] { width: 140px; }
+  .we-top select {
+    padding: 3px 6px;
+    border: 1.5px solid var(--bdr);
+    background: var(--sur);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text);
+    border-radius: 4px;
+  }
+  .we-top button {
+    padding: 5px 10px;
+    border: 1.5px solid var(--bdr);
+    background: var(--sur-2);
+    color: var(--text-2);
+    font-size: 10px; font-weight: 600;
+    border-radius: 5px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--font-sans);
+    transition: all .15s;
+  }
+  .we-top button:hover { border-color: var(--blue); color: var(--blue); }
+  .we-top button.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .we-top button.primary:hover { background: var(--navy-2); border-color: var(--navy-2); }
+  .we-top button.danger:hover { border-color: var(--red); color: var(--red); }
+  .we-top .spacer { flex: 1; }
+
+  /* ============ Main layout ============ */
+  .we-root {
+    display: grid;
+    grid-template-columns: 48px 1fr var(--ep-aside-w);
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  /* ============ Toolbar (left) ============ */
+  .we-tools {
+    background: var(--sur);
+    border-right: 1px solid var(--bdr);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 8px 0; gap: 3px;
+    overflow-y: auto;
+  }
+  .we-tool {
+    width: 36px; height: 36px;
+    border: 1.5px solid transparent;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-2);
+    font-size: 16px;
+    transition: all .15s;
+    position: relative;
+  }
+  .we-tool:hover { background: var(--sur-2); color: var(--blue); border-color: var(--bdr); }
+  .we-tool.active {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #fff;
+  }
+  .we-tool-sep { width: 24px; height: 1px; background: var(--bdr); margin: 4px 0; }
+  .we-tool-shortcut {
+    position: absolute; right: 2px; bottom: 1px;
+    font-size: 7px; color: var(--text-3);
+    font-family: var(--font-mono); font-weight: 700;
+  }
+  .we-tool.active .we-tool-shortcut { color: rgba(255,255,255,.7); }
+
+  /* ============ Canvas stage ============ */
+  .we-stage {
+    background: var(--bg);
+    position: relative;
+    overflow: hidden;
+  }
+  .we-svg-wrap {
+    width: 100%; height: 100%;
+    cursor: crosshair;
+  }
+  .we-svg-wrap.pan { cursor: grabbing; }
+  .we-svg-wrap.select { cursor: default; }
+
+  /* 3D canvas — overlays SVG when view mode = '3d' */
+  .we-3d-host {
+    position: absolute; inset: 0;
+    display: none;
+    background: linear-gradient(180deg, #dce6f2 0%, #eef3fa 100%);
+  }
+  .we-stage.mode-3d .we-3d-host { display: block; }
+  .we-stage.mode-3d .we-svg-wrap { visibility: hidden; }
+  .we-stage.mode-3d #g-preview,
+  .we-stage.mode-3d #g-snap { display: none; }
+  .we-3d-host canvas { width: 100% !important; height: 100% !important; display: block; }
+
+  /* Floor switcher + view toggle in bottom bar */
+  .we-botbar {
+    height: 36px;
+    background: var(--sur);
+    border-top: 1px solid var(--bdr);
+    display: flex; align-items: center; gap: 10px;
+    padding: 0 10px;
+    flex: 0 0 auto;
+  }
+  .we-botbar .we-floor-seg {
+    display: inline-flex;
+    border: 1px solid var(--bdr);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--sur-2);
+  }
+  .we-botbar .we-floor-seg button {
+    border: 0; background: transparent;
+    height: 26px;
+    padding: 0 10px;
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 700;
+    color: var(--text-2);
+    cursor: pointer;
+    border-right: 1px solid var(--bdr);
+    transition: background .12s, color .12s;
+  }
+  .we-botbar .we-floor-seg button:last-child { border-right: 0; }
+  .we-botbar .we-floor-seg button:hover { background: var(--sur); color: var(--navy); }
+  .we-botbar .we-floor-seg button.active { background: var(--blue); color: #fff; }
+  .we-botbar .we-floor-seg button.ghost { color: var(--text-3); font-weight: 600; font-size: 11px; }
+  .we-botbar .we-view-seg {
+    display: inline-flex;
+    border: 1px solid var(--bdr);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .we-botbar .we-view-seg button {
+    width: 38px; height: 26px;
+    border: 0; background: var(--sur-2);
+    font-size: 10px; font-weight: 700;
+    color: var(--text-2);
+    cursor: pointer;
+    border-right: 1px solid var(--bdr);
+    transition: background .12s, color .12s;
+  }
+  .we-botbar .we-view-seg button:last-child { border-right: 0; }
+  .we-botbar .we-view-seg button.active { background: var(--blue); color: #fff; }
+  .we-botbar .we-zoom-ctrl { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
+  .we-botbar .we-zoom-ctrl button {
+    width: 24px; height: 24px; border: 1px solid var(--bdr);
+    background: var(--sur-2); border-radius: 4px;
+    cursor: pointer; color: var(--text-2);
+    font-size: 12px; font-weight: 700;
+  }
+  .we-botbar .we-zoom-ctrl button:hover { border-color: var(--blue); color: var(--blue); }
+  .we-botbar .we-zoom-ctrl .we-zoom-val {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--navy); font-weight: 700;
+    min-width: 44px; text-align: center;
+  }
+
+  /* Fire-mode time-lapse bar (only visible when fires placed) */
+  .we-fire-bar {
+    display: none;
+    align-items: center; gap: 8px;
+    height: 30px;
+    padding: 0 10px;
+    background: linear-gradient(90deg, #2a0e0a 0%, #3a1810 100%);
+    color: #fff9ef;
+    border-top: 1px solid var(--red);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    flex: 0 0 auto;
+  }
+  body.fire-mode .we-fire-bar { display: flex; }
+  .we-fire-bar .we-fire-ico { color: var(--ora); font-size: 14px; }
+  .we-fire-bar .we-fire-t { min-width: 56px; font-weight: 700; color: #ffd39c; }
+  .we-fire-bar input[type=range] { flex: 1; accent-color: var(--ora); }
+  .we-fire-bar button {
+    background: transparent; border: 1px solid rgba(255,255,255,.2);
+    color: #fff; border-radius: 4px;
+    width: 24px; height: 22px; cursor: pointer;
+    font-size: 11px;
+  }
+  .we-fire-bar button:hover { background: rgba(255,255,255,.1); border-color: var(--ora); color: var(--ora); }
+  .we-fire-bar .we-fire-speed {
+    display: inline-flex; border: 1px solid rgba(255,255,255,.2);
+    border-radius: 4px; overflow: hidden;
+  }
+  .we-fire-bar .we-fire-speed button {
+    border: 0; border-right: 1px solid rgba(255,255,255,.15);
+    border-radius: 0; width: 30px;
+    font-size: 9px; font-weight: 700;
+  }
+  .we-fire-bar .we-fire-speed button:last-child { border-right: 0; }
+  .we-fire-bar .we-fire-speed button.active { background: var(--ora); color: #fff; }
+  .we-fire-bar .we-fire-scenario {
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.15);
+    color: #fff9ef;
+    font-family: var(--font-mono); font-size: 10px;
+    padding: 3px 6px;
+    border-radius: 4px;
+  }
+  .we-svg {
+    width: 100%; height: 100%;
+    display: block;
+    background: var(--sur);
+  }
+
+  /* SVG element styles */
+  .we-grid-major { stroke: var(--bdr-2); stroke-width: 0.5; opacity: .45; fill: none; }
+  .we-grid-minor { stroke: var(--bdr); stroke-width: 0.3; opacity: .35; fill: none; }
+  .we-grid-axis  { stroke: var(--blue); stroke-width: 0.8; opacity: .4; fill: none; }
+
+  .we-wall        { fill: var(--text); stroke: var(--navy); stroke-width: 0.02; stroke-linejoin: miter; }
+  .dark .we-wall  { fill: #a7b7d1; stroke: #e6ecf5; }
+  .we-wall.sel    { fill: var(--blue); stroke: var(--navy-2); }
+  .we-wall-preview { fill: var(--blue); opacity: .45; stroke: var(--blue); stroke-width: 0.02; stroke-dasharray: 0.08 0.05; }
+
+  .we-column      { fill: var(--text-2); stroke: var(--navy); stroke-width: 0.015; }
+  .we-column.sel  { fill: var(--blue); }
+  .dark .we-column { fill: #c4d4e8; stroke: #e6ecf5; }
+
+  .we-door        { fill: none; stroke: var(--blue); stroke-width: 0.025; }
+  .we-door-leaf   { fill: var(--blue); opacity: .25; stroke: var(--blue); stroke-width: 0.015; }
+  .we-door-swing  { fill: none; stroke: var(--blue); stroke-width: 0.01; stroke-dasharray: 0.04 0.03; opacity: .6; }
+  .we-door-cutout { fill: var(--sur); stroke: none; }
+  .we-door.sel    { stroke: var(--navy-2); stroke-width: 0.04; }
+
+  .we-window        { fill: var(--sur); stroke: var(--blue); stroke-width: 0.02; }
+  .we-window-glass  { fill: var(--blue-lt); stroke: var(--blue); stroke-width: 0.01; }
+  .we-window.sel    { stroke: var(--navy-2); stroke-width: 0.04; }
+
+  .we-fan-jet       { fill: var(--ora-lt); stroke: var(--ora); stroke-width: 0.02; }
+  .we-fan-jet-arrow { fill: var(--ora); stroke: none; }
+  .we-fan-exhaust   { fill: var(--blue-lt); stroke: var(--blue); stroke-width: 0.02; }
+  .we-fan.sel       { stroke: var(--navy-2); stroke-width: 0.04; }
+
+  .we-snap-pt { fill: none; stroke: var(--ora); stroke-width: 0.02; }
+  .we-snap-label {
+    fill: var(--ora); font-family: var(--font-mono);
+    font-size: 0.2px; font-weight: 700;
+  }
+
+  .we-dim-line { stroke: var(--text-3); stroke-width: 0.01; }
+  .we-dim-tick { stroke: var(--text-3); stroke-width: 0.01; }
+  .we-dim-label { fill: var(--text-2); font-family: var(--font-mono); font-size: 0.18px; }
+
+  .we-selection-box {
+    fill: none; stroke: var(--blue); stroke-width: 0.02;
+    stroke-dasharray: 0.06 0.04;
+  }
+
+  /* ============ Right panel ============ */
+  .we-aside {
+    background: var(--sur);
+    border-left: 1px solid var(--bdr);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .we-aside-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--bdr);
+    flex: 0 0 auto;
+  }
+  .we-aside-tab {
+    flex: 1; padding: 8px 4px;
+    background: transparent;
+    border: 0; border-bottom: 2px solid transparent;
+    font-size: 10px; font-weight: 600;
+    color: var(--text-3);
+    cursor: pointer;
+    font-family: var(--font-sans);
+    transition: all .15s;
+  }
+  .we-aside-tab:hover { color: var(--text-2); }
+  .we-aside-tab.active {
+    color: var(--blue); border-bottom-color: var(--blue); background: var(--blue-lt);
+  }
+  .we-aside-content {
+    flex: 1 1 0;
+    overflow-y: auto;
+    padding: 12px;
+  }
+  .we-aside-panel { display: none; }
+  .we-aside-panel.active { display: block; }
+
+  .we-group { margin-bottom: 14px; }
+  .we-group-title {
+    font-family: var(--font-mono);
+    font-size: 9px; font-weight: 700;
+    color: var(--navy);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding-bottom: 4px; margin-bottom: 8px;
+    border-bottom: 1px solid var(--bdr);
+  }
+
+  .we-lib-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+  }
+  .we-lib-card {
+    background: var(--sur-2);
+    border: 1.5px solid var(--bdr);
+    border-radius: 5px;
+    padding: 6px 5px;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    transition: all .15s;
+    text-align: left;
+  }
+  .we-lib-card:hover { border-color: var(--blue); background: var(--blue-lt); }
+  .we-lib-card.sel { border-color: var(--blue); background: var(--blue-lt); box-shadow: 0 0 0 2px rgba(31,111,212,.15); }
+  .we-lib-card .nm { font-size: 10px; font-weight: 700; color: var(--navy); line-height: 1.2; }
+  .we-lib-card.sel .nm { color: var(--blue); }
+  .we-lib-card .mt { font-size: 9px; color: var(--text-3); font-family: var(--font-mono); margin-top: 2px; }
+
+  .we-prop {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    margin-bottom: 6px;
+  }
+  .we-prop .field label {
+    display: block;
+    font-size: 10px; color: var(--text-2); font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .we-prop input, .we-prop select {
+    width: 100%;
+    padding: 4px 6px;
+    border: 1.5px solid var(--bdr);
+    background: var(--sur);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    border-radius: 4px;
+  }
+  .we-prop input:focus, .we-prop select:focus {
+    outline: none; border-color: var(--blue);
+  }
+
+  .we-empty {
+    text-align: center; color: var(--text-3);
+    font-size: 11px; font-style: italic;
+    padding: 20px 12px;
+  }
+
+  /* ============ Statusbar ============ */
+  .we-status {
+    height: 22px;
+    background: var(--sur);
+    border-top: 1px solid var(--bdr);
+    display: flex; align-items: center; gap: 12px;
+    padding: 0 14px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-2);
+    flex: 0 0 auto;
+  }
+  .we-status .dot {
+    display: inline-block;
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--grn);
+  }
+  .we-status-sep { color: var(--text-3); }
+
+  /* ============ Toast ============ */
+  .we-toast {
+    position: fixed;
+    bottom: 36px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--navy);
+    color: #fff;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 11px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.3);
+    opacity: 0;
+    pointer-events: none;
+    transition: all .25s;
+    z-index: 100;
+  }
+  .we-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ============ Help modal ============ */
+  .we-modal-bd {
+    position: fixed; inset: 0;
+    background: rgba(15,23,36,.6);
+    display: none; align-items: center; justify-content: center;
+    z-index: 200;
+    backdrop-filter: blur(3px);
+  }
+  .we-modal-bd.open { display: flex; }
+  .we-modal {
+    background: var(--sur);
+    border: 1px solid var(--bdr);
+    border-radius: 12px;
+    width: min(860px, 92vw);
+    max-height: 85vh;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+  .we-modal-h {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--bdr);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .we-modal-h h2 { font-size: 14px; font-weight: 700; color: var(--navy); flex: 1; }
+  .we-modal-h button {
+    background: transparent; border: 0;
+    font-size: 20px; cursor: pointer; color: var(--text-2);
+    width: 28px; height: 28px; border-radius: 5px;
+  }
+  .we-modal-h button:hover { background: var(--sur-2); color: var(--blue); }
+  .we-modal-b { padding: 16px 18px; overflow-y: auto; }
+
+  .we-help-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+  }
+  .we-help-card {
+    background: var(--sur-2);
+    border: 1px solid var(--bdr);
+    border-left: 3px solid var(--blue);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .we-help-card .head {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700; color: var(--navy);
+    margin-bottom: 4px;
+  }
+  .we-help-card .head svg { flex: 0 0 auto; }
+  .we-help-card .sh {
+    font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+    background: var(--blue); color: #fff;
+    padding: 1px 5px; border-radius: 4px;
+    margin-left: auto;
+  }
+  .we-help-card .desc { font-size: 10.5px; color: var(--text-2); line-height: 1.45; margin-bottom: 6px; }
+  .we-help-card .caps {
+    font-family: var(--font-mono); font-size: 9.5px; color: var(--text-3);
+    line-height: 1.5;
+  }
+  .we-help-card .caps b { color: var(--navy); }
+
+  .we-kbd-table {
+    display: grid; grid-template-columns: auto 1fr auto 1fr; gap: 4px 12px;
+    font-family: var(--font-mono); font-size: 10px;
+  }
+  .we-kbd-table kbd {
+    background: var(--sur-2); border: 1px solid var(--bdr-2);
+    padding: 1px 6px; border-radius: 3px; color: var(--navy);
+    font-family: var(--font-mono); font-size: 9px; font-weight: 700;
+  }
+  .we-kbd-table span { color: var(--text-2); }
+
+  .we-tabs-sub {
+    display: flex; gap: 4px; padding: 0 18px;
+    border-bottom: 1px solid var(--bdr);
+    flex: 0 0 auto;
+  }
+  .we-tabs-sub button {
+    background: transparent; border: 0;
+    padding: 8px 14px;
+    font-size: 11px; font-weight: 600; color: var(--text-3);
+    cursor: pointer; font-family: var(--font-sans);
+    border-bottom: 2px solid transparent;
+    transition: all .15s;
+  }
+  .we-tabs-sub button:hover { color: var(--text-2); }
+  .we-tabs-sub button.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+  .we-help-panel { display: none; }
+  .we-help-panel.active { display: block; }
+
+  @media (max-width: 900px) {
+    .we-root { grid-template-columns: 40px 1fr; }
+    .ep-panel { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ TOPBAR ============ -->
+<header class="we-top">
+  <h1>📐 გეგმის რედაქტორი</h1>
+  <div class="sep"></div>
+  <label>სახელი <input type="text" id="inp-name" value="ახალი გეგმა"></label>
+  <div class="sep"></div>
+  <label>იატაკის სიმაღლე (მ) <input type="number" id="inp-floor-h" min="2.0" max="8" step="0.1" value="3.0"></label>
+  <label>ჭერი (მ) <input type="number" id="inp-ceiling-h" min="2.0" max="8" step="0.1" value="2.8"></label>
+  <div class="sep"></div>
+  <label>Grid <select id="inp-grid">
+    <option value="0.1">10 cm</option>
+    <option value="0.25" selected>25 cm</option>
+    <option value="0.5">50 cm</option>
+    <option value="1">1 მ</option>
+  </select></label>
+  <div class="sep"></div>
+  <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--text-3);font-family:var(--font-mono)">
+    <span style="color:var(--text-2)">📁</span>
+    <span id="project-badge" style="color:var(--navy);font-weight:700;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">— (legacy)</span>
+  </span>
+  <button id="btn-save-as" title="შენახვა როგორც ახალი პროექტი">💾 Save as</button>
+  <button id="btn-rename" title="სახელის შეცვლა">✎</button>
+  <div class="spacer"></div>
+  <button id="btn-zoom-fit" title="ცენტრირება (F)">🎯 Fit</button>
+  <button id="btn-undo" title="Undo (Ctrl+Z)">↶</button>
+  <button id="btn-redo" title="Redo (Ctrl+Y)">↷</button>
+  <button id="btn-import" title="JSON ჩატვირთვა">⬆ JSON</button>
+  <button id="btn-export" title="JSON ექსპორტი">⬇ JSON</button>
+  <button id="btn-import-dxf" title="DXF (CAD) ფაილის ჩატვირთვა — LINE + LWPOLYLINE კედლებად ჩატვირთვა">⬆ DXF</button>
+  <button id="btn-export-dxf" title="DXF-ად ექსპორტი — AutoCAD/Revit/LibreCAD თავსებადი">⬇ DXF</button>
+  <button id="btn-ai-walls" title="AI: სურათიდან კედლების ავტო-დეტექცია (Claude Vision)">🤖 AI walls</button>
+  <button id="btn-cleanup" title="კედლების გასუფთავება (deduplicate, snap, colinear merge, orthogonalize)">🪄 Clean</button>
+  <button id="btn-print" title="PDF-ად ბეჭდვა">🖨 PDF</button>
+  <button id="btn-gate" title="ყველა პროექტი">🗂</button>
+  <button id="btn-clear" class="danger" title="ყველაფრის წაშლა">🗑</button>
+</header>
+
+<!-- ============ MAIN ============ -->
+<div class="we-root">
+
+  <!-- Toolbar -->
+  <aside class="we-tools">
+    <button class="we-tool active" data-tool="select" title="Select (V) · click to pick, drag to move">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 3 L4 15 L7.5 12 L10 17 L12 16 L9.5 11 L14 11 Z"/>
+      </svg>
+      <span class="we-tool-shortcut">V</span>
+    </button>
+    <div class="we-tool-sep"></div>
+    <button class="we-tool" data-tool="wall" title="Wall (W) · click vertices, Enter/Esc=finish">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <line x1="2" y1="7" x2="18" y2="7"/>
+        <line x1="2" y1="13" x2="18" y2="13"/>
+      </svg>
+      <span class="we-tool-shortcut">W</span>
+    </button>
+    <button class="we-tool" data-tool="room" title="Room (R) · drag rectangle corner-to-corner">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">
+        <rect x="3.5" y="3.5" width="13" height="13"/>
+        <circle cx="3.5" cy="3.5" r="1.5" fill="currentColor"/>
+        <circle cx="16.5" cy="16.5" r="1.5" fill="currentColor"/>
+      </svg>
+      <span class="we-tool-shortcut">R</span>
+    </button>
+    <div class="we-tool-sep"></div>
+    <button class="we-tool" data-tool="column" title="Column (C) · ■ square or ○ round load-bearing">
+      <svg viewBox="0 0 20 20" width="18" height="18">
+        <rect x="5" y="5" width="10" height="10" rx="0.5" fill="currentColor"/>
+        <circle cx="10" cy="10" r="1.5" fill="white" opacity="0.6"/>
+      </svg>
+      <span class="we-tool-shortcut">C</span>
+    </button>
+    <button class="we-tool" data-tool="door" title="Door (D) · click on wall · 1 or 2 leafs, swing arc">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="4" y1="4" x2="4" y2="16"/>
+        <line x1="4" y1="4" x2="4" y2="4"/>
+        <line x1="4" y1="16" x2="15" y2="16"/>
+        <path d="M 4 4 A 12 12 0 0 1 15 16" stroke-dasharray="1.5 1.2"/>
+      </svg>
+      <span class="we-tool-shortcut">D</span>
+    </button>
+    <button class="we-tool" data-tool="window" title="Window (F) · click on wall · glazing, sill, tilt">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="5" width="14" height="10"/>
+        <line x1="10" y1="5" x2="10" y2="15"/>
+        <line x1="3" y1="10" x2="17" y2="10" stroke-dasharray="1 1"/>
+      </svg>
+      <span class="we-tool-shortcut">F</span>
+    </button>
+    <div class="we-tool-sep"></div>
+    <button class="we-tool" data-tool="jetfan" title="Jet Fan (J) · parking · rotate for thrust direction">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+        <circle cx="10" cy="10" r="6"/>
+        <path d="M10 4 Q 16 6 16 10"/>
+        <path d="M10 16 Q 4 14 4 10"/>
+        <circle cx="10" cy="10" r="1.5" fill="currentColor"/>
+      </svg>
+      <span class="we-tool-shortcut">J</span>
+    </button>
+    <button class="we-tool" data-tool="exhaust" title="Exhaust (E) · ceiling-mounted vent, flow m³/h">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="4" y="4" width="12" height="12"/>
+        <line x1="7" y1="7" x2="13" y2="13"/>
+        <line x1="13" y1="7" x2="7" y2="13"/>
+      </svg>
+      <span class="we-tool-shortcut">E</span>
+    </button>
+    <button class="we-tool" data-tool="furniture" title="Furniture (M) · ავეჯი · bed, sofa, table, kitchen…">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="8" width="14" height="7" rx="1.2"/>
+        <line x1="5" y1="15" x2="5" y2="17"/>
+        <line x1="15" y1="15" x2="15" y2="17"/>
+        <line x1="3" y1="11" x2="17" y2="11"/>
+      </svg>
+      <span class="we-tool-shortcut">M</span>
+    </button>
+    <div class="we-tool-sep"></div>
+    <button class="we-tool" data-tool="fire" title="🔥 Fire (X) · place fire source · HRR, growth">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 2 Q 13 5.5 13 8.5 A 2.5 2.5 0 0 1 8 8.5 Q 8 7.5 8.5 7 Q 7 8 6.2 10 A 4.2 4.2 0 0 0 14 12 Q 14 7 10 2 Z"/>
+      </svg>
+      <span class="we-tool-shortcut">X</span>
+    </button>
+    <div class="we-tool-sep"></div>
+    <button class="we-tool" data-tool="pan" title="Pan (H) · drag canvas · wheel = zoom">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M7 9 V 4.5 A 1.2 1.2 0 0 1 9.5 4.5 V 9 M 9.5 9 V 3.5 A 1.2 1.2 0 0 1 12 3.5 V 9 M 12 9 V 4.5 A 1.2 1.2 0 0 1 14.5 4.5 V 10 M 14.5 10 V 6.5 A 1.2 1.2 0 0 1 17 6.5 V 13 A 4.5 4.5 0 0 1 12.5 17.5 A 5 5 0 0 1 7 13 V 10 Z"/>
+      </svg>
+      <span class="we-tool-shortcut">H</span>
+    </button>
+    <div class="we-tool-sep"></div>
+    <button class="we-tool" id="btn-help" title="დახმარება · კომპონენტების ცხრილი + keyboard shortcuts" style="color:var(--blue)">
+      <svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="10" cy="10" r="7"/>
+        <path d="M7.5 7.5 A 2.5 2.5 0 0 1 12.5 7.5 Q 12.5 9.5 10 10.5 V 12"/>
+        <circle cx="10" cy="14.5" r="0.7" fill="currentColor"/>
+      </svg>
+      <span class="we-tool-shortcut">?</span>
+    </button>
+  </aside>
+
+  <!-- Canvas -->
+  <main class="we-stage" id="we-stage">
+    <div class="we-svg-wrap" id="svg-wrap">
+      <svg id="svg" class="we-svg" xmlns="http://www.w3.org/2000/svg">
+        <g id="g-grid"></g>
+        <g id="g-rooms"></g>
+        <g id="g-walls"></g>
+        <g id="g-openings"></g>
+        <g id="g-columns"></g>
+        <g id="g-fixtures"></g>
+        <g id="g-furniture"></g>
+        <g id="g-dims"></g>
+        <g id="g-fires"></g>
+        <g id="g-sim-overlay"></g>
+        <g id="g-preview"></g>
+        <g id="g-selection"></g>
+        <g id="g-snap"></g>
+      </svg>
+    </div>
+    <!-- 3D host (mounted lazily when view='3d') -->
+    <div class="we-3d-host" id="we-3d-host"></div>
+
+    <!-- PIP (Picture-in-Picture) — draggable alt-view -->
+    <div class="ep-pip" id="pip">
+      <div class="ep-pip-head" id="pip-head">
+        <span class="ep-pip-title">მიმოხილვა</span>
+        <div class="ep-pip-seg">
+          <button id="pip-2d" class="active">2D</button>
+          <button id="pip-3d">3D</button>
+        </div>
+        <button id="pip-collapse" class="ep-iconbtn" data-tip="ჩაკვრა" style="width:20px;height:20px;margin-left:2px">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <path d="M5 12h14"/>
+          </svg>
+        </button>
+      </div>
+      <div class="ep-pip-body" id="pip-body">
+        <svg id="pip-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </div>
+
+    <!-- Floating selection context menu (EditorPanels.ctxMenu) -->
+    <div id="ctx-host" style="position:absolute;inset:0;pointer-events:none;"></div>
+  </main>
+
+  <!-- Right panel — context-driven (Coohom parity §F) -->
+  <aside class="ep-panel" id="ctx-panel">
+    <div class="ep-panel-head">
+      <span class="ep-icon" id="ctx-panel-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+        </svg>
+      </span>
+      <h2 id="ctx-panel-title">იატაკი</h2>
+      <span class="ep-panel-sub" id="ctx-panel-sub">1F</span>
+    </div>
+    <div class="ep-panel-body" id="ctx-panel-body">
+      <!-- EditorPanels.render(ctxPanelBody, ctx, handlers) populates this -->
+    </div>
+  </aside>
+
+</div>
+
+<!-- Fire-mode time-lapse bar (visible when fires placed) -->
+<div class="we-fire-bar" id="fire-bar">
+  <span class="we-fire-ico">🔥</span>
+  <span>სცენარი</span>
+  <select class="we-fire-scenario" id="fire-scenario">
+    <option value="stair">სადარბაზო</option>
+    <option value="corridor">დერეფანი</option>
+    <option value="elevator">ლიფტის უჯრედი</option>
+    <option value="parking" selected>პარკინგი</option>
+    <option value="evac">ევაკუაცია</option>
+  </select>
+  <span>სტანდარტი</span>
+  <select class="we-fire-scenario" id="fire-standard">
+    <option value="en12101">EN 12101-6</option>
+    <option value="nfpa92">NFPA 92</option>
+    <option value="sp7">СП 7.13130</option>
+  </select>
+  <span style="color:rgba(255,255,255,.4)">·</span>
+  <button id="fire-reset" title="რესტარტი">⟲</button>
+  <button id="fire-play" title="დაწყება/პაუზა">▶</button>
+  <input type="range" id="fire-slider" min="0" max="600" step="1" value="0">
+  <span class="we-fire-t" id="fire-t">t = 0s</span>
+  <div class="we-fire-speed">
+    <button data-speed="1" class="active">1×</button>
+    <button data-speed="5">5×</button>
+    <button data-speed="10">10×</button>
+  </div>
+  <button id="fire-report" title="ანგარიში (PDF)">📋</button>
+</div>
+
+<!-- Bottom bar — floor switcher + view toggle (Coohom §H) -->
+<div class="we-botbar">
+  <div class="we-floor-seg" id="floor-seg" role="tablist"></div>
+  <button class="eng-btn" id="btn-new-upper" title="ახალი ზედა სართული">+ ზედა</button>
+  <button class="eng-btn" id="btn-new-lower" title="ახალი ქვედა სართული">+ ქვედა</button>
+  <span style="color:var(--text-3);font-size:10px">·</span>
+  <div class="we-view-seg" id="view-seg" role="tablist">
+    <button class="active" data-view="2d" title="2D ხედი">2D</button>
+    <button data-view="3d" title="3D ხედი">3D</button>
+  </div>
+  <span style="color:var(--text-3);font-size:10px">·</span>
+  <button class="eng-btn" id="btn-pip-toggle" title="PIP ფანჯრის ჩართვა/გამორთვა">PIP</button>
+  <div class="we-zoom-ctrl">
+    <button id="btn-zoom-out" title="−">−</button>
+    <span class="we-zoom-val" id="st-zoom">100%</span>
+    <button id="btn-zoom-in" title="+">+</button>
+  </div>
+</div>
+
+<!-- Statusbar -->
+<footer class="we-status">
+  <span><span class="dot"></span> Ready</span>
+  <span class="we-status-sep">·</span>
+  <span id="st-tool">Tool: Select</span>
+  <span class="we-status-sep">·</span>
+  <span id="st-coord">X: 0.00m · Y: 0.00m</span>
+  <span class="we-status-sep">·</span>
+  <span id="st-snap">Snap: grid</span>
+  <span class="we-status-sep">·</span>
+  <span id="st-counts">0 walls · 0 cols · 0 doors</span>
+</footer>
+
+<!-- Toast -->
+<div class="we-toast" id="toast"></div>
+
+<!-- Help modal -->
+<div class="we-modal-bd" id="help-modal">
+  <div class="we-modal">
+    <div class="we-modal-h">
+      <h2>📖 კომპონენტების ცნობარი</h2>
+      <button id="help-close" title="დახურვა">×</button>
+    </div>
+    <div class="we-tabs-sub">
+      <button class="active" data-help="tools">🛠 ინსტრუმენტები</button>
+      <button data-help="components">📦 კომპონენტები</button>
+      <button data-help="shortcuts">⌨ Shortcuts</button>
+    </div>
+    <div class="we-modal-b">
+
+      <!-- Tools panel -->
+      <div class="we-help-panel active" data-help="tools">
+        <div class="we-help-grid">
+
+          <div class="we-help-card">
+            <div class="head">▲ Select<span class="sh">V</span></div>
+            <div class="desc">ელემენტის არჩევა, გადატანა, თვისებების შეცვლა.</div>
+            <div class="caps">
+              <b>ქმედება:</b> click · Shift-click = add-to-selection · drag = move<br>
+              <b>Shortcuts:</b> Del = წაშლა · arrows = 10cm · Shift+arrows = 1m
+            </div>
+          </div>
+
+          <div class="we-help-card">
+            <div class="head">║ Wall<span class="sh">W</span></div>
+            <div class="desc">კედლის დახაზვა vertex-by-vertex, მომდევნო click სეგმენტს ამთავრებს.</div>
+            <div class="caps">
+              <b>Snap:</b> grid · vertex · midpoint · angle 0°/45°/90°<br>
+              <b>Enter/Esc:</b> ხაზვის დასრულება<br>
+              <b>Params:</b> სისქე (100–300mm library) · სიმაღლე · მასალა
+            </div>
+          </div>
+
+          <div class="we-help-card">
+            <div class="head">▭ Room<span class="sh">R</span></div>
+            <div class="desc">ოთახის რაიონი — drag corner-to-corner, ავტომ 4 კედელი.</div>
+            <div class="caps">
+              <b>Output:</b> closed polygon + 4 walls<br>
+              <b>Detect:</b> area_m2 + perimeter auto-computed
+            </div>
+          </div>
+
+          <div class="we-help-card">
+            <div class="head">■ Column<span class="sh">C</span></div>
+            <div class="desc">კოლონა — □ კვადრატი ან ○ მრგვალი, ადგილზე click.</div>
+            <div class="caps">
+              <b>Params:</b> shape · size (300–800mm) · rotation · material · structural<br>
+              <b>Snap:</b> grid · wall intersection · other column align
+            </div>
+          </div>
+
+          <div class="we-help-card">
+            <div class="head">🚪 Door<span class="sh">D</span></div>
+            <div class="desc">კარი კედელზე — 1-ფრთ. ან 2-ფრთ., swing arc.</div>
+            <div class="caps">
+              <b>Params:</b> width (700–1800mm) · leafs (1/2) · swing side · fire rating (EI30/60/90/120) · closer force<br>
+              <b>Auto:</b> კედელზე მიიბმება · offset clamps-ი
+            </div>
+          </div>
+
+          <div class="we-help-card">
+            <div class="head">⊞ Window<span class="sh">F</span></div>
+            <div class="desc">ფანჯარა კედელზე — fixed/tilt-turn/sliding, glazing class.</div>
+            <div class="caps">
+              <b>Params:</b> width · height · sill height · glazing · U-value · g-value<br>
+              <b>Types:</b> fixed / tilt-turn / sliding / hopper / casement
+            </div>
+          </div>
+
+          <div class="we-help-card">
+            <div class="head">🌀 Jet Fan<span class="sh">J</span></div>
+            <div class="desc">პარკინგის ჯეტ ფანი — rect ან round, thrust-ის მიმართ rotation.</div>
+            <div class="caps">
+              <b>Models:</b> JFR-315/400/500/560/630 (rect) · JFR-D315/D400/D500 (round)<br>
+              <b>Params:</b> thrust N · flow m³/h · pressure class F200/300/400/600 · CO trigger
+            </div>
+          </div>
+
+          <div class="we-help-card">
+            <div class="head">⇧ Exhaust<span class="sh">E</span></div>
+            <div class="desc">გამწოვი / supply vent — ceiling-mounted, flow m³/h.</div>
+            <div class="caps">
+              <b>Shapes:</b> □ 300/400/600 · ○ Ø315/Ø400<br>
+              <b>Params:</b> flow · filter (G4/F7/HEPA) · fire damper · diffuser type
+            </div>
+          </div>
+
+          <div class="we-help-card">
+            <div class="head">✋ Pan<span class="sh">H</span></div>
+            <div class="desc">ტილოს გადაადგილება · wheel = zoom (cursor-center).</div>
+            <div class="caps">
+              <b>Alt:</b> Space+drag ნებისმიერი tool-ით<br>
+              <b>Middle mouse:</b> pan<br>
+              <b>F button:</b> fit all content
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Components panel -->
+      <div class="we-help-panel" data-help="components">
+        <div class="we-help-grid">
+
+          <div class="we-help-card">
+            <div class="head">კედელი</div>
+            <div class="desc">სტრუქტურული ან partition კედელი, dimensional + physics params.</div>
+            <div class="caps">
+              <b>Params:</b> start · end · thickness 5–60cm · height 2–8m · material · U-value · leakage · fire rating EI0–EI240<br>
+              <b>Operations:</b> draw · split · merge · rotate · mirror · duplicate · lock<br>
+              <b>Snap:</b> vertex · grid · angle · parallel · perpendicular · intersection<br>
+              <b>Physics:</b> leakage Q=0.827·A·√Δp · U·ΔT·A heat
+            </div>
+          </div>
+
+          <div class="we-help-card">
+            <div class="head">კარი</div>
+            <div class="desc">1 ან 2 ფრთა, swing direction + side, fire rating tag.</div>
+            <div class="caps">
+              <b>Params:</b> width · height · leafs · swing side/direction · EI tag · closer force · handle · auto-sensor<br>
+              <b>Subtypes:</b> single / double / sliding / revolving / bifold<br>
+              <b>Physics:</b> closed leakage · open flow · opening force NFPA 92
+            </div>
+          </div>
+
+          <div class="we-help-card">
+            <div class="head">ფანჯარა</div>
+            <div class="desc">ფიქსირ. / ოპერაბ. / tilt-turn, glazing class, sill height.</div>
+            <div class="caps">
+              <b>Params:</b> width · height · sill · frame · glazing 1/2/3 · U · g (SHGC) · EN 12207 leakage class<br>
+              <b>Subtypes:</b> fixed / tilt-turn / sliding / hopper / awning / casement
+            </div>
+          </div>
+
+          <div class="we-help-card">
+            <div class="head">კოლონა</div>
+            <div class="desc">□ ან ○, structural მარკერი, rotation, height-override.</div>
+            <div class="caps">
+              <b>Params:</b> shape (sq/round/rect) · size · rotation · height · material · number<br>
+              <b>Ops:</b> place · move · rotate 15° · resize · array grid
+            </div>
+          </div>
+
+          <div class="we-help-card">
+            <div class="head">ჯეტ ფანი</div>
+            <div class="desc">Parking vent rect/round, thrust + flow + pressure class.</div>
+            <div class="caps">
+              <b>Physics:</b> momentum J=ρ·Q·v · 12° cone spread · 10× diameter range<br>
+              <b>EN 12101-3:</b> F200/300/400/600, duration 60–240 min<br>
+              <b>Controller:</b> CO-based / scheduled / manual
+            </div>
+          </div>
+
+          <div class="we-help-card">
+            <div class="head">გამწოვი / მიმწოდი</div>
+            <div class="desc">Ceiling/wall/floor-mount, flow m³/h source/sink, duct link.</div>
+            <div class="caps">
+              <b>Filter:</b> G4 / F7 / HEPA<br>
+              <b>Fire damper:</b> 60/90/120 min<br>
+              <b>Diffuser:</b> 4-way / swirl / linear / perforated
+            </div>
+          </div>
+
+          <div class="we-help-card">
+            <div class="head">ზომა (Dimension)</div>
+            <div class="desc">2 წერტილის ავტო-მანძილი, offset customizable, label override.</div>
+            <div class="caps">
+              <b>Units:</b> metric / imperial · precision 0–3 decimals<br>
+              <b>Style:</b> arch / engineering / extended
+            </div>
+          </div>
+
+          <div class="we-help-card">
+            <div class="head">ოთახი (Auto)</div>
+            <div class="desc">დაკეტილი კედლები → auto room polygon, area + volume.</div>
+            <div class="caps">
+              <b>Types:</b> office / hallway / stairwell / parking / elevator-lobby / storage / bathroom / technical<br>
+              <b>Data:</b> area · volume · perimeter · occupancy · fire compartment
+            </div>
+          </div>
+
+        </div>
+        <div style="margin-top:14px;padding:10px 12px;background:var(--blue-lt);border-left:3px solid var(--blue);border-radius:6px;font-size:11px;color:var(--navy)">
+          📘 <b>სრული სპეკი:</b> <code>docs/specs/wall-editor-components.md</code> — ყოველი ფილდი, range, snap, physics, operations ცხრილებად.
+        </div>
+      </div>
+
+      <!-- Shortcuts panel -->
+      <div class="we-help-panel" data-help="shortcuts">
+        <div class="we-kbd-table">
+          <kbd>V</kbd><span>Select</span>         <kbd>W</kbd><span>Wall</span>
+          <kbd>R</kbd><span>Room</span>           <kbd>C</kbd><span>Column</span>
+          <kbd>D</kbd><span>Door</span>           <kbd>F</kbd><span>Window</span>
+          <kbd>J</kbd><span>Jet Fan</span>        <kbd>E</kbd><span>Exhaust</span>
+          <kbd>H</kbd><span>Pan</span>            <kbd>M</kbd><span>Measure (soon)</span>
+          <kbd>Space+drag</kbd><span>Pan</span>   <kbd>Wheel</kbd><span>Zoom</span>
+          <kbd>Del</kbd><span>Delete selection</span> <kbd>Esc</kbd><span>Cancel tool</span>
+          <kbd>Enter</kbd><span>Finish draw</span> <kbd>Ctrl+Z</kbd><span>Undo</span>
+          <kbd>Ctrl+Y</kbd><span>Redo</span>      <kbd>Ctrl+Shift+Z</kbd><span>Redo alt</span>
+          <kbd>Ctrl+D</kbd><span>Duplicate</span> <kbd>Ctrl+A</kbd><span>Select all</span>
+          <kbd>Ctrl+S</kbd><span>Save</span>      <kbd>Ctrl+E</kbd><span>Export</span>
+          <kbd>Ctrl+O</kbd><span>Import</span>    <kbd>G</kbd><span>Grid toggle</span>
+          <kbd>0</kbd><span>Fit content</span>    <kbd>1</kbd><span>100% zoom</span>
+          <kbd>+/−</kbd><span>Zoom in/out</span>  <kbd>?</kbd><span>ამ Help-ის ჩვენება</span>
+        </div>
+        <div style="margin-top:14px;padding:10px 12px;background:var(--sur-2);border-radius:6px;font-size:11px;color:var(--text-2)">
+          <b>Pro tips:</b> Shift-click = add to selection · Ctrl-click = toggle · Alt+drag = rectangle deselect · Shift+R = rotate 5° (fine)
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// =========================================================================
+// engineers.ge — Wall Editor MVP · single-floor planner
+// =========================================================================
+'use strict';
+
+// ============== CONSTANTS ==============
+const LIB = {
+  walls: [
+    { id: 'w100', name: 'drywall',    thickness: 0.10, meta: '100mm · GKL' },
+    { id: 'w150', name: 'drywall+',   thickness: 0.15, meta: '150mm · GKL+insul.' },
+    { id: 'w200', name: 'brick',      thickness: 0.20, meta: '200mm · აგური' },
+    { id: 'w250', name: 'block',      thickness: 0.25, meta: '250mm · ბლოკი' },
+    { id: 'w300', name: 'concrete',   thickness: 0.30, meta: '300mm · ბეტონი' },
+    { id: 'w400', name: 'facade',     thickness: 0.40, meta: '400mm · ფასადი' }
+  ],
+  doors: [
+    { id: 'd-s-700',  name: '1-ფრთ. 700',    w: 0.70, h: 2.10, leafs: 1, subtype: 'single',    meta: '700×2100' },
+    { id: 'd-s-800',  name: '1-ფრთ. 800',    w: 0.80, h: 2.10, leafs: 1, subtype: 'single',    meta: '800×2100' },
+    { id: 'd-s-900',  name: '1-ფრთ. 900',    w: 0.90, h: 2.10, leafs: 1, subtype: 'single',    meta: '900×2100' },
+    { id: 'd-s-1000', name: '1-ფრთ. 1000',   w: 1.00, h: 2.10, leafs: 1, subtype: 'single',    meta: '1000×2100' },
+    { id: 'd-d-1200', name: '2-ფრთ. 1200',   w: 1.20, h: 2.10, leafs: 2, subtype: 'double',    meta: '2×600' },
+    { id: 'd-d-1600', name: '2-ფრთ. 1600',   w: 1.60, h: 2.10, leafs: 2, subtype: 'double',    meta: '2×800' },
+    { id: 'd-d-1800', name: '2-ფრთ. 1800',   w: 1.80, h: 2.10, leafs: 2, subtype: 'double',    meta: '2×900' },
+    { id: 'd-u-1200', name: '2-ფრთ. უთან. 1200', w: 1.20, h: 2.10, leafs: 2, subtype: 'double-unequal', meta: '800+400' },
+    { id: 'd-sl-1500', name: 'მოცურავი 1500', w: 1.50, h: 2.10, leafs: 2, subtype: 'sliding',   meta: '1500 slide' },
+    { id: 'd-sl-2000', name: 'მოცურავი 2000', w: 2.00, h: 2.10, leafs: 2, subtype: 'sliding',   meta: '2000 slide' },
+    { id: 'd-f-900',  name: 'ღიობი (no leaf) 900', w: 0.90, h: 2.10, leafs: 0, subtype: 'frame', meta: 'frame only' },
+    { id: 'd-f-2400', name: 'ღიობი wide 2400', w: 2.40, h: 2.10, leafs: 0, subtype: 'frame',    meta: 'frame wide' }
+  ],
+  windows: [
+    { id: 'win-600',  name: 'casement 600',   w: 0.60, h: 1.20, sill: 0.90, subtype: 'casement', meta: '600×1200' },
+    { id: 'win-900',  name: 'casement 900',   w: 0.90, h: 1.40, sill: 0.90, subtype: 'casement', meta: '900×1400' },
+    { id: 'win-1200', name: 'casement 1200',  w: 1.20, h: 1.40, sill: 0.90, subtype: 'casement', meta: '1200×1400' },
+    { id: 'win-1500', name: 'casement 1500',  w: 1.50, h: 1.40, sill: 0.90, subtype: 'casement', meta: '1500×1400' },
+    { id: 'win-1800', name: 'casement 1800',  w: 1.80, h: 1.40, sill: 0.90, subtype: 'casement', meta: '1800×1400' },
+    { id: 'win-tt-1200', name: 'tilt-turn 1200', w: 1.20, h: 1.40, sill: 0.90, subtype: 'tilt', meta: '1200 TT' },
+    { id: 'win-sl-1800', name: 'sliding 1800', w: 1.80, h: 1.40, sill: 0.90, subtype: 'sliding', meta: '1800 slide' },
+    { id: 'win-bay-2400', name: 'bay 2400',  w: 2.40, h: 1.80, sill: 0.40, subtype: 'bay',      meta: '2400 bay' },
+    { id: 'win-corn-1800', name: 'corner 1800', w: 1.80, h: 1.60, sill: 0.60, subtype: 'corner', meta: '1800 corner' },
+    { id: 'win-2400', name: 'panoramic 2400', w: 2.40, h: 2.40, sill: 0.10, subtype: 'panoramic', meta: '2400×2400' }
+  ],
+  columns: [
+    { id: 'col-sq-300', name: '□ 300', shape: 'square', size: 0.30, meta: '300×300' },
+    { id: 'col-sq-400', name: '□ 400', shape: 'square', size: 0.40, meta: '400×400' },
+    { id: 'col-sq-500', name: '□ 500', shape: 'square', size: 0.50, meta: '500×500' },
+    { id: 'col-sq-600', name: '□ 600', shape: 'square', size: 0.60, meta: '600×600' },
+    { id: 'col-r-300',  name: '○ Ø300', shape: 'round', size: 0.30, meta: 'Ø300' },
+    { id: 'col-r-400',  name: '○ Ø400', shape: 'round', size: 0.40, meta: 'Ø400' },
+    { id: 'col-r-500',  name: '○ Ø500', shape: 'round', size: 0.50, meta: 'Ø500' },
+    { id: 'col-r-600',  name: '○ Ø600', shape: 'round', size: 0.60, meta: 'Ø600' },
+    { id: 'col-l-400',  name: 'L 400',  shape: 'l-shape', size: 0.40, meta: 'L-ფორმა' }
+  ],
+
+  // Structural (beams, stairs, openings-in-slab)
+  structural: [
+    { id: 'beam-300', name: 'Beam 300', kind: 'beam', w: 0.30, d: 0.50, meta: '300×500' },
+    { id: 'beam-500', name: 'Beam 500', kind: 'beam', w: 0.50, d: 0.80, meta: '500×800' },
+    { id: 'stair-l', name: 'Stair L',   kind: 'stair', w: 1.20, steps: 14, meta: 'L-shape · 14 ფეხი' },
+    { id: 'stair-u', name: 'Stair U',   kind: 'stair', w: 1.20, steps: 16, meta: 'U-shape · 16 ფეხი' },
+    { id: 'stair-str', name: 'Stair Straight', kind: 'stair', w: 1.10, steps: 17, meta: 'Straight · 17' },
+    { id: 'void-1000', name: 'Slab opening 1m', kind: 'void', w: 1.0, d: 1.0, meta: '1×1 ღიობი ფილაში' }
+  ],
+
+  // Material / finish library
+  materials: {
+    wall: [
+      { id: 'mat-brick', name: 'აგური', color: '#c88a6f', meta: 'წითელი' },
+      { id: 'mat-concrete', name: 'ბეტონი', color: '#b5b8bc', meta: 'C25/30' },
+      { id: 'mat-gkl', name: 'GKL', color: '#eceadc', meta: 'თაბაშირ-კარტონი' },
+      { id: 'mat-block', name: 'ბლოკი', color: '#d9cfbd', meta: 'ღორღო' }
+    ],
+    floor: [
+      { id: 'fl-parquet', name: 'Parquet', color: '#b88a55', meta: 'ხე' },
+      { id: 'fl-tile', name: 'Tile', color: '#d8d3c4', meta: 'კერამოგრანიტი' },
+      { id: 'fl-screed', name: 'Screed', color: '#c8c4b9', meta: 'სტიჟკა' },
+      { id: 'fl-carpet', name: 'Carpet', color: '#8b7c7a', meta: 'ხალიჩა' }
+    ],
+    ceiling: [
+      { id: 'cl-gkl', name: 'GKL ceiling', color: '#f5f2e6', meta: 'დაკიდებული GKL' },
+      { id: 'cl-grid', name: 'T-grid', color: '#e8e6e0', meta: 'Armstrong 600×600' },
+      { id: 'cl-exposed', name: 'Exposed slab', color: '#b5b8bc', meta: 'ბეტონი ღია' }
+    ]
+  },
+
+  // Basic furniture (10 essentials — MVP, mostly for visual)
+  furniture: [
+    { id: 'fur-bed-d', name: 'საწოლი (ორადგ.)', kind: 'bed', w: 2.00, d: 1.80, meta: '2000×1800' },
+    { id: 'fur-bed-s', name: 'საწოლი (ერთ.)', kind: 'bed', w: 2.00, d: 0.90, meta: '2000×900' },
+    { id: 'fur-sofa', name: 'დივანი',       kind: 'sofa', w: 2.20, d: 0.95, meta: '2200×950' },
+    { id: 'fur-table-d', name: 'სადილის მაგიდა', kind: 'table', w: 1.60, d: 0.90, meta: '1600×900' },
+    { id: 'fur-table-w', name: 'სამუშაო მაგიდა', kind: 'table', w: 1.20, d: 0.60, meta: '1200×600' },
+    { id: 'fur-chair', name: 'სკამი',         kind: 'chair', w: 0.50, d: 0.50, meta: '500×500' },
+    { id: 'fur-kitchen', name: 'სამზარეულოს ბლოკი', kind: 'kitchen', w: 2.40, d: 0.65, meta: '2400×650' },
+    { id: 'fur-wc', name: 'ტუალეტი',           kind: 'wc', w: 0.40, d: 0.70, meta: '400×700' },
+    { id: 'fur-sink', name: 'ნიჟარა',           kind: 'sink', w: 0.60, d: 0.50, meta: '600×500' },
+    { id: 'fur-shower', name: 'შხაპის კაბინა',  kind: 'shower', w: 0.90, d: 0.90, meta: '900×900' }
+  ],
+  jetfans: [
+    { id: 'jfr-315', name: 'JFR-315',  shape: 'rect',  w: 0.45, d: 0.50, thrust_N: 50,  flow_m3h: 2700, meta: 'rect, 50 N' },
+    { id: 'jfr-400', name: 'JFR-400',  shape: 'rect',  w: 0.50, d: 0.55, thrust_N: 80,  flow_m3h: 3600, meta: 'rect, 80 N' },
+    { id: 'jfr-500', name: 'JFR-500',  shape: 'rect',  w: 0.55, d: 0.60, thrust_N: 125, flow_m3h: 4800, meta: 'rect, 125 N' },
+    { id: 'jfr-d315', name: 'JFR-D315', shape: 'round', diameter: 0.40, thrust_N: 30,  flow_m3h: 2400, meta: 'Ø, 30 N' },
+    { id: 'jfr-d400', name: 'JFR-D400', shape: 'round', diameter: 0.50, thrust_N: 60,  flow_m3h: 3400, meta: 'Ø, 60 N' },
+    { id: 'jfr-d500', name: 'JFR-D500', shape: 'round', diameter: 0.60, thrust_N: 100, flow_m3h: 4500, meta: 'Ø, 100 N' }
+  ],
+  exhausts: [
+    { id: 'ex-300', name: 'EX 300', shape: 'square', size: 0.30, meta: '300×300' },
+    { id: 'ex-400', name: 'EX 400', shape: 'square', size: 0.40, meta: '400×400' },
+    { id: 'ex-600', name: 'EX 600', shape: 'square', size: 0.60, meta: '600×600' },
+    { id: 'ex-r315', name: 'EX Ø315', shape: 'round', size: 0.315, meta: 'Ø315' },
+    { id: 'ex-r400', name: 'EX Ø400', shape: 'round', size: 0.40, meta: 'Ø400' }
+  ]
+};
+
+// ============== STATE ==============
+const state = {
+  version: 1,
+  meta: { name: 'ახალი გეგმა', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() },
+  scale: { metersPerUnit: 1, gridStep: 0.25 },
+  floor: { height: 3.0, slabThickness: 0.2, ceilingHeight: 2.8 },
+  walls: [],
+  columns: [],
+  openings: [],
+  fixtures: [],
+  furniture: [],  // Phase C — placed furniture (bed, sofa, table, etc)
+  rooms: [],
+  dimensions: [],
+  fires: []       // fire sources (Phase D)
+};
+
+// UI / ephemeral
+const ui = {
+  tool: 'select',
+  selectedLib: { walls: 'w200', doors: 'd-s-900', windows: 'win-1200', columns: 'col-sq-400', jetfans: 'jfr-400', exhausts: 'ex-400', furniture: 'fur-bed-d' },
+  selection: [],       // ids of selected elements
+  drafting: null,      // { type: 'wall', vertices: [[x,y],...], mode: 'line'|'arc' }
+  view: { x: 0, y: 0, zoom: 40 },  // zoom = px per meter
+  panning: false, panStart: null,
+  cursor: { x: 0, y: 0 },           // world coords (m)
+  snapped: null,                    // {x, y, type}
+  history: { past: [], future: [] },
+  toolDefaults: {},    // per-tool panel defaults ({wall:{wallMode,...}, door:{...}, ...})
+  // Coohom-parity additions
+  activeFloor: 0,      // index into state.floors
+  viewMode: '2d',      // '2d' | '3d'
+  pipVisible: true,
+  pipMode: '2d',       // '2d' | '3d' inside PIP
+  pipPos: null,        // {left, top} persisted drag position
+  // Fire-safety mode (Phase D)
+  fireScenario: 'parking',   // stair/corridor/elevator/parking/evac
+  fireStandard: 'en12101',   // en12101 / nfpa92 / sp7
+  fireT: 0,                  // current sim time (s)
+  fireSpeed: 1,              // 1× / 5× / 10×
+  firePlaying: false,
+  fireLastTs: 0              // rAF timestamp for delta
+};
+
+// ============== HELPERS ==============
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+function toast(msg, dur=2000) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._h);
+  toast._h = setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function snapshot() {
+  ui.history.past.push(JSON.stringify({ walls: state.walls, columns: state.columns, openings: state.openings, fixtures: state.fixtures }));
+  if (ui.history.past.length > 50) ui.history.past.shift();
+  ui.history.future = [];
+}
+
+function restoreFromSnapshot(snap) {
+  const data = JSON.parse(snap);
+  state.walls = data.walls;
+  state.columns = data.columns;
+  state.openings = data.openings;
+  state.fixtures = data.fixtures;
+}
+
+function undo() {
+  if (!ui.history.past.length) return;
+  const cur = JSON.stringify({ walls: state.walls, columns: state.columns, openings: state.openings, fixtures: state.fixtures });
+  ui.history.future.push(cur);
+  const prev = ui.history.past.pop();
+  restoreFromSnapshot(prev);
+  ui.selection = [];
+  render();
+  autosave();
+  toast('Undo');
+}
+
+function redo() {
+  if (!ui.history.future.length) return;
+  const cur = JSON.stringify({ walls: state.walls, columns: state.columns, openings: state.openings, fixtures: state.fixtures });
+  ui.history.past.push(cur);
+  const next = ui.history.future.pop();
+  restoreFromSnapshot(next);
+  ui.selection = [];
+  render();
+  autosave();
+  toast('Redo');
+}
+
+// ============== COORD SYSTEM ==============
+// World (meters) ↔ Screen (px).
+// Canvas viewBox uses world coords centered on ui.view, with pixel zoom factor.
+function updateViewBox() {
+  const svg = $('#svg');
+  const rect = svg.getBoundingClientRect();
+  const worldW = rect.width / ui.view.zoom;
+  const worldH = rect.height / ui.view.zoom;
+  const minX = ui.view.x - worldW/2;
+  const minY = ui.view.y - worldH/2;
+  svg.setAttribute('viewBox', `${minX} ${minY} ${worldW} ${worldH}`);
+}
+
+function screenToWorld(clientX, clientY) {
+  const svg = $('#svg');
+  const rect = svg.getBoundingClientRect();
+  const x = (clientX - rect.left) / ui.view.zoom + (ui.view.x - rect.width/(2*ui.view.zoom));
+  const y = (clientY - rect.top)  / ui.view.zoom + (ui.view.y - rect.height/(2*ui.view.zoom));
+  return { x, y };
+}
+
+// World (meters) → stage-local px (for overlay positioning)
+function worldToStage(wx, wy) {
+  const svg = $('#svg');
+  const stage = $('#we-stage');
+  const s = svg.getBoundingClientRect();
+  const st = stage.getBoundingClientRect();
+  const worldW = s.width / ui.view.zoom;
+  const worldH = s.height / ui.view.zoom;
+  const minX = ui.view.x - worldW/2;
+  const minY = ui.view.y - worldH/2;
+  const px = (wx - minX) * ui.view.zoom + (s.left - st.left);
+  const py = (wy - minY) * ui.view.zoom + (s.top - st.top);
+  return { x: px, y: py };
+}
+
+// ============== SNAP ==============
+function applySnap(pt) {
+  const grid = state.scale.gridStep;
+  const threshold = 0.08 / ui.view.zoom * 50; // scale with zoom
+  let best = null;
+
+  // Vertex endpoint snap
+  const vertices = [];
+  for (const w of state.walls) { vertices.push({ x: w.start[0], y: w.start[1], kind: 'vertex' }); vertices.push({ x: w.end[0], y: w.end[1], kind: 'vertex' }); }
+  for (const v of vertices) {
+    const d = Math.hypot(v.x - pt.x, v.y - pt.y);
+    if (d < threshold && (!best || d < best.d)) best = { ...v, d };
+  }
+  if (best) return { x: best.x, y: best.y, type: 'vertex' };
+
+  // Grid snap
+  const gx = Math.round(pt.x / grid) * grid;
+  const gy = Math.round(pt.y / grid) * grid;
+  if (Math.abs(gx - pt.x) < threshold && Math.abs(gy - pt.y) < threshold) {
+    return { x: gx, y: gy, type: 'grid' };
+  }
+
+  return { x: pt.x, y: pt.y, type: null };
+}
+
+// ============== TOOL MANAGEMENT ==============
+function setTool(tool) {
+  ui.tool = tool;
+  ui.drafting = null;
+  ui.selection = [];
+  $$('.we-tool').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
+  $('#st-tool').textContent = 'Tool: ' + tool.charAt(0).toUpperCase() + tool.slice(1);
+  const wrap = $('#svg-wrap');
+  wrap.classList.toggle('select', tool === 'select');
+  render();
+  renderProperties();
+}
+
+// ============== RENDERING ==============
+const svgNS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs) {
+  const n = document.createElementNS(svgNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  return n;
+}
+
+function render() {
+  renderGrid();
+  try { detectRooms(); } catch {}
+  renderRooms();
+  renderWalls();
+  renderOpenings();
+  renderColumns();
+  renderFixtures();
+  renderFurniture();
+  renderFires();
+  renderAutoDims();
+  renderPreview();
+  renderSelection();
+  renderSnap();
+  renderCounts();
+  // Keep floating ctx menu anchored to selection on pan/zoom
+  if (ui.selection.length === 1 && window.EditorPanels) {
+    try { renderCtxMenu(buildCtxFromState()); } catch {}
+  }
+  // Keep PIP in sync (if visible)
+  if (ui.pipVisible) { try { renderPIP(); } catch {} }
+  // If 3D is active, re-extrude on state changes
+  if (ui.viewMode === '3d' && three3d.initialized) { try { update3D(); } catch {} }
+  // Zoom readout (bottom bar)
+  const zv = $('#st-zoom');
+  if (zv) zv.textContent = Math.round(ui.view.zoom * 2.5) + '%';
+}
+
+function renderGrid() {
+  const g = $('#g-grid');
+  g.innerHTML = '';
+  const svg = $('#svg');
+  const vb = svg.viewBox.baseVal;
+  let major = state.scale.gridStep * 4;
+  let minor = state.scale.gridStep;
+
+  // Adaptive — scale grid with zoom so lines stay visible but not dense
+  const zoom = ui.view.zoom;
+  const minorPx = minor * zoom;
+  const majorPx = major * zoom;
+  // If minor is < 10px, skip minor lines
+  const showMinor = minorPx > 10;
+  // If major is < 24px, increase major step by ×5
+  let majorMul = 1;
+  if (majorPx < 24) majorMul = 5;
+  if (majorPx < 6) majorMul = 25;
+  major = major * majorMul;
+
+  const x0 = Math.floor(vb.x / major) * major - major;
+  const x1 = Math.ceil((vb.x + vb.width) / major) * major + major;
+  const y0 = Math.floor(vb.y / major) * major - major;
+  const y1 = Math.ceil((vb.y + vb.height) / major) * major + major;
+
+  // Minor
+  if (showMinor) {
+    for (let x = x0; x <= x1; x += minor) {
+      if (Math.abs(x % major) > 0.001) {
+        g.appendChild(el('line', { x1: x, y1: y0, x2: x, y2: y1, class: 'we-grid-minor' }));
+      }
+    }
+    for (let y = y0; y <= y1; y += minor) {
+      if (Math.abs(y % major) > 0.001) {
+        g.appendChild(el('line', { x1: x0, y1: y, x2: x1, y2: y, class: 'we-grid-minor' }));
+      }
+    }
+  }
+  // Major
+  for (let x = x0; x <= x1; x += major) {
+    g.appendChild(el('line', { x1: x, y1: y0, x2: x, y2: y1, class: 'we-grid-major' }));
+  }
+  for (let y = y0; y <= y1; y += major) {
+    g.appendChild(el('line', { x1: x0, y1: y, x2: x1, y2: y, class: 'we-grid-major' }));
+  }
+  // Axes
+  g.appendChild(el('line', { x1: x0, y1: 0, x2: x1, y2: 0, class: 'we-grid-axis' }));
+  g.appendChild(el('line', { x1: 0, y1: y0, x2: 0, y2: y1, class: 'we-grid-axis' }));
+}
+
+function renderWalls() {
+  const g = $('#g-walls');
+  g.innerHTML = '';
+  for (const w of state.walls) {
+    if (w.hidden) continue;
+    const poly = wallPolygon(w);
+    const pts = poly.map(p => `${p[0]},${p[1]}`).join(' ');
+    const sel = ui.selection.includes(w.id);
+    const classes = ['we-wall'];
+    if (sel) classes.push('sel');
+    if (w.locked) classes.push('locked');
+    const node = el('polygon', {
+      points: pts,
+      class: classes.join(' '),
+      'data-id': w.id,
+      opacity: w.locked ? 0.75 : 1
+    });
+    g.appendChild(node);
+  }
+}
+
+function wallPolygon(w) {
+  if (w.kind === 'arc' && w.apex) return wallArcPolygon(w);
+  const [x1, y1] = w.start;
+  const [x2, y2] = w.end;
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.hypot(dx, dy);
+  if (len === 0) return [[x1,y1],[x1,y1],[x1,y1],[x1,y1]];
+  const nx = -dy / len, ny = dx / len;
+  const t = w.thickness / 2;
+  return [
+    [x1 + nx*t, y1 + ny*t],
+    [x2 + nx*t, y2 + ny*t],
+    [x2 - nx*t, y2 - ny*t],
+    [x1 - nx*t, y1 - ny*t]
+  ];
+}
+
+// ---------- Arc wall math (3-point arc: start, end, apex) ----------
+// circleFrom3Pts — returns {cx, cy, r} or null (collinear).
+function circleFrom3Pts(p1, p2, p3) {
+  const ax = p1[0], ay = p1[1], bx = p2[0], by = p2[1], cx = p3[0], cy = p3[1];
+  const d = 2 * (ax*(by-cy) + bx*(cy-ay) + cx*(ay-by));
+  if (Math.abs(d) < 1e-9) return null;
+  const ux = ((ax*ax + ay*ay)*(by-cy) + (bx*bx + by*by)*(cy-ay) + (cx*cx + cy*cy)*(ay-by)) / d;
+  const uy = ((ax*ax + ay*ay)*(cx-bx) + (bx*bx + by*by)*(ax-cx) + (cx*cx + cy*cy)*(bx-ax)) / d;
+  return { cx: ux, cy: uy, r: Math.hypot(ax - ux, ay - uy) };
+}
+
+// Sample arc from start to end passing through apex. n segments → n+1 points.
+function sampleArc(start, end, apex, n = 32) {
+  const c = circleFrom3Pts(start, apex, end);
+  if (!c) return [start.slice(), end.slice()];
+  const a1 = Math.atan2(start[1] - c.cy, start[0] - c.cx);
+  const a2 = Math.atan2(apex[1]  - c.cy, apex[0]  - c.cx);
+  const a3 = Math.atan2(end[1]   - c.cy, end[0]   - c.cx);
+  const normalize = (da) => {
+    while (da > Math.PI) da -= 2 * Math.PI;
+    while (da < -Math.PI) da += 2 * Math.PI;
+    return da;
+  };
+  const d12 = normalize(a2 - a1);
+  const d13 = normalize(a3 - a1);
+  let sweep;
+  if (Math.sign(d12) === Math.sign(d13) && Math.abs(d13) > Math.abs(d12)) {
+    sweep = d13;
+  } else {
+    sweep = d13 > 0 ? d13 - 2 * Math.PI : d13 + 2 * Math.PI;
+  }
+  const pts = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const a = a1 + t * sweep;
+    pts.push([c.cx + c.r * Math.cos(a), c.cy + c.r * Math.sin(a)]);
+  }
+  return pts;
+}
+
+// Offset arc samples by ±thickness/2 → closed polygon (right side + reversed left side).
+function wallArcPolygon(w) {
+  const samples = sampleArc(w.start, w.end, w.apex, 32);
+  const t = (w.thickness || 0.12) / 2;
+  const right = [], left = [];
+  for (let i = 0; i < samples.length; i++) {
+    const prev = samples[Math.max(0, i - 1)];
+    const next = samples[Math.min(samples.length - 1, i + 1)];
+    const dx = next[0] - prev[0], dy = next[1] - prev[1];
+    const L = Math.hypot(dx, dy) || 1;
+    const nx = -dy / L, ny = dx / L;
+    right.push([samples[i][0] + nx * t, samples[i][1] + ny * t]);
+    left.push([samples[i][0]  - nx * t, samples[i][1]  - ny * t]);
+  }
+  return right.concat(left.reverse());
+}
+
+// Build SVG Arc path "M x1 y1 A rx ry 0 largeArc sweep x2 y2" for an arc wall — used
+// for dashed preview and dimension pinning. Returns "" if collinear.
+function arcPathD(start, end, apex) {
+  const c = circleFrom3Pts(start, apex, end);
+  if (!c) return `M ${start[0]} ${start[1]} L ${end[0]} ${end[1]}`;
+  const a1 = Math.atan2(start[1] - c.cy, start[0] - c.cx);
+  const a3 = Math.atan2(end[1]   - c.cy, end[0]   - c.cx);
+  const a2 = Math.atan2(apex[1]  - c.cy, apex[0]  - c.cx);
+  // sweep flag: 1 if going ccw from a1 to a3 passes apex
+  const norm = (da) => { while (da > Math.PI) da -= 2*Math.PI; while (da < -Math.PI) da += 2*Math.PI; return da; };
+  const d12 = norm(a2 - a1), d13 = norm(a3 - a1);
+  const shortContainsApex = Math.sign(d12) === Math.sign(d13) && Math.abs(d13) > Math.abs(d12);
+  const sweep = shortContainsApex ? (d13 > 0 ? 1 : 0) : (d13 > 0 ? 0 : 1);
+  const largeArc = shortContainsApex ? 0 : 1;
+  return `M ${start[0]} ${start[1]} A ${c.r} ${c.r} 0 ${largeArc} ${sweep} ${end[0]} ${end[1]}`;
+}
+
+// Arc length (along centerline) for display.
+function arcLength(start, end, apex) {
+  const c = circleFrom3Pts(start, apex, end);
+  if (!c) return Math.hypot(end[0]-start[0], end[1]-start[1]);
+  const a1 = Math.atan2(start[1] - c.cy, start[0] - c.cx);
+  const a2 = Math.atan2(apex[1]  - c.cy, apex[0]  - c.cx);
+  const a3 = Math.atan2(end[1]   - c.cy, end[0]   - c.cx);
+  const norm = (da) => { while (da > Math.PI) da -= 2*Math.PI; while (da < -Math.PI) da += 2*Math.PI; return da; };
+  const d12 = norm(a2 - a1), d13 = norm(a3 - a1);
+  const sweep = (Math.sign(d12) === Math.sign(d13) && Math.abs(d13) > Math.abs(d12))
+    ? d13
+    : (d13 > 0 ? d13 - 2*Math.PI : d13 + 2*Math.PI);
+  return Math.abs(sweep) * c.r;
+}
+
+function renderColumns() {
+  const g = $('#g-columns');
+  g.innerHTML = '';
+  for (const c of state.columns) {
+    const sel = ui.selection.includes(c.id);
+    if (c.shape === 'square') {
+      const s = c.size;
+      const node = el('rect', {
+        x: c.position[0] - s/2, y: c.position[1] - s/2,
+        width: s, height: s,
+        class: 'we-column' + (sel ? ' sel' : ''),
+        transform: `rotate(${c.rotation || 0} ${c.position[0]} ${c.position[1]})`,
+        'data-id': c.id
+      });
+      g.appendChild(node);
+    } else {
+      const node = el('circle', {
+        cx: c.position[0], cy: c.position[1], r: c.size/2,
+        class: 'we-column' + (sel ? ' sel' : ''),
+        'data-id': c.id
+      });
+      g.appendChild(node);
+    }
+  }
+}
+
+function renderOpenings() {
+  const g = $('#g-openings');
+  g.innerHTML = '';
+  for (const o of state.openings) {
+    const wall = state.walls.find(w => w.id === o.wallId);
+    if (!wall) continue;
+    const [x1, y1] = wall.start;
+    const [x2, y2] = wall.end;
+    const dx = x2 - x1, dy = y2 - y1;
+    const len = Math.hypot(dx, dy);
+    if (len === 0) continue;
+    const ux = dx / len, uy = dy / len;
+    const nx = -uy, ny = ux;
+    const cx = x1 + ux * o.offset;
+    const cy = y1 + uy * o.offset;
+    const hw = o.width / 2;
+    const t = wall.thickness / 2;
+
+    // Cutout rectangle (covers the wall cross-section)
+    const pts = [
+      [cx - ux*hw + nx*t, cy - uy*hw + ny*t],
+      [cx + ux*hw + nx*t, cy + uy*hw + ny*t],
+      [cx + ux*hw - nx*t, cy + uy*hw - ny*t],
+      [cx - ux*hw - nx*t, cy - uy*hw - ny*t]
+    ];
+    const cutout = el('polygon', {
+      points: pts.map(p => p.join(',')).join(' '),
+      class: 'we-door-cutout'
+    });
+    g.appendChild(cutout);
+
+    const sel = ui.selection.includes(o.id);
+
+    if (o.type === 'door') {
+      // Door frame outline
+      const frame = el('polygon', {
+        points: pts.map(p => p.join(',')).join(' '),
+        class: 'we-door' + (sel ? ' sel' : ''),
+        'data-id': o.id
+      });
+      g.appendChild(frame);
+
+      if (o.subtype === 'single' || !o.subtype) {
+        // Single leaf — line along wall + swing arc
+        const sa = [cx - ux*hw, cy - uy*hw];
+        const ea = [cx + ux*hw, cy + uy*hw];
+        const leaf = el('line', {
+          x1: sa[0], y1: sa[1],
+          x2: sa[0] + nx*o.width, y2: sa[1] + ny*o.width,
+          class: 'we-door'
+        });
+        g.appendChild(leaf);
+        const arc = el('path', {
+          d: `M ${ea[0]} ${ea[1]} A ${o.width} ${o.width} 0 0 1 ${sa[0] + nx*o.width} ${sa[1] + ny*o.width}`,
+          class: 'we-door-swing'
+        });
+        g.appendChild(arc);
+      } else {
+        // Double leaf
+        const sa = [cx - ux*hw, cy - uy*hw];
+        const ma = [cx, cy];
+        const ea = [cx + ux*hw, cy + uy*hw];
+        const halfW = o.width / 2;
+        // Left leaf
+        const leafL = el('line', {
+          x1: sa[0], y1: sa[1],
+          x2: sa[0] + nx*halfW, y2: sa[1] + ny*halfW,
+          class: 'we-door'
+        });
+        g.appendChild(leafL);
+        g.appendChild(el('path', {
+          d: `M ${ma[0]} ${ma[1]} A ${halfW} ${halfW} 0 0 1 ${sa[0] + nx*halfW} ${sa[1] + ny*halfW}`,
+          class: 'we-door-swing'
+        }));
+        // Right leaf
+        const leafR = el('line', {
+          x1: ea[0], y1: ea[1],
+          x2: ea[0] + nx*halfW, y2: ea[1] + ny*halfW,
+          class: 'we-door'
+        });
+        g.appendChild(leafR);
+        g.appendChild(el('path', {
+          d: `M ${ma[0]} ${ma[1]} A ${halfW} ${halfW} 0 0 0 ${ea[0] + nx*halfW} ${ea[1] + ny*halfW}`,
+          class: 'we-door-swing'
+        }));
+      }
+    } else if (o.type === 'window') {
+      // Window — glass bar
+      const glass = el('polygon', {
+        points: pts.map(p => p.join(',')).join(' '),
+        class: 'we-window' + (sel ? ' sel' : ''),
+        'data-id': o.id
+      });
+      g.appendChild(glass);
+      // Center line (glass indicator)
+      const cx1 = cx - ux*hw + 0.02*nx;
+      const cy1 = cy - uy*hw + 0.02*ny;
+      const cx2 = cx + ux*hw - 0.02*nx;
+      const cy2 = cy + uy*hw - 0.02*ny;
+      g.appendChild(el('line', {
+        x1: cx1, y1: cy1, x2: cx2, y2: cy2,
+        class: 'we-door'
+      }));
+    }
+  }
+}
+
+function renderFixtures() {
+  const g = $('#g-fixtures');
+  g.innerHTML = '';
+  for (const f of state.fixtures) {
+    const sel = ui.selection.includes(f.id);
+    const lib = (LIB.jetfans.concat(LIB.exhausts)).find(x => x.id === f.model);
+    if (!lib) continue;
+
+    if (f.type === 'jet-fan' || f.type === 'jet-fan-rect' || f.type === 'jet-fan-round') {
+      const w = lib.w || lib.diameter || 0.5;
+      const d = lib.d || lib.diameter || 0.5;
+      if (lib.shape === 'round') {
+        g.appendChild(el('circle', {
+          cx: f.position[0], cy: f.position[1], r: d/2,
+          class: 'we-fan-jet' + (sel ? ' sel' : ''),
+          'data-id': f.id
+        }));
+      } else {
+        g.appendChild(el('rect', {
+          x: f.position[0] - w/2, y: f.position[1] - d/2,
+          width: w, height: d,
+          class: 'we-fan-jet' + (sel ? ' sel' : ''),
+          transform: `rotate(${f.rotation || 0} ${f.position[0]} ${f.position[1]})`,
+          'data-id': f.id
+        }));
+      }
+      // Thrust arrow
+      const len = 1.2;
+      const a = (f.rotation || 0) * Math.PI / 180;
+      const ax = Math.cos(a) * len;
+      const ay = Math.sin(a) * len;
+      g.appendChild(el('path', {
+        d: `M ${f.position[0]} ${f.position[1]} L ${f.position[0]+ax} ${f.position[1]+ay}`,
+        stroke: 'var(--ora)', 'stroke-width': 0.03, 'marker-end': 'url(#arrow-ora)'
+      }));
+      // head
+      g.appendChild(el('polygon', {
+        points: `${f.position[0]+ax},${f.position[1]+ay} ${f.position[0]+ax-0.1*Math.cos(a)-0.05*Math.sin(a)},${f.position[1]+ay-0.1*Math.sin(a)+0.05*Math.cos(a)} ${f.position[0]+ax-0.1*Math.cos(a)+0.05*Math.sin(a)},${f.position[1]+ay-0.1*Math.sin(a)-0.05*Math.cos(a)}`,
+        class: 'we-fan-jet-arrow'
+      }));
+    } else if (f.type === 'exhaust') {
+      const s = lib.size;
+      if (lib.shape === 'round') {
+        g.appendChild(el('circle', {
+          cx: f.position[0], cy: f.position[1], r: s/2,
+          class: 'we-fan-exhaust' + (sel ? ' sel' : ''),
+          'data-id': f.id
+        }));
+      } else {
+        g.appendChild(el('rect', {
+          x: f.position[0] - s/2, y: f.position[1] - s/2,
+          width: s, height: s,
+          class: 'we-fan-exhaust' + (sel ? ' sel' : ''),
+          'data-id': f.id
+        }));
+      }
+      // Inside: X pattern indicating exhaust
+      g.appendChild(el('line', {
+        x1: f.position[0]-s/3, y1: f.position[1]-s/3,
+        x2: f.position[0]+s/3, y2: f.position[1]+s/3,
+        stroke: 'var(--blue)', 'stroke-width': 0.02
+      }));
+      g.appendChild(el('line', {
+        x1: f.position[0]-s/3, y1: f.position[1]+s/3,
+        x2: f.position[0]+s/3, y2: f.position[1]-s/3,
+        stroke: 'var(--blue)', 'stroke-width': 0.02
+      }));
+    }
+  }
+}
+
+function renderRooms() {
+  const g = $('#g-rooms');
+  g.innerHTML = '';
+  if (ui.showRoomLabels === false) return;
+  const rooms = state.rooms || [];
+  const colorByType = {
+    generic: 'rgba(120,150,200,0.10)',
+    living: 'rgba(180,200,140,0.12)',
+    bedroom: 'rgba(200,170,220,0.12)',
+    kitchen: 'rgba(250,200,120,0.14)',
+    bathroom: 'rgba(130,200,220,0.14)',
+    corridor: 'rgba(200,200,200,0.10)',
+    stair: 'rgba(220,150,80,0.14)',
+    parking: 'rgba(160,160,160,0.12)',
+    tech: 'rgba(220,120,120,0.10)'
+  };
+  for (const r of rooms) {
+    if (!r.polygon || r.polygon.length < 3) continue;
+    const pts = r.polygon.map(p => p.join(',')).join(' ');
+    const poly = el('polygon', {
+      points: pts,
+      fill: colorByType[r.type] || colorByType.generic,
+      stroke: 'rgba(31,111,212,0.35)',
+      'stroke-width': 0.015,
+      'stroke-dasharray': '0.08 0.1',
+      class: 'we-room'
+    });
+    g.appendChild(poly);
+    // Label at centroid
+    if (r.labelVisible !== false) {
+      const [cx, cy] = r.centroid || [0, 0];
+      g.appendChild(el('text', {
+        x: cx, y: cy - 0.08,
+        'text-anchor': 'middle',
+        'font-size': 0.22,
+        'font-family': 'Plus Jakarta Sans, Noto Sans Georgian, sans-serif',
+        'font-weight': 700,
+        fill: 'var(--navy)',
+        opacity: 0.9
+      })).textContent = r.name || 'Unnamed';
+    }
+    if (r.areaVisible !== false) {
+      const [cx, cy] = r.centroid || [0, 0];
+      g.appendChild(el('text', {
+        x: cx, y: cy + 0.22,
+        'text-anchor': 'middle',
+        'font-size': 0.18,
+        'font-family': 'IBM Plex Mono, monospace',
+        'font-weight': 600,
+        fill: 'var(--text-2)'
+      })).textContent = (r.area || 0).toFixed(2) + ' მ²';
+    }
+  }
+}
+
+// ============== AUTO DIMENSIONS ==============
+function renderAutoDims() {
+  const g = $('#g-dims');
+  g.innerHTML = '';
+  if (!ui.showDims) return;
+  for (const w of state.walls) {
+    if (w.hidden) continue;
+    // Offset label above the wall center, perpendicular
+    const [x1, y1] = w.start;
+    const [x2, y2] = w.end;
+    const dx = x2 - x1, dy = y2 - y1;
+    const L = Math.hypot(dx, dy);
+    if (L < 0.1) continue;
+    const nx = -dy / L, ny = dx / L;
+    const off = (w.thickness || 0.12) / 2 + 0.15;
+    const mx = (x1 + x2) / 2 + nx * off;
+    const my = (y1 + y2) / 2 + ny * off;
+    const label = (w.kind === 'arc' && w.apex)
+      ? arcLength(w.start, w.end, w.apex).toFixed(2) + ' მ ⌒'
+      : L.toFixed(2) + ' მ';
+    const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    g.appendChild(el('text', {
+      x: mx, y: my,
+      'text-anchor': 'middle',
+      'font-size': 0.16,
+      'font-family': 'IBM Plex Mono, monospace',
+      'font-weight': 600,
+      fill: 'var(--blue)',
+      opacity: 0.85,
+      transform: `rotate(${angle} ${mx} ${my})`
+    })).textContent = label;
+  }
+}
+
+// ============== ROOM AUTO-DETECT ==============
+// Planar graph face enumeration: each closed inner face of the wall graph
+// becomes a room. Small tolerance on node merging (0.05 m).
+
+function detectRooms() {
+  const tol = 0.05;
+  // Only straight walls contribute to planar graph; arcs are treated as a
+  // single chord edge for MVP.
+  const segs = state.walls.filter(w => !w.hidden).map(w => [w.start, w.end]);
+  if (!segs.length) { state.rooms = []; return; }
+
+  // Merge endpoints within tol → nodes
+  const nodes = [];
+  const nodeOf = (p) => {
+    for (let i = 0; i < nodes.length; i++) {
+      if (Math.hypot(nodes[i][0] - p[0], nodes[i][1] - p[1]) < tol) return i;
+    }
+    nodes.push([p[0], p[1]]);
+    return nodes.length - 1;
+  };
+
+  // Half-edges: each segment → 2 directed half-edges
+  const he = [];
+  for (const [a, b] of segs) {
+    const ia = nodeOf(a), ib = nodeOf(b);
+    if (ia === ib) continue;
+    he.push({ from: ia, to: ib, next: -1, used: false });
+    he.push({ from: ib, to: ia, next: -1, used: false });
+  }
+
+  // For each node, sort outgoing half-edges by angle CCW
+  const outByNode = Array.from({ length: nodes.length }, () => []);
+  he.forEach((h, idx) => {
+    const a = nodes[h.from], b = nodes[h.to];
+    h.angle = Math.atan2(b[1] - a[1], b[0] - a[0]);
+    outByNode[h.from].push(idx);
+  });
+  outByNode.forEach(list => list.sort((i, j) => he[i].angle - he[j].angle));
+
+  // For each half-edge h (u→v): "next" is the half-edge at v with the largest
+  // angle strictly less than angle(v→u) (i.e., turn as-right-as-possible to
+  // enumerate each face CCW).
+  function reverseAngle(a) { return Math.atan2(Math.sin(a + Math.PI), Math.cos(a + Math.PI)); }
+  for (let i = 0; i < he.length; i++) {
+    const h = he[i];
+    const target = reverseAngle(h.angle);
+    const list = outByNode[h.to];
+    let chosen = -1;
+    let bestDelta = -Infinity;
+    for (const j of list) {
+      const g = he[j];
+      // We want the outgoing half-edge whose angle is just-less-than target
+      let delta = target - g.angle;
+      while (delta <= 0) delta += 2 * Math.PI;
+      while (delta > 2 * Math.PI) delta -= 2 * Math.PI;
+      if (delta > bestDelta && delta < 2 * Math.PI - 1e-9) { bestDelta = delta; chosen = j; }
+    }
+    h.next = chosen;
+  }
+
+  // Walk faces
+  const faces = [];
+  for (let i = 0; i < he.length; i++) {
+    if (he[i].used || he[i].next < 0) continue;
+    const poly = [];
+    let cur = i, guard = 0;
+    while (!he[cur].used && guard++ < 10000) {
+      he[cur].used = true;
+      poly.push(nodes[he[cur].from]);
+      cur = he[cur].next;
+      if (cur < 0) break;
+      if (cur === i) break;
+    }
+    if (poly.length >= 3) faces.push(poly);
+  }
+
+  // Compute signed area — outer face has negative area (CCW convention).
+  // Drop largest-area face (outer boundary).
+  const faceInfo = faces.map(poly => {
+    let a = 0;
+    for (let i = 0; i < poly.length; i++) {
+      const [x1, y1] = poly[i], [x2, y2] = poly[(i + 1) % poly.length];
+      a += x1 * y2 - x2 * y1;
+    }
+    return { poly, signedArea: a / 2 };
+  });
+  // Outer face = signedArea < 0 (and/or the largest |area|); skip those.
+  const inner = faceInfo.filter(f => f.signedArea > 0.1);
+
+  // Match existing rooms by centroid proximity (preserve name/type)
+  const prev = state.rooms || [];
+  const newRooms = [];
+  let unnamedCount = 0;
+  for (const f of inner) {
+    const cx = f.poly.reduce((s, p) => s + p[0], 0) / f.poly.length;
+    const cy = f.poly.reduce((s, p) => s + p[1], 0) / f.poly.length;
+    const match = prev.find(r => r.centroid && Math.hypot(r.centroid[0] - cx, r.centroid[1] - cy) < 1.5);
+    newRooms.push({
+      id: match?.id || uid(),
+      polygon: f.poly.map(p => [p[0], p[1]]),
+      centroid: [cx, cy],
+      area: f.signedArea,
+      perim: (() => {
+        let p = 0;
+        for (let i = 0; i < f.poly.length; i++) {
+          const [x1, y1] = f.poly[i], [x2, y2] = f.poly[(i + 1) % f.poly.length];
+          p += Math.hypot(x2 - x1, y2 - y1);
+        }
+        return p;
+      })(),
+      volume: f.signedArea * (state.floor.ceilingHeight || 2.8),
+      name: match?.name || `Unnamed ${++unnamedCount}`,
+      type: match?.type || 'generic',
+      labelVisible: match?.labelVisible !== false,
+      areaVisible: match?.areaVisible !== false
+    });
+  }
+  state.rooms = newRooms;
+}
+
+function renderPreview() {
+  const g = $('#g-preview');
+  g.innerHTML = '';
+  if (!ui.drafting) return;
+  if (ui.drafting.type !== 'wall' || !ui.drafting.vertices.length) return;
+
+  const thickness = LIB.walls.find(x => x.id === ui.selectedLib.walls).thickness;
+  const cursor = ui.snapped || ui.cursor;
+  const cpt = [cursor.x, cursor.y];
+
+  if (ui.drafting.mode === 'arc') {
+    // Phase 1: one point → rubber-band chord to cursor
+    if (ui.drafting.vertices.length === 1) {
+      const start = ui.drafting.vertices[0];
+      g.appendChild(el('line', {
+        x1: start[0], y1: start[1], x2: cpt[0], y2: cpt[1],
+        class: 'we-wall-preview', 'stroke-dasharray': '0.08 0.06',
+        stroke: 'var(--blue)', 'stroke-width': 0.02, fill: 'none'
+      }));
+      const d = Math.hypot(cpt[0]-start[0], cpt[1]-start[1]);
+      g.appendChild(el('text', {
+        x: (start[0] + cpt[0]) / 2 + 0.15,
+        y: (start[1] + cpt[1]) / 2 - 0.1,
+        class: 'we-dim-label'
+      })).textContent = d.toFixed(2) + ' მ chord';
+    }
+    // Phase 2: start + end set → preview arc with cursor as apex
+    else if (ui.drafting.vertices.length === 2) {
+      const [start, end] = ui.drafting.vertices;
+      const fake = { kind: 'arc', start, end, apex: cpt, thickness };
+      const poly = wallPolygon(fake);
+      g.appendChild(el('polygon', {
+        points: poly.map(p => p.join(',')).join(' '),
+        class: 'we-wall-preview'
+      }));
+      // centerline path (dashed) + chord marker
+      const pathD = arcPathD(start, end, cpt);
+      g.appendChild(el('path', {
+        d: pathD, fill: 'none', stroke: 'var(--blue)',
+        'stroke-width': 0.02, 'stroke-dasharray': '0.05 0.04'
+      }));
+      // chord line (faint)
+      g.appendChild(el('line', {
+        x1: start[0], y1: start[1], x2: end[0], y2: end[1],
+        stroke: 'var(--text-3)', 'stroke-width': 0.015, 'stroke-dasharray': '0.04 0.05', fill: 'none'
+      }));
+      // radius/length label
+      const aLen = arcLength(start, end, cpt);
+      g.appendChild(el('text', {
+        x: cpt[0] + 0.15, y: cpt[1] - 0.1,
+        class: 'we-dim-label'
+      })).textContent = aLen.toFixed(2) + ' მ arc';
+      // mark the 3 points
+      for (const p of [start, end, cpt]) {
+        g.appendChild(el('circle', {
+          cx: p[0], cy: p[1], r: 0.06,
+          fill: 'var(--blue)', stroke: '#fff', 'stroke-width': 0.015
+        }));
+      }
+    }
+    return;
+  }
+
+  // Default: line/polyline preview
+  // Draw committed segments
+  for (let i = 0; i < ui.drafting.vertices.length - 1; i++) {
+    const fake = { start: ui.drafting.vertices[i], end: ui.drafting.vertices[i+1], thickness };
+    const poly = wallPolygon(fake);
+    g.appendChild(el('polygon', {
+      points: poly.map(p => p.join(',')).join(' '),
+      class: 'we-wall-preview'
+    }));
+  }
+  // Segment from last to cursor
+  const last = ui.drafting.vertices[ui.drafting.vertices.length - 1];
+  const fake = { start: last, end: cpt, thickness };
+  const poly = wallPolygon(fake);
+  g.appendChild(el('polygon', {
+    points: poly.map(p => p.join(',')).join(' '),
+    class: 'we-wall-preview'
+  }));
+  // Length label
+  const dx = cpt[0] - last[0], dy = cpt[1] - last[1];
+  const len = Math.hypot(dx, dy);
+  g.appendChild(el('text', {
+    x: (last[0] + cpt[0]) / 2 + 0.15,
+    y: (last[1] + cpt[1]) / 2 - 0.1,
+    class: 'we-dim-label'
+  })).textContent = len.toFixed(2) + ' მ';
+}
+
+function renderSelection() {
+  const g = $('#g-selection');
+  g.innerHTML = '';
+  // future: bounding box for selected elements
+}
+
+function renderSnap() {
+  const g = $('#g-snap');
+  g.innerHTML = '';
+  if (!ui.snapped || !ui.snapped.type) return;
+  g.appendChild(el('circle', {
+    cx: ui.snapped.x, cy: ui.snapped.y, r: 0.12,
+    class: 'we-snap-pt'
+  }));
+}
+
+function renderCounts() {
+  $('#st-counts').textContent =
+    `${state.walls.length} walls · ${state.columns.length} cols · ${state.openings.filter(o=>o.type==='door').length} doors · ${state.openings.filter(o=>o.type==='window').length} windows · ${state.fixtures.length} fixtures`;
+}
+
+// ============== CONTEXT PANEL (Coohom-parity) ==============
+// Delegates all rendering to EditorPanels (portable in /calc/_editor-panels.js).
+// This function builds a ctx object from current tool + selection, and a
+// handlers object that routes field/action events back to state mutations.
+
+const TOOL_TO_LIB_KEY = { wall: 'walls', door: 'doors', window: 'windows', column: 'columns', jetfan: 'jetfans', exhaust: 'exhausts', furniture: 'furniture' };
+const TOOL_LIB_KIND = { wall: 'wall', door: 'door', window: 'window', column: 'column', jetfan: 'jetfan', exhaust: 'exhaust', furniture: 'furniture' };
+
+function wallLength(w) { return Math.hypot(w.end[0]-w.start[0], w.end[1]-w.start[1]); }
+
+function buildLibForTool(tool) {
+  const key = TOOL_TO_LIB_KEY[tool];
+  if (!key) return null;
+  const kind = TOOL_LIB_KIND[tool];
+  return (LIB[key] || []).map(it => ({
+    key: it.id,
+    name: it.name,
+    meta: it.meta,
+    previewSvg: EditorPanels.makePreviewSvg(kind, it)
+  }));
+}
+
+function computePanelHead(ctx) {
+  const T = ctx.type;
+  if (T === 'empty') return { icon: 'floor', title: 'იატაკი', sub: '1F' };
+  if (T.startsWith('tool:')) {
+    const t = T.slice(5);
+    const map = {
+      wall: { icon: 'wall', title: 'კედლის ხატვა', sub: 'W' },
+      door: { icon: 'door', title: 'კარის განთავსება', sub: 'D' },
+      window: { icon: 'window', title: 'ფანჯრის განთავსება', sub: 'F' },
+      column: { icon: 'column', title: 'კოლონის განთავსება', sub: 'C' },
+      jetfan: { icon: 'fan', title: 'ჯეტ ფანის განთავსება', sub: 'J' },
+      exhaust: { icon: 'exhaust', title: 'გამწოვის განთავსება', sub: 'E' },
+      furniture: { icon: 'settings', title: '🛏 ავეჯი', sub: 'M' },
+      fire: { icon: 'fire', title: '🔥 ცეცხლის წყარო', sub: 'X' }
+    };
+    return map[t] || { icon: 'settings', title: 'ინსტრუმენტი', sub: t };
+  }
+  if (T.startsWith('sel:')) {
+    const t = T.slice(4);
+    const map = {
+      wall: { icon: 'wall', title: 'კედელი', sub: 'SEL' },
+      door: { icon: 'door', title: 'კარი', sub: 'SEL' },
+      window: { icon: 'window', title: 'ფანჯარა', sub: 'SEL' },
+      column: { icon: 'column', title: 'კოლონა', sub: 'SEL' },
+      jetfan: { icon: 'fan', title: 'ჯეტ ფანი', sub: 'SEL' },
+      exhaust: { icon: 'exhaust', title: 'გამწოვი', sub: 'SEL' },
+      room: { icon: 'room', title: 'ოთახი', sub: 'SEL' },
+      furniture: { icon: 'settings', title: '🛏 ავეჯი', sub: 'SEL' },
+      fire: { icon: 'fire', title: '🔥 ცეცხლი', sub: 'SEL' },
+      multi: { icon: 'duplicate', title: 'მრავალი ელემენტი', sub: 'MULTI' }
+    };
+    return map[t] || { icon: 'settings', title: 'მონიშნული', sub: t };
+  }
+  return { icon: 'floor', title: 'გეგმა', sub: '' };
+}
+
+function setPanelHead(head) {
+  const ico = $('#ctx-panel-icon');
+  const titleEl = $('#ctx-panel-title');
+  const subEl = $('#ctx-panel-sub');
+  if (ico) {
+    const ip = EditorPanels.icons[head.icon] || EditorPanels.icons.settings;
+    ico.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ip}</svg>`;
+  }
+  if (titleEl) titleEl.textContent = head.title;
+  if (subEl) subEl.textContent = head.sub || '';
+}
+
+// Map current selection → ctx.type + data pulled from state
+function buildCtxFromState() {
+  // Active selection takes priority
+  if (ui.selection.length > 1) {
+    return { type: 'sel:multi', data: { count: ui.selection.length } };
+  }
+  if (ui.selection.length === 1) {
+    const id = ui.selection[0];
+    const w = state.walls.find(x => x.id === id);
+    if (w) {
+      const len = wallLength(w);
+      return { type: 'sel:wall', data: {
+        id: w.id,
+        thk: Math.round(w.thickness * 1000),
+        h: w.height || state.floor.height,
+        type: w.type || 'partition',
+        material: w.material || 'brick',
+        length: len,
+        area: len * (w.height || state.floor.height),
+        locked: !!w.locked,
+        hidden: !!w.hidden
+      }};
+    }
+    const c = state.columns.find(x => x.id === id);
+    if (c) {
+      return { type: 'sel:column', data: {
+        id: c.id,
+        shape: c.shape === 'square' ? 'rect' : (c.shape || 'rect'),
+        w: Math.round((c.size || 0.4) * 1000),
+        depth: Math.round((c.depth || c.size || 0.4) * 1000),
+        h: c.height || state.floor.ceilingHeight,
+        rot: c.rotation || 0,
+        material: c.material || 'concrete'
+      }};
+    }
+    const o = state.openings.find(x => x.id === id);
+    if (o) {
+      const kind = o.type === 'door' ? 'sel:door' : 'sel:window';
+      return { type: kind, data: {
+        id: o.id,
+        type: o.subtype || (o.type === 'door' ? 'single' : 'casement'),
+        w: Math.round((o.width || 0.9) * 1000),
+        h: Math.round((o.height || 2.1) * 1000),
+        sill: Math.round((o.sillHeight || 0.9) * 1000),
+        swing: o.swing || 'inner-left',
+        fireRating: o.fireRating || 'none',
+        frame: o.frame || 'pvc-white',
+        pos: o.offset || 0
+      }};
+    }
+    const fire = state.fires.find(x => x.id === id);
+    if (fire) {
+      return { type: 'sel:fire', data: {
+        id: fire.id,
+        hrrMax: fire.hrrMax,
+        radius: fire.radius,
+        growth: fire.growth,
+        preset: fire.preset
+      }};
+    }
+    const fur = (state.furniture || []).find(x => x.id === id);
+    if (fur) {
+      return { type: 'sel:furniture', data: {
+        id: fur.id, model: fur.model, kind: fur.kind, name: fur.name,
+        w: fur.w, d: fur.d, rotation: fur.rotation || 0, color: fur.color
+      }};
+    }
+    const f = state.fixtures.find(x => x.id === id);
+    if (f) {
+      const kind = f.type && f.type.includes('jet') ? 'sel:jetfan' : 'sel:exhaust';
+      if (kind === 'sel:jetfan') {
+        return { type: 'sel:jetfan', data: {
+          id: f.id, model: f.model,
+          shape: f.shape || 'rect',
+          w: Math.round((f.w || 0.5) * 1000),
+          h: Math.round((f.d || 0.5) * 1000),
+          dia: Math.round((f.diameter || 0.5) * 1000),
+          thrust: f.params?.thrust_N || 50,
+          kw: f.params?.kw || 1.1,
+          flow: f.params?.flow_m3h || 3000,
+          zh: f.zh || 2.5,
+          rot: f.rotation || 0,
+          reversible: !!f.reversible
+        }};
+      }
+      return { type: 'sel:exhaust', data: {
+        id: f.id,
+        type: f.subtype || 'grille',
+        w: Math.round((f.size || 0.4) * 1000),
+        h: Math.round((f.size || 0.4) * 1000),
+        flow: f.params?.flow_m3h || 2000
+      }};
+    }
+    // Fallback: selection stale
+    return { type: 'empty' };
+  }
+
+  // Active tool
+  if (ui.tool && ui.tool !== 'select' && ui.tool !== 'pan' && ui.tool !== 'room') {
+    const t = 'tool:' + ui.tool;
+    const libKey = TOOL_TO_LIB_KEY[ui.tool];
+    const libSel = libKey ? ui.selectedLib[libKey] : null;
+    const toolDefaults = ui.toolDefaults && ui.toolDefaults[ui.tool] || {};
+    const lib = libKey ? buildLibForTool(ui.tool) : null;
+    return { type: t, data: toolDefaults, library: lib, libSel };
+  }
+
+  // Default: floor panel
+  const area = state.rooms.reduce((s, r) => s + (r.area || 0), 0);
+  return { type: 'empty', data: {
+    name: state.meta.name,
+    roomH: state.floor.ceilingHeight,
+    slabThk: Math.round((state.floor.slabThickness || 0.2) * 1000),
+    area, perim: 0,
+    wallCount: state.walls.length,
+    roomCount: state.rooms.length,
+    showGrid: ui.showGrid !== false,
+    showDims: !!ui.showDims,
+    showRoomLabels: ui.showRoomLabels !== false,
+    showFixtures: !!ui.showFixtures,
+    gridStep: state.scale.gridStep,
+    planOpacity: 100,
+    floorCount: 1,
+    floorLabel: '1F'
+  }};
+}
+
+// ── handlers: field changes from the panel → state ──
+function onCtxField(key, value) {
+  const ctx = buildCtxFromState();
+  const T = ctx.type;
+
+  if (T === 'empty') {
+    if (key === 'name') { state.meta.name = value; $('#inp-name').value = value; }
+    else if (key === 'roomH') { state.floor.ceilingHeight = value; $('#inp-ceiling-h').value = value; }
+    else if (key === 'slabThk') { state.floor.slabThickness = value / 1000; }
+    else if (key === 'gridStep') { state.scale.gridStep = value; $('#inp-grid').value = value; render(); }
+    else if (key === 'showGrid') { ui.showGrid = value; render(); }
+    else if (key === 'showDims') { ui.showDims = value; render(); }
+    else if (key === 'showRoomLabels') { ui.showRoomLabels = value; render(); }
+    else if (key === 'showFixtures') { ui.showFixtures = value; render(); }
+    autosave();
+    return;
+  }
+
+  if (T.startsWith('tool:')) {
+    ui.toolDefaults = ui.toolDefaults || {};
+    const tool = T.slice(5);
+    ui.toolDefaults[tool] = { ...(ui.toolDefaults[tool] || {}), [key]: value };
+    // No re-render needed; values get picked up on next placement
+    return;
+  }
+
+  if (T.startsWith('sel:')) {
+    const id = ui.selection[0];
+    const w = state.walls.find(x => x.id === id);
+    const c = state.columns.find(x => x.id === id);
+    const o = state.openings.find(x => x.id === id);
+    const fi = state.fires.find(x => x.id === id);
+    const fur = (state.furniture || []).find(x => x.id === id);
+    const f = state.fixtures.find(x => x.id === id);
+    if (w) applyWallField(w, key, value);
+    else if (c) applyColumnField(c, key, value);
+    else if (o) applyOpeningField(o, key, value);
+    else if (fi) applyFireField(fi, key, value);
+    else if (fur) applyFurnitureField(fur, key, value);
+    else if (f) applyFixtureField(f, key, value);
+    render();
+    autosave();
+    return;
+  }
+}
+
+function applyFurnitureField(fur, k, v) {
+  if (k === 'name') fur.name = v;
+  else if (k === 'w') fur.w = v;
+  else if (k === 'd') fur.d = v;
+  else if (k === 'rotation') fur.rotation = v;
+  else if (k === 'color') fur.color = v;
+}
+
+function applyFireField(fi, k, v) {
+  if (k === 'hrrMax') fi.hrrMax = v;
+  else if (k === 'radius') fi.radius = v;
+  else if (k === 'growth') fi.growth = v;
+  else if (k === 'preset') fi.preset = v;
+}
+
+function applyWallField(w, k, v) {
+  if (k === 'thk') w.thickness = v / 1000;
+  else if (k === 'h') w.height = v;
+  else if (k === 'type') w.type = v;
+  else if (k === 'material') w.material = v;
+}
+function applyColumnField(c, k, v) {
+  if (k === 'shape') c.shape = v === 'rect' ? 'square' : v;
+  else if (k === 'w') c.size = v / 1000;
+  else if (k === 'depth') c.depth = v / 1000;
+  else if (k === 'h') c.height = v;
+  else if (k === 'rot') c.rotation = v;
+  else if (k === 'material') c.material = v;
+}
+function applyOpeningField(o, k, v) {
+  if (k === 'type') o.subtype = v;
+  else if (k === 'w') o.width = v / 1000;
+  else if (k === 'h') o.height = v / 1000;
+  else if (k === 'sill') o.sillHeight = v / 1000;
+  else if (k === 'swing') o.swing = v;
+  else if (k === 'fireRating') o.fireRating = v;
+  else if (k === 'frame') o.frame = v;
+  else if (k === 'pos') o.offset = v;
+}
+function applyFixtureField(f, k, v) {
+  if (k === 'shape') f.shape = v;
+  else if (k === 'w') f.w = v / 1000;
+  else if (k === 'h') { f.d = v / 1000; f.size = v / 1000; }
+  else if (k === 'dia') f.diameter = v / 1000;
+  else if (k === 'thrust') { f.params = f.params || {}; f.params.thrust_N = v; }
+  else if (k === 'kw') { f.params = f.params || {}; f.params.kw = v; }
+  else if (k === 'flow') { f.params = f.params || {}; f.params.flow_m3h = v; }
+  else if (k === 'zh') f.zh = v;
+  else if (k === 'rot') f.rotation = v;
+  else if (k === 'reversible') f.reversible = v;
+  else if (k === 'type') f.subtype = v;
+}
+
+function onCtxAction(name) {
+  if (name === 'delete') { deleteSelection(); return; }
+  if (name === 'duplicate')       { duplicateSelection(); return; }
+  if (name === 'lock-toggle')     { toggleAttr('locked'); return; }
+  if (name === 'visibility-toggle'){ toggleAttr('hidden'); return; }
+  if (name === 'rotate')          { rotateSelection(90); return; }
+  if (name === 'flip')            { flipSelection(); return; }
+  if (name === 'reverse')         { reverseSelection(); return; }
+  if (name === 'split')           { splitWallSelection(); return; }
+  if (name === 'align' || name === 'align-left' || name === 'align-right' ||
+      name === 'distribute-h' || name === 'group') {
+    return alignDistribute(name);
+  }
+  if (name.startsWith('floor:')) {
+    toast('multi-floor floor ops — Task 030'); return;
+  }
+}
+
+// ---------- action implementations ----------
+function findSelectedRefs() {
+  const refs = [];
+  for (const id of ui.selection) {
+    const w = state.walls.find(x => x.id === id);   if (w) { refs.push({ kind: 'wall', item: w }); continue; }
+    const c = state.columns.find(x => x.id === id); if (c) { refs.push({ kind: 'column', item: c }); continue; }
+    const o = state.openings.find(x => x.id === id); if (o) { refs.push({ kind: 'opening', item: o }); continue; }
+    const fi = state.fires.find(x => x.id === id);  if (fi) { refs.push({ kind: 'fire', item: fi }); continue; }
+    const fur = (state.furniture || []).find(x => x.id === id); if (fur) { refs.push({ kind: 'furniture', item: fur }); continue; }
+    const f = state.fixtures.find(x => x.id === id); if (f) { refs.push({ kind: 'fixture', item: f }); continue; }
+  }
+  return refs;
+}
+
+function duplicateSelection() {
+  const refs = findSelectedRefs();
+  if (!refs.length) return;
+  snapshot();
+  const OFFSET = 0.5;
+  const newIds = [];
+  for (const { kind, item } of refs) {
+    const copy = JSON.parse(JSON.stringify(item));
+    copy.id = uid();
+    if (copy.position) { copy.position = [copy.position[0] + OFFSET, copy.position[1] + OFFSET]; }
+    if (copy.start && copy.end) {
+      copy.start = [copy.start[0] + OFFSET, copy.start[1] + OFFSET];
+      copy.end   = [copy.end[0]   + OFFSET, copy.end[1]   + OFFSET];
+      if (copy.apex) copy.apex = [copy.apex[0] + OFFSET, copy.apex[1] + OFFSET];
+    }
+    if (kind === 'opening') {
+      // Openings are attached to a wall — duplicating makes little sense without target wall
+      copy.offset = Math.max(0, (copy.offset || 0) + 0.2);
+    }
+    if (kind === 'wall') state.walls.push(copy);
+    else if (kind === 'column') state.columns.push(copy);
+    else if (kind === 'opening') state.openings.push(copy);
+    else if (kind === 'fixture') state.fixtures.push(copy);
+    else if (kind === 'fire') state.fires.push(copy);
+    else if (kind === 'furniture') state.furniture.push(copy);
+    newIds.push(copy.id);
+  }
+  ui.selection = newIds;
+  render(); renderCtxPanel(); autosave();
+  toast(`დუბლირდა ${newIds.length} ელემენტი`);
+}
+
+function toggleAttr(attr) {
+  const refs = findSelectedRefs();
+  if (!refs.length) return;
+  snapshot();
+  let on = 0, off = 0;
+  for (const { item } of refs) {
+    item[attr] = !item[attr];
+    if (item[attr]) on++; else off++;
+  }
+  render(); renderCtxPanel(); autosave();
+  toast(`${attr}: +${on} / -${off}`);
+}
+
+function rotateSelection(deg) {
+  const refs = findSelectedRefs();
+  if (!refs.length) return;
+  snapshot();
+  for (const { kind, item } of refs) {
+    if (kind === 'column' || kind === 'fixture' || kind === 'furniture' || kind === 'fire') {
+      item.rotation = ((item.rotation || 0) + deg) % 360;
+    }
+  }
+  render(); renderCtxPanel(); autosave();
+}
+
+function flipSelection() {
+  const refs = findSelectedRefs();
+  if (!refs.length) return;
+  snapshot();
+  for (const { kind, item } of refs) {
+    if (kind === 'wall') {
+      [item.start, item.end] = [item.end, item.start];
+    } else if (kind === 'opening') {
+      // Toggle swing: invert first token "inner"/"outer"
+      const sw = item.swing || 'inner-left';
+      const [side, dir] = sw.split('-');
+      item.swing = (side === 'inner' ? 'outer' : 'inner') + '-' + (dir || 'left');
+    } else if (kind === 'fixture' || kind === 'furniture' || kind === 'fire') {
+      item.rotation = ((item.rotation || 0) + 180) % 360;
+    }
+  }
+  render(); renderCtxPanel(); autosave();
+}
+
+function reverseSelection() {
+  const refs = findSelectedRefs();
+  if (!refs.length) return;
+  snapshot();
+  for (const { kind, item } of refs) {
+    if (kind === 'wall') { [item.start, item.end] = [item.end, item.start]; }
+  }
+  render(); renderCtxPanel(); autosave();
+}
+
+function splitWallSelection() {
+  const refs = findSelectedRefs().filter(r => r.kind === 'wall' && r.item.kind !== 'arc');
+  if (!refs.length) { toast('მონიშნე კედელი'); return; }
+  snapshot();
+  const newIds = [];
+  for (const { item: w } of refs) {
+    const mx = (w.start[0] + w.end[0]) / 2;
+    const my = (w.start[1] + w.end[1]) / 2;
+    const a = { ...JSON.parse(JSON.stringify(w)), id: uid(), end: [mx, my] };
+    const b = { ...JSON.parse(JSON.stringify(w)), id: uid(), start: [mx, my] };
+    const idx = state.walls.findIndex(x => x.id === w.id);
+    if (idx < 0) continue;
+    state.walls.splice(idx, 1, a, b);
+    newIds.push(a.id, b.id);
+  }
+  ui.selection = newIds;
+  render(); renderCtxPanel(); autosave();
+  toast(`გაყო: ${refs.length} → ${refs.length * 2}`);
+}
+
+function alignDistribute(op) {
+  const refs = findSelectedRefs().filter(r => r.item.position);
+  if (refs.length < 2) { toast('მონიშნე ≥2 ელემენტი'); return; }
+  snapshot();
+  if (op === 'align-left') {
+    const minX = Math.min(...refs.map(r => r.item.position[0]));
+    for (const r of refs) r.item.position[0] = minX;
+  } else if (op === 'align-right') {
+    const maxX = Math.max(...refs.map(r => r.item.position[0]));
+    for (const r of refs) r.item.position[0] = maxX;
+  } else if (op === 'align') {
+    // horizontal alignment → y average
+    const avgY = refs.reduce((s, r) => s + r.item.position[1], 0) / refs.length;
+    for (const r of refs) r.item.position[1] = avgY;
+  } else if (op === 'distribute-h') {
+    refs.sort((a, b) => a.item.position[0] - b.item.position[0]);
+    const x0 = refs[0].item.position[0], x1 = refs[refs.length - 1].item.position[0];
+    const step = (x1 - x0) / (refs.length - 1);
+    refs.forEach((r, i) => r.item.position[0] = x0 + step * i);
+  } else if (op === 'group') {
+    toast('Grouping — Task 031 (future)');
+    return;
+  }
+  render(); renderCtxPanel(); autosave();
+  toast(op + ' შესრულებულია');
+}
+
+function onCtxLibPick(key) {
+  const tool = ui.tool;
+  const libKey = TOOL_TO_LIB_KEY[tool];
+  if (!libKey) return;
+  ui.selectedLib[libKey] = key;
+  renderCtxPanel();
+  toast('არჩეულია: ' + key);
+}
+
+function renderCtxPanel() {
+  if (!window.EditorPanels) return;
+  const ctx = buildCtxFromState();
+  setPanelHead(computePanelHead(ctx));
+  EditorPanels.render($('#ctx-panel-body'), ctx,
+    { onField: onCtxField, onAction: onCtxAction, onLibPick: onCtxLibPick });
+  renderCtxMenu(ctx);
+}
+
+// Floating context menu above selected element
+function renderCtxMenu(ctx) {
+  const host = $('#ctx-host');
+  if (!host) return;
+  if (!ctx.type.startsWith('sel:') || ui.selection.length !== 1) {
+    EditorPanels.ctxMenu(host, null); return;
+  }
+  const id = ui.selection[0];
+  const kind = ctx.type.slice(4);
+  let anchor = null;
+
+  const w = state.walls.find(x => x.id === id);
+  const c = state.columns.find(x => x.id === id);
+  const o = state.openings.find(x => x.id === id);
+  const f = state.fixtures.find(x => x.id === id);
+
+  if (w) {
+    anchor = { wx: (w.start[0] + w.end[0]) / 2, wy: Math.min(w.start[1], w.end[1]) - 0.3 };
+  } else if (c) {
+    anchor = { wx: c.position[0], wy: c.position[1] - (c.size || 0.4) * 0.7 };
+  } else if (o) {
+    const wall = state.walls.find(x => x.id === o.wallId);
+    if (wall) {
+      const [x1, y1] = wall.start, [x2, y2] = wall.end;
+      const len = Math.hypot(x2 - x1, y2 - y1) || 1;
+      const ux = (x2 - x1) / len, uy = (y2 - y1) / len;
+      anchor = { wx: x1 + ux * o.offset, wy: y1 + uy * o.offset - 0.4 };
+    }
+  } else if (f) {
+    anchor = { wx: f.position[0], wy: f.position[1] - 0.5 };
+  }
+  if (!anchor) { EditorPanels.ctxMenu(host, null); return; }
+
+  const p = worldToStage(anchor.wx, anchor.wy);
+  const label = { wall: 'Wall', door: 'Door', window: 'Window', column: 'Column',
+                  jetfan: 'Jet Fan', exhaust: 'Exhaust', room: 'Room' }[kind] || 'Element';
+  EditorPanels.ctxMenu(host, {
+    kind, label,
+    x: Math.max(8, p.x - 70),
+    y: Math.max(8, p.y - 40)
+  }, { onAction: onCtxAction });
+}
+
+// Backward-compat shim: existing code calls renderProperties() — route it.
+function renderProperties() { renderCtxPanel(); }
+function renderLibrary() { renderCtxPanel(); }
+
+// Register Fire-mode context types (Phase D) with EditorPanels.
+function registerFireContexts() {
+  if (!window.EditorPanels) return;
+  const B = EditorPanels.build;
+  const { h, field, numInput, selectInput, segControl, section, stat, toggle } = B;
+
+  EditorPanels.registerType('tool:fire', function (container, ctx, hx) {
+    const d = ctx.data || {};
+    container.innerHTML = '';
+    container.appendChild(section({
+      title: '🔥 ცეცხლის წყარო',
+      aux: 'X',
+      collapsed: false,
+      children: [
+        field('Preset',
+          segControl({ value: d.preset || 'car',
+            options: [
+              { value: 'trash', label: 'ნაგვის ყუთი' },
+              { value: 'car', label: 'ავტომობილი' },
+              { value: 'truck', label: 'სატვირთო' },
+              { value: 'custom', label: 'Custom' }
+            ],
+            onChange: v => {
+              const map = { trash: 1000, car: 5000, truck: 20000 };
+              hx.onField('preset', v);
+              if (map[v]) hx.onField('hrrMax', map[v]);
+            } })
+        ),
+        h('div', { class: 'ep-field-grid' },
+          field(
+            h('label', { class: 'ep-label' }, 'HRR max ', h('span', { class: 'ep-unit' }, '(kW)')),
+            numInput({ value: d.hrrMax || 5000, min: 100, max: 50000, step: 100, unit: 'kW',
+              onInput: v => hx.onField('hrrMax', v) })
+          ),
+          field(
+            h('label', { class: 'ep-label' }, 'რადიუსი ', h('span', { class: 'ep-unit' }, '(მ)')),
+            numInput({ value: d.radius || 1.0, min: 0.2, max: 5, step: 0.1, unit: 'მ',
+              onInput: v => hx.onField('radius', v) })
+          )
+        ),
+        field('ზრდის ტიპი (NFPA 92)',
+          segControl({ value: d.growth || 'medium',
+            options: [
+              { value: 'slow', label: 'Slow' },
+              { value: 'medium', label: 'Medium' },
+              { value: 'fast', label: 'Fast' },
+              { value: 'ultra', label: 'Ultra' }
+            ],
+            onChange: v => hx.onField('growth', v) })
+        ),
+        h('div', { class: 'ep-hint' },
+          'დააწკაპე კანვაზზე, რომ დადო ცეცხლი. ქვემო ზოლში — time-lapse კონტროლი.')
+      ]
+    }));
+  });
+
+  // Furniture contexts (Phase C)
+  EditorPanels.registerType('tool:furniture', function (container, ctx, hx) {
+    container.innerHTML = '';
+    container.appendChild(section({
+      title: '🛏 ავეჯის განთავსება',
+      aux: 'M',
+      collapsed: false,
+      children: [
+        h('div', { class: 'ep-hint' }, 'აირჩიე ტიპი ბიბლიოთეკიდან და კანვაზზე დააწკაპე.')
+      ]
+    }));
+    if (ctx.library && ctx.library.length) {
+      container.appendChild(B.libSection('ავეჯის ბიბლიოთეკა', ctx.library, ctx.libSel, hx));
+    }
+  });
+
+  EditorPanels.registerType('sel:furniture', function (container, ctx, hx) {
+    const d = ctx.data || {};
+    container.innerHTML = '';
+    container.appendChild(section({
+      title: d.name || 'ავეჯი',
+      aux: d.kind,
+      collapsed: false,
+      iconRow: [
+        h('button', { class: 'ep-iconbtn', 'data-tip': 'ბრუნვა 90°',
+          onclick: () => hx.onAction('rotate') }, B.mkIcon('rotate', 12)),
+        h('button', { class: 'ep-iconbtn danger', 'data-tip': 'წაშლა',
+          onclick: () => hx.onAction('delete') }, B.mkIcon('delete', 12))
+      ],
+      children: [
+        field('სახელი', B.textInput({ value: d.name || '',
+          onInput: v => hx.onField('name', v) })),
+        h('div', { class: 'ep-field-grid' },
+          field(h('label', { class: 'ep-label' }, 'W ', h('span', { class: 'ep-unit' }, '(მ)')),
+            numInput({ value: d.w, min: 0.2, max: 5, step: 0.05, unit: 'მ',
+              onInput: v => hx.onField('w', v) })),
+          field(h('label', { class: 'ep-label' }, 'D ', h('span', { class: 'ep-unit' }, '(მ)')),
+            numInput({ value: d.d, min: 0.2, max: 5, step: 0.05, unit: 'მ',
+              onInput: v => hx.onField('d', v) }))
+        ),
+        field(h('label', { class: 'ep-label' }, 'ბრუნვა ', h('span', { class: 'ep-unit' }, '(°)')),
+          B.slider({ value: d.rotation || 0, min: 0, max: 359, step: 15, unit: '°',
+            onInput: v => hx.onField('rotation', v) })),
+        field('ფერი',
+          (() => {
+            const row = h('div', { class: 'ep-swatch-row' });
+            for (const c of ['#b8a078','#a8928a','#c0a074','#988068','#d0c8b8','#8faed0','#c4a8a8','#b8c8b0']) {
+              row.appendChild(h('div', {
+                class: 'ep-swatch' + (d.color === c ? ' active' : ''),
+                style: 'background:' + c,
+                onclick: () => hx.onField('color', c)
+              }));
+            }
+            return row;
+          })()
+        )
+      ]
+    }));
+  });
+
+  EditorPanels.registerType('sel:fire', function (container, ctx, hx) {
+    const d = ctx.data || {};
+    container.innerHTML = '';
+    container.appendChild(section({
+      title: '🔥 ცეცხლი',
+      aux: d.id ? `#${String(d.id).slice(-4)}` : null,
+      collapsed: false,
+      iconRow: [
+        h('button', { class: 'ep-iconbtn danger', 'data-tip': 'წაშლა',
+          onclick: () => hx.onAction('delete') }, B.mkIcon('delete', 12))
+      ],
+      children: [
+        h('div', { class: 'ep-field-grid' },
+          field(
+            h('label', { class: 'ep-label' }, 'HRR max ', h('span', { class: 'ep-unit' }, '(kW)')),
+            numInput({ value: d.hrrMax, min: 100, max: 50000, step: 100, unit: 'kW',
+              onInput: v => hx.onField('hrrMax', v) })
+          ),
+          field(
+            h('label', { class: 'ep-label' }, 'რადიუსი ', h('span', { class: 'ep-unit' }, '(მ)')),
+            numInput({ value: d.radius, min: 0.2, max: 5, step: 0.1, unit: 'მ',
+              onInput: v => hx.onField('radius', v) })
+          )
+        ),
+        field('ზრდა',
+          segControl({ value: d.growth || 'medium',
+            options: [
+              { value: 'slow', label: 'Slow' },
+              { value: 'medium', label: 'Medium' },
+              { value: 'fast', label: 'Fast' },
+              { value: 'ultra', label: 'Ultra' }
+            ],
+            onChange: v => hx.onField('growth', v) })
+        ),
+        stat('მიმდინარე t', Math.floor(ui.fireT) + ' s'),
+        stat('პროგნოზი Q(t)', (() => {
+          const g = FIRE_GROWTH[d.growth || 'medium'];
+          const Q = Math.min(d.hrrMax || 5000, g * ui.fireT * ui.fireT);
+          return Q.toFixed(0) + ' kW';
+        })())
+      ]
+    }));
+  });
+}
+
+// ============== PICKING ==============
+function pickAt(x, y) {
+  // Check walls (via polygon point-in-polygon)
+  for (const w of state.walls) {
+    const poly = wallPolygon(w);
+    if (pointInPoly(x, y, poly)) return { kind: 'wall', item: w };
+  }
+  // Check columns
+  for (const c of state.columns) {
+    const d = Math.hypot(c.position[0] - x, c.position[1] - y);
+    if (d < c.size * 0.6) return { kind: 'column', item: c };
+  }
+  // Check openings
+  for (const o of state.openings) {
+    const wall = state.walls.find(w => w.id === o.wallId);
+    if (!wall) continue;
+    const [x1, y1] = wall.start;
+    const [x2, y2] = wall.end;
+    const dx = x2-x1, dy = y2-y1;
+    const len = Math.hypot(dx, dy);
+    const ux = dx/len, uy = dy/len;
+    const cx = x1 + ux*o.offset, cy = y1 + uy*o.offset;
+    if (Math.hypot(cx-x, cy-y) < o.width*0.55) return { kind: 'opening', item: o };
+  }
+  // Check fixtures
+  for (const f of state.fixtures) {
+    if (Math.hypot(f.position[0] - x, f.position[1] - y) < 0.5) return { kind: 'fixture', item: f };
+  }
+  // Check furniture (rotated bbox test)
+  for (const f of (state.furniture || [])) {
+    const rad = (f.rotation || 0) * Math.PI / 180;
+    const dx = x - f.position[0], dy = y - f.position[1];
+    const lx =  dx * Math.cos(-rad) - dy * Math.sin(-rad);
+    const ly =  dx * Math.sin(-rad) + dy * Math.cos(-rad);
+    if (Math.abs(lx) < f.w/2 && Math.abs(ly) < f.d/2) return { kind: 'furniture', item: f };
+  }
+  // Check fire sources
+  for (const f of state.fires) {
+    if (Math.hypot(f.position[0] - x, f.position[1] - y) < Math.max(0.4, f.radius || 1)) {
+      return { kind: 'fire', item: f };
+    }
+  }
+  return null;
+}
+
+function pointInPoly(x, y, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i][0], yi = poly[i][1];
+    const xj = poly[j][0], yj = poly[j][1];
+    const intersect = ((yi > y) !== (yj > y)) && (x < (xj-xi)*(y-yi)/(yj-yi) + xi);
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
+function pickWallOnly(x, y) {
+  for (const w of state.walls) {
+    const poly = wallPolygon(w);
+    if (pointInPoly(x, y, poly)) return w;
+  }
+  return null;
+}
+
+function projectOnWall(wall, x, y) {
+  const [x1, y1] = wall.start;
+  const [x2, y2] = wall.end;
+  const dx = x2-x1, dy = y2-y1;
+  const len = Math.hypot(dx, dy);
+  const t = ((x-x1)*dx + (y-y1)*dy) / (len*len);
+  const tc = Math.max(0, Math.min(1, t));
+  return tc * len;
+}
+
+// ============== ACTIONS ==============
+// ============== WALL HEURISTIC CLEANUP (Task 019) ==============
+// Post-DXF (or any) cleanup: snap close endpoints, deduplicate, merge
+// colinear-adjacent segments, orthogonalize near-axis-aligned walls.
+// Returns { changed, stats } where stats = { before, after, merged, deduped,
+// orthoSnapped, endpointsMerged }.
+
+function cleanupWalls(opts) {
+  opts = opts || {};
+  const snapTol = opts.snapTol != null ? opts.snapTol : 0.05;    // 5 cm endpoint merge
+  const colTol  = opts.colTol  != null ? opts.colTol  : 0.04;    // 4 cm perp-offset for colinear
+  const orthoDeg = opts.orthoDeg != null ? opts.orthoDeg : 3;    // snap to 0°/90° within 3°
+
+  const before = state.walls.length;
+  // Skip arc walls — heuristic only touches straight walls.
+  const straight = state.walls.filter(w => w.kind !== 'arc');
+  const arcs = state.walls.filter(w => w.kind === 'arc');
+  let walls = straight.map(w => ({
+    id: w.id,
+    start: [w.start[0], w.start[1]],
+    end:   [w.end[0],   w.end[1]],
+    thickness: w.thickness,
+    height: w.height,
+    material: w.material,
+    type: w.type,
+    locked: w.locked, hidden: w.hidden
+  }));
+
+  // 1) Endpoint merge — build node clusters with `snapTol`, snap each to centroid.
+  const nodes = []; // {x,y,count}
+  const nodeOf = (p) => {
+    for (let i = 0; i < nodes.length; i++) {
+      if (Math.hypot(nodes[i].x - p[0], nodes[i].y - p[1]) < snapTol) return i;
+    }
+    nodes.push({ x: p[0], y: p[1], count: 1 });
+    return nodes.length - 1;
+  };
+  const epIndex = walls.map(w => ({ a: nodeOf(w.start), b: nodeOf(w.end) }));
+  // Recompute snapped centroids by averaging all contributing endpoints
+  const sums = nodes.map(() => ({ x: 0, y: 0, n: 0 }));
+  walls.forEach((w, i) => {
+    sums[epIndex[i].a].x += w.start[0]; sums[epIndex[i].a].y += w.start[1]; sums[epIndex[i].a].n++;
+    sums[epIndex[i].b].x += w.end[0];   sums[epIndex[i].b].y += w.end[1];   sums[epIndex[i].b].n++;
+  });
+  const snapped = sums.map(s => [s.x / Math.max(1, s.n), s.y / Math.max(1, s.n)]);
+  walls.forEach((w, i) => {
+    w.start = [snapped[epIndex[i].a][0], snapped[epIndex[i].a][1]];
+    w.end   = [snapped[epIndex[i].b][0], snapped[epIndex[i].b][1]];
+  });
+  const endpointsMerged = walls.filter((w, i) =>
+    Math.hypot(w.start[0] - straight[i].start[0], w.start[1] - straight[i].start[1]) > 1e-9 ||
+    Math.hypot(w.end[0]   - straight[i].end[0],   w.end[1]   - straight[i].end[1]) > 1e-9
+  ).length;
+
+  // 2) Orthogonalize — if segment angle is within orthoDeg of 0/90/180/270, snap.
+  const orthoTol = orthoDeg * Math.PI / 180;
+  let orthoSnapped = 0;
+  for (const w of walls) {
+    const dx = w.end[0] - w.start[0], dy = w.end[1] - w.start[1];
+    const L = Math.hypot(dx, dy);
+    if (L < 1e-6) continue;
+    const a = Math.atan2(dy, dx);
+    const diffs = [0, Math.PI/2, Math.PI, -Math.PI/2]
+      .map(t => ({ t, d: Math.abs(normalizeAngle(a - t)) }));
+    diffs.sort((x, y) => x.d - y.d);
+    if (diffs[0].d < orthoTol && diffs[0].d > 1e-6) {
+      const newA = diffs[0].t;
+      const mx = (w.start[0] + w.end[0]) / 2, my = (w.start[1] + w.end[1]) / 2;
+      w.start = [mx - Math.cos(newA) * L / 2, my - Math.sin(newA) * L / 2];
+      w.end   = [mx + Math.cos(newA) * L / 2, my + Math.sin(newA) * L / 2];
+      orthoSnapped++;
+    }
+  }
+
+  // 3) Deduplicate — drop walls whose endpoints match another (either direction)
+  const key = w => {
+    const k1 = `${w.start[0].toFixed(3)},${w.start[1].toFixed(3)}|${w.end[0].toFixed(3)},${w.end[1].toFixed(3)}`;
+    const k2 = `${w.end[0].toFixed(3)},${w.end[1].toFixed(3)}|${w.start[0].toFixed(3)},${w.start[1].toFixed(3)}`;
+    return k1 < k2 ? k1 : k2;
+  };
+  const seen = new Set();
+  const deduped = [];
+  let dedupCount = 0;
+  for (const w of walls) {
+    const k = key(w);
+    if (seen.has(k)) { dedupCount++; continue; }
+    seen.add(k);
+    deduped.push(w);
+  }
+  walls = deduped;
+
+  // 4) Colinear merge — for any two walls sharing an endpoint with <colTol perp
+  // offset and <orthoTol angle diff, merge into one.
+  let merged = 0;
+  let changed = true;
+  while (changed) {
+    changed = false;
+    outer: for (let i = 0; i < walls.length; i++) {
+      for (let j = i + 1; j < walls.length; j++) {
+        const a = walls[i], b = walls[j];
+        // Find shared endpoint
+        const endpoints = [
+          ['start', a.start, 'start', b.start],
+          ['start', a.start, 'end',   b.end],
+          ['end',   a.end,   'start', b.start],
+          ['end',   a.end,   'end',   b.end]
+        ];
+        let sharedIdx = -1;
+        for (let e = 0; e < 4; e++) {
+          const [, pa, , pb] = endpoints[e];
+          if (Math.hypot(pa[0] - pb[0], pa[1] - pb[1]) < snapTol) { sharedIdx = e; break; }
+        }
+        if (sharedIdx < 0) continue;
+        // Free endpoints
+        const freeA = endpoints[sharedIdx][0] === 'start' ? a.end : a.start;
+        const freeB = endpoints[sharedIdx][2] === 'start' ? b.end : b.start;
+        // Angles
+        const vA = [endpoints[sharedIdx][1][0] - freeA[0], endpoints[sharedIdx][1][1] - freeA[1]];
+        const vB = [freeB[0] - endpoints[sharedIdx][1][0], freeB[1] - endpoints[sharedIdx][1][1]];
+        const angA = Math.atan2(vA[1], vA[0]);
+        const angB = Math.atan2(vB[1], vB[0]);
+        const diff = Math.abs(normalizeAngle(angA - angB));
+        if (diff > orthoTol) continue;
+        // Must share thickness/type/material to merge
+        if ((a.thickness !== b.thickness) || (a.type !== b.type)) continue;
+        // Replace both with one wall
+        walls.splice(j, 1);
+        walls.splice(i, 1);
+        walls.push({
+          id: a.id || uid(),
+          start: freeA, end: freeB,
+          thickness: a.thickness, height: a.height,
+          material: a.material, type: a.type,
+          locked: false, hidden: false
+        });
+        merged++;
+        changed = true;
+        break outer;
+      }
+    }
+  }
+
+  // 5) Drop degenerate walls (zero length)
+  walls = walls.filter(w => Math.hypot(w.end[0] - w.start[0], w.end[1] - w.start[1]) > 1e-6);
+
+  state.walls = walls.concat(arcs);
+  return {
+    changed: true,
+    stats: {
+      before, after: state.walls.length,
+      merged, deduped: dedupCount, orthoSnapped, endpointsMerged
+    }
+  };
+}
+
+function normalizeAngle(a) {
+  while (a > Math.PI) a -= 2 * Math.PI;
+  while (a < -Math.PI) a += 2 * Math.PI;
+  return a;
+}
+
+function runCleanup() {
+  if (!state.walls.length) { toast('ცარიელია'); return; }
+  snapshot();
+  const r = cleanupWalls();
+  const s = r.stats;
+  render(); renderCtxPanel(); autosave();
+  toast(
+    `🪄 ${s.before}→${s.after} კედ. · ` +
+    `snap:${s.endpointsMerged} dup:${s.deduped} merge:${s.merged} orto:${s.orthoSnapped}`,
+    3500
+  );
+}
+
+// ============== DXF EXPORT (Task 018 reverse) ==============
+function exportDXF() {
+  if (!window.DxfExport) { toast('DXF exporter არ ჩაიტვირთა'); return; }
+  const units = prompt('ერთეული: m / mm / cm', 'mm');
+  if (!units) return;
+  if (!['m', 'mm', 'cm'].includes(units)) { toast('ერთეული: m/mm/cm'); return; }
+  try {
+    syncActiveFloorToArchive();
+    const name = (state.meta?.name || 'plan').replace(/\s+/g, '-');
+    window.DxfExport.triggerDownload(state, name + '.dxf', { units });
+    toast('DXF ექსპორტირდა: ' + name + '.dxf');
+  } catch (e) {
+    toast('DXF შეცდომა: ' + e.message);
+  }
+}
+
+// ============== AI WALL DETECTION (Task 020) ==============
+// Uploads an image to /api/ai/detect-walls which calls Claude Vision with a
+// strict schema prompt and returns normalized wall segments in meters.
+
+async function importFromAI() {
+  const fi = document.createElement('input');
+  fi.type = 'file';
+  fi.accept = 'image/png,image/jpeg,image/webp';
+  fi.onchange = async () => {
+    const f = fi.files[0]; if (!f) return;
+    if (f.size > 10 * 1024 * 1024) { toast('ფაილი > 10 MB'); return; }
+
+    // Ask for real-world scale hint — biggest win for spatial accuracy
+    const scaleInput = prompt(
+      'სურათის რეალური სიგანე მეტრში\n(approx, 30–150 m² flat = 6–15 მ სიგანე)',
+      '12'
+    );
+    if (!scaleInput) return;
+    const scaleM = parseFloat(scaleInput);
+    if (!isFinite(scaleM) || scaleM <= 0) { toast('ვალიდური რიცხვი მომეცი'); return; }
+
+    const mediaType =
+      f.type === 'image/jpeg' ? 'image/jpeg' :
+      f.type === 'image/webp' ? 'image/webp' : 'image/png';
+
+    toast('🤖 ატვირთვა... (Claude Vision)', 4000);
+
+    // File → base64
+    const base64 = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result).split(',')[1] || '');
+      r.onerror = reject;
+      r.readAsDataURL(f);
+    });
+
+    try {
+      const res = await fetch('/api/ai/detect-walls', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64, mediaType, scaleM })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast('AI შეცდომა: ' + (data.message || data.error || res.status), 5000);
+        return;
+      }
+      if (!Array.isArray(data.walls) || data.walls.length === 0) {
+        toast('AI-მ კედლები ვერ იპოვა' + (data.notes ? ': ' + data.notes : ''));
+        return;
+      }
+      const ok = confirm(
+        `🤖 AI-მ იპოვა:\n` +
+        `• ${data.walls.length} კედლის სეგმენტი\n` +
+        `• Confidence: ${data.confidence != null ? Math.round(data.confidence * 100) + '%' : 'n/a'}\n` +
+        (data.notes ? `• ${data.notes}\n` : '') +
+        `\nშემოიტანო?`
+      );
+      if (!ok) return;
+      snapshot();
+      for (const w of data.walls) {
+        state.walls.push({
+          id: uid(),
+          start: [w.start[0], w.start[1]],
+          end: [w.end[0], w.end[1]],
+          thickness: w.thickness || 0.12,
+          height: state.floor.height,
+          material: 'brick'
+        });
+      }
+      render(); renderCtxPanel(); autosave();
+      fitView();
+      // Offer cleanup — AI output often has small issues
+      setTimeout(() => {
+        if (confirm('🪄 ავტო-გასუფთავება AI-ს output-ზე (ხშირად ნიშნავს)?')) runCleanup();
+      }, 300);
+    } catch (e) {
+      toast('ქსელის შეცდომა: ' + e.message, 5000);
+    }
+  };
+  fi.click();
+}
+
+// ============== DXF IMPORT (Task 018) ==============
+function importDXF() {
+  if (!window.DxfParser) { toast('DXF parser არ ჩაიტვირთა'); return; }
+  const fi = document.createElement('input');
+  fi.type = 'file';
+  fi.accept = '.dxf,.DXF,application/dxf,text/plain';
+  fi.onchange = () => {
+    const f = fi.files[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const text = String(reader.result || '');
+        const parsed = DxfParser.parse(text);
+        // Auto-detect scale: if bounds width > 200, assume mm → m (÷1000)
+        const bw = parsed.bounds.maxX - parsed.bounds.minX;
+        const bh = parsed.bounds.maxY - parsed.bounds.minY;
+        let scale = 1;
+        if (bw > 300 || bh > 300) scale = 0.001;    // mm → m
+        else if (bw > 30 || bh > 30) scale = 0.01;  // cm → m
+        const dflt = (ui.toolDefaults?.wall) || {};
+        const thickness = (dflt.wallThk ? dflt.wallThk / 1000 : 0.15);
+        const height = (dflt.wallH != null ? dflt.wallH : state.floor.height);
+        const r = DxfParser.toWallEditor(parsed, { scale, thickness, height });
+        if (!r.walls.length) { toast('DXF-ში კედლები ვერ მოიძებნა'); return; }
+        const ok = confirm(
+          `DXF ნაპოვნია:\n` +
+          `• ${r.hints.lineCount} LINE + ${r.hints.polylineCount} POLYLINE\n` +
+          `• ${r.hints.totalWalls} კედლის სეგმენტი\n` +
+          `• Scale: ${scale === 1 ? '1:1' : scale === 0.001 ? 'mm → m' : 'cm → m'}\n\n` +
+          `შემოიტანო?`
+        );
+        if (!ok) return;
+        snapshot();
+        // Clear layer meta (not used by state)
+        state.walls = state.walls.concat(r.walls.map(w => {
+          const { _layer, ...rest } = w;
+          return rest;
+        }));
+        render(); renderCtxPanel(); autosave();
+        fitView();
+        // Offer auto-cleanup (DXF imports often have duplicates / unconnected endpoints)
+        const doClean = confirm('DXF შემოტანილია: ' + r.hints.totalWalls + ' კედ.\n\n🪄 გავუშვა ავტო-გასუფთავება (deduplicate + snap + orthogonalize)?');
+        if (doClean) runCleanup();
+        else toast('DXF შემოტანილია: ' + r.hints.totalWalls + ' კედ.');
+      } catch (e) {
+        toast('DXF შეცდომა: ' + e.message);
+      }
+    };
+    reader.onerror = () => toast('ფაილის წაკითხვის შეცდომა');
+    reader.readAsText(f);
+  };
+  fi.click();
+}
+
+function commitWallSegment(start, end) {
+  const thickness = LIB.walls.find(x => x.id === ui.selectedLib.walls).thickness;
+  state.walls.push({
+    id: uid(), start: [start[0], start[1]], end: [end[0], end[1]],
+    thickness, height: state.floor.height, material: 'concrete'
+  });
+}
+
+function commitArcWall(start, end, apex) {
+  const thickness = LIB.walls.find(x => x.id === ui.selectedLib.walls).thickness;
+  state.walls.push({
+    id: uid(),
+    kind: 'arc',
+    start: [start[0], start[1]],
+    end: [end[0], end[1]],
+    apex: [apex[0], apex[1]],
+    thickness, height: state.floor.height, material: 'concrete'
+  });
+}
+
+function placeColumn(x, y) {
+  const lib = LIB.columns.find(x => x.id === ui.selectedLib.columns);
+  state.columns.push({
+    id: uid(), position: [x, y],
+    shape: lib.shape, size: lib.size, rotation: 0, height: state.floor.ceilingHeight
+  });
+}
+
+function placeOpeningOnWall(wall, x, y, type) {
+  const offset = projectOnWall(wall, x, y);
+  const len = Math.hypot(wall.end[0]-wall.start[0], wall.end[1]-wall.start[1]);
+  let lib, o;
+  if (type === 'door') {
+    lib = LIB.doors.find(x => x.id === ui.selectedLib.doors);
+    const safeOffset = Math.max(lib.w/2 + 0.05, Math.min(len - lib.w/2 - 0.05, offset));
+    o = {
+      id: uid(), wallId: wall.id, offset: safeOffset,
+      type: 'door', subtype: lib.leafs === 2 ? 'double' : 'single',
+      width: lib.w, height: lib.h
+    };
+  } else {
+    lib = LIB.windows.find(x => x.id === ui.selectedLib.windows);
+    const safeOffset = Math.max(lib.w/2 + 0.05, Math.min(len - lib.w/2 - 0.05, offset));
+    o = {
+      id: uid(), wallId: wall.id, offset: safeOffset,
+      type: 'window', subtype: 'fixed',
+      width: lib.w, height: lib.h, sillHeight: lib.sill
+    };
+  }
+  state.openings.push(o);
+}
+
+// ============== FURNITURE (Phase C) ==============
+function renderFurniture() {
+  const g = $('#g-furniture');
+  g.innerHTML = '';
+  for (const f of state.furniture || []) {
+    if (f.hidden) continue;
+    const sel = ui.selection.includes(f.id);
+    const cx = f.position[0], cy = f.position[1];
+    const w = f.w || 1, d = f.d || 1;
+    const rot = f.rotation || 0;
+    const grp = el('g', {
+      'data-id': f.id,
+      transform: `translate(${cx} ${cy}) rotate(${rot})`
+    });
+    // Box outline
+    grp.appendChild(el('rect', {
+      x: -w/2, y: -d/2, width: w, height: d,
+      fill: f.color || '#b8a078', opacity: sel ? 0.85 : 0.7,
+      stroke: sel ? 'var(--blue)' : 'var(--navy)',
+      'stroke-width': sel ? 0.04 : 0.02,
+      rx: 0.06
+    }));
+    // Kind-specific symbols
+    if (f.kind === 'bed') {
+      // Pillow line at one end
+      grp.appendChild(el('rect', {
+        x: -w/2 + 0.05, y: -d/2 + 0.05, width: w - 0.1, height: 0.3,
+        fill: '#fff', opacity: 0.75, rx: 0.03
+      }));
+    } else if (f.kind === 'sofa') {
+      // Backrest
+      grp.appendChild(el('rect', {
+        x: -w/2, y: -d/2, width: w, height: 0.2,
+        fill: '#555', opacity: 0.55, rx: 0.04
+      }));
+    } else if (f.kind === 'table') {
+      // Grid cross
+      grp.appendChild(el('line', { x1: -w/2 + 0.1, y1: 0, x2: w/2 - 0.1, y2: 0, stroke: 'var(--navy)', 'stroke-width': 0.015, 'stroke-dasharray': '0.05 0.05' }));
+      grp.appendChild(el('line', { x1: 0, y1: -d/2 + 0.1, x2: 0, y2: d/2 - 0.1, stroke: 'var(--navy)', 'stroke-width': 0.015, 'stroke-dasharray': '0.05 0.05' }));
+    } else if (f.kind === 'wc') {
+      grp.appendChild(el('ellipse', { cx: 0, cy: 0.05, rx: w*0.32, ry: d*0.32, fill: '#fff', opacity: 0.7 }));
+    } else if (f.kind === 'sink') {
+      grp.appendChild(el('circle', { cx: 0, cy: 0, r: Math.min(w,d)*0.35, fill: '#fff', opacity: 0.7 }));
+    } else if (f.kind === 'shower') {
+      grp.appendChild(el('circle', { cx: 0, cy: 0, r: Math.min(w,d)*0.18, fill: 'var(--blue-lt)', opacity: 0.6 }));
+    } else if (f.kind === 'kitchen') {
+      // Stove/sink ring
+      grp.appendChild(el('circle', { cx: -w*0.25, cy: 0, r: 0.12, fill: 'none', stroke: 'var(--navy)', 'stroke-width': 0.02 }));
+      grp.appendChild(el('circle', { cx:  w*0.25, cy: 0, r: 0.12, fill: 'none', stroke: 'var(--navy)', 'stroke-width': 0.02 }));
+    }
+    // Label
+    grp.appendChild(el('text', {
+      x: 0, y: d/2 + 0.15,
+      'text-anchor': 'middle',
+      'font-size': 0.14,
+      'font-family': 'IBM Plex Mono, monospace',
+      'font-weight': 600,
+      fill: 'var(--text-2)',
+      opacity: 0.85
+    })).textContent = f.name || f.kind;
+    g.appendChild(grp);
+  }
+}
+
+// ============== FIRE (Phase D) ==============
+// HRR growth: Q(t) = α · t²  where α depends on growth type (NFPA 92)
+const FIRE_GROWTH = { slow: 0.00293, medium: 0.01172, fast: 0.0469, ultra: 0.1878 }; // kW/s²
+
+function placeFire(x, y) {
+  const def = (ui.toolDefaults && ui.toolDefaults.fire) || {};
+  state.fires.push({
+    id: uid(),
+    position: [x, y],
+    hrrMax: def.hrrMax || 5000,        // kW — steady-state
+    growth: def.growth || 'medium',
+    preset: def.preset || 'car',        // trash|car|truck|custom
+    radius: def.radius || 1.0           // visual fire footprint
+  });
+  document.body.classList.add('fire-mode');
+  updateFireBarVisibility();
+}
+
+// SFPE plume mass-flow (simplified) → smoke plume radius at ceiling.
+// radius ∝ (Q^0.4 · t^0.5), clamped. Used for visual expansion only.
+function smokeRadiusAt(fire, t, ceiling) {
+  const g = FIRE_GROWTH[fire.growth] || FIRE_GROWTH.medium;
+  const Q = Math.min(fire.hrrMax, g * t * t);          // kW
+  // Empirical: r = 0.15 · Q^0.4 · t^0.5 · (ceiling/2.5)^0.3  (for visualization)
+  const ch = ceiling || state.floor.ceilingHeight || 2.8;
+  return Math.min(60, 0.15 * Math.pow(Q, 0.4) * Math.pow(Math.max(1, t), 0.5) * Math.pow(ch / 2.5, 0.3));
+}
+
+// Smoke layer descent depth (0 = no layer, ceiling = full room). Very simplified.
+function smokeLayerDepth(fire, t, ceiling) {
+  const g = FIRE_GROWTH[fire.growth] || FIRE_GROWTH.medium;
+  const Q = Math.min(fire.hrrMax, g * t * t);
+  const ch = ceiling || state.floor.ceilingHeight || 2.8;
+  // 0..ch over t=0..600 s, asymptotic to ch with Q
+  return Math.min(ch, (Q / (fire.hrrMax || 1)) * ch * (t / 600) * 2.2);
+}
+
+function renderFires() {
+  const g = $('#g-fires');
+  g.innerHTML = '';
+  const ovl = $('#g-sim-overlay');
+  ovl.innerHTML = '';
+  if (!state.fires.length) return;
+
+  const t = ui.fireT;
+  const ch = state.floor.ceilingHeight || 2.8;
+
+  // Defs for animated gradient
+  const defs = el('defs');
+  defs.innerHTML = `
+    <radialGradient id="smoke-grad">
+      <stop offset="0%" stop-color="rgba(80,40,20,0.55)"/>
+      <stop offset="50%" stop-color="rgba(120,80,60,0.35)"/>
+      <stop offset="100%" stop-color="rgba(140,120,110,0)"/>
+    </radialGradient>
+    <radialGradient id="fire-grad">
+      <stop offset="0%" stop-color="#fff7d6"/>
+      <stop offset="35%" stop-color="#ffb24a"/>
+      <stop offset="75%" stop-color="#e54a12"/>
+      <stop offset="100%" stop-color="rgba(140,30,10,0)"/>
+    </radialGradient>`;
+  ovl.appendChild(defs);
+
+  for (const f of state.fires) {
+    const [x, y] = f.position;
+    // Smoke plume (expanding disc)
+    const r = smokeRadiusAt(f, t, ch);
+    if (r > 0.1) {
+      const smoke = el('circle', {
+        cx: x, cy: y, r,
+        fill: 'url(#smoke-grad)',
+        opacity: 0.85
+      });
+      ovl.appendChild(smoke);
+    }
+
+    // CO heatmap ring (approximated by concentric opacity rings)
+    for (let i = 1; i <= 3; i++) {
+      const rr = r * (0.35 * i);
+      if (rr < 0.1) continue;
+      ovl.appendChild(el('circle', {
+        cx: x, cy: y, r: rr,
+        fill: 'none',
+        stroke: 'rgba(200,50,20,0.22)',
+        'stroke-width': 0.05,
+        'stroke-dasharray': '0.2 0.15'
+      }));
+    }
+
+    // Fire core — pulsating ellipse
+    const pulse = 1 + 0.08 * Math.sin(t * 6);
+    ovl.appendChild(el('circle', {
+      cx: x, cy: y, r: (f.radius || 1) * pulse,
+      fill: 'url(#fire-grad)',
+      opacity: 0.9
+    }));
+
+    // Fire icon (crosshair + number)
+    g.appendChild(el('circle', {
+      cx: x, cy: y, r: 0.2,
+      fill: '#fff', stroke: '#c0201a',
+      'stroke-width': 0.04
+    }));
+    g.appendChild(el('text', {
+      x: x, y: y + 0.06,
+      'text-anchor': 'middle',
+      'font-size': 0.22,
+      'font-family': 'IBM Plex Mono, monospace',
+      'font-weight': 700,
+      fill: '#c0201a'
+    })).textContent = '🔥';
+  }
+}
+
+// ============== FIRE TIME-LAPSE LOOP ==============
+let fireRaf = 0;
+function fireLoop(ts) {
+  fireRaf = requestAnimationFrame(fireLoop);
+  if (!ui.firePlaying) { ui.fireLastTs = ts; return; }
+  const dt = Math.min(0.1, (ts - (ui.fireLastTs || ts)) / 1000);
+  ui.fireLastTs = ts;
+  ui.fireT = Math.min(600, ui.fireT + dt * ui.fireSpeed);
+  $('#fire-slider').value = ui.fireT;
+  $('#fire-t').textContent = 't = ' + Math.floor(ui.fireT) + 's';
+  renderFires();
+  if (ui.fireT >= 600) {
+    ui.firePlaying = false;
+    $('#fire-play').textContent = '▶';
+  }
+}
+
+function updateFireBarVisibility() {
+  const has = state.fires.length > 0;
+  document.body.classList.toggle('fire-mode', has);
+  if (!has) { ui.firePlaying = false; ui.fireT = 0; }
+}
+
+function wireFireBar() {
+  $('#fire-scenario').addEventListener('change', e => { ui.fireScenario = e.target.value; autosave(); });
+  $('#fire-standard').addEventListener('change', e => { ui.fireStandard = e.target.value; autosave(); });
+  $('#fire-reset').addEventListener('click', () => {
+    ui.fireT = 0; ui.firePlaying = false;
+    $('#fire-play').textContent = '▶';
+    $('#fire-slider').value = 0;
+    $('#fire-t').textContent = 't = 0s';
+    renderFires();
+  });
+  $('#fire-play').addEventListener('click', () => {
+    ui.firePlaying = !ui.firePlaying;
+    $('#fire-play').textContent = ui.firePlaying ? '⏸' : '▶';
+  });
+  $('#fire-slider').addEventListener('input', e => {
+    ui.fireT = parseFloat(e.target.value) || 0;
+    $('#fire-t').textContent = 't = ' + Math.floor(ui.fireT) + 's';
+    renderFires();
+  });
+  $$('.we-fire-speed button').forEach(b => {
+    b.addEventListener('click', () => {
+      $$('.we-fire-speed button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      ui.fireSpeed = parseFloat(b.dataset.speed) || 1;
+    });
+  });
+  $('#fire-report').addEventListener('click', () => {
+    toast('PDF ანგარიში — Task 028 (Codex)');
+  });
+  fireLoop(performance.now());
+}
+
+function placeFurniture(x, y) {
+  const lib = LIB.furniture.find(f => f.id === ui.selectedLib.furniture) || LIB.furniture[0];
+  state.furniture.push({
+    id: uid(),
+    model: lib.id,
+    kind: lib.kind,
+    name: lib.name,
+    position: [x, y],
+    w: lib.w,
+    d: lib.d,
+    rotation: 0,
+    color: furnColor(lib.kind)
+  });
+}
+
+function furnColor(kind) {
+  const m = {
+    bed: '#b8a078', sofa: '#a8928a', table: '#c0a074', chair: '#988068',
+    kitchen: '#d0c8b8', wc: '#e8ede5', sink: '#d4dde6', shower: '#c8d8e4'
+  };
+  return m[kind] || '#b8a078';
+}
+
+function placeFixture(x, y, type) {
+  let lib, f;
+  if (type === 'jet-fan') {
+    lib = LIB.jetfans.find(x => x.id === ui.selectedLib.jetfans);
+    f = {
+      id: uid(), position: [x, y], rotation: 0,
+      type: 'jet-fan', model: lib.id,
+      params: { thrust_N: lib.thrust_N, flow_m3h: lib.flow_m3h }
+    };
+  } else {
+    lib = LIB.exhausts.find(x => x.id === ui.selectedLib.exhausts);
+    f = {
+      id: uid(), position: [x, y], rotation: 0,
+      type: 'exhaust', model: lib.id,
+      params: { }
+    };
+  }
+  state.fixtures.push(f);
+}
+
+function deleteSelection() {
+  if (!ui.selection.length) return;
+  snapshot();
+  const ids = new Set(ui.selection);
+  state.walls = state.walls.filter(w => !ids.has(w.id));
+  state.columns = state.columns.filter(c => !ids.has(c.id));
+  state.openings = state.openings.filter(o => !ids.has(o.id) && !ids.has(o.wallId));
+  state.fixtures = state.fixtures.filter(f => !ids.has(f.id));
+  state.fires = state.fires.filter(f => !ids.has(f.id));
+  state.furniture = (state.furniture || []).filter(f => !ids.has(f.id));
+  ui.selection = [];
+  updateFireBarVisibility();
+  render();
+  renderProperties();
+  autosave();
+}
+
+function clearAll() {
+  if (!confirm('ნამდვილად გსურს ყველა ელემენტის წაშლა?')) return;
+  snapshot();
+  state.walls = []; state.columns = []; state.openings = []; state.fixtures = []; state.fires = []; state.furniture = [];
+  ui.selection = [];
+  updateFireBarVisibility();
+  render();
+  renderProperties();
+  autosave();
+  toast('გასუფთავებულია');
+}
+
+// ============== EVENTS ==============
+function onPointerDown(e) {
+  if (e.button === 1 || (e.button === 0 && e.shiftKey && ui.tool === 'select')) {
+    // middle or shift — pan
+    ui.panning = true;
+    ui.panStart = { x: e.clientX, y: e.clientY, view: { ...ui.view } };
+    return;
+  }
+  if (ui.tool === 'pan') {
+    ui.panning = true;
+    ui.panStart = { x: e.clientX, y: e.clientY, view: { ...ui.view } };
+    return;
+  }
+
+  const world = screenToWorld(e.clientX, e.clientY);
+  const sn = applySnap(world);
+  const x = sn.x, y = sn.y;
+
+  if (ui.tool === 'select') {
+    const hit = pickAt(x, y);
+    if (hit) {
+      ui.selection = [hit.item.id];
+    } else {
+      ui.selection = [];
+    }
+    renderCtxPanel();
+    render();
+  } else if (ui.tool === 'wall') {
+    const mode = (ui.toolDefaults && ui.toolDefaults.wall && ui.toolDefaults.wall.wallMode) || 'line';
+    if (mode === 'arc') {
+      // 3-click sequence: start → end → apex
+      if (!ui.drafting || ui.drafting.mode !== 'arc') {
+        ui.drafting = { type: 'wall', mode: 'arc', vertices: [[x, y]] };
+      } else if (ui.drafting.vertices.length === 1) {
+        // 2nd click = end (chord other end)
+        const start = ui.drafting.vertices[0];
+        if (Math.hypot(start[0]-x, start[1]-y) > 0.05) {
+          ui.drafting.vertices.push([x, y]);
+        }
+      } else if (ui.drafting.vertices.length === 2) {
+        // 3rd click = apex → commit arc wall
+        const [start, end] = ui.drafting.vertices;
+        snapshot();
+        commitArcWall(start, end, [x, y]);
+        ui.drafting = null;
+        autosave();
+      }
+      render();
+    } else {
+      // line / polyline mode
+      if (!ui.drafting || ui.drafting.mode === 'arc') {
+        ui.drafting = { type: 'wall', mode: 'line', vertices: [[x, y]] };
+      } else {
+        const last = ui.drafting.vertices[ui.drafting.vertices.length - 1];
+        if (Math.hypot(last[0]-x, last[1]-y) > 0.05) {
+          snapshot();
+          commitWallSegment(last, [x, y]);
+          ui.drafting.vertices.push([x, y]);
+          autosave();
+        }
+      }
+      render();
+    }
+  } else if (ui.tool === 'column') {
+    snapshot();
+    placeColumn(x, y);
+    render();
+    autosave();
+  } else if (ui.tool === 'door' || ui.tool === 'window') {
+    const wall = pickWallOnly(x, y);
+    if (wall) {
+      if (wall.kind === 'arc') {
+        toast('რკალ-კედელზე კარი/ფანჯარა ჯერ არ არის — Task 027');
+        return;
+      }
+      snapshot();
+      placeOpeningOnWall(wall, x, y, ui.tool);
+      render();
+      autosave();
+      toast(ui.tool === 'door' ? 'კარი დამატდა' : 'ფანჯარა დამატდა');
+    } else {
+      toast('დააჭირე კედელზე');
+    }
+  } else if (ui.tool === 'fire') {
+    snapshot();
+    placeFire(x, y);
+    render();
+    autosave();
+    toast('🔥 ცეცხლი დაემატა');
+  } else if (ui.tool === 'furniture') {
+    snapshot();
+    placeFurniture(x, y);
+    render();
+    autosave();
+  } else if (ui.tool === 'jetfan') {
+    snapshot();
+    placeFixture(x, y, 'jet-fan');
+    render();
+    autosave();
+  } else if (ui.tool === 'exhaust') {
+    snapshot();
+    placeFixture(x, y, 'exhaust');
+    render();
+    autosave();
+  }
+}
+
+function onPointerMove(e) {
+  if (ui.panning && ui.panStart) {
+    const dx = (e.clientX - ui.panStart.x) / ui.view.zoom;
+    const dy = (e.clientY - ui.panStart.y) / ui.view.zoom;
+    ui.view.x = ui.panStart.view.x - dx;
+    ui.view.y = ui.panStart.view.y - dy;
+    updateViewBox();
+    render();
+    return;
+  }
+
+  const world = screenToWorld(e.clientX, e.clientY);
+  ui.cursor = world;
+  ui.snapped = applySnap(world);
+  $('#st-coord').textContent = `X: ${world.x.toFixed(2)}მ · Y: ${world.y.toFixed(2)}მ`;
+  $('#st-snap').textContent = 'Snap: ' + (ui.snapped.type || '—');
+
+  if (ui.tool === 'wall' && ui.drafting) {
+    renderPreview();
+  }
+  renderSnap();
+}
+
+function onPointerUp(e) {
+  if (ui.panning) {
+    ui.panning = false;
+    ui.panStart = null;
+  }
+}
+
+function onKeyDown(e) {
+  // Tool shortcuts
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return; }
+    if (e.key === 'y' || e.key === 'Y') { e.preventDefault(); redo(); return; }
+    if (e.key === 'd' || e.key === 'D') { if (ui.selection.length) { e.preventDefault(); duplicateSelection(); } return; }
+    return;
+  }
+
+  switch (e.key.toLowerCase()) {
+    case 'v': setTool('select'); break;
+    case 'w': setTool('wall'); break;
+    case 'r': setTool('room'); break;
+    case 'c': setTool('column'); break;
+    case 'f': setTool('window'); break;
+    case 'j': setTool('jetfan'); break;
+    case 'e': setTool('exhaust'); break;
+    case 'm': setTool('furniture'); break;
+    case 'x': setTool('fire'); break;
+    case 'h': setTool('pan'); break;
+    case 'delete': case 'backspace':
+      if (ui.selection.length) { deleteSelection(); e.preventDefault(); }
+      break;
+    case 'd': setTool('door'); break;
+    case 'l':
+      if (ui.selection.length) toggleAttr('locked');
+      break;
+    case 'escape':
+      ui.drafting = null; ui.selection = [];
+      setTool('select');
+      break;
+    case 'enter':
+      if (ui.drafting) { ui.drafting = null; render(); }
+      break;
+    case '?':
+      $('#help-modal').classList.add('open');
+      break;
+  }
+}
+
+function onWheel(e) {
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.15 : 1/1.15;
+  const svg = $('#svg');
+  const rect = svg.getBoundingClientRect();
+  const world = screenToWorld(e.clientX, e.clientY);
+  ui.view.zoom = Math.max(5, Math.min(400, ui.view.zoom * factor));
+  // Re-center so cursor world stays fixed on screen
+  const newWorld = screenToWorld(e.clientX, e.clientY);
+  ui.view.x += world.x - newWorld.x;
+  ui.view.y += world.y - newWorld.y;
+  updateViewBox();
+  $('#st-zoom').textContent = `${Math.round(ui.view.zoom*2.5)}%`;
+  render();
+}
+
+function fitView() {
+  if (!state.walls.length && !state.columns.length && !state.fixtures.length) {
+    ui.view = { x: 0, y: 0, zoom: 40 };
+    updateViewBox();
+    render();
+    return;
+  }
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const w of state.walls) {
+    minX = Math.min(minX, w.start[0], w.end[0]);
+    maxX = Math.max(maxX, w.start[0], w.end[0]);
+    minY = Math.min(minY, w.start[1], w.end[1]);
+    maxY = Math.max(maxY, w.start[1], w.end[1]);
+  }
+  for (const c of state.columns) {
+    minX = Math.min(minX, c.position[0]-c.size); maxX = Math.max(maxX, c.position[0]+c.size);
+    minY = Math.min(minY, c.position[1]-c.size); maxY = Math.max(maxY, c.position[1]+c.size);
+  }
+  for (const f of state.fixtures) {
+    minX = Math.min(minX, f.position[0]-1); maxX = Math.max(maxX, f.position[0]+1);
+    minY = Math.min(minY, f.position[1]-1); maxY = Math.max(maxY, f.position[1]+1);
+  }
+  const w = maxX - minX, h = maxY - minY;
+  if (!Number.isFinite(w) || w <= 0) { ui.view = { x: 0, y: 0, zoom: 40 }; }
+  else {
+    const svg = $('#svg');
+    const rect = svg.getBoundingClientRect();
+    ui.view.x = (minX + maxX) / 2;
+    ui.view.y = (minY + maxY) / 2;
+    ui.view.zoom = Math.min(rect.width / (w + 4), rect.height / (h + 4));
+  }
+  updateViewBox();
+  render();
+}
+
+// ============== IMPORT / EXPORT ==============
+function exportJSON() {
+  state.meta.updatedAt = new Date().toISOString();
+  state.meta.name = $('#inp-name').value || 'unnamed';
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `plan-${state.meta.name.replace(/[^a-z0-9\u10A0-\u10FF]/gi, '-').toLowerCase()}-${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('ჩამოიტვირთა JSON');
+}
+
+function importJSON() {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.json,application/json';
+  inp.onchange = async () => {
+    const file = inp.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (data.walls && Array.isArray(data.walls)) {
+        snapshot();
+        Object.assign(state, data);
+        $('#inp-name').value = state.meta?.name || 'imported';
+        $('#inp-floor-h').value = state.floor?.height || 3;
+        $('#inp-ceiling-h').value = state.floor?.ceilingHeight || 2.8;
+        ui.selection = [];
+        render();
+        renderProperties();
+        autosave();
+        toast('JSON იმპორტდა');
+      } else {
+        toast('არასწორი ფორმატი');
+      }
+    } catch (e) {
+      toast('JSON წაკითხვა ვერ მოხერხდა');
+    }
+  };
+  inp.click();
+}
+
+// ============== AUTOSAVE (via ProjectBridge) ==============
+// When loaded with ?project=<id>, state is saved into the projects lib slot.
+// Otherwise falls back to legacy `eng_wall_editor_v1` key (backward compat).
+let _bridge = null;
+
+function buildSnapshot() {
+  try { syncActiveFloorToArchive(); } catch {}
+  return {
+    ...state,
+    _floors: state.floors, _activeFloor: ui.activeFloor,
+    _viewMode: ui.viewMode, _toolDefaults: ui.toolDefaults,
+    _pipVisible: ui.pipVisible, _pipMode: ui.pipMode, _pipPos: ui.pipPos
+  };
+}
+
+function applySnapshot(data) {
+  if (!data || typeof data !== 'object') return;
+  if (data.walls && Array.isArray(data.walls)) Object.assign(state, data);
+  if (data._floors) state.floors = data._floors;
+  if (typeof data._activeFloor === 'number') ui.activeFloor = data._activeFloor;
+  if (data._viewMode) ui.viewMode = data._viewMode;
+  if (data._toolDefaults) ui.toolDefaults = data._toolDefaults;
+  if (typeof data._pipVisible === 'boolean') ui.pipVisible = data._pipVisible;
+  if (data._pipMode) ui.pipMode = data._pipMode;
+  if (data._pipPos) ui.pipPos = data._pipPos;
+}
+
+function autosave() {
+  if (_bridge) _bridge.save();
+  updateProjectBadge();
+}
+
+function restoreAutosave() {
+  if (!window.ProjectBridge) return false;
+  _bridge = ProjectBridge.init({
+    slug: 'wall-editor',
+    legacyKey: 'eng_wall_editor_v1',
+    getState: buildSnapshot,
+    applyState: applySnapshot,
+    onProjectChange: updateProjectBadge
+  });
+  const r = _bridge.load();
+  return r.loaded;
+}
+
+function updateProjectBadge() {
+  const el = document.getElementById('project-badge');
+  if (!el || !_bridge) return;
+  const p = _bridge.currentProject();
+  el.textContent = p ? p.name : '— (legacy)';
+  el.title = p ? `${p.name} · updated ${new Date(p.updatedAt).toLocaleString()}` : 'პროექტის გარეშე — localStorage';
+}
+
+// ============== MULTI-FLOOR ==============
+// state.floors = [{ id, name, height, data: { walls, columns, openings, fixtures, rooms, dimensions } }]
+// state.walls/columns/etc. = live views for active floor (kept in sync via switchFloor).
+
+function initFloors() {
+  if (state.floors && state.floors.length) {
+    // Restore active floor if already multi-floor
+    const active = state.floors[ui.activeFloor] || state.floors[0];
+    applyFloorData(active.data);
+    return;
+  }
+  // First-time migration: current flat arrays → floor 0
+  state.floors = [{
+    id: uid(), name: '1F', height: state.floor.ceilingHeight,
+    data: cloneFloorData({
+      walls: state.walls, columns: state.columns, openings: state.openings,
+      fixtures: state.fixtures, rooms: state.rooms, dimensions: state.dimensions
+    })
+  }];
+  ui.activeFloor = 0;
+}
+
+function cloneFloorData(d) {
+  return JSON.parse(JSON.stringify({
+    walls: d.walls || [], columns: d.columns || [], openings: d.openings || [],
+    fixtures: d.fixtures || [], furniture: d.furniture || [],
+    rooms: d.rooms || [], dimensions: d.dimensions || []
+  }));
+}
+
+function applyFloorData(d) {
+  state.walls = d.walls || [];
+  state.columns = d.columns || [];
+  state.openings = d.openings || [];
+  state.fixtures = d.fixtures || [];
+  state.furniture = d.furniture || [];
+  state.rooms = d.rooms || [];
+  state.dimensions = d.dimensions || [];
+}
+
+function syncActiveFloorToArchive() {
+  if (!state.floors || !state.floors[ui.activeFloor]) return;
+  state.floors[ui.activeFloor].data = cloneFloorData({
+    walls: state.walls, columns: state.columns, openings: state.openings,
+    fixtures: state.fixtures, furniture: state.furniture,
+    rooms: state.rooms, dimensions: state.dimensions
+  });
+}
+
+function switchFloor(idx) {
+  if (!state.floors || idx < 0 || idx >= state.floors.length || idx === ui.activeFloor) return;
+  syncActiveFloorToArchive();
+  ui.activeFloor = idx;
+  applyFloorData(state.floors[idx].data);
+  ui.selection = []; ui.drafting = null;
+  renderFloorSeg();
+  render(); renderCtxPanel(); renderPIP();
+  autosave();
+}
+
+function createFloor(pos /* 'upper' | 'lower' */) {
+  syncActiveFloorToArchive();
+  const cur = state.floors[ui.activeFloor];
+  const idx = pos === 'upper' ? ui.activeFloor + 1 : ui.activeFloor;
+  const label = defaultFloorName(pos);
+  state.floors.splice(idx, 0, {
+    id: uid(), name: label, height: cur.height || state.floor.ceilingHeight,
+    data: cloneFloorData({})
+  });
+  ui.activeFloor = idx;
+  applyFloorData(state.floors[idx].data);
+  ui.selection = []; ui.drafting = null;
+  renderFloorSeg();
+  render(); renderCtxPanel(); renderPIP();
+  autosave();
+  toast('სართული დამატდა: ' + label);
+}
+
+function defaultFloorName(pos) {
+  const upperCount = state.floors.filter(f => !/^B\d+$/i.test(f.name)).length;
+  const lowerCount = state.floors.filter(f => /^B\d+$/i.test(f.name)).length;
+  if (pos === 'upper') return (upperCount + 1) + 'F';
+  return 'B' + (lowerCount + 1);
+}
+
+function renderFloorSeg() {
+  const seg = $('#floor-seg');
+  if (!seg) return;
+  seg.innerHTML = '';
+  (state.floors || []).forEach((f, i) => {
+    const b = document.createElement('button');
+    b.textContent = f.name;
+    b.className = (i === ui.activeFloor) ? 'active' : '';
+    b.addEventListener('click', () => switchFloor(i));
+    b.addEventListener('dblclick', () => {
+      const nw = prompt('სართულის სახელი', f.name);
+      if (nw && nw.trim()) { f.name = nw.trim(); renderFloorSeg(); autosave(); }
+    });
+    seg.appendChild(b);
+  });
+}
+
+// ============== PIP (Picture-in-Picture) ==============
+function renderPIP() {
+  if (!ui.pipVisible) { $('#pip').style.display = 'none'; return; }
+  $('#pip').style.display = '';
+  // Restore saved position
+  if (ui.pipPos) {
+    const pip = $('#pip');
+    pip.style.right = 'auto'; pip.style.top = ui.pipPos.top + 'px'; pip.style.left = ui.pipPos.left + 'px';
+  }
+  $('#pip-2d').classList.toggle('active', ui.pipMode === '2d');
+  $('#pip-3d').classList.toggle('active', ui.pipMode === '3d');
+
+  if (ui.pipMode === '2d') drawPIP2D();
+  else drawPIP3D();
+}
+
+function drawPIP2D() {
+  const svg = $('#pip-svg');
+  svg.innerHTML = '';
+  // Compute plan bounds
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const w of state.walls) {
+    for (const p of [w.start, w.end, w.apex].filter(Boolean)) {
+      minX = Math.min(minX, p[0]); minY = Math.min(minY, p[1]);
+      maxX = Math.max(maxX, p[0]); maxY = Math.max(maxY, p[1]);
+    }
+  }
+  if (!isFinite(minX)) { minX = -5; minY = -5; maxX = 5; maxY = 5; }
+  const pad = 1;
+  minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+  svg.setAttribute('viewBox', `${minX} ${minY} ${maxX-minX} ${maxY-minY}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  // Walls
+  const ns = 'http://www.w3.org/2000/svg';
+  for (const w of state.walls) {
+    const poly = wallPolygon(w);
+    const pg = document.createElementNS(ns, 'polygon');
+    pg.setAttribute('points', poly.map(p => p.join(',')).join(' '));
+    pg.setAttribute('fill', 'var(--navy)');
+    pg.setAttribute('opacity', '0.9');
+    svg.appendChild(pg);
+  }
+  // Columns
+  for (const c of state.columns) {
+    const n = c.shape === 'round'
+      ? document.createElementNS(ns, 'circle')
+      : document.createElementNS(ns, 'rect');
+    if (c.shape === 'round') {
+      n.setAttribute('cx', c.position[0]); n.setAttribute('cy', c.position[1]);
+      n.setAttribute('r', (c.size || 0.4) / 2);
+    } else {
+      const s = c.size || 0.4;
+      n.setAttribute('x', c.position[0] - s/2); n.setAttribute('y', c.position[1] - s/2);
+      n.setAttribute('width', s); n.setAttribute('height', s);
+    }
+    n.setAttribute('fill', 'var(--text-2)');
+    svg.appendChild(n);
+  }
+  // Viewport rectangle (where main canvas is looking)
+  const svgMain = $('#svg');
+  const vb = svgMain.viewBox.baseVal;
+  if (vb && vb.width > 0) {
+    const r = document.createElementNS(ns, 'rect');
+    r.setAttribute('x', vb.x); r.setAttribute('y', vb.y);
+    r.setAttribute('width', vb.width); r.setAttribute('height', vb.height);
+    r.setAttribute('fill', 'rgba(31,111,212,0.12)');
+    r.setAttribute('stroke', 'var(--blue)');
+    r.setAttribute('stroke-width', Math.max(0.03, (maxX-minX) * 0.004));
+    r.setAttribute('stroke-dasharray', '0.15 0.12');
+    svg.appendChild(r);
+  }
+}
+
+function drawPIP3D() {
+  const svg = $('#pip-svg');
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  // Isometric preview — project walls via simple axonometric transform
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const iso = (x, y, z) => [x - y * 0.5, -z + (x + y) * 0.3];
+  const segs = [];
+  for (const w of state.walls) {
+    const h = w.height || state.floor.ceilingHeight || 2.8;
+    const [x1, y1] = w.start, [x2, y2] = w.end;
+    const pts = [
+      iso(x1, y1, 0), iso(x2, y2, 0),
+      iso(x2, y2, h), iso(x1, y1, h)
+    ];
+    pts.forEach(p => {
+      minX = Math.min(minX, p[0]); minY = Math.min(minY, p[1]);
+      maxX = Math.max(maxX, p[0]); maxY = Math.max(maxY, p[1]);
+    });
+    segs.push(pts);
+  }
+  if (!isFinite(minX)) { minX = -5; minY = -5; maxX = 5; maxY = 5; }
+  const pad = 1;
+  svg.setAttribute('viewBox', `${minX-pad} ${minY-pad} ${maxX-minX+pad*2} ${maxY-minY+pad*2}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  for (const pts of segs) {
+    const pg = document.createElementNS(ns, 'polygon');
+    pg.setAttribute('points', pts.map(p => p.join(',')).join(' '));
+    pg.setAttribute('fill', 'var(--sur-2)');
+    pg.setAttribute('stroke', 'var(--navy)');
+    pg.setAttribute('stroke-width', '0.04');
+    pg.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(pg);
+  }
+}
+
+function wirePipDrag() {
+  const pip = $('#pip'), head = $('#pip-head');
+  let drag = null;
+  head.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button')) return;
+    const r = pip.getBoundingClientRect();
+    drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+    head.setPointerCapture(e.pointerId);
+  });
+  head.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const stage = $('#we-stage').getBoundingClientRect();
+    const left = Math.max(0, Math.min(stage.width - 160, e.clientX - stage.left - drag.dx));
+    const top  = Math.max(0, Math.min(stage.height - 40, e.clientY - stage.top - drag.dy));
+    pip.style.right = 'auto';
+    pip.style.left = left + 'px';
+    pip.style.top = top + 'px';
+    ui.pipPos = { left, top };
+  });
+  head.addEventListener('pointerup', () => { drag = null; autosave(); });
+
+  $('#pip-2d').addEventListener('click', () => { ui.pipMode = '2d'; renderPIP(); autosave(); });
+  $('#pip-3d').addEventListener('click', () => { ui.pipMode = '3d'; renderPIP(); autosave(); });
+  $('#pip-collapse').addEventListener('click', () => {
+    pip.classList.toggle('collapsed');
+  });
+}
+
+// ============== 3D VIEW (Three.js, lazy) ==============
+const three3d = { initialized: false, scene: null, renderer: null, camera: null, controls: null, root: null, raf: 0 };
+
+async function init3D() {
+  if (three3d.initialized) return;
+  const THREE = await import('three');
+  const { OrbitControls } = await import('three/addons/controls/OrbitControls.js');
+  const host = $('#we-3d-host');
+  const w = host.clientWidth || 800, h = host.clientHeight || 600;
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xe6edf6);
+  scene.fog = new THREE.Fog(0xe6edf6, 30, 80);
+
+  const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 200);
+  camera.position.set(10, 10, 10);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setPixelRatio(window.devicePixelRatio);
+  renderer.setSize(w, h);
+  renderer.shadowMap.enabled = true;
+  host.appendChild(renderer.domElement);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.target.set(0, 1, 0);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.maxPolarAngle = Math.PI * 0.49;
+
+  // Lights
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x6b82a6, 0.55);
+  scene.add(hemi);
+  const dir = new THREE.DirectionalLight(0xffffff, 0.85);
+  dir.position.set(8, 12, 6); dir.castShadow = true;
+  dir.shadow.mapSize.set(2048, 2048);
+  dir.shadow.camera.left = -25; dir.shadow.camera.right = 25;
+  dir.shadow.camera.top = 25; dir.shadow.camera.bottom = -25;
+  scene.add(dir);
+
+  // Ground
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(60, 60),
+    new THREE.MeshStandardMaterial({ color: 0xd8dfea, roughness: 0.95 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+  // Grid
+  const grid = new THREE.GridHelper(60, 60, 0x9cb0cc, 0xc5d0e2);
+  grid.position.y = 0.001;
+  scene.add(grid);
+
+  const root = new THREE.Group();
+  scene.add(root);
+
+  three3d.THREE = THREE;
+  three3d.scene = scene; three3d.camera = camera;
+  three3d.renderer = renderer; three3d.controls = controls;
+  three3d.root = root;
+  three3d.initialized = true;
+
+  // Resize handling
+  const resize = () => {
+    const W = host.clientWidth, H = host.clientHeight;
+    if (W > 0 && H > 0) {
+      camera.aspect = W / H; camera.updateProjectionMatrix();
+      renderer.setSize(W, H);
+    }
+  };
+  window.addEventListener('resize', resize);
+
+  // Animate loop
+  const loop = () => {
+    three3d.raf = requestAnimationFrame(loop);
+    if (ui.viewMode !== '3d') return;
+    controls.update();
+    renderer.render(scene, camera);
+  };
+  loop();
+}
+
+function update3D() {
+  if (!three3d.initialized) return;
+  const { THREE, root } = three3d;
+  // Clear previous walls
+  while (root.children.length) {
+    const c = root.children[0]; root.remove(c);
+    if (c.geometry) c.geometry.dispose();
+    if (c.material) (Array.isArray(c.material) ? c.material : [c.material]).forEach(m => m.dispose && m.dispose());
+  }
+
+  const matWall = new THREE.MeshStandardMaterial({ color: 0xf7f6f1, roughness: 0.85 });
+  const matLoad = new THREE.MeshStandardMaterial({ color: 0xe0dbc8, roughness: 0.8 });
+  const matFire = new THREE.MeshStandardMaterial({ color: 0xf0c8b5, roughness: 0.8 });
+  const matCol  = new THREE.MeshStandardMaterial({ color: 0xbec7d4, roughness: 0.6 });
+  const matFan  = new THREE.MeshStandardMaterial({ color: 0x4c6b8f, roughness: 0.4, metalness: 0.3 });
+
+  function wallMat(w) {
+    if (w.type === 'loadbearing') return matLoad;
+    if (w.type === 'fire') return matFire;
+    return matWall;
+  }
+
+  // Walls — extrude polygon; for straight walls with openings, break into
+  // pier + sill + lintel segments so doors/windows render as real cutouts
+  // (Task 021 — CSG alternative without npm deps).
+  for (const w of state.walls) {
+    if (w.hidden) continue;
+    const H = w.height || state.floor.height || 2.8;
+    const mat = wallMat(w);
+
+    // Arc walls: no opening cutouts yet — extrude whole polygon
+    if (w.kind === 'arc') {
+      const poly = wallPolygon(w);
+      const shape = new THREE.Shape(poly.map(p => new THREE.Vector2(p[0], p[1])));
+      const geo = new THREE.ExtrudeGeometry(shape, { depth: H, bevelEnabled: false });
+      geo.rotateX(-Math.PI / 2);
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      root.add(mesh);
+      continue;
+    }
+
+    const openings = state.openings.filter(o => o.wallId === w.id && !o.hidden);
+    const [x1, y1] = w.start, [x2, y2] = w.end;
+    const dx = x2 - x1, dy = y2 - y1;
+    const L = Math.hypot(dx, dy);
+    if (L < 1e-6) continue;
+    const angle = Math.atan2(dy, dx);
+    const thk = w.thickness || 0.15;
+
+    if (openings.length === 0) {
+      const box = new THREE.BoxGeometry(L, H, thk);
+      const mesh = new THREE.Mesh(box, mat);
+      mesh.position.set((x1 + x2) / 2, H / 2, (y1 + y2) / 2);
+      mesh.rotation.y = -angle;
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      root.add(mesh);
+      continue;
+    }
+
+    // Helper: build a wall chunk at offset range [s0..s1] and height [yBot..yTop]
+    function chunk(s0, s1, yBot, yTop) {
+      const segL = s1 - s0; const segH = yTop - yBot;
+      if (segL < 0.01 || segH < 0.01) return;
+      const tMid = (s0 + s1) / 2 / L;
+      const cx = x1 + dx * tMid;
+      const cy = y1 + dy * tMid;
+      const box = new THREE.BoxGeometry(segL, segH, thk);
+      const m = new THREE.Mesh(box, mat);
+      m.position.set(cx, yBot + segH / 2, cy);
+      m.rotation.y = -angle;
+      m.castShadow = true; m.receiveShadow = true;
+      root.add(m);
+    }
+
+    // Sort openings by offset along wall
+    const ops = openings.slice().sort((a, b) => (a.offset || 0) - (b.offset || 0));
+    let cursor = 0;
+    for (const o of ops) {
+      const oW = o.width || 0.9;
+      const oH = o.height || 2.1;
+      const sillH = (o.type === 'window') ? (o.sillHeight != null ? o.sillHeight : 0.9) : 0;
+      const s0 = Math.max(0, (o.offset || 0) - oW / 2);
+      const s1 = Math.min(L, (o.offset || 0) + oW / 2);
+      // Pier before opening (full height)
+      if (s0 > cursor) chunk(cursor, s0, 0, H);
+      // Sill below (windows)
+      if (sillH > 0.01) chunk(s0, s1, 0, sillH);
+      // Lintel above
+      const topH = sillH + oH;
+      if (topH < H - 0.01) chunk(s0, s1, topH, H);
+      cursor = s1;
+    }
+    // Final pier after last opening
+    if (cursor < L - 0.001) chunk(cursor, L, 0, H);
+  }
+
+  // Columns
+  for (const c of state.columns) {
+    if (c.hidden) continue;
+    const h = c.height || state.floor.ceilingHeight || 3;
+    const geo = c.shape === 'round'
+      ? new THREE.CylinderGeometry(c.size/2, c.size/2, h, 24)
+      : new THREE.BoxGeometry(c.size, h, c.size);
+    const mesh = new THREE.Mesh(geo, matCol);
+    mesh.position.set(c.position[0], h/2, c.position[1]);
+    if (c.rotation) mesh.rotation.y = THREE.MathUtils.degToRad(c.rotation);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    root.add(mesh);
+  }
+
+  // Fixtures (jet fans + exhausts) — simple indicator
+  for (const f of state.fixtures) {
+    if (f.hidden) continue;
+    const isJet = String(f.type || '').includes('jet');
+    const geo = isJet
+      ? new THREE.CylinderGeometry((f.diameter || 0.4)/2, (f.diameter || 0.4)/2, 0.5, 20)
+      : new THREE.BoxGeometry(f.size || 0.4, 0.15, f.size || 0.4);
+    const mesh = new THREE.Mesh(geo, matFan);
+    const zh = f.zh || 2.3;
+    if (isJet) {
+      mesh.position.set(f.position[0], zh, f.position[1]);
+      mesh.rotation.z = Math.PI / 2;
+      if (f.rotation) mesh.rotation.y = THREE.MathUtils.degToRad(f.rotation);
+    } else {
+      mesh.position.set(f.position[0], zh, f.position[1]);
+    }
+    mesh.castShadow = true;
+    root.add(mesh);
+  }
+
+  // Furniture — extrude box with kind-specific height
+  const furnH = { bed: 0.55, sofa: 0.85, table: 0.75, chair: 0.9, kitchen: 0.9, wc: 0.4, sink: 0.85, shower: 2.0 };
+  for (const fur of (state.furniture || [])) {
+    if (fur.hidden) continue;
+    const height = furnH[fur.kind] || 0.8;
+    const geo = new THREE.BoxGeometry(fur.w || 1, height, fur.d || 1);
+    const color = new THREE.Color(fur.color || '#b8a078');
+    const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.72 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(fur.position[0], height / 2, fur.position[1]);
+    if (fur.rotation) mesh.rotation.y = THREE.MathUtils.degToRad(fur.rotation);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    root.add(mesh);
+  }
+
+  // Center camera around bbox
+  const box = new three3d.THREE.Box3().setFromObject(root);
+  if (box.isEmpty()) return;
+  const center = new three3d.THREE.Vector3(); box.getCenter(center);
+  const size = new three3d.THREE.Vector3(); box.getSize(size);
+  const dist = Math.max(size.x, size.z) * 1.4 + 6;
+  three3d.camera.position.set(center.x + dist * 0.7, dist * 0.9, center.z + dist * 0.7);
+  three3d.controls.target.copy(center);
+  three3d.controls.update();
+}
+
+async function setViewMode(m) {
+  ui.viewMode = m;
+  const stage = $('#we-stage');
+  stage.classList.toggle('mode-3d', m === '3d');
+  $$('#view-seg button').forEach(b => b.classList.toggle('active', b.dataset.view === m));
+  if (m === '3d') {
+    await init3D();
+    update3D();
+  }
+  autosave();
+}
+
+// ============== WIRE UI ==============
+function wire() {
+  // Tool buttons
+  $$('.we-tool').forEach(b => {
+    b.addEventListener('click', () => setTool(b.dataset.tool));
+  });
+
+  // Topbar inputs
+  $('#inp-floor-h').addEventListener('change', e => { state.floor.height = parseFloat(e.target.value) || 3; autosave(); });
+  $('#inp-ceiling-h').addEventListener('change', e => { state.floor.ceilingHeight = parseFloat(e.target.value) || 2.8; autosave(); });
+  $('#inp-grid').addEventListener('change', e => { state.scale.gridStep = parseFloat(e.target.value) || 0.25; render(); autosave(); });
+  $('#inp-name').addEventListener('change', e => { state.meta.name = e.target.value; autosave(); });
+
+  // Topbar buttons
+  $('#btn-export').addEventListener('click', () => { if (_bridge) _bridge.exportJSON(); else exportJSON(); });
+  $('#btn-import').addEventListener('click', () => {
+    if (!_bridge) return importJSON();
+    const fi = document.createElement('input');
+    fi.type = 'file'; fi.accept = 'application/json,.json';
+    fi.onchange = () => {
+      const f = fi.files[0]; if (!f) return;
+      _bridge.importJSON(f).then(p => {
+        render(); renderCtxPanel();
+        toast('ჩატვირთულია: ' + p.name);
+      }).catch(e => toast('შეცდომა: ' + e.message));
+    };
+    fi.click();
+  });
+  $('#btn-save-as').addEventListener('click', () => {
+    if (!_bridge) return toast('ბრიჯი არ არის');
+    const name = prompt('პროექტის სახელი', state.meta?.name || 'ახალი გეგმა');
+    if (!name) return;
+    const p = _bridge.saveAs(name);
+    toast('შენახულია: ' + p.name);
+  });
+  $('#btn-rename').addEventListener('click', () => {
+    if (!_bridge || !_bridge.projectId) return toast('ჯერ Save as-ით შექმენი პროექტი');
+    const cur = _bridge.currentProject();
+    const name = prompt('ახალი სახელი', cur?.name || '');
+    if (!name) return;
+    _bridge.rename(name);
+    toast('გადარქმეულია');
+  });
+  $('#btn-print').addEventListener('click', () => _bridge && _bridge.printPDF());
+  $('#btn-gate').addEventListener('click', () => _bridge && _bridge.openGate());
+  $('#btn-import-dxf').addEventListener('click', importDXF);
+  $('#btn-export-dxf').addEventListener('click', exportDXF);
+  $('#btn-ai-walls').addEventListener('click', importFromAI);
+  $('#btn-cleanup').addEventListener('click', runCleanup);
+  $('#btn-clear').addEventListener('click', clearAll);
+  $('#btn-undo').addEventListener('click', undo);
+  $('#btn-redo').addEventListener('click', redo);
+  $('#btn-zoom-fit').addEventListener('click', fitView);
+
+  // Library + tab events now handled by EditorPanels (renderCtxPanel);
+  // nothing to wire here.
+
+  // Bottom bar — floor switcher
+  $('#btn-new-upper').addEventListener('click', () => createFloor('upper'));
+  $('#btn-new-lower').addEventListener('click', () => createFloor('lower'));
+
+  // View mode 2D / 3D
+  $$('#view-seg button').forEach(b => {
+    b.addEventListener('click', () => setViewMode(b.dataset.view));
+  });
+
+  // Zoom +/−
+  $('#btn-zoom-in').addEventListener('click', () => {
+    ui.view.zoom = Math.min(400, ui.view.zoom * 1.2);
+    updateViewBox(); $('#st-zoom').textContent = Math.round(ui.view.zoom*2.5) + '%';
+    render();
+  });
+  $('#btn-zoom-out').addEventListener('click', () => {
+    ui.view.zoom = Math.max(5, ui.view.zoom / 1.2);
+    updateViewBox(); $('#st-zoom').textContent = Math.round(ui.view.zoom*2.5) + '%';
+    render();
+  });
+
+  // PIP toggle
+  $('#btn-pip-toggle').addEventListener('click', () => {
+    ui.pipVisible = !ui.pipVisible;
+    renderPIP();
+    autosave();
+  });
+  wirePipDrag();
+
+  // Fire-mode time-lapse bar
+  wireFireBar();
+
+  // Help modal
+  const helpModal = $('#help-modal');
+  $('#btn-help').addEventListener('click', (e) => {
+    e.stopPropagation();
+    helpModal.classList.add('open');
+  });
+  $('#help-close').addEventListener('click', () => helpModal.classList.remove('open'));
+  helpModal.addEventListener('click', (e) => {
+    if (e.target === helpModal) helpModal.classList.remove('open');
+  });
+  $$('.we-tabs-sub button').forEach(b => {
+    b.addEventListener('click', () => {
+      $$('.we-tabs-sub button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      $$('.we-help-panel').forEach(p => p.classList.toggle('active', p.dataset.help === b.dataset.help));
+    });
+  });
+
+  // Canvas events
+  const wrap = $('#svg-wrap');
+  wrap.addEventListener('pointerdown', onPointerDown);
+  window.addEventListener('pointermove', onPointerMove);
+  window.addEventListener('pointerup', onPointerUp);
+  wrap.addEventListener('wheel', onWheel, { passive: false });
+  window.addEventListener('keydown', onKeyDown);
+  window.addEventListener('resize', () => { updateViewBox(); render(); });
+}
+
+// ============== BOOT ==============
+document.addEventListener('DOMContentLoaded', () => {
+  restoreAutosave();
+  initFloors();
+  $('#inp-name').value = state.meta?.name || 'ახალი გეგმა';
+  $('#inp-floor-h').value = state.floor.height;
+  $('#inp-ceiling-h').value = state.floor.ceilingHeight;
+  $('#inp-grid').value = state.scale.gridStep;
+  wire();
+  registerFireContexts();
+  renderFloorSeg();
+  renderCtxPanel();
+  updateFireBarVisibility();
+  updateViewBox();
+  render();
+  renderPIP();
+  fitView();
+  if (ui.viewMode === '3d') setViewMode('3d');
+});
+</script>
+</body>
+</html>

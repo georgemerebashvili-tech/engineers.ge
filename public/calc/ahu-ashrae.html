@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AHU Engineering Report — ASHRAE</title>
 <script src="/calc/_theme-sync.js"></script>
+<script src="/calc/_draft-store.js"></script>
 <link rel="stylesheet" href="/calc/_base.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -175,6 +176,14 @@ canvas{display:block;width:100%;height:auto;max-width:100%}
 
 /* ── DIVIDER ───────────────────────────────────────────────────── */
 .sep{height:1px;background:var(--bdr);margin:14px 0}
+
+/* ── SUMMARY BANNER ────────────────────────────────────────────── */
+.sum-banner{background:linear-gradient(135deg,var(--navy),var(--navy-2));
+            color:#fff;border-radius:8px;padding:16px 20px;margin-bottom:16px}
+.sum-banner-title{font-family:var(--font-sans);font-size:18px;font-weight:700;margin-bottom:4px;letter-spacing:-0.01em}
+.sum-banner-meta{font-size:11px;opacity:.75;font-family:var(--font-mono)}
+.dark .sum-banner{background:linear-gradient(135deg,var(--blue-lt),var(--sur-2));color:var(--navy);border:1px solid var(--blue-bd)}
+.dark .sum-banner-meta{color:var(--text-2);opacity:.9}
 
 /* ── RESPONSIVE ────────────────────────────────────────────────── */
 @media (max-width: 960px){
@@ -946,9 +955,9 @@ canvas{display:block;width:100%;height:auto;max-width:100%}
     <span class="sec-std">ASHRAE Compliant Design</span><span class="chevron">▾</span>
   </div>
   <div class="sec-body">
-    <div style="background:var(--navy);color:white;border-radius:8px;padding:16px 20px;margin-bottom:16px">
-      <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;margin-bottom:4px" id="sum_proj">AHU Engineering Report</div>
-      <div style="font-size:11px;opacity:.7" id="sum_info">Location · Engineer · Date</div>
+    <div class="sum-banner">
+      <div class="sum-banner-title" id="sum_proj">AHU Engineering Report</div>
+      <div class="sum-banner-meta" id="sum_info">Location · Engineer · Date</div>
     </div>
     <div class="rcols3">
       <div class="rcard">
@@ -1468,6 +1477,18 @@ function resetDefaults(){
 
 // Initial run
 calc();
+
+// Draft autosave (localStorage + cookie fallback) — /calc/_draft-store.js
+(function(){
+  if (typeof DraftStore === 'undefined') return;
+  try {
+    const d = DraftStore.create('ahu-ashrae');
+    const touched = d.restoreInputs();
+    d.autosaveInputs({debounce: 400});
+    if (touched > 0) { try { calc(); } catch(_) {} }
+    window.__DRAFT_AHU__ = d;
+  } catch (e) { console.warn('draft-store init failed', e); }
+})();
 </script>
 </body>
 </html>

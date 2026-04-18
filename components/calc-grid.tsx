@@ -50,9 +50,9 @@ const SYSTEMS: System[] = [
     slug: 'fire-safety',
     icons: [{icon: Siren, color: 'var(--red)'}],
     title: 'სახანძრო სისტემები',
-    desc: 'EN 12101, კვამლის გაწოვა, კიბის ზეწოლა, sprinkler',
-    toolsCount: 0,
-    href: null,
+    desc: 'EN 12101 · სადარბაზო, ლიფტი, პარკინგი და corridor/lobby refuge სიმულატორები',
+    toolsCount: 4,
+    href: '/calc/stair-pressurization',
     accent: 'var(--red)'
   },
   {
@@ -103,12 +103,12 @@ export function CalcGrid() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 md:gap-4 md:grid-cols-2 lg:grid-cols-3">
           {SYSTEMS.map((s) => {
             const active = s.toolsCount > 0 && !!s.href;
             const card = (
               <div
-                className={`group relative h-full bg-sur border rounded-[var(--radius-card)] p-5 shadow-[var(--shadow-card)] transition-all ${
+                className={`group relative h-full bg-sur border rounded-[var(--radius-card)] p-3.5 md:p-4 lg:p-5 shadow-[var(--shadow-card)] transition-all ${
                   active ? 'hover:border-blue hover:-translate-y-0.5' : 'opacity-80'
                 }`}
               >

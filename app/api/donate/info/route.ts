@@ -12,10 +12,21 @@ type Bank = {
   pay_link?: string | null;
 };
 
+const DEFAULT_HEADING = 'მხარდაჭერა';
+const DEFAULT_DESCRIPTION =
+  'engineers.ge უფასოა ყველასთვის. ყოველი ლარი გვეხმარება ახალი ინსტრუმენტების და ქართული საინჟინრო კონტენტის აშენებაში.';
+const DEFAULT_AD_LONG = 'იშოვე 3000 ლარამდე';
+const DEFAULT_AD_SHORT = '3000 ₾';
+
 const FALLBACK = {
   recipient_name: '',
   recipient_surname: '',
-  banks: [] as Bank[]
+  banks: [] as Bank[],
+  heading_text: DEFAULT_HEADING,
+  description_text: DEFAULT_DESCRIPTION,
+  ad_visible: true,
+  ad_text_long: DEFAULT_AD_LONG,
+  ad_text_short: DEFAULT_AD_SHORT
 };
 
 function normalizeBanks(raw: unknown): Bank[] {
@@ -42,7 +53,9 @@ export async function GET() {
   try {
     const {data, error} = await supabaseAdmin()
       .from('donation_settings')
-      .select('recipient_name,recipient_surname,banks')
+      .select(
+        'recipient_name,recipient_surname,banks,heading_text,description_text,ad_visible,ad_text_long,ad_text_short'
+      )
       .eq('id', 1)
       .maybeSingle();
     if (error) throw error;
@@ -50,7 +63,12 @@ export async function GET() {
     return NextResponse.json({
       recipient_name: data.recipient_name ?? '',
       recipient_surname: data.recipient_surname ?? '',
-      banks: normalizeBanks(data.banks)
+      banks: normalizeBanks(data.banks),
+      heading_text: data.heading_text ?? DEFAULT_HEADING,
+      description_text: data.description_text ?? DEFAULT_DESCRIPTION,
+      ad_visible: data.ad_visible ?? true,
+      ad_text_long: data.ad_text_long ?? DEFAULT_AD_LONG,
+      ad_text_short: data.ad_text_short ?? DEFAULT_AD_SHORT
     });
   } catch {
     return NextResponse.json(FALLBACK);

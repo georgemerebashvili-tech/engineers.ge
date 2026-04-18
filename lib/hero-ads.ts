@@ -76,7 +76,7 @@ export const HERO_SLOT_SPECS: Record<HeroSlotKey, SlotSpec> = {
     format_hint: 'JPG / PNG / WEBP',
     size_hint: '532 × 712 px',
     default_client_name: 'კომპანია 2',
-    default_price_gel: 1250,
+    default_price_gel: 300,
     default_occupied_until: '2026-05-30',
     default_link_url: 'https://example.com'
   },
@@ -90,7 +90,7 @@ export const HERO_SLOT_SPECS: Record<HeroSlotKey, SlotSpec> = {
     format_hint: 'JPG / PNG / WEBP',
     size_hint: '488 × 200 px',
     default_client_name: 'კომპანია 3',
-    default_price_gel: 690,
+    default_price_gel: 300,
     default_occupied_until: '2026-05-12',
     default_link_url: ''
   },
@@ -104,7 +104,7 @@ export const HERO_SLOT_SPECS: Record<HeroSlotKey, SlotSpec> = {
     format_hint: 'JPG / PNG / WEBP',
     size_hint: '488 × 232 px',
     default_client_name: 'კომპანია 4',
-    default_price_gel: 620,
+    default_price_gel: 300,
     default_occupied_until: '2026-06-08',
     default_link_url: ''
   },
@@ -118,7 +118,7 @@ export const HERO_SLOT_SPECS: Record<HeroSlotKey, SlotSpec> = {
     format_hint: 'JPG / PNG / WEBP',
     size_hint: '488 × 280 px',
     default_client_name: 'კომპანია 5',
-    default_price_gel: 580,
+    default_price_gel: 300,
     default_occupied_until: '2026-06-20',
     default_link_url: ''
   },
@@ -132,7 +132,7 @@ export const HERO_SLOT_SPECS: Record<HeroSlotKey, SlotSpec> = {
     format_hint: 'JPG / PNG / WEBP',
     size_hint: '340 × 432 px',
     default_client_name: 'კომპანია 6',
-    default_price_gel: 540,
+    default_price_gel: 300,
     default_occupied_until: '2026-05-25',
     default_link_url: ''
   },
@@ -146,7 +146,7 @@ export const HERO_SLOT_SPECS: Record<HeroSlotKey, SlotSpec> = {
     format_hint: 'JPG / PNG / WEBP',
     size_hint: '296 × 712 px',
     default_client_name: 'კომპანია 7',
-    default_price_gel: 960,
+    default_price_gel: 300,
     default_occupied_until: '2026-07-01',
     default_link_url: ''
   },
@@ -160,7 +160,7 @@ export const HERO_SLOT_SPECS: Record<HeroSlotKey, SlotSpec> = {
     format_hint: 'JPG / PNG / WEBP',
     size_hint: '340 × 280 px',
     default_client_name: 'კომპანია 8',
-    default_price_gel: 510,
+    default_price_gel: 300,
     default_occupied_until: '2026-05-18',
     default_link_url: ''
   }

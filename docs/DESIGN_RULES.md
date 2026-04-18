@@ -375,6 +375,60 @@ Light tokens გადატრიალდება `.dark` class-ზე:
 
 **წესი:** ყოველი surface/text/border token დარჩენილია იგივე — კომპონენტი dark-ში **თავისით** იმუშავებს თუ მარტო tokens-ზეა დამოკიდებული. ad-hoc `dark:bg-[...]` → reject.
 
+### 13.1. 3D სცენები / Canvas / WebGL
+
+**წესი:** ნებისმიერი 3D სცენა (Three.js, WebGL, Canvas-based viewer) **default ღია ფერებში**. მუქი პალიტრა ირთვება **მხოლოდ** `.dark` class-ის დროს.
+
+- Scene background / fog → light gradient (`#eef3fb → #cedbee` ტიპის), არა `#0f1724`
+- Ground plane → `#eaf0fa` ან ღია neutral. dark-ში `#232f48`
+- Grid helper → `#a7b7d1 / #c4d4e8` (light), `#4a6080 / #2a3a55` (dark)
+- Ambient light intensity → light mode-ში უფრო მაღალი (0.85), dark-ში უფრო დაბალი (0.55)
+- **Re-theme on toggle** — MutationObserver-ით მოუსმინე `documentElement.classList` ცვლილებას და განაახლე fog / ground material / grid / ambient intensity
+- Ground / fill light ფერები ცოცხლად ვახდენთ swap-ს, არა reload-ით
+- **Forbidden** — hardcoded dark gradient background iframe-ში ან canvas-ში, რომელიც light mode-ზე არ გადადის
+
+**რატომ:** calc iframe-ები parent-ის theme-ს syncs-ავენ `_theme-sync.js`-ით. თუ 3D ხედი ყოველთვის მუქია, user-ს light-მოდში "გაუქრეს ფერები" — contrast გარე UI-სთან ფუჭდება.
+
+### 13.2. Overlay-ები არ უნდა ფარავდნენ content-ს
+
+**წესი:** content-level info ბარათები (std-info, legend, status) **არასოდეს** იყოს `position: absolute`-ად content-ის ზევით. ისინი უნდა იდგეს ცალკე proportional zone-ში (sibling flex panel).
+
+- ✅ sibling panel: `<div class="stage"><div class="view-area flex-1"/><aside class="info flex-0 280px"/></div>`
+- ❌ overlay: `<div class="view-area"><div class="std-info" style="position:absolute;top:12px;left:12px"/></div>`
+- **Exception**: კოპაკტ-ი hint-ებისთვის (keyboard shortcuts, zoom helper, tooltip) `position: absolute` OK **მხოლოდ** თუ:
+  - max width < 180px
+  - max height < 40px (single-line)
+  - `pointer-events: none` მიღებულია
+  - არ ფარავს მოცულობის 10%-ზე მეტს
+
+**რატომ:** narrow viewport-ზე (sidebar + aside + iframe squeeze) overlay ცალკე content-ს იპარავს. User screenshot-ი 2026-04-18 — EN 12101-6 std-info ბარათმა 3D tower სრულად დაფარა.
+
+**ფაილში:** stage flex-row → view-area flex-1, info-aside flex-0 (fixed ~280px). Mobile (`max-width: 820px`) → stack column, aside მოცულობით ≤35vh.
+
+```css
+.stage { display: flex; flex-direction: row; flex: 1 1 0; min-height: 0; overflow: hidden; }
+.view-area { flex: 1 1 0; position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+.info-aside { flex: 0 0 280px; border-left: 1px solid var(--bdr); padding: 12px; overflow-y: auto; }
+@media (max-width: 820px) {
+  .stage { flex-direction: column; }
+  .info-aside { flex: 0 0 auto; border-left: 0; border-top: 1px solid var(--bdr); max-height: 35vh; }
+}
+```
+
+### 13.3. Resizable splitters (sidebar ↔ stage)
+
+კალკულატორებში sidebar + stage layout **უნდა იყოს drag-resizable**, თუ user-ს ერთი ან მეორე უფრო ფართოდ სჭირდება.
+
+- Grid-template-columns: `var(--side-w, 280px) 6px 1fr` (6px = handle)
+- Handle class: `.sp-resizer` (ან ანალოგი) — `cursor: col-resize`, hover ფონი → `var(--blue)`
+- Min: **220px**, Max: **55% container width**
+- Persist → `localStorage` (key prefix `eng_`, მაგ. `eng_sp_side_w`)
+- Double-click handle → reset to default
+- Arrow keys (focused handle) → ±16px
+- Drag დროს `body.sp-resizing` → `pointer-events: none` iframe-ზე, რომ drag არ დაიკარგოს
+- On release → trigger canvas/3D resize (`onResize3D()` ან ResizeObserver)
+- Mobile (`max-width: 820px`) → handle hide, sidebar გადავა ზემოთ
+
 ---
 
 ## 14. Forbidden ნიმუშები

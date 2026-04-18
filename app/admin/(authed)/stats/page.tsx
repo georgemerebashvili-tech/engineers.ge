@@ -3,6 +3,7 @@ import {getCalcStats} from '@/lib/calc-stats';
 import {StatsDashboard} from './dashboard';
 import {CalcStatsPanel} from './calc-stats-panel';
 import type {PageViewRow} from './types';
+import {AdminPageHeader, AdminSection} from '@/components/admin-page-header';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -33,26 +34,43 @@ export default async function StatsPage() {
 
   if (error) {
     return (
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold">Stats</h1>
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-900">
-          <p className="font-medium">Supabase-ს ვერ ვუკავშირდები.</p>
-          <p className="mt-1 font-mono text-xs">{error}</p>
-          <p className="mt-3">
-            შეამოწმე <code>.env.local</code>-ში <code>NEXT_PUBLIC_SUPABASE_URL</code> და{' '}
-            <code>SUPABASE_SERVICE_ROLE_KEY</code>, და რომ migration გაშვებულია{' '}
-            (<code>supabase/migrations/0001_page_views.sql</code>).
-          </p>
-        </div>
-        <CalcStatsPanel rows={calcStats} />
-      </div>
+      <>
+        <AdminPageHeader
+          crumbs={[{label: 'Stats'}]}
+          title="სტატისტიკა"
+          description="კალკულატორების გამოყენება + გვერდების ვიზიტები."
+        />
+        <AdminSection>
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-sm text-red-900">
+            <p className="font-medium">Supabase-ს ვერ ვუკავშირდები.</p>
+            <p className="mt-1 font-mono text-xs">{error}</p>
+            <p className="mt-3">
+              შეამოწმე <code>.env.local</code>-ში <code>NEXT_PUBLIC_SUPABASE_URL</code> და{' '}
+              <code>SUPABASE_SERVICE_ROLE_KEY</code>, და რომ migration გაშვებულია{' '}
+              (<code>supabase/migrations/0001_page_views.sql</code>).
+            </p>
+          </div>
+          <div className="mt-6">
+            <CalcStatsPanel rows={calcStats} />
+          </div>
+        </AdminSection>
+      </>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <CalcStatsPanel rows={calcStats} />
-      <StatsDashboard rows={rows} />
-    </div>
+    <>
+      <AdminPageHeader
+        crumbs={[{label: 'Stats'}]}
+        title="სტატისტიკა"
+        description="კალკულატორების გამოყენება + გვერდების ვიზიტები (ბოლო 30 დღე)."
+      />
+      <AdminSection>
+        <div className="space-y-6">
+          <CalcStatsPanel rows={calcStats} />
+          <StatsDashboard rows={rows} />
+        </div>
+      </AdminSection>
+    </>
   );
 }
