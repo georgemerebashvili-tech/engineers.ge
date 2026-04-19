@@ -11,6 +11,8 @@ import {
   FolderOpen,
   Globe,
   Layers,
+  PanelLeftClose,
+  PanelLeftOpen,
   Rocket,
   Search,
   Server,
@@ -38,6 +40,7 @@ export function SitemapWorkspace({
 }: Props) {
   const [selected, setSelected] = useState<RouteNode | null>(null);
   const [query, setQuery] = useState('');
+  const [collapsed, setCollapsed] = useState(false);
   const [deploying, startDeploy] = useTransition();
   const [deployMsg, setDeployMsg] = useState<{
     kind: 'ok' | 'err' | 'info';
@@ -100,7 +103,40 @@ export function SitemapWorkspace({
   };
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(320px,420px)_1fr]">
+    <div
+      className={`grid gap-4 ${
+        collapsed
+          ? 'lg:grid-cols-[36px_1fr]'
+          : 'lg:grid-cols-[minmax(320px,420px)_1fr]'
+      }`}
+    >
+      {collapsed ? (
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setCollapsed(false)}
+            title="მენიუს გახსნა"
+            aria-label="მენიუს გახსნა"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius-card)] border bg-sur text-text-2 hover:border-blue hover:text-blue"
+          >
+            <PanelLeftOpen size={15} />
+          </button>
+          <div className="flex flex-col items-center gap-1 rounded-[var(--radius-card)] border bg-sur py-2 text-[9px] font-mono text-text-3">
+            <span className="flex items-center gap-0.5">
+              <Layers size={10} />
+              {stats.pages}
+            </span>
+            <span className="flex items-center gap-0.5">
+              <Server size={10} />
+              {stats.api}
+            </span>
+            <span className="flex items-center gap-0.5">
+              <FileCode size={10} />
+              {calcs.length}
+            </span>
+          </div>
+        </div>
+      ) : (
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2 rounded-[var(--radius-card)] border bg-sur p-3">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-bd bg-blue-lt px-2 py-0.5 font-mono text-[10px] font-semibold text-blue">
@@ -115,6 +151,15 @@ export function SitemapWorkspace({
           <span className="ml-auto inline-flex items-center gap-1 rounded-full border border-ora-bd bg-ora-lt px-2 py-0.5 font-mono text-[9px] font-semibold text-ora">
             env: {deployEnv}
           </span>
+          <button
+            type="button"
+            onClick={() => setCollapsed(true)}
+            title="მენიუს დაკეცვა"
+            aria-label="მენიუს დაკეცვა"
+            className="inline-flex h-6 w-6 items-center justify-center rounded-full border text-text-3 hover:border-blue hover:text-blue"
+          >
+            <PanelLeftClose size={12} />
+          </button>
         </div>
 
         <div className="rounded-[var(--radius-card)] border bg-sur p-3">
@@ -208,6 +253,7 @@ export function SitemapWorkspace({
           </div>
         </div>
       </div>
+      )}
 
       <div className="sticky top-20 rounded-[var(--radius-card)] border bg-sur p-3">
         {selected ? (
