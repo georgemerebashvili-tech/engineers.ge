@@ -280,6 +280,8 @@ function AddDeviceScreen({
     null
   ]);
   const [saving, setSaving] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiMissing, setAiMissing] = useState<string[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [photoSlot, setPhotoSlot] = useState<number | null>(null);
@@ -339,6 +341,64 @@ function AddDeviceScreen({
       img.src = ev.target?.result as string;
     };
     reader.readAsDataURL(file);
+  }
+
+  async function runVision() {
+    if (analyzing) return;
+    const photosWithData = photos.filter((p): p is string => !!p);
+    if (photosWithData.length === 0) {
+      flash('ჯერ გადაიღე ფოტო');
+      return;
+    }
+    setAnalyzing(true);
+    try {
+      const r = await fetch('/api/tbc/vision/analyze-device', {
+        method: 'POST',
+        headers: {'content-type': 'application/json'},
+        body: JSON.stringify({
+          photos: photosWithData,
+          hint: category || subtype ? {category, subtype} : undefined
+        })
+      });
+      if (r.status === 401) {
+        window.location.href = '/tbc';
+        return;
+      }
+      if (r.status === 503) {
+        flash('AI გამორთულია');
+        return;
+      }
+      if (!r.ok) {
+        flash('AI ვერ მუშაობს');
+        return;
+      }
+      const d = await r.json();
+      const res = d.result as {
+        category: string | null;
+        subtype: string | null;
+        brand: string | null;
+        model: string | null;
+        serial: string | null;
+        notes: string | null;
+        missing: string[];
+      };
+
+      // Only fill empty fields; don't overwrite user input
+      if (!category && res.category) setCategory(res.category);
+      if (!subtype && res.subtype) setSubtype(res.subtype);
+      if (!brand && res.brand) setBrand(res.brand);
+      if (!model && res.model) setModel(res.model);
+      if (!serial && res.serial) setSerial(res.serial);
+      if (res.notes && !location) setLocation(res.notes);
+
+      setAiMissing(res.missing || []);
+      flash('AI-მ შეავსო ველები ✨');
+    } catch (e) {
+      console.error(e);
+      flash('AI შეცდომა');
+    } finally {
+      setAnalyzing(false);
+    }
   }
 
   async function save(stayOnScreen: boolean) {
@@ -529,6 +589,21 @@ function AddDeviceScreen({
             </div>
             <div className="font-mono text-xs text-slate-500">{filled}/5</div>
           </div>
+          {filled > 0 && (
+            <button
+              onClick={runVision}
+              disabled={analyzing}
+              className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] py-3 text-sm font-bold text-white shadow disabled:opacity-60 active:scale-[0.98]"
+            >
+              {analyzing ? '🔮 ანალიზი...' : '🤖 AI-მ ამოიცნოს ფოტოდან'}
+            </button>
+          )}
+          {aiMissing.length > 0 && (
+            <div className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
+              ⚠️ AI-ს ვერ წაიკითხა: <b>{aiMissing.join(', ')}</b> — შეავსე
+              ხელით.
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             {[0, 1, 2, 3, 4].map((slot) => {
               const photo = photos[slot];
