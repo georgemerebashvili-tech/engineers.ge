@@ -2,276 +2,36 @@
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {useRouter} from 'next/navigation';
-import Link from 'next/link';
 import type {TbcSession} from '@/lib/tbc/auth';
 
+type Device = {
+  category?: string;
+  subtype?: string;
+  brand?: string;
+  model?: string;
+  serial?: string;
+  location?: string;
+  photos?: (string | null)[];
+  unplanned?: boolean;
+  added_at?: string;
+  ai_missing?: string[];
+};
 type Branch = {
   id: number;
   alias: string | null;
   name: string;
-  type: string | null;
-  region: string | null;
   city: string | null;
-  address: string | null;
-  status: string | null;
+  region: string | null;
   planned_count: number;
-  devices?: unknown[];
+  devices: Device[] | null;
 };
 
-type EquipType = {category: string; subtype: string};
-
-const PHOTO_LABELS = [
-  'ზოგადი',
-  'გარე ხედი',
-  'ცხაურის ხედი',
-  'შიდა ხედი',
-  'ნომერი / ეტიკეტი'
-];
-
-const STATUS_COLOR: Record<string, string> = {
-  done: '#00AA8D',
-  progress: '#0071CE',
-  pending: '#F59E0B',
-  described: '#8B5CF6',
-  todescribe: '#EC4899',
-  general: '#64748B'
-};
-
-type Screen =
-  | {kind: 'list'}
-  | {kind: 'branch'; branch: Branch}
-  | {kind: 'add'; branch: Branch};
+const PHOTO_LABELS = ['ბირკა', 'ახლო', 'მსხვ.', 'გარე', 'დამატ.'];
 
 export function MobileApp({session}: {session: TbcSession}) {
   const router = useRouter();
-  const [screen, setScreen] = useState<Screen>({kind: 'list'});
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [types, setTypes] = useState<EquipType[]>([]);
-  const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(true);
-
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [b, t] = await Promise.all([
-        fetch('/api/tbc/branches'),
-        fetch('/api/tbc/equipment-types')
-      ]);
-      if (b.status === 401) {
-        router.replace('/tbc');
-        return;
-      }
-      if (b.ok) setBranches(((await b.json()).branches || []) as Branch[]);
-      if (t.ok) setTypes((await t.json()).types || []);
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  async function logout() {
-    await fetch('/api/tbc/logout', {method: 'POST'});
-    router.replace('/tbc');
-    router.refresh();
-  }
-
-  const filtered = branches.filter((b) => {
-    if (!search) return true;
-    const s = search.toLowerCase();
-    return (
-      (b.alias || '').toLowerCase().includes(s) ||
-      (b.name || '').toLowerCase().includes(s) ||
-      (b.city || '').toLowerCase().includes(s) ||
-      (b.address || '').toLowerCase().includes(s)
-    );
-  });
-
-  if (screen.kind === 'add') {
-    return (
-      <AddDeviceScreen
-        branch={screen.branch}
-        types={types}
-        onBack={() => setScreen({kind: 'branch', branch: screen.branch})}
-        onSaved={() => {
-          refresh();
-        }}
-      />
-    );
-  }
-
-  if (screen.kind === 'branch') {
-    const b =
-      branches.find((x) => x.id === screen.branch.id) || screen.branch;
-    const deviceCount = Array.isArray(b.devices) ? b.devices.length : 0;
-    return (
-      <div className="flex min-h-screen flex-col bg-slate-50">
-        <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-slate-200 bg-white px-3 py-2.5 shadow-sm">
-          <button
-            onClick={() => setScreen({kind: 'list'})}
-            className="rounded-lg bg-slate-100 px-3 py-2 text-base font-semibold text-slate-700"
-          >
-            ←
-          </button>
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-[13px] font-semibold text-slate-900">
-              {b.alias || '#' + b.id} · {b.name}
-            </div>
-            <div className="truncate text-[11px] text-slate-500">
-              {b.city}
-              {b.address ? `, ${b.address}` : ''}
-            </div>
-          </div>
-        </header>
-
-        <div className="flex-1 px-4 py-5">
-          <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
-            <div className="grid grid-cols-2 gap-3 text-center">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                  დამატებული
-                </div>
-                <div className="font-mono text-3xl font-bold text-[#00AA8D]">
-                  {deviceCount}
-                </div>
-              </div>
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                  დაგეგმილი
-                </div>
-                <div className="font-mono text-3xl font-bold text-slate-700">
-                  {b.planned_count || 0}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setScreen({kind: 'add', branch: b})}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0071CE] py-6 text-lg font-bold text-white shadow-lg active:scale-[0.98]"
-          >
-            ➕ ახალი მოწყობილობის დამატება
-          </button>
-
-          <Link
-            href={`/tbc/app`}
-            className="mt-3 block w-full rounded-2xl bg-white py-4 text-center text-sm font-medium text-slate-700 ring-1 ring-slate-200"
-          >
-            💻 სრული ინვენტარი (desktop)
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // list screen
-  return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white px-3 py-2.5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="text-[13px] font-semibold text-slate-900">
-            📱 {session.displayName || session.username}
-          </div>
-          <button
-            onClick={logout}
-            className="rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600"
-          >
-            გასვლა
-          </button>
-        </div>
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="🔍 ძიება — ფილიალი, ქალაქი, alias…"
-          className="mt-2 w-full rounded-lg bg-slate-100 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0071CE]/30"
-        />
-      </header>
-
-      <div className="flex-1 px-3 py-3">
-        {loading ? (
-          <div className="mt-10 text-center text-sm text-slate-400">
-            იტვირთება…
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="mt-10 text-center text-sm text-slate-400">
-            {branches.length === 0
-              ? 'არ გაქვს წვდომა არცერთ ფილიალზე'
-              : 'ძიებით არაფერი იპოვა'}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filtered.map((b) => {
-              const color = STATUS_COLOR[b.status || 'general'] || '#64748B';
-              const deviceCount = Array.isArray(b.devices)
-                ? b.devices.length
-                : 0;
-              return (
-                <button
-                  key={b.id}
-                  onClick={() => setScreen({kind: 'branch', branch: b})}
-                  className="flex w-full items-center gap-3 rounded-xl bg-white p-4 text-left shadow-sm ring-1 ring-slate-200 active:bg-slate-50"
-                >
-                  <div
-                    className="h-10 w-1 rounded-full"
-                    style={{background: color}}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="rounded bg-[#E6F2FB] px-1.5 py-0.5 font-mono text-[10px] font-bold text-[#0071CE]">
-                        {b.alias || '#' + b.id}
-                      </span>
-                      <span className="truncate text-[13px] font-semibold text-slate-900">
-                        {b.name}
-                      </span>
-                    </div>
-                    <div className="mt-0.5 truncate text-[11px] text-slate-500">
-                      {b.city || '—'}
-                      {b.address ? ` · ${b.address}` : ''}
-                    </div>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <div className="font-mono text-base font-bold text-[#00AA8D]">
-                      {deviceCount}
-                    </div>
-                    <div className="font-mono text-[10px] text-slate-400">
-                      /{b.planned_count || 0}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ===========================================================
-// Add-device screen (photo loop)
-// ===========================================================
-
-function AddDeviceScreen({
-  branch,
-  types,
-  onBack,
-  onSaved
-}: {
-  branch: Branch;
-  types: EquipType[];
-  onBack: () => void;
-  onSaved: () => void;
-}) {
-  const [category, setCategory] = useState('');
-  const [subtype, setSubtype] = useState('');
-  const [brand, setBrand] = useState('');
-  const [model, setModel] = useState('');
-  const [serial, setSerial] = useState('');
-  const [location, setLocation] = useState('');
-  const [unplanned, setUnplanned] = useState(false);
+  const [branchId, setBranchId] = useState<number | null>(null);
   const [photos, setPhotos] = useState<(string | null)[]>([
     null,
     null,
@@ -279,43 +39,90 @@ function AddDeviceScreen({
     null,
     null
   ]);
-  const [saving, setSaving] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [aiMissing, setAiMissing] = useState<string[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [formFields, setFormFields] = useState<{
+    category: string;
+    subtype: string;
+    brand: string;
+    model: string;
+    serial: string;
+    location: string;
+  }>({
+    category: '',
+    subtype: '',
+    brand: '',
+    model: '',
+    serial: '',
+    location: ''
+  });
   const fileRef = useRef<HTMLInputElement>(null);
-  const [photoSlot, setPhotoSlot] = useState<number | null>(null);
+  const pendingSlot = useRef<number | null>(null);
 
-  const categories = Array.from(new Set(types.map((t) => t.category)));
-  const subtypes = types
-    .filter((t) => t.category === category)
-    .map((t) => t.subtype);
-
-  function flash(msg: string) {
-    setToast(msg);
+  const flash = (m: string) => {
+    setToast(m);
     setTimeout(() => setToast(null), 1800);
+  };
+
+  const loadBranches = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await fetch('/api/tbc/branches');
+      if (r.status === 401) {
+        router.replace('/tbc');
+        return;
+      }
+      if (r.ok) {
+        const list = ((await r.json()).branches || []) as Branch[];
+        setBranches(list);
+        // Restore last selected branch
+        try {
+          const saved = Number(localStorage.getItem('tbc_mobile_branch') || '0');
+          if (saved && list.find((b) => b.id === saved)) setBranchId(saved);
+          else if (list.length === 1) setBranchId(list[0].id);
+        } catch {}
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    loadBranches();
+  }, [loadBranches]);
+
+  useEffect(() => {
+    if (branchId) {
+      try {
+        localStorage.setItem('tbc_mobile_branch', String(branchId));
+      } catch {}
+    }
+  }, [branchId]);
+
+  const selectedBranch = branches.find((b) => b.id === branchId) || null;
+  const devices = selectedBranch?.devices || [];
+
+  async function logout() {
+    await fetch('/api/tbc/logout', {method: 'POST'});
+    router.replace('/tbc');
+    router.refresh();
   }
 
-  function pick(slot: number) {
-    setPhotoSlot(slot);
+  function pickPhoto(slot: number) {
+    pendingSlot.current = slot;
     if (fileRef.current) {
       fileRef.current.value = '';
       fileRef.current.click();
     }
   }
 
-  function removePhoto(slot: number) {
-    setPhotos((p) => {
-      const n = [...p];
-      n[slot] = null;
-      return n;
-    });
-  }
-
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file || photoSlot === null) return;
-    const slot = photoSlot;
+    if (!file || pendingSlot.current === null) return;
+    const slot = pendingSlot.current;
     const reader = new FileReader();
     reader.onload = (ev) => {
       const img = new Image();
@@ -343,134 +150,327 @@ function AddDeviceScreen({
     reader.readAsDataURL(file);
   }
 
-  async function runVision() {
-    if (analyzing) return;
-    const photosWithData = photos.filter((p): p is string => !!p);
-    if (photosWithData.length === 0) {
-      flash('ჯერ გადაიღე ფოტო');
-      return;
-    }
-    setAnalyzing(true);
-    try {
-      const r = await fetch('/api/tbc/vision/analyze-device', {
-        method: 'POST',
-        headers: {'content-type': 'application/json'},
-        body: JSON.stringify({
-          photos: photosWithData,
-          hint: category || subtype ? {category, subtype} : undefined
-        })
-      });
-      if (r.status === 401) {
-        window.location.href = '/tbc';
-        return;
-      }
-      if (r.status === 503) {
-        flash('AI გამორთულია');
-        return;
-      }
-      if (!r.ok) {
-        flash('AI ვერ მუშაობს');
-        return;
-      }
-      const d = await r.json();
-      const res = d.result as {
-        category: string | null;
-        subtype: string | null;
-        brand: string | null;
-        model: string | null;
-        serial: string | null;
-        notes: string | null;
-        missing: string[];
-      };
-
-      // Only fill empty fields; don't overwrite user input
-      if (!category && res.category) setCategory(res.category);
-      if (!subtype && res.subtype) setSubtype(res.subtype);
-      if (!brand && res.brand) setBrand(res.brand);
-      if (!model && res.model) setModel(res.model);
-      if (!serial && res.serial) setSerial(res.serial);
-      if (res.notes && !location) setLocation(res.notes);
-
-      setAiMissing(res.missing || []);
-      flash('AI-მ შეავსო ველები ✨');
-    } catch (e) {
-      console.error(e);
-      flash('AI შეცდომა');
-    } finally {
-      setAnalyzing(false);
-    }
+  function removePhoto(slot: number) {
+    setPhotos((p) => {
+      const n = [...p];
+      n[slot] = null;
+      return n;
+    });
   }
 
-  async function save(stayOnScreen: boolean) {
-    if (saving) return;
-    if (!category && !subtype && !serial && !brand && !model) {
-      flash('შეავსე მინიმუმ ერთი ველი');
+  async function addDevice(withAi: boolean) {
+    if (!branchId) {
+      flash('ჯერ აირჩიე ფილიალი');
       return;
     }
-    setSaving(true);
+    const filled = photos.filter(Boolean) as string[];
+    if (filled.length === 0 && !showForm) {
+      flash('ჯერ გადაიღე ფოტო ან ჩართე ფორმა');
+      return;
+    }
+    setAdding(true);
     try {
-      const r = await fetch(`/api/tbc/branches/${branch.id}/devices`, {
+      let aiFields = {...formFields};
+      let aiMissing: string[] = [];
+      if (withAi && filled.length > 0) {
+        try {
+          const r = await fetch('/api/tbc/vision/analyze-device', {
+            method: 'POST',
+            headers: {'content-type': 'application/json'},
+            body: JSON.stringify({photos: filled})
+          });
+          if (r.ok) {
+            const body = await r.json();
+            const res = body.result || {};
+            aiFields = {
+              category: formFields.category || res.category || '',
+              subtype: formFields.subtype || res.subtype || '',
+              brand: formFields.brand || res.brand || '',
+              model: formFields.model || res.model || '',
+              serial: formFields.serial || res.serial || '',
+              location: formFields.location || ''
+            };
+            aiMissing = res.missing || [];
+          }
+        } catch (e) {
+          console.error('AI pre-fill failed', e);
+        }
+      }
+
+      const save = await fetch(`/api/tbc/branches/${branchId}/devices`, {
         method: 'POST',
         headers: {'content-type': 'application/json'},
         body: JSON.stringify({
-          category,
-          subtype,
-          brand,
-          model,
-          serial,
-          location,
-          unplanned,
+          ...aiFields,
           photos
         })
       });
-      if (r.status === 401) {
-        window.location.href = '/tbc';
+      if (save.status === 401) {
+        router.replace('/tbc');
         return;
       }
-      if (!r.ok) {
-        flash('შეცდომა');
+      if (!save.ok) {
+        flash('ვერ შეინახა');
         return;
       }
-      const d = await r.json();
-      flash(`დამატებულია ✓ (${d.count})`);
-      onSaved();
-      if (stayOnScreen) {
-        setCategory('');
-        setSubtype('');
-        setBrand('');
-        setModel('');
-        setSerial('');
-        setLocation('');
-        setUnplanned(false);
-        setPhotos([null, null, null, null, null]);
-      } else {
-        setTimeout(onBack, 500);
-      }
+      const body = await save.json();
+      const count = body.count || 0;
+      flash(`✅ დამატებულია ${aiMissing.length ? `(ვერ ამოიცნო ${aiMissing.length})` : ''} · ${count}`);
+      setPhotos([null, null, null, null, null]);
+      setFormFields({
+        category: '',
+        subtype: '',
+        brand: '',
+        model: '',
+        serial: '',
+        location: ''
+      });
+      setShowForm(false);
+      loadBranches();
     } finally {
-      setSaving(false);
+      setAdding(false);
     }
   }
 
-  const filled = photos.filter(Boolean).length;
+  async function doDeleteLast() {
+    if (!branchId) return;
+    setConfirmOpen(false);
+    const r = await fetch(`/api/tbc/branches/${branchId}/devices/last`, {
+      method: 'DELETE'
+    });
+    if (r.ok) {
+      flash('🗑 ბოლო წაიშალა');
+      loadBranches();
+    } else {
+      flash('ვერ წაიშალა');
+    }
+  }
+
+  const filledPhotos = photos.filter(Boolean).length;
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
-      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-slate-200 bg-white px-3 py-2.5 shadow-sm">
-        <button
-          onClick={onBack}
-          className="rounded-lg bg-slate-100 px-3 py-2 text-base font-semibold text-slate-700"
-        >
-          ←
-        </button>
-        <div className="min-w-0 flex-1">
-          <div className="text-[11px] text-slate-500">
-            {branch.alias || '#' + branch.id}
-          </div>
-          <div className="truncate text-[14px] font-bold text-slate-900">
-            ახალი მოწყობილობა
-          </div>
+    <div className="mx-auto flex h-screen max-w-[540px] flex-col bg-slate-50">
+      {/* Header — minimal, fixed */}
+      <header className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-3 py-2">
+        <div className="flex items-center gap-2">
+          <img src="/tbc/logos/tbc.svg" alt="TBC" className="h-6 w-auto" />
+          <span className="text-slate-300">×</span>
+          <img src="/tbc/logos/dmt.png" alt="DMT" className="h-5 w-auto" />
         </div>
+        <button
+          onClick={logout}
+          className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
+        >
+          გასვლა
+        </button>
       </header>
+
+      {/* Branch picker — fixed */}
+      <div className="shrink-0 border-b border-slate-200 bg-white px-3 py-2">
+        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
+          🏢 ფილიალი
+        </label>
+        <select
+          value={branchId ?? ''}
+          onChange={(e) => setBranchId(Number(e.target.value) || null)}
+          disabled={loading}
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-base font-semibold text-slate-900 focus:border-[#0071CE] focus:bg-white focus:outline-none"
+        >
+          <option value="">
+            {loading ? 'იტვირთება…' : '— აირჩიე ფილიალი —'}
+          </option>
+          {branches.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.alias ? `${b.alias} · ` : ''}
+              {b.name.slice(0, 60)} — {b.city || ''}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Action row 50/50 — fixed */}
+      <div className="grid shrink-0 grid-cols-2 gap-2 border-b border-slate-200 bg-white px-3 py-2">
+        <button
+          onClick={() => addDevice(true)}
+          disabled={!branchId || adding || filledPhotos === 0}
+          className="flex items-center justify-center gap-2 rounded-2xl bg-[#00AA8D] py-4 text-lg font-black text-white shadow-lg ring-2 ring-[#008A73]/30 disabled:opacity-40 active:scale-95"
+        >
+          {adding ? '⏳' : '➕'} <span>დამატება</span>
+        </button>
+        <button
+          onClick={() => setConfirmOpen(true)}
+          disabled={!branchId || devices.length === 0}
+          className="flex items-center justify-center gap-2 rounded-2xl bg-red-600 py-4 text-lg font-black text-white shadow-lg ring-2 ring-red-800/30 disabled:opacity-40 active:scale-95"
+        >
+          🗑 <span>წაშლა</span>
+        </button>
+      </div>
+
+      {/* Photos — fixed */}
+      <div className="shrink-0 border-b border-slate-200 bg-white px-3 py-3">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            📷 ფოტოები (მიმდინარე დანადგარი)
+          </span>
+          <span className="font-mono text-xs text-slate-500">
+            {filledPhotos}/5
+          </span>
+        </div>
+        <div className="grid grid-cols-5 gap-1.5">
+          {[0, 1, 2, 3, 4].map((slot) => {
+            const p = photos[slot];
+            return (
+              <div key={slot} className="relative aspect-square">
+                {p ? (
+                  <>
+                    <img
+                      src={p}
+                      alt={PHOTO_LABELS[slot]}
+                      className="h-full w-full rounded-xl object-cover ring-2 ring-[#00AA8D]"
+                    />
+                    <button
+                      onClick={() => removePhoto(slot)}
+                      className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow ring-2 ring-white"
+                    >
+                      ✕
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => pickPhoto(slot)}
+                    disabled={!branchId}
+                    className="flex h-full w-full flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 text-center active:bg-slate-100 disabled:opacity-40"
+                  >
+                    <span className="text-2xl">📷</span>
+                    <span className="mt-0.5 text-[9px] font-semibold text-slate-500">
+                      {PHOTO_LABELS[slot]}
+                    </span>
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <button
+          onClick={() => setShowForm((v) => !v)}
+          className="mt-2 w-full rounded-lg border border-slate-200 bg-white py-1.5 text-[11px] font-semibold text-slate-600"
+        >
+          {showForm ? '✕ ფორმის დახურვა' : '✎ ხელით შევსება'}
+        </button>
+        {showForm && (
+          <div className="mt-2 grid grid-cols-2 gap-1.5">
+            <input
+              value={formFields.brand}
+              onChange={(e) =>
+                setFormFields({...formFields, brand: e.target.value})
+              }
+              placeholder="ბრენდი"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm"
+            />
+            <input
+              value={formFields.model}
+              onChange={(e) =>
+                setFormFields({...formFields, model: e.target.value})
+              }
+              placeholder="მოდელი"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm"
+            />
+            <input
+              value={formFields.serial}
+              onChange={(e) =>
+                setFormFields({...formFields, serial: e.target.value})
+              }
+              placeholder="S/N"
+              className="col-span-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 font-mono text-sm"
+            />
+            <input
+              value={formFields.location}
+              onChange={(e) =>
+                setFormFields({...formFields, location: e.target.value})
+              }
+              placeholder="ადგილმდებარეობა"
+              className="col-span-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-sm"
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Device list — scrollable */}
+      <div className="flex-1 overflow-y-auto bg-slate-50 px-3 py-3">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            📦 დამატებული ({devices.length}/{selectedBranch?.planned_count || 0})
+          </span>
+          {adding && (
+            <span className="text-xs text-[#0071CE]">იგზავნება…</span>
+          )}
+        </div>
+        {!branchId ? (
+          <div className="mt-10 text-center text-sm text-slate-400">
+            ჯერ აირჩიე ფილიალი ზემოდან
+          </div>
+        ) : devices.length === 0 ? (
+          <div className="mt-10 text-center text-sm text-slate-400">
+            ცარიელია — დაამატე პირველი დანადგარი
+          </div>
+        ) : (
+          <div className="space-y-1.5 pb-6">
+            {devices
+              .slice()
+              .reverse()
+              .map((d, revIdx) => {
+                const idx = devices.length - 1 - revIdx;
+                const isLast = idx === devices.length - 1;
+                const thumb = (d.photos || []).find(Boolean);
+                const label = [d.brand, d.model, d.serial]
+                  .filter(Boolean)
+                  .join(' · ');
+                const secondary = [d.category, d.subtype]
+                  .filter(Boolean)
+                  .join(' / ');
+                return (
+                  <div
+                    key={idx}
+                    className={`flex items-center gap-2 rounded-xl bg-white p-2 shadow-sm ring-1 ${
+                      isLast ? 'ring-[#00AA8D]/40' : 'ring-slate-200'
+                    }`}
+                  >
+                    {thumb ? (
+                      <img
+                        src={thumb}
+                        alt=""
+                        className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-xl">
+                        📦
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-xs font-semibold text-slate-900">
+                        #{idx + 1} ·{' '}
+                        {label || (
+                          <span className="text-slate-400">(ცარიელი)</span>
+                        )}
+                      </div>
+                      <div className="truncate text-[10px] text-slate-500">
+                        {secondary || '—'}
+                      </div>
+                      {d.ai_missing && d.ai_missing.length > 0 && (
+                        <div className="mt-0.5 text-[10px] font-semibold text-amber-600">
+                          ⚠️ ვერ იკითხა: {d.ai_missing.join(', ')}
+                        </div>
+                      )}
+                    </div>
+                    <div className="shrink-0 font-mono text-[9px] text-slate-400">
+                      {(d.photos || []).filter(Boolean).length}📷
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        )}
+      </div>
 
       <input
         ref={fileRef}
@@ -481,200 +481,44 @@ function AddDeviceScreen({
         onChange={onFile}
       />
 
-      <div className="flex-1 space-y-4 px-4 py-4 pb-40">
-        {/* Fields */}
-        <div className="space-y-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500">
-              კატეგორია
-            </label>
-            <select
-              value={category}
-              onChange={(e) => {
-                setCategory(e.target.value);
-                setSubtype('');
-              }}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-base"
-            >
-              <option value="">— აირჩიე —</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500">
-              ქვეტიპი
-            </label>
-            <select
-              value={subtype}
-              onChange={(e) => setSubtype(e.target.value)}
-              disabled={!category}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-base disabled:opacity-50"
-            >
-              <option value="">— აირჩიე —</option>
-              {subtypes.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500">
-                ბრენდი
-              </label>
-              <input
-                value={brand}
-                onChange={(e) => setBrand(e.target.value)}
-                placeholder="Daikin…"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-base"
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500">
-                მოდელი
-              </label>
-              <input
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="FTXB25…"
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-base"
-              />
-            </div>
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500">
-              S/N
-            </label>
-            <input
-              value={serial}
-              onChange={(e) => setSerial(e.target.value)}
-              placeholder="ABC-12345"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 font-mono text-base"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500">
-              ადგილმდებარეობა
-            </label>
-            <input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="2 სართ., ოთახი 203"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-base"
-            />
-          </div>
-          <label className="flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-sm ring-1 ring-amber-200">
-            <input
-              type="checkbox"
-              checked={unplanned}
-              onChange={(e) => setUnplanned(e.target.checked)}
-              className="h-5 w-5 accent-amber-600"
-            />
-            <span className="text-amber-800">
-              დაუგეგმავი (არ არის გეგმაში)
-            </span>
-          </label>
-        </div>
-
-        {/* Photo grid — big buttons */}
-        <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="text-sm font-semibold text-slate-900">
-              ფოტოები
-            </div>
-            <div className="font-mono text-xs text-slate-500">{filled}/5</div>
-          </div>
-          {filled > 0 && (
-            <button
-              onClick={runVision}
-              disabled={analyzing}
-              className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#8B5CF6] to-[#EC4899] py-3 text-sm font-bold text-white shadow disabled:opacity-60 active:scale-[0.98]"
-            >
-              {analyzing ? '🔮 ანალიზი...' : '🤖 AI-მ ამოიცნოს ფოტოდან'}
-            </button>
-          )}
-          {aiMissing.length > 0 && (
-            <div className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 ring-1 ring-amber-200">
-              ⚠️ AI-ს ვერ წაიკითხა: <b>{aiMissing.join(', ')}</b> — შეავსე
-              ხელით.
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-3">
-            {[0, 1, 2, 3, 4].map((slot) => {
-              const photo = photos[slot];
-              return (
-                <div
-                  key={slot}
-                  className={`relative aspect-square overflow-hidden rounded-2xl ${
-                    photo
-                      ? 'ring-2 ring-[#00AA8D]'
-                      : 'border-2 border-dashed border-slate-300 bg-slate-50'
-                  }`}
-                >
-                  {photo ? (
-                    <>
-                      <img
-                        src={photo}
-                        alt={PHOTO_LABELS[slot]}
-                        className="h-full w-full object-cover"
-                      />
-                      <button
-                        onClick={() => removePhoto(slot)}
-                        className="absolute right-1.5 top-1.5 rounded-full bg-red-500 p-1.5 text-xs font-bold text-white shadow-lg"
-                        aria-label="წაშლა"
-                      >
-                        ✕
-                      </button>
-                      <div className="absolute inset-x-0 bottom-0 bg-black/60 px-2 py-1 text-center text-[10px] font-semibold text-white">
-                        {PHOTO_LABELS[slot]}
-                      </div>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => pick(slot)}
-                      className="flex h-full w-full flex-col items-center justify-center gap-2 p-3 text-center active:bg-slate-100"
-                    >
-                      <span className="text-4xl">📷</span>
-                      <span className="text-xs font-semibold text-slate-600">
-                        {PHOTO_LABELS[slot]}
-                      </span>
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          {/* last row — stretched 5th if needed; already fits 2 cols * 3 rows with slot 4 alone, keep as-is */}
-        </div>
-      </div>
-
-      {/* Sticky bottom actions */}
-      <div className="fixed inset-x-0 bottom-0 z-20 space-y-2 border-t border-slate-200 bg-white/95 p-3 pb-5 backdrop-blur">
-        <button
-          onClick={() => save(true)}
-          disabled={saving}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#00AA8D] py-4 text-base font-bold text-white shadow-lg disabled:opacity-60 active:scale-[0.98]"
-        >
-          {saving ? 'იგზავნება…' : '✅ შენახვა + შემდეგი'}
-        </button>
-        <button
-          onClick={() => save(false)}
-          disabled={saving}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-100 py-3 text-sm font-semibold text-slate-700 disabled:opacity-60"
-        >
-          შენახვა და დახურვა
-        </button>
-      </div>
-
+      {/* Toast */}
       {toast && (
-        <div className="fixed inset-x-0 bottom-36 z-30 flex justify-center">
-          <div className="rounded-lg bg-slate-900 px-4 py-2 text-sm text-white shadow-lg">
-            {toast}
+        <div className="pointer-events-none fixed bottom-6 left-1/2 z-30 -translate-x-1/2 rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-2xl">
+          {toast}
+        </div>
+      )}
+
+      {/* Confirm delete modal */}
+      {confirmOpen && (
+        <div
+          className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/60 backdrop-blur-sm p-4 sm:items-center"
+          onClick={() => setConfirmOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"
+          >
+            <div className="mb-2 text-center text-4xl">🗑</div>
+            <h2 className="mb-2 text-center text-base font-bold text-slate-900">
+              წავშალო ბოლო დანადგარი?
+            </h2>
+            <p className="mb-4 text-center text-xs text-slate-500">
+              ეს ქმედება შეუქცევადია.
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setConfirmOpen(false)}
+                className="rounded-xl bg-slate-100 py-3 text-sm font-bold text-slate-700"
+              >
+                გაუქმება
+              </button>
+              <button
+                onClick={doDeleteLast}
+                className="rounded-xl bg-red-600 py-3 text-sm font-bold text-white shadow"
+              >
+                🗑 წაშლა
+              </button>
+            </div>
           </div>
         </div>
       )}
