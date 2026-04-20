@@ -21,7 +21,24 @@ async function ensureVisible(
   return rows.some((r) => r.branch_id === branchId);
 }
 
+const SituationalPhoto = z.object({
+  src: z.string().min(1),
+  caption: z.string().max(500).optional().default('')
+});
+
+const TodoItem = z.object({
+  text: z.string().max(500),
+  done: z.boolean().default(false)
+});
+
+const CommentItem = z.object({
+  text: z.string().max(2000),
+  at: z.string().optional(),
+  by: z.string().max(128).optional()
+});
+
 const DeviceSchema = z.object({
+  name: z.string().max(200).nullable().optional(),
   category: z.string().max(128).nullable().optional(),
   subtype: z.string().max(128).nullable().optional(),
   brand: z.string().max(128).nullable().optional(),
@@ -31,7 +48,15 @@ const DeviceSchema = z.object({
   install_date: z.string().max(64).nullable().optional(),
   specs: z.string().max(2000).nullable().optional(),
   unplanned: z.boolean().default(false),
-  photos: z.array(z.string().nullable()).max(5).default([null, null, null, null, null]),
+  photos: z
+    .array(z.string().nullable())
+    .max(5)
+    .default([null, null, null, null, null]),
+  situational_photos: z.array(SituationalPhoto).max(50).default([]),
+  needs: z.array(TodoItem).max(100).default([]),
+  prohibitions: z.array(TodoItem).max(100).default([]),
+  comments: z.array(CommentItem).max(200).default([]),
+  ai_missing: z.array(z.string().max(64)).max(16).optional(),
   added_at: z.string().optional()
 });
 
@@ -71,6 +96,7 @@ export async function POST(
 
   const devices = Array.isArray(branch.data.devices) ? branch.data.devices : [];
   const newDevice = {
+    name: parsed.data.name || '',
     category: parsed.data.category || '',
     subtype: parsed.data.subtype || '',
     brand: parsed.data.brand || '',
@@ -85,6 +111,15 @@ export async function POST(
       parsed.data.photos && parsed.data.photos.length === 5
         ? parsed.data.photos
         : [null, null, null, null, null],
+    situational_photos: parsed.data.situational_photos || [],
+    needs: parsed.data.needs || [],
+    prohibitions: parsed.data.prohibitions || [],
+    comments: (parsed.data.comments || []).map((c) => ({
+      text: c.text,
+      at: c.at || new Date().toISOString(),
+      by: c.by || session.username
+    })),
+    ai_missing: parsed.data.ai_missing || [],
     added_at: parsed.data.added_at || new Date().toISOString(),
     added_by: session.username
   };
@@ -118,11 +153,16 @@ export async function POST(
     action: 'device.add',
     targetType: 'branch',
     targetId: branchId,
-    summary: `დაამატა მოწყობილობა: ${labelParts.join(' · ') || '(empty)'}${
-      photoCount ? ` · ${photoCount} ფოტო` : ''
+    summary: `დაამატა მოწყობილობა: ${
+      newDevice.name || labelParts.join(' · ') || '(empty)'
+    }${photoCount ? ` · ${photoCount} ფოტო` : ''}${
+      newDevice.situational_photos.length
+        ? ` · ${newDevice.situational_photos.length} სიტ.`
+        : ''
     }${newDevice.unplanned ? ' · დაუგეგმავი' : ''}`,
     metadata: {
       branch_id: branchId,
+      name: newDevice.name,
       category: newDevice.category,
       subtype: newDevice.subtype,
       brand: newDevice.brand,
@@ -131,6 +171,10 @@ export async function POST(
       location: newDevice.location,
       unplanned: newDevice.unplanned,
       photo_count: photoCount,
+      situational_count: newDevice.situational_photos.length,
+      needs_count: newDevice.needs.length,
+      prohibitions_count: newDevice.prohibitions.length,
+      comments_count: newDevice.comments.length,
       total_devices_now: devices.length + 1
     }
   });
