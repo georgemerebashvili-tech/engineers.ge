@@ -350,7 +350,7 @@ export function DeviceEditorModal({
           <button
             onClick={onClose}
             disabled={saving}
-            className="ml-2 rounded-md bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-700 disabled:opacity-40"
+            className="ml-2 min-h-11 rounded-lg bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-700 active:scale-95 disabled:opacity-40"
           >
             ✕ დახურვა
           </button>
@@ -364,17 +364,17 @@ export function DeviceEditorModal({
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
-                className={`relative flex flex-col items-center justify-center gap-0.5 py-2 text-[10px] font-semibold transition ${
+                className={`relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 py-2.5 text-[11px] font-semibold transition active:bg-slate-50 ${
                   active
                     ? 'border-b-2 border-[#0071CE] text-[#0071CE]'
                     : 'border-b-2 border-transparent text-slate-500'
                 }`}
               >
-                <span className="text-base leading-none">{t.icon}</span>
+                <span className="text-xl leading-none">{t.icon}</span>
                 <span className="truncate">{t.label}</span>
                 {t.badge !== undefined && (
                   <span
-                    className={`absolute right-1 top-1 rounded-full px-1.5 py-0 text-[9px] font-bold ${
+                    className={`absolute right-0.5 top-0.5 rounded-full px-1.5 py-0 text-[10px] font-bold ${
                       active
                         ? 'bg-[#0071CE] text-white'
                         : 'bg-slate-200 text-slate-700'
@@ -415,7 +415,7 @@ export function DeviceEditorModal({
                             />
                             <button
                               onClick={() => removeDevicePhoto(slot)}
-                              className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs font-bold text-white shadow ring-2 ring-white"
+                              className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full bg-red-500 text-sm font-bold text-white shadow-lg ring-2 ring-white active:scale-90"
                             >
                               ✕
                             </button>
@@ -440,7 +440,7 @@ export function DeviceEditorModal({
               <button
                 onClick={runAiScan}
                 disabled={photoCount === 0 || aiStatus === 'loading'}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0071CE] py-3 text-sm font-bold text-white shadow disabled:opacity-40 active:scale-95"
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0071CE] px-4 py-3.5 text-base font-bold text-white shadow disabled:opacity-40 active:scale-95"
               >
                 {aiStatus === 'loading'
                   ? '⏳ სკანირება…'
@@ -472,7 +472,7 @@ export function DeviceEditorModal({
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="მაგ: ბოილერი 1, კონდიციონერი ოფისში…"
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 focus:border-[#0071CE] focus:outline-none"
+                    className="h-12 w-full rounded-lg border border-slate-200 bg-white px-3 text-base font-semibold text-slate-900 focus:border-[#0071CE] focus:outline-none"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -480,37 +480,37 @@ export function DeviceEditorModal({
                     value={brand}
                     onChange={(e) => setBrand(e.target.value)}
                     placeholder="ბრენდი"
-                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm"
+                    className="h-12 rounded-lg border border-slate-200 bg-white px-3 text-sm"
                   />
                   <input
                     value={model}
                     onChange={(e) => setModel(e.target.value)}
                     placeholder="მოდელი"
-                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm"
+                    className="h-12 rounded-lg border border-slate-200 bg-white px-3 text-sm"
                   />
                   <input
                     value={serial}
                     onChange={(e) => setSerial(e.target.value)}
                     placeholder="S/N"
-                    className="col-span-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2 font-mono text-sm"
+                    className="col-span-2 h-12 rounded-lg border border-slate-200 bg-white px-3 font-mono text-sm"
                   />
                   <input
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
                     placeholder="კატეგორია (BOILER, SPLIT…)"
-                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm"
+                    className="h-12 rounded-lg border border-slate-200 bg-white px-3 text-sm"
                   />
                   <input
                     value={subtype}
                     onChange={(e) => setSubtype(e.target.value)}
                     placeholder="ქვეტიპი"
-                    className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm"
+                    className="h-12 rounded-lg border border-slate-200 bg-white px-3 text-sm"
                   />
                   <input
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="ადგილმდებარეობა"
-                    className="col-span-2 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm"
+                    className="col-span-2 h-12 rounded-lg border border-slate-200 bg-white px-3 text-sm"
                   />
                 </div>
               </div>
@@ -542,7 +542,7 @@ export function DeviceEditorModal({
               <button
                 onClick={pickSituPhoto}
                 disabled={situational.length >= SITU_MAX}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#00AA8D] py-3 text-sm font-bold text-white shadow disabled:opacity-40 active:scale-95"
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#00AA8D] px-4 py-3.5 text-base font-bold text-white shadow disabled:opacity-40 active:scale-95"
               >
                 📷 დამატება
               </button>
@@ -561,22 +561,22 @@ export function DeviceEditorModal({
                       <img
                         src={s.src}
                         alt=""
-                        className="h-20 w-20 shrink-0 rounded-lg object-cover"
+                        className="h-24 w-24 shrink-0 rounded-lg object-cover"
                       />
-                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <div className="flex min-w-0 flex-1 flex-col gap-2">
                         <input
                           value={s.caption}
                           onChange={(e) =>
                             updateSituCaption(idx, e.target.value)
                           }
-                          placeholder="რა არის ნაჩვენები? (მაგ: გარე ბლოკი)"
-                          className="w-full rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs focus:border-[#0071CE] focus:bg-white focus:outline-none"
+                          placeholder="რა არის ნაჩვენები?"
+                          className="h-11 w-full rounded-md border border-slate-200 bg-slate-50 px-3 text-sm focus:border-[#0071CE] focus:bg-white focus:outline-none"
                         />
                         <button
                           onClick={() => removeSitu(idx)}
-                          className="self-start rounded-md bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-600"
+                          className="min-h-10 self-start rounded-md bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 active:scale-95"
                         >
-                          წაშლა
+                          🗑 წაშლა
                         </button>
                       </div>
                     </div>
@@ -602,11 +602,11 @@ export function DeviceEditorModal({
                   onChange={(e) => setNeedInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && addNeed()}
                   placeholder="მაგ: საჭიროა ვენტილაცია"
-                  className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-[#0071CE] focus:outline-none"
+                  className="h-12 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm focus:border-[#0071CE] focus:outline-none"
                 />
                 <button
                   onClick={addNeed}
-                  className="rounded-lg bg-[#0071CE] px-3 py-2.5 text-sm font-bold text-white"
+                  className="h-12 min-w-14 rounded-lg bg-[#0071CE] px-4 text-xl font-bold text-white shadow active:scale-95"
                 >
                   +
                 </button>
@@ -620,11 +620,11 @@ export function DeviceEditorModal({
                   {needs.map((it, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center gap-2 rounded-lg bg-white p-2.5 shadow-sm ring-1 ring-slate-200"
+                      className="flex min-h-14 items-center gap-2 rounded-lg bg-white p-2 shadow-sm ring-1 ring-slate-200"
                     >
                       <button
                         onClick={() => toggleNeed(idx)}
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 text-xs font-bold ${
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 text-lg font-bold active:scale-90 ${
                           it.done
                             ? 'border-[#00AA8D] bg-[#00AA8D] text-white'
                             : 'border-slate-300 bg-white'
@@ -643,7 +643,7 @@ export function DeviceEditorModal({
                       </span>
                       <button
                         onClick={() => removeNeed(idx)}
-                        className="rounded px-1.5 py-0.5 text-xs text-slate-400 hover:bg-red-50 hover:text-red-600"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-base text-slate-400 active:bg-red-50 active:text-red-600"
                       >
                         ✕
                       </button>
@@ -671,11 +671,11 @@ export function DeviceEditorModal({
                   onChange={(e) => setProhibitInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && addProhibit()}
                   placeholder="მაგ: არ ჩართო გაზი ვენტამდე"
-                  className="flex-1 rounded-lg border border-red-200 bg-white px-3 py-2.5 text-sm focus:border-red-500 focus:outline-none"
+                  className="h-12 flex-1 rounded-lg border border-red-200 bg-white px-3 text-sm focus:border-red-500 focus:outline-none"
                 />
                 <button
                   onClick={addProhibit}
-                  className="rounded-lg bg-red-600 px-3 py-2.5 text-sm font-bold text-white"
+                  className="h-12 min-w-14 rounded-lg bg-red-600 px-4 text-xl font-bold text-white shadow active:scale-95"
                 >
                   +
                 </button>
@@ -689,11 +689,11 @@ export function DeviceEditorModal({
                   {prohibitions.map((it, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center gap-2 rounded-lg bg-red-50/50 p-2.5 shadow-sm ring-1 ring-red-200"
+                      className="flex min-h-14 items-center gap-2 rounded-lg bg-red-50/50 p-2 shadow-sm ring-1 ring-red-200"
                     >
                       <button
                         onClick={() => toggleProhibit(idx)}
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 text-xs font-bold ${
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border-2 text-lg font-bold active:scale-90 ${
                           it.done
                             ? 'border-slate-400 bg-slate-400 text-white'
                             : 'border-red-400 bg-white'
@@ -712,7 +712,7 @@ export function DeviceEditorModal({
                       </span>
                       <button
                         onClick={() => removeProhibit(idx)}
-                        className="rounded px-1.5 py-0.5 text-xs text-slate-400 hover:bg-red-100 hover:text-red-700"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-base text-slate-400 active:bg-red-100 active:text-red-700"
                       >
                         ✕
                       </button>
@@ -761,12 +761,12 @@ export function DeviceEditorModal({
                     onChange={(e) => setCommentInput(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && addComment()}
                     placeholder="დაწერე კომენტარი…"
-                    className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-[#0071CE] focus:bg-white focus:outline-none"
+                    className="h-12 flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm focus:border-[#0071CE] focus:bg-white focus:outline-none"
                   />
                   <button
                     onClick={addComment}
                     disabled={!commentInput.trim()}
-                    className="rounded-lg bg-[#0071CE] px-4 py-2.5 text-sm font-bold text-white disabled:opacity-40"
+                    className="h-12 min-w-14 rounded-lg bg-[#0071CE] px-4 text-lg font-bold text-white shadow active:scale-95 disabled:opacity-40"
                   >
                     ➤
                   </button>
