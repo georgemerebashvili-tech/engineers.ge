@@ -40,12 +40,58 @@ type AuditEvent = {
   created_at: string;
 };
 
+type Company = {
+  id: number;
+  name: string;
+  type: 'client' | 'contractor' | 'supplier' | 'other';
+  contact_person: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  tax_id: string | null;
+  notes: string | null;
+  active: boolean;
+  created_at: string;
+  created_by: string | null;
+};
+
+type CategoryReport = {
+  category: string;
+  planned: number;
+  installed: number;
+  unplanned: number;
+  pct: number;
+};
+type SubtypeReport = CategoryReport & {subtype: string};
+type RegionReport = {
+  region: string;
+  branches: number;
+  planned: number;
+  installed: number;
+  unplanned: number;
+  pct: number;
+};
+
 export function TbcAdminPanel({session}: {session: TbcSession}) {
   const router = useRouter();
-  const [tab, setTab] = useState<'users' | 'activity' | 'events'>('users');
+  const [tab, setTab] = useState<
+    'users' | 'companies' | 'tables' | 'activity' | 'events'
+  >('users');
   const [users, setUsers] = useState<TbcUser[]>([]);
   const [events, setEvents] = useState<LoginEvent[]>([]);
   const [audit, setAudit] = useState<AuditEvent[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [report, setReport] = useState<{
+    categories: CategoryReport[];
+    subtypes: SubtypeReport[];
+    regions: RegionReport[];
+    totals: {
+      branches: number;
+      planned: number;
+      installed: number;
+      unplanned: number;
+    };
+  } | null>(null);
   const [auditActor, setAuditActor] = useState('');
   const [auditAction, setAuditAction] = useState('');
   const [loading, setLoading] = useState(true);
@@ -68,17 +114,31 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
     if (r.ok) setAudit((await r.json()).events || []);
   }, [auditActor, auditAction]);
 
+  const loadCompanies = useCallback(async () => {
+    const r = await fetch('/api/tbc/companies');
+    if (r.ok) setCompanies((await r.json()).companies || []);
+  }, []);
+
+  const loadReport = useCallback(async () => {
+    const r = await fetch('/api/tbc/reports/categories');
+    if (r.ok) setReport(await r.json());
+  }, []);
+
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [uRes, eRes, aRes] = await Promise.all([
+      const [uRes, eRes, aRes, cRes, rRes] = await Promise.all([
         fetch('/api/tbc/users'),
         fetch('/api/tbc/login-events?limit=200'),
-        fetch('/api/tbc/audit-log?limit=300')
+        fetch('/api/tbc/audit-log?limit=300'),
+        fetch('/api/tbc/companies'),
+        fetch('/api/tbc/reports/categories')
       ]);
       if (uRes.ok) setUsers((await uRes.json()).users || []);
       if (eRes.ok) setEvents((await eRes.json()).events || []);
       if (aRes.ok) setAudit((await aRes.json()).events || []);
+      if (cRes.ok) setCompanies((await cRes.json()).companies || []);
+      if (rRes.ok) setReport(await rRes.json());
     } finally {
       setLoading(false);
     }
@@ -250,6 +310,8 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
           {(
             [
               ['users', 'მომხმარებლები'],
+              ['companies', 'კომპანიები'],
+              ['tables', 'ცხრილი'],
               ['activity', 'მოქმედებათა ლოგი'],
               ['events', 'შესვლის ლოგი']
             ] as const
@@ -476,6 +538,23 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
               შესაცვლელად ან მისამართზე პროდაქშენის ცვლილებისთვის უნდა განახლდეს env.
             </div>
           </div>
+        )}
+
+        {tab === 'companies' && (
+          <CompaniesPanel
+            rows={companies}
+            loading={loading}
+            reload={loadCompanies}
+            flash={flashToast}
+          />
+        )}
+
+        {tab === 'tables' && (
+          <TablesPanel
+            data={report}
+            loading={loading}
+            reload={loadReport}
+          />
         )}
 
         {tab === 'activity' && (
@@ -740,6 +819,541 @@ function ActivityPanel({
           })
         )}
       </div>
+    </div>
+  );
+}
+
+// ============================================
+// COMPANIES PANEL
+// ============================================
+const COMPANY_TYPE_LABEL: Record<string, string> = {
+  client: 'კლიენტი',
+  contractor: 'კონტრაქტორი',
+  supplier: 'მომწოდებელი',
+  other: 'სხვა'
+};
+const COMPANY_TYPE_COLOR: Record<string, string> = {
+  client: 'bg-[#E6F2FB] text-[#0071CE]',
+  contractor: 'bg-[#E0F7F3] text-[#008A73]',
+  supplier: 'bg-[#FEF3C7] text-amber-700',
+  other: 'bg-slate-100 text-slate-700'
+};
+
+function CompaniesPanel({
+  rows,
+  loading,
+  reload,
+  flash
+}: {
+  rows: Company[];
+  loading: boolean;
+  reload: () => void;
+  flash: (m: string) => void;
+}) {
+  const [form, setForm] = useState({
+    name: '',
+    type: 'contractor' as Company['type'],
+    contact_person: '',
+    phone: '',
+    email: '',
+    address: '',
+    tax_id: '',
+    notes: ''
+  });
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  function reset() {
+    setForm({
+      name: '',
+      type: 'contractor',
+      contact_person: '',
+      phone: '',
+      email: '',
+      address: '',
+      tax_id: '',
+      notes: ''
+    });
+    setEditingId(null);
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    try {
+      const url = editingId
+        ? `/api/tbc/companies/${editingId}`
+        : '/api/tbc/companies';
+      const method = editingId ? 'PATCH' : 'POST';
+      const r = await fetch(url, {
+        method,
+        headers: {'content-type': 'application/json'},
+        body: JSON.stringify(form)
+      });
+      if (!r.ok) {
+        flash('ვერ შეინახა');
+        return;
+      }
+      flash(editingId ? 'განახლდა' : 'დამატებულია');
+      reset();
+      reload();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startEdit(c: Company) {
+    setEditingId(c.id);
+    setForm({
+      name: c.name,
+      type: c.type,
+      contact_person: c.contact_person || '',
+      phone: c.phone || '',
+      email: c.email || '',
+      address: c.address || '',
+      tax_id: c.tax_id || '',
+      notes: c.notes || ''
+    });
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+
+  async function del(c: Company) {
+    if (!confirm(`წავშალო კომპანია "${c.name}"?`)) return;
+    const r = await fetch(`/api/tbc/companies/${c.id}`, {method: 'DELETE'});
+    if (!r.ok) flash('ვერ წაიშალა');
+    else {
+      flash('წაიშალა');
+      reload();
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* form */}
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+          {editingId ? 'კომპანიის რედაქტირება' : 'ახალი კომპანია'}
+        </h2>
+        <form onSubmit={submit} className="grid gap-3 sm:grid-cols-4">
+          <input
+            value={form.name}
+            onChange={(e) => setForm({...form, name: e.target.value})}
+            placeholder="კომპანიის სახელი *"
+            required
+            className="sm:col-span-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#0071CE] focus:bg-white focus:outline-none"
+          />
+          <select
+            value={form.type}
+            onChange={(e) =>
+              setForm({...form, type: e.target.value as Company['type']})
+            }
+            className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm"
+          >
+            {Object.entries(COMPANY_TYPE_LABEL).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </select>
+          <input
+            value={form.tax_id}
+            onChange={(e) => setForm({...form, tax_id: e.target.value})}
+            placeholder="საიდ. ნომერი"
+            className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-sm focus:border-[#0071CE] focus:bg-white focus:outline-none"
+          />
+          <input
+            value={form.contact_person}
+            onChange={(e) => setForm({...form, contact_person: e.target.value})}
+            placeholder="კონტაქტი / სახელი"
+            className="sm:col-span-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#0071CE] focus:bg-white focus:outline-none"
+          />
+          <input
+            value={form.phone}
+            onChange={(e) => setForm({...form, phone: e.target.value})}
+            placeholder="ტელეფონი"
+            className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-sm focus:border-[#0071CE] focus:bg-white focus:outline-none"
+          />
+          <input
+            value={form.email}
+            onChange={(e) => setForm({...form, email: e.target.value})}
+            type="email"
+            placeholder="ელფოსტა"
+            className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#0071CE] focus:bg-white focus:outline-none"
+          />
+          <input
+            value={form.address}
+            onChange={(e) => setForm({...form, address: e.target.value})}
+            placeholder="მისამართი"
+            className="sm:col-span-4 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#0071CE] focus:bg-white focus:outline-none"
+          />
+          <textarea
+            value={form.notes}
+            onChange={(e) => setForm({...form, notes: e.target.value})}
+            placeholder="შენიშვნები"
+            rows={2}
+            className="sm:col-span-4 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#0071CE] focus:bg-white focus:outline-none"
+          />
+          <div className="sm:col-span-4 flex gap-2">
+            <button
+              type="submit"
+              disabled={busy}
+              className="rounded-md bg-[#0071CE] px-4 py-2 text-sm font-semibold text-white hover:bg-[#005BA8] disabled:opacity-60"
+            >
+              {busy ? '…' : editingId ? '💾 შეინახე' : '+ დამატება'}
+            </button>
+            {editingId && (
+              <button
+                type="button"
+                onClick={reset}
+                className="rounded-md border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              >
+                გაუქმება
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      {/* list */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+            ყველა კომპანია
+          </h2>
+          <span className="font-mono text-xs text-slate-400">{rows.length}</span>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-2 text-left">სახელი</th>
+                <th className="px-4 py-2 text-left">ტიპი</th>
+                <th className="px-4 py-2 text-left">კონტაქტი</th>
+                <th className="px-4 py-2 text-left">ტელ.</th>
+                <th className="px-4 py-2 text-left">ელფოსტა</th>
+                <th className="px-4 py-2 text-right">მოქმედ.</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-4 py-10 text-center text-slate-400"
+                  >
+                    იტვირთება…
+                  </td>
+                </tr>
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-4 py-10 text-center text-slate-400"
+                  >
+                    ცარიელია
+                  </td>
+                </tr>
+              ) : (
+                rows.map((c) => (
+                  <tr
+                    key={c.id}
+                    className="border-b border-slate-100 hover:bg-slate-50"
+                  >
+                    <td className="px-4 py-2.5 font-semibold text-slate-900">
+                      {c.name}
+                      {c.tax_id && (
+                        <div className="font-mono text-[10px] text-slate-400">
+                          {c.tax_id}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <span
+                        className={`rounded px-2 py-0.5 text-xs font-semibold ${COMPANY_TYPE_COLOR[c.type]}`}
+                      >
+                        {COMPANY_TYPE_LABEL[c.type]}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2.5 text-slate-700">
+                      {c.contact_person || '—'}
+                    </td>
+                    <td className="px-4 py-2.5 font-mono text-xs text-slate-600">
+                      {c.phone ? (
+                        <a
+                          href={`tel:${c.phone}`}
+                          className="text-[#0071CE] hover:underline"
+                        >
+                          {c.phone}
+                        </a>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-xs">
+                      {c.email ? (
+                        <a
+                          href={`mailto:${c.email}`}
+                          className="text-[#0071CE] hover:underline"
+                        >
+                          {c.email}
+                        </a>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 text-right">
+                      <div className="inline-flex gap-1 text-xs">
+                        <button
+                          onClick={() => startEdit(c)}
+                          className="rounded border border-slate-200 bg-white px-2 py-1 hover:bg-slate-50"
+                        >
+                          ✏️ რედ.
+                        </button>
+                        <button
+                          onClick={() => del(c)}
+                          className="rounded border border-red-200 bg-white px-2 py-1 text-red-600 hover:bg-red-50"
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// TABLES (pivot reports) PANEL
+// ============================================
+function TablesPanel({
+  data,
+  loading,
+  reload
+}: {
+  data: {
+    categories: CategoryReport[];
+    subtypes: SubtypeReport[];
+    regions: RegionReport[];
+    totals: {
+      branches: number;
+      planned: number;
+      installed: number;
+      unplanned: number;
+    };
+  } | null;
+  loading: boolean;
+  reload: () => void;
+}) {
+  if (loading || !data) {
+    return (
+      <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-400 shadow-sm">
+        იტვირთება…
+      </div>
+    );
+  }
+  const {categories, subtypes, regions, totals} = data;
+
+  return (
+    <div className="space-y-6">
+      {/* Totals */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Tile label="ფილიალი" value={totals.branches} />
+        <Tile label="დაგეგმილი" value={totals.planned} />
+        <Tile
+          label="დაყენებული"
+          value={totals.installed}
+          sub={
+            totals.planned > 0
+              ? `${Math.round((totals.installed / totals.planned) * 100)}%`
+              : ''
+          }
+          accent
+        />
+        <Tile
+          label="დაუგეგმავი"
+          value={`+${totals.unplanned}`}
+          warn
+        />
+      </div>
+
+      {/* Categories */}
+      <ReportTable
+        title="კატეგორიის მიხედვით"
+        headers={['კატეგორია', 'დაგეგმ.', 'დაყენებ.', '+?', '%']}
+        onRefresh={reload}
+      >
+        {categories.map((c) => (
+          <tr key={c.category} className="border-b border-slate-100">
+            <td className="px-4 py-2 font-semibold text-slate-900">
+              {c.category}
+            </td>
+            <td className="px-4 py-2 text-right font-mono">{c.planned}</td>
+            <td className="px-4 py-2 text-right font-mono text-[#008A73]">
+              {c.installed}
+            </td>
+            <td className="px-4 py-2 text-right font-mono text-amber-600">
+              {c.unplanned ? `+${c.unplanned}` : ''}
+            </td>
+            <td className="px-4 py-2 text-right">
+              <PctBar pct={c.pct} />
+            </td>
+          </tr>
+        ))}
+      </ReportTable>
+
+      {/* Subtypes */}
+      <ReportTable
+        title="ქვეტიპის მიხედვით"
+        headers={['კატეგორია', 'ქვეტიპი', 'დაგეგმ.', 'დაყენებ.', '%']}
+      >
+        {subtypes.map((s, i) => (
+          <tr key={i} className="border-b border-slate-100">
+            <td className="px-4 py-2 text-xs text-slate-500">{s.category}</td>
+            <td className="px-4 py-2 font-medium text-slate-900">
+              {s.subtype}
+            </td>
+            <td className="px-4 py-2 text-right font-mono">{s.planned}</td>
+            <td className="px-4 py-2 text-right font-mono text-[#008A73]">
+              {s.installed}
+            </td>
+            <td className="px-4 py-2 text-right">
+              <PctBar pct={s.pct} />
+            </td>
+          </tr>
+        ))}
+      </ReportTable>
+
+      {/* Regions */}
+      <ReportTable
+        title="რეგიონის მიხედვით"
+        headers={['რეგიონი', 'ფილ.', 'დაგეგმ.', 'დაყენებ.', '+?', '%']}
+      >
+        {regions.map((r) => (
+          <tr key={r.region} className="border-b border-slate-100">
+            <td className="px-4 py-2 font-semibold text-slate-900">
+              {r.region}
+            </td>
+            <td className="px-4 py-2 text-right font-mono">{r.branches}</td>
+            <td className="px-4 py-2 text-right font-mono">{r.planned}</td>
+            <td className="px-4 py-2 text-right font-mono text-[#008A73]">
+              {r.installed}
+            </td>
+            <td className="px-4 py-2 text-right font-mono text-amber-600">
+              {r.unplanned ? `+${r.unplanned}` : ''}
+            </td>
+            <td className="px-4 py-2 text-right">
+              <PctBar pct={r.pct} />
+            </td>
+          </tr>
+        ))}
+      </ReportTable>
+    </div>
+  );
+}
+
+function Tile({
+  label,
+  value,
+  sub,
+  accent,
+  warn
+}: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  accent?: boolean;
+  warn?: boolean;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+        {label}
+      </div>
+      <div
+        className={`font-mono text-2xl font-bold ${accent ? 'text-[#008A73]' : warn ? 'text-amber-600' : 'text-slate-900'}`}
+      >
+        {value}
+      </div>
+      {sub && <div className="font-mono text-xs text-slate-400">{sub}</div>}
+    </div>
+  );
+}
+
+function ReportTable({
+  title,
+  headers,
+  children,
+  onRefresh
+}: {
+  title: string;
+  headers: string[];
+  children: React.ReactNode;
+  onRefresh?: () => void;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
+          {title}
+        </h2>
+        {onRefresh && (
+          <button
+            onClick={onRefresh}
+            className="rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          >
+            🔄 განახლება
+          </button>
+        )}
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+            <tr>
+              {headers.map((h, i) => (
+                <th
+                  key={i}
+                  className={`px-4 py-2 ${i >= 2 ? 'text-right' : 'text-left'}`}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>{children}</tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function PctBar({pct}: {pct: number}) {
+  const clamped = Math.max(0, Math.min(100, pct));
+  const color =
+    clamped >= 90
+      ? '#00AA8D'
+      : clamped >= 50
+        ? '#0071CE'
+        : clamped >= 25
+          ? '#F59E0B'
+          : '#EC4899';
+  return (
+    <div className="inline-flex min-w-[100px] items-center gap-2">
+      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100">
+        <div
+          className="h-full"
+          style={{width: clamped + '%', background: color}}
+        />
+      </div>
+      <span className="font-mono text-xs font-semibold text-slate-700">
+        {pct}%
+      </span>
     </div>
   );
 }

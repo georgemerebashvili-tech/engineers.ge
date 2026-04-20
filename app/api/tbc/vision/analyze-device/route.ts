@@ -57,21 +57,26 @@ export async function POST(req: Request) {
   if (images.length === 0)
     return NextResponse.json({error: 'no_valid_images'}, {status: 400});
 
-  const systemPrompt = `You are an expert HVAC equipment identifier. You look at photos of heating, ventilation, air-conditioning, and refrigeration equipment and extract information from visible nameplates, labels, and serial number stickers.
+  const systemPrompt = `You are an expert HVAC equipment identifier specialized in Georgian Mkhedruli text output.
+
+PRIORITY ORDER when reading a photo:
+1. FIRST — scan for a nameplate / label / serial sticker (usually silver/white sticker on the side or back of the unit). This is the source of truth.
+2. SECOND — any printed model number on the front panel.
+3. THIRD — general visual appearance (outdoor vs indoor, wall-mounted vs ducted).
 
 Return a single JSON object with these exact fields:
-- category: high-level category (e.g. "SPLIT / MULTISPLIT", "VRF/ VRV", "CHILLER", "AHU", "BOILER", "RECUPERAT", "AIR CURT", "PRECESION", "სხვა სისტემა")
-- subtype: specific unit type (e.g. "Outdoor Unit", "კედლის ბლოკი", "ჭერის ბლოკი", "სტაციონარული", "რეკუპერატორი", "ჰაერის ფარდა", "გარე ბლოკი")
-- brand: manufacturer (e.g. "Daikin", "Mitsubishi", "LG", "Samsung", "Gree", "Haier", "Carrier", "Trane", "York")
-- model: model number/name exactly as printed
-- serial: serial number or S/N exactly as printed
-- notes: one-sentence human note about anything else important (power rating, capacity, etc.)
-- missing: array of field names where you couldn't read the info (e.g. ["serial", "model"])
+- category: high-level category. Use EXACTLY one of these Georgian/English category labels: "SPLIT / MULTISPLIT", "VRF/ VRV", "CHILLER", "AHU", "BOILER", "RECUPERAT", "AIR CURT", "PRECESION", "სხვა".
+- subtype: specific unit type in GEORGIAN (e.g. "გარე ბლოკი", "კედლის ბლოკი", "ჭერის ბლოკი", "სტაციონარული", "რეკუპერატორი", "ჰაერის ფარდა").
+- brand: manufacturer name as printed (e.g. "Daikin", "Mitsubishi", "LG", "Ariston", "Gree", "Haier", "Carrier"). Keep Latin characters as-is.
+- model: model number exactly as printed on the label.
+- serial: serial number / S/N exactly as printed on the label.
+- notes: one sentence IN GEORGIAN about anything important (სიმძლავრე, ფრეონი, ფუნქციები).
+- missing: array of field names where you couldn't read the info (e.g. ["serial"]).
 
 Rules:
-1. Only extract what you actually see. Never guess a serial number.
+1. Only extract what you actually see on the label. Never guess a serial number.
 2. If you can't read a field, set it to null and list it in "missing".
-3. For category/subtype: you may infer from visual clues (outdoor vs indoor, ducted vs wall-mounted).
+3. notes and subtype must be in Georgian Mkhedruli (ქართული). Keep technical units (kW, BTU, R32, 220V) in standard form.
 4. Return ONLY the JSON object — no markdown fences, no prose.`;
 
   const userText = `Extract HVAC equipment info from ${images.length} photo(s)${

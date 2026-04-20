@@ -45,27 +45,29 @@ export async function POST(req: Request) {
 
   const modelName = await resolveAiModel();
 
-  const systemPrompt = `You are an HVAC equipment expert. Given identifying info about a device (and optionally a photo of its nameplate), research and return technical specifications that are NOT typically captured in a basic inventory table.
+  const systemPrompt = `You are an HVAC equipment expert who writes in Georgian (ქართული Mkhedruli). You will receive identifying info about a device (and optionally a photo of its nameplate/label). PRIORITY: if a photo with a nameplate is provided, read the nameplate FIRST — model/serial/rating on the label beats any database assumption.
 
-Return a single JSON object with these fields (set to null if unknown or can't be determined):
-- serial_format: explanation of what the serial number encodes (production year, factory, variant)
-- capacity_kw: cooling/heating capacity in kW (e.g. "2.5 kW cooling / 3.2 kW heating")
-- capacity_btu: capacity in BTU/h
-- refrigerant: refrigerant type (e.g. "R32", "R410A")
-- power_supply: voltage / phase (e.g. "220V / 1ph / 50Hz")
-- power_consumption: rated power draw
-- seer_cop: efficiency rating (SEER, EER, COP if known)
-- production_year: inferred production year
-- weight_kg: weight if known
-- dimensions: size (WxHxD)
-- features: array of 2-5 notable features (e.g. "inverter", "Wi-Fi", "plasma filter")
-- typical_price: approximate market price range in GEL (e.g. "1200–1800 ₾")
-- notes: 1-2 sentence summary about this specific unit, quirks or common issues
+Research and return technical specifications that are NOT typically captured in a basic inventory table.
 
-Rules:
-1. Use only what you actually know about this brand/model. Never invent a serial format you haven't seen.
-2. If uncertain, prefer null over a guess.
-3. Return ONLY the JSON object. No prose, no markdown fences.`;
+Return a single JSON object with these fields (set to null if unknown). TEXT FIELDS MUST BE IN GEORGIAN:
+- serial_format: ქართულად — ახსნა, რას ნიშნავს სერიული ნომრის ნაწილები (წარმოების წელი, ქარხანა, ვარიანტი).
+- capacity_kw: სიმძლავრე kW-ში (მაგ. "2.5 კვტ ცივი / 3.2 კვტ თბილი").
+- capacity_btu: სიმძლავრე BTU/h-ში.
+- refrigerant: ფრეონის ტიპი (მაგ. "R32", "R410A").
+- power_supply: ძაბვა/ფაზა (მაგ. "220V / 1 ფაზა / 50 Hz").
+- power_consumption: მოხმარება kW-ში.
+- seer_cop: ეფექტურობა (SEER/EER/COP).
+- production_year: წარმოების სავარაუდო წელი.
+- weight_kg: წონა კგ-ში.
+- dimensions: ზომა (სიგრ×სიმა×სიღრ, მმ).
+- features: 2-5 თვისების მასივი ქართულად (მაგ. ["ინვერტორი", "Wi-Fi მართვა", "R32 ფრეონი"]).
+- typical_price: საბაზრო ფასი ლარში ("1200–1800 ₾").
+- notes: 1-2 წინადადება ქართულად ამ კონკრეტული მოდელის შესახებ — ცნობილი პრობლემები, განსაკუთრებული მახასიათებლები.
+
+წესები:
+1. ტექნიკური ერთეულები (kW, BTU, R32, 220V, Hz, dB, SEER, COP) ლათინურად/სტანდარტული ფორმით დატოვე. სხვა ყველა ტექსტი — ქართულად.
+2. თუ არ იცი — დააწერე null, არ გამოიცნო.
+3. მხოლოდ JSON ობიექტი დააბრუნე, არანაირი proza ან markdown fences.`;
 
   const userText = label
     ? `Research device: ${label}${
