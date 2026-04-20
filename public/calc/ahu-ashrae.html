@@ -1490,6 +1490,66 @@ calc();
     window.__DRAFT_AHU__ = d;
   } catch (e) { console.warn('draft-store init failed', e); }
 })();
+
+/* ========== i18n (this calc ships English by default) ========== */
+if (window.engCalcI18n) {
+  window.engCalcI18n.apply({
+    en: {
+      title: 'AHU Engineering Report — ASHRAE — engineers.ge',
+      selectors: {
+        'header .hdr-info h1': {text: 'AHU Engineering Report'},
+        'header .hdr-info p': {text: 'Air Handling Unit — Full ASHRAE Compliance Analysis'},
+        '.btn-reset': {text: '↺ Reset'},
+        '.btn-pdf': {text: '⬇ Export PDF'}
+      }
+    },
+    ka: {
+      title: 'AHU საინჟინრო ანგარიში — ASHRAE — engineers.ge',
+      selectors: {
+        'header .hdr-info h1': {text: 'AHU საინჟინრო ანგარიში'},
+        'header .hdr-info p': {text: 'Air Handling Unit — სრული ASHRAE შესაბამისობის ანალიზი'},
+        '.btn-reset': {text: '↺ Reset'},
+        '.btn-pdf': {text: '⬇ Export PDF'}
+      }
+    },
+    ru: {
+      title: 'Инженерный отчёт AHU — ASHRAE — engineers.ge',
+      selectors: {
+        'header .hdr-info h1': {text: 'Инженерный отчёт AHU'},
+        'header .hdr-info p': {text: 'Air Handling Unit — полный анализ соответствия ASHRAE'},
+        '.btn-reset': {text: '↺ Сброс'},
+        '.btn-pdf': {text: '⬇ Экспорт PDF'}
+      }
+    },
+    tr: {
+      title: 'AHU Muhendislik Raporu — ASHRAE — engineers.ge',
+      selectors: {
+        'header .hdr-info h1': {text: 'AHU Muhendislik Raporu'},
+        'header .hdr-info p': {text: 'Air Handling Unit — tam ASHRAE uygunluk analizi'},
+        '.btn-reset': {text: '↺ Sifirla'},
+        '.btn-pdf': {text: '⬇ PDF dışa aktar'}
+      }
+    },
+    az: {
+      title: 'AHU Muhəndislik Hesabati — ASHRAE — engineers.ge',
+      selectors: {
+        'header .hdr-info h1': {text: 'AHU muhəndislik hesabatı'},
+        'header .hdr-info p': {text: 'Air Handling Unit — tam ASHRAE uyğunluq analizi'},
+        '.btn-reset': {text: '↺ Sifirla'},
+        '.btn-pdf': {text: '⬇ PDF ixrac et'}
+      }
+    },
+    hy: {
+      title: 'AHU Ինժեներական Հաշվետվություն — ASHRAE — engineers.ge',
+      selectors: {
+        'header .hdr-info h1': {text: 'AHU ինժեներական հաշվետվություն'},
+        'header .hdr-info p': {text: 'Air Handling Unit — ամբողջական ASHRAE համապատասխանության վերլուծություն'},
+        '.btn-reset': {text: '↺ Վերակայել'},
+        '.btn-pdf': {text: '⬇ Արտահանել PDF'}
+      }
+    }
+  });
+}
 </script>
 </body>
 </html>

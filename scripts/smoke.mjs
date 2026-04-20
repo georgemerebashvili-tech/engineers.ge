@@ -97,6 +97,65 @@ await check('GET /calc/hvac.html asset', () =>
 await check('GET /calc/_physics-engine.js asset', () =>
   expectStatus('/calc/_physics-engine.js', 200)
 );
+await check('GET /calc/_i18n.js asset', () =>
+  expectStatus('/calc/_i18n.js', 200)
+);
+
+// -------- i18n: every calc HTML loads _i18n.js + registers translation table --------
+const I18N_CALCS = [
+  'hvac',
+  'heat-loss',
+  'wall-thermal',
+  'stair-pressurization',
+  'elevator-shaft-press',
+  'parking-ventilation',
+  'floor-pressurization',
+  'wall-editor',
+  'building-composer',
+  'silencer',
+  'silencer-kaya',
+  'ahu-ashrae',
+  'heat-transfer',
+  'ifc-viewer',
+  'stair-pressurization-mockup'
+];
+for (const slug of I18N_CALCS) {
+  await check(`i18n: ${slug}.html loads _i18n.js + registers bundle`, () =>
+    expectContains(`/calc/${slug}.html`, '_i18n.js', 'engCalcI18n.apply')
+  );
+}
+
+// -------- i18n: /calc/[slug] React page propagates locale to iframe --------
+await check('calc page passes ?lang= to iframe (default ka)', () =>
+  expectContains('/calc/hvac', 'src="/calc/hvac.html?lang=ka"')
+);
+
+// -------- Coohom-parity critical assets --------
+await check('GET /calc/_editor-ui.css', () =>
+  expectStatus('/calc/_editor-ui.css', 200)
+);
+await check('GET /calc/_editor-panels.js', () =>
+  expectStatus('/calc/_editor-panels.js', 200)
+);
+await check('GET /calc/_project-bridge.js', () =>
+  expectStatus('/calc/_project-bridge.js', 200)
+);
+await check('wall-editor.html ships fire overlay + physics wiring', () =>
+  expectContains(
+    '/calc/wall-editor.html',
+    'plumeMassFlow',
+    'smokeLayerHeight',
+    'doorOpeningForce',
+    '#g-sim-overlay'
+  )
+);
+await check('POST /api/fire-report validates payload', () =>
+  expectJson(
+    '/api/fire-report',
+    {method: 'POST', headers: {'content-type': 'application/json'}, body: '{}'},
+    (res) => (res.status === 400 ? null : `wanted 400, got ${res.status}`)
+  )
+);
 
 // -------- Sitemap + robots --------
 await check('GET /sitemap.xml', () => expectStatus('/sitemap.xml', 200));

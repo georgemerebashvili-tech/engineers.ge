@@ -36,8 +36,8 @@ const supabaseHost = (() => {
 
 const CSP_DIRECTIVES = [
   `default-src 'self'`,
-  `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com`,
-  `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
+  `script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com`,
+  `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net`,
   `font-src 'self' data: https://fonts.gstatic.com`,
   `img-src 'self' data: blob: https:`,
   [

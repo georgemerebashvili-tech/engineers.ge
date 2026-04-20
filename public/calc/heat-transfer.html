@@ -8863,6 +8863,25 @@ function showCoefInfo(which){
   document.getElementById('cim_ref').textContent='📖 '+d.ref;
   document.getElementById('coef_info_modal').style.display='flex';
 }
+
+/* ========== i18n (top UI chrome) ========== */
+if (window.engCalcI18n) {
+  window.engCalcI18n.apply({
+    ka: {title: 'HVAC კალკულატორი · EN 12831'},
+    en: {
+      title: 'HVAC Calculator · EN 12831 — engineers.ge',
+      selectors: {
+        'h1:nth-of-type(1)': {text: '⚡ Wall Thermal Transmittance'}
+      }
+    },
+    ru: {
+      title: 'Калькулятор HVAC · EN 12831 — engineers.ge',
+      selectors: {
+        'h1:nth-of-type(1)': {text: '⚡ Теплопередача стены'}
+      }
+    }
+  });
+}
 </script>
 
 </body>

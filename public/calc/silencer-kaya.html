@@ -503,10 +503,10 @@ html{scroll-behavior:smooth}
 </div>
 
 <div class="mobile-nav no-print">
-  <a href="file:///Users/macbookair/Library/Containers/net.whatsapp.WhatsApp/Data/tmp/documents/706E5E76-801C-4694-8EB6-7048CE3E9FB9/%E1%83%AE%E1%83%9B%E1%83%90%E1%83%A3%E1%83%A0%E1%83%93%E1%83%90%E1%83%9B%E1%83%AE%E1%83%A8%E1%83%9D%E1%83%91%E1%83%98%20%E1%83%A1%E1%83%94%E1%83%9A%E1%83%94%E1%83%A5%E1%83%A8%E1%83%94%E1%83%9C%E1%83%98.html#calc-section" class="active">კალკულაცია</a>
-  <a href="file:///Users/macbookair/Library/Containers/net.whatsapp.WhatsApp/Data/tmp/documents/706E5E76-801C-4694-8EB6-7048CE3E9FB9/%E1%83%AE%E1%83%9B%E1%83%90%E1%83%A3%E1%83%A0%E1%83%93%E1%83%90%E1%83%9B%E1%83%AE%E1%83%A8%E1%83%9D%E1%83%91%E1%83%98%20%E1%83%A1%E1%83%94%E1%83%9A%E1%83%94%E1%83%A5%E1%83%A8%E1%83%94%E1%83%9C%E1%83%98.html#std-details">სტანდარტები</a>
-  <a href="file:///Users/macbookair/Library/Containers/net.whatsapp.WhatsApp/Data/tmp/documents/706E5E76-801C-4694-8EB6-7048CE3E9FB9/%E1%83%AE%E1%83%9B%E1%83%90%E1%83%A3%E1%83%A0%E1%83%93%E1%83%90%E1%83%9B%E1%83%AE%E1%83%A8%E1%83%9D%E1%83%91%E1%83%98%20%E1%83%A1%E1%83%94%E1%83%9A%E1%83%94%E1%83%A5%E1%83%A8%E1%83%94%E1%83%9C%E1%83%98.html#drawings-section">ნახაზები</a>
-  <a href="file:///Users/macbookair/Library/Containers/net.whatsapp.WhatsApp/Data/tmp/documents/706E5E76-801C-4694-8EB6-7048CE3E9FB9/%E1%83%AE%E1%83%9B%E1%83%90%E1%83%A3%E1%83%A0%E1%83%93%E1%83%90%E1%83%9B%E1%83%AE%E1%83%A8%E1%83%9D%E1%83%91%E1%83%98%20%E1%83%A1%E1%83%94%E1%83%9A%E1%83%94%E1%83%A5%E1%83%A8%E1%83%94%E1%83%9C%E1%83%98.html#model-section">3D</a>
+  <a href="#calc-section" class="active">კალკულაცია</a>
+  <a href="#std-details">სტანდარტები</a>
+  <a href="#drawings-section">ნახაზები</a>
+  <a href="#model-section">3D</a>
 </div>
 
 <!-- CLIENT INFO -->
@@ -3644,6 +3644,73 @@ document.addEventListener("DOMContentLoaded",()=>{
     } catch (e) { console.warn('draft-store init failed', e); }
   }
 });
+
+/* ========== i18n (top UI chrome) ========== */
+if (window.engCalcI18n) {
+  window.engCalcI18n.apply({
+    ka: {title: 'KAYA — ხმაურდამხშობის კალკულატორი — FINAL'},
+    en: {
+      title: 'KAYA — Silencer Calculator — engineers.ge',
+      selectors: {
+        '.hdr-title': {text: 'KAYA Silencer Calculator — FINAL'},
+        '.hdr-sub': {text: '50 mm mineral wool 100 kg/m³ · G4 filter · 0.8 mm galvanized steel · standard catalogue models'},
+        '.pdf-btn': {text: '⬇ Export PDF'},
+        '.mobile-nav a[href="#calc-section"]': {text: 'Calculation'},
+        '.mobile-nav a[href="#std-details"]': {text: 'Standards'},
+        '.mobile-nav a[href="#drawings-section"]': {text: 'Drawings'},
+        '.mobile-nav a[href="#model-section"]': {text: '3D'}
+      }
+    },
+    ru: {
+      title: 'KAYA — Калькулятор шумоглушителя — engineers.ge',
+      selectors: {
+        '.hdr-title': {text: 'KAYA калькулятор шумоглушителя — FINAL'},
+        '.hdr-sub': {text: '50 мм минеральная вата 100 кг/м³ · фильтр G4 · 0.8 мм оцинкованная сталь · стандартные каталожные модели'},
+        '.pdf-btn': {text: '⬇ Экспорт PDF'},
+        '.mobile-nav a[href="#calc-section"]': {text: 'Расчёт'},
+        '.mobile-nav a[href="#std-details"]': {text: 'Стандарты'},
+        '.mobile-nav a[href="#drawings-section"]': {text: 'Чертежи'},
+        '.mobile-nav a[href="#model-section"]': {text: '3D'}
+      }
+    },
+    tr: {
+      title: 'KAYA — Susturucu Hesaplayici — engineers.ge',
+      selectors: {
+        '.hdr-title': {text: 'KAYA Susturucu Hesaplayici — FINAL'},
+        '.hdr-sub': {text: '50 mm mineral yün 100 kg/m³ · G4 filtre · 0.8 mm galvanizli celik · standart katalog modelleri'},
+        '.pdf-btn': {text: '⬇ PDF dışa aktar'},
+        '.mobile-nav a[href="#calc-section"]': {text: 'Hesap'},
+        '.mobile-nav a[href="#std-details"]': {text: 'Standartlar'},
+        '.mobile-nav a[href="#drawings-section"]': {text: 'Cizimler'},
+        '.mobile-nav a[href="#model-section"]': {text: '3D'}
+      }
+    },
+    az: {
+      title: 'KAYA — Səsboğucu Kalkulyatoru — engineers.ge',
+      selectors: {
+        '.hdr-title': {text: 'KAYA səsboğucu kalkulyatoru — FINAL'},
+        '.hdr-sub': {text: '50 mm mineral yun 100 kg/m³ · G4 filtr · 0.8 mm sinklənmiş polad · standart kataloq modelləri'},
+        '.pdf-btn': {text: '⬇ PDF ixrac et'},
+        '.mobile-nav a[href="#calc-section"]': {text: 'Hesablama'},
+        '.mobile-nav a[href="#std-details"]': {text: 'Standartlar'},
+        '.mobile-nav a[href="#drawings-section"]': {text: 'Cizgilər'},
+        '.mobile-nav a[href="#model-section"]': {text: '3D'}
+      }
+    },
+    hy: {
+      title: 'KAYA — Ձայնախլացուցիչ — engineers.ge',
+      selectors: {
+        '.hdr-title': {text: 'KAYA ձայնախլացուցիչի հաշվիչ — FINAL'},
+        '.hdr-sub': {text: '50 մմ հանքային բուրդ 100 կգ/մ³ · G4 ֆիլտր · 0.8 մմ ցինկապատ պողպատ · ստանդարտ կատալոգային մոդելներ'},
+        '.pdf-btn': {text: '⬇ Արտահանել PDF'},
+        '.mobile-nav a[href="#calc-section"]': {text: 'Հաշվարկ'},
+        '.mobile-nav a[href="#std-details"]': {text: 'Ստանդարտներ'},
+        '.mobile-nav a[href="#drawings-section"]': {text: 'Գծագրեր'},
+        '.mobile-nav a[href="#model-section"]': {text: '3D'}
+      }
+    }
+  });
+}
 </script>
 
 </body></html>

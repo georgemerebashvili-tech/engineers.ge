@@ -190,7 +190,7 @@
   <h1>🏠 IFC / BIM Viewer</h1>
   <span class="sep"></span>
   <label class="btn" for="file-input">
-    📂 ატვირთე IFC
+    <span id="txt-ifc-upload">📂 ატვირთე IFC</span>
     <input id="file-input" type="file" accept=".ifc">
   </label>
   <button id="btn-sample" class="primary">📦 Sample მოდელი</button>
@@ -1048,6 +1048,91 @@ document.getElementById('ov-type').addEventListener('click', () => applyOverlay(
 // Initial overlay
 applyOverlay('normal');
 updateStats();
+
+/* ========== i18n (top UI chrome) ========== */
+if (window.engCalcI18n) {
+  window.engCalcI18n.apply({
+    ka: {title: 'IFC / BIM Viewer — engineers.ge'},
+    en: {
+      title: 'IFC / BIM Viewer — engineers.ge',
+      selectors: {
+        '#txt-ifc-upload': {text: '📂 Upload IFC'},
+        '#btn-sample': {text: '📦 Sample model'},
+        '#btn-reset': {text: '🔄 Reset view'},
+        '#ov-normal': {text: '🎨 Normal'},
+        '#ov-heat': {text: '🌡 Heat Loss'},
+        '#ov-rooms': {text: '🚪 Rooms Demand'},
+        '#ov-orient': {text: '🧭 Orientation'},
+        '#ov-type': {text: '🏷 Type'},
+        '.side-head': {text: 'Element properties'},
+        '[data-city="tbilisi"]': {text: 'Tbilisi'},
+        '[data-city="batumi"]': {text: 'Batumi'},
+        '[data-city="kutaisi"]': {text: 'Kutaisi'},
+        '[data-city="bakuriani"]': {text: 'Bakuriani'}
+      }
+    },
+    ru: {
+      title: 'IFC / BIM Viewer — engineers.ge',
+      selectors: {
+        '#txt-ifc-upload': {text: '📂 Загрузить IFC'},
+        '#btn-sample': {text: '📦 Пример модели'},
+        '#btn-reset': {text: '🔄 Сброс вида'},
+        '#ov-normal': {text: '🎨 Нормальный'},
+        '#ov-heat': {text: '🌡 Теплопотери'},
+        '#ov-rooms': {text: '🚪 Нагрузка комнат'},
+        '#ov-orient': {text: '🧭 Ориентация'},
+        '#ov-type': {text: '🏷 Тип'},
+        '.side-head': {text: 'Свойства элемента'},
+        '[data-city="tbilisi"]': {text: 'Тбилиси'},
+        '[data-city="batumi"]': {text: 'Батуми'},
+        '[data-city="kutaisi"]': {text: 'Кутаиси'},
+        '[data-city="bakuriani"]': {text: 'Бакуриани'}
+      }
+    },
+    tr: {
+      title: 'IFC / BIM Goruntuleyici — engineers.ge',
+      selectors: {
+        '#txt-ifc-upload': {text: '📂 IFC yukle'},
+        '#btn-sample': {text: '📦 Ornek model'},
+        '#btn-reset': {text: '🔄 Gorunumu sifirla'},
+        '#ov-normal': {text: '🎨 Normal'},
+        '#ov-heat': {text: '🌡 Isi kaybi'},
+        '#ov-rooms': {text: '🚪 Oda yukleri'},
+        '#ov-orient': {text: '🧭 Yon'},
+        '#ov-type': {text: '🏷 Tur'},
+        '.side-head': {text: 'Eleman ozellikleri'}
+      }
+    },
+    az: {
+      title: 'IFC / BIM Gosterici — engineers.ge',
+      selectors: {
+        '#txt-ifc-upload': {text: '📂 IFC yukle'},
+        '#btn-sample': {text: '📦 Numune model'},
+        '#btn-reset': {text: '🔄 Gorunusu sifirla'},
+        '#ov-normal': {text: '🎨 Normal'},
+        '#ov-heat': {text: '🌡 Istilik itkisi'},
+        '#ov-rooms': {text: '🚪 Otaq yukleri'},
+        '#ov-orient': {text: '🧭 Yon'},
+        '#ov-type': {text: '🏷 Nov'},
+        '.side-head': {text: 'Element xasseleri'}
+      }
+    },
+    hy: {
+      title: 'IFC / BIM Դիտարկիչ — engineers.ge',
+      selectors: {
+        '#txt-ifc-upload': {text: '📂 Բեռնել IFC'},
+        '#btn-sample': {text: '📦 Օրինակ մոդել'},
+        '#btn-reset': {text: '🔄 Վերակայել տեսքը'},
+        '#ov-normal': {text: '🎨 Սովորական'},
+        '#ov-heat': {text: '🌡 Ջերմային կորուստ'},
+        '#ov-rooms': {text: '🚪 Սենյակների բեռներ'},
+        '#ov-orient': {text: '🧭 Կողմնորոշում'},
+        '#ov-type': {text: '🏷 Տեսակ'},
+        '.side-head': {text: 'Տարրի հատկություններ'}
+      }
+    }
+  });
+}
 </script>
 
 </body>

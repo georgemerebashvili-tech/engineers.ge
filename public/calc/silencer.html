@@ -1952,6 +1952,73 @@ document.addEventListener("DOMContentLoaded",()=>{
     } catch (e) { console.warn('draft-store init failed', e); }
   }
 });
+
+/* ========== i18n (top UI chrome) ========== */
+if (window.engCalcI18n) {
+  window.engCalcI18n.apply({
+    ka: {title: 'KAYA — ხმაურდამხშობის კალკულატორი — FINAL'},
+    en: {
+      title: 'KAYA — Silencer Calculator — engineers.ge',
+      selectors: {
+        '.hdr-title': {text: 'Silencer Calculator — FINAL'},
+        '.hdr-sub': {text: '50 mm mineral wool 100 kg/m³ · G4 filter · 0.8 mm galvanized steel · standard catalogue models'},
+        '.pdf-btn': {text: '⬇ Export PDF'},
+        'a[href="#calc-section"]': {text: 'Calculation'},
+        'a[href="#std-details"]': {text: 'Standards'},
+        'a[href="#drawings-section"]': {text: 'Drawings'},
+        'a[href="#model-section"]': {text: '3D'}
+      }
+    },
+    ru: {
+      title: 'KAYA — Калькулятор шумоглушителя — engineers.ge',
+      selectors: {
+        '.hdr-title': {text: 'Калькулятор шумоглушителя — FINAL'},
+        '.hdr-sub': {text: '50 мм минеральная вата 100 кг/м³ · фильтр G4 · 0.8 мм оцинкованная сталь · стандартные каталожные модели'},
+        '.pdf-btn': {text: '⬇ Экспорт PDF'},
+        'a[href="#calc-section"]': {text: 'Расчёт'},
+        'a[href="#std-details"]': {text: 'Стандарты'},
+        'a[href="#drawings-section"]': {text: 'Чертежи'},
+        'a[href="#model-section"]': {text: '3D'}
+      }
+    },
+    tr: {
+      title: 'KAYA — Susturucu Hesaplayici — engineers.ge',
+      selectors: {
+        '.hdr-title': {text: 'Susturucu Hesaplayici — FINAL'},
+        '.hdr-sub': {text: '50 mm mineral yün 100 kg/m³ · G4 filtre · 0.8 mm galvanizli celik · standart katalog modelleri'},
+        '.pdf-btn': {text: '⬇ PDF dışa aktar'},
+        'a[href="#calc-section"]': {text: 'Hesap'},
+        'a[href="#std-details"]': {text: 'Standartlar'},
+        'a[href="#drawings-section"]': {text: 'Cizimler'},
+        'a[href="#model-section"]': {text: '3D'}
+      }
+    },
+    az: {
+      title: 'KAYA — Səsboğucu Kalkulyatoru — engineers.ge',
+      selectors: {
+        '.hdr-title': {text: 'Səsboğucu kalkulyatoru — FINAL'},
+        '.hdr-sub': {text: '50 mm mineral yun 100 kg/m³ · G4 filtr · 0.8 mm sinklənmiş polad · standart kataloq modelləri'},
+        '.pdf-btn': {text: '⬇ PDF ixrac et'},
+        'a[href="#calc-section"]': {text: 'Hesablama'},
+        'a[href="#std-details"]': {text: 'Standartlar'},
+        'a[href="#drawings-section"]': {text: 'Cizgilər'},
+        'a[href="#model-section"]': {text: '3D'}
+      }
+    },
+    hy: {
+      title: 'KAYA — Ձայնախլացուցիչի Հաշվիչ — engineers.ge',
+      selectors: {
+        '.hdr-title': {text: 'Ձայնախլացուցիչի հաշվիչ — FINAL'},
+        '.hdr-sub': {text: '50 մմ հանքային բուրդ 100 կգ/մ³ · G4 ֆիլտր · 0.8 մմ ցինկապատ պողպատ · ստանդարտ կատալոգային մոդելներ'},
+        '.pdf-btn': {text: '⬇ Արտահանել PDF'},
+        'a[href="#calc-section"]': {text: 'Հաշվարկ'},
+        'a[href="#std-details"]': {text: 'Ստանդարտներ'},
+        'a[href="#drawings-section"]': {text: 'Գծագրեր'},
+        'a[href="#model-section"]': {text: '3D'}
+      }
+    }
+  });
+}
 </script>
 </body>
 </html>
