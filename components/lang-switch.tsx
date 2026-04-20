@@ -22,8 +22,6 @@ export function LangSwitch() {
   const [pending, start] = useTransition();
   const t = useTranslations('lang');
 
-  if (pathname.startsWith('/calc/')) return null;
-
   return (
     <label className="inline-flex items-center gap-2 text-sm">
       <Globe size={16} aria-hidden />
