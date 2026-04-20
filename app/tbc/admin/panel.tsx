@@ -4,6 +4,7 @@ import {useCallback, useEffect, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import type {TbcSession} from '@/lib/tbc/auth';
+import {TbcHelpModal, TbcHelpButton} from '@/components/tbc-help-modal';
 
 type TbcUser = {
   id: string;
@@ -96,6 +97,7 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
   const [auditAction, setAuditAction] = useState('');
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   // new user form
   const [newUsername, setNewUsername] = useState('');
@@ -276,17 +278,16 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       <header className="flex items-center gap-4 border-b border-slate-200 bg-white px-4 py-2.5 text-sm">
-        <div className="flex items-center gap-2">
-          <div className="rounded border-2 border-[#0071CE] px-2 py-0.5 text-xs font-extrabold tracking-tight text-[#0071CE]">
-            TBC
-          </div>
+        <div className="flex items-center gap-3">
+          <img src="/tbc/logos/tbc.svg" alt="TBC" className="h-7 w-auto" />
           <span className="text-slate-300">×</span>
-          <span className="flex h-6 w-6 items-center justify-center rounded bg-gradient-to-br from-[#00AA8D] to-[#008A73] font-mono text-xs font-extrabold text-white">
-            D
+          <img src="/tbc/logos/dmt.png" alt="DMT" className="h-6 w-auto" />
+          <span className="ml-3 rounded bg-red-100 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-red-700">
+            Admin
           </span>
-          <span className="font-bold">DMT · Admin</span>
         </div>
         <div className="ml-auto flex items-center gap-2 text-xs">
+          <TbcHelpButton onClick={() => setHelpOpen(true)} />
           <span className="hidden text-slate-500 sm:inline">
             {session.displayName || session.username}
           </span>
@@ -645,6 +646,13 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-lg bg-slate-900 px-4 py-2.5 text-sm text-white shadow-lg">
           {toast}
         </div>
+      )}
+
+      {helpOpen && (
+        <TbcHelpModal
+          role={session.role}
+          onClose={() => setHelpOpen(false)}
+        />
       )}
     </div>
   );

@@ -93,15 +93,10 @@ export default async function InvoicePage({
         {/* Header */}
         <div className="mb-8 flex items-start justify-between border-b-2 border-slate-900 pb-6">
           <div>
-            <div className="flex items-center gap-2">
-              <div className="rounded border-2 border-[#0071CE] px-2.5 py-1 text-sm font-extrabold text-[#0071CE]">
-                TBC
-              </div>
+            <div className="flex items-center gap-3">
+              <img src="/tbc/logos/tbc.svg" alt="TBC" className="h-9 w-auto" />
               <span className="text-slate-400">×</span>
-              <span className="flex h-8 w-8 items-center justify-center rounded bg-gradient-to-br from-[#00AA8D] to-[#008A73] font-mono text-sm font-bold text-white">
-                D
-              </span>
-              <span className="text-lg font-bold text-slate-900">DMT</span>
+              <img src="/tbc/logos/dmt.png" alt="DMT" className="h-8 w-auto" />
             </div>
             <div className="mt-2 text-xs text-slate-500">
               TBC ფილიალების ინვენტარიზაცია
