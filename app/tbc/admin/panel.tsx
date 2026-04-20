@@ -164,6 +164,10 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
   async function createUser(e: React.FormEvent) {
     e.preventDefault();
     if (creating) return;
+    if (!newEmail.trim()) {
+      flashToast('ელფოსტა სავალდებულოა — პაროლი ავტომატურად გაიგზავნება');
+      return;
+    }
     setCreating(true);
     try {
       const res = await fetch('/api/tbc/users', {
@@ -171,9 +175,10 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
         headers: {'content-type': 'application/json'},
         body: JSON.stringify({
           username: newUsername.trim().toLowerCase(),
-          password: newPassword,
+          // password is now optional — server auto-generates 4-char if absent
+          password: newPassword || undefined,
           display_name: newDisplay || undefined,
-          email: newEmail.trim() || undefined,
+          email: newEmail.trim(),
           role: newRole
         })
       });
@@ -186,15 +191,46 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
         );
         return;
       }
+      const body = await res.json();
+      if (body.stubbed && body.temp_password) {
+        alert(
+          `RESEND_API_KEY არ არის დაყენებული — მეილი ვერ გაიგზავნა.\n\nდროებითი პაროლი (გადაეცი user-ს ხელით):\n\n${body.temp_password}`
+        );
+      } else {
+        flashToast('მომხმარებელი დაემატა + მეილი გაიგზავნა ✓');
+      }
       setNewUsername('');
       setNewPassword('');
       setNewDisplay('');
       setNewEmail('');
       setNewRole('user');
-      flashToast('მომხმარებელი დამატებულია');
       loadAll();
     } finally {
       setCreating(false);
+    }
+  }
+
+  async function regenerateUserPassword(u: TbcUser) {
+    if (!u.email) {
+      flashToast('ჯერ დააყენე ელფოსტა');
+      return;
+    }
+    if (!confirm(`დააგენერიროს ახალი 4-სიმბოლოიანი პაროლი და გაუგზავნოს ${u.email}-ზე?`))
+      return;
+    const r = await fetch(`/api/tbc/users/${u.id}/regenerate-password`, {
+      method: 'POST'
+    });
+    if (!r.ok) {
+      flashToast('ვერ გაიგზავნა');
+      return;
+    }
+    const body = await r.json();
+    if (body.stubbed && body.temp_password) {
+      alert(
+        `RESEND_API_KEY არ არის დაყენებული — მეილი ვერ გაიგზავნა.\n\nახალი პაროლი (გადაეცი user-ს ხელით):\n\n${body.temp_password}`
+      );
+    } else {
+      flashToast('ახალი პაროლი გაიგზავნა ელფოსტაზე ✓');
     }
   }
 
@@ -340,22 +376,13 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
                 ახალი მომხმარებელი
               </h2>
-              <form onSubmit={createUser} className="grid gap-3 sm:grid-cols-6">
+              <form onSubmit={createUser} className="grid gap-3 sm:grid-cols-5">
                 <input
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
-                  placeholder="username"
+                  placeholder="username *"
                   pattern="[a-z0-9_.\-]+"
                   minLength={3}
-                  required
-                  className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#0071CE] focus:bg-white focus:outline-none"
-                />
-                <input
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  type="password"
-                  placeholder="პაროლი (min 6)"
-                  minLength={6}
                   required
                   className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#0071CE] focus:bg-white focus:outline-none"
                 />
@@ -363,7 +390,8 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
                   type="email"
-                  placeholder="ელფოსტა (reset-ისთვის)"
+                  placeholder="ელფოსტა *"
+                  required
                   className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#0071CE] focus:bg-white focus:outline-none"
                 />
                 <input
@@ -385,9 +413,14 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                   disabled={creating}
                   className="rounded-md bg-[#0071CE] px-4 py-2 text-sm font-semibold text-white hover:bg-[#005BA8] disabled:opacity-60"
                 >
-                  {creating ? '…' : '+ დამატება'}
+                  {creating ? '…' : '+ დამატება + email'}
                 </button>
               </form>
+              <p className="mt-3 rounded-md bg-[#E6F2FB] px-3 py-2 text-[11px] leading-relaxed text-[#005BA8] ring-1 ring-[#0071CE]/20">
+                🔐 <b>4-სიმბოლოიანი ერთჯერადი პაროლი</b> ავტომატურად დაგენერირდება
+                და გაიგზავნება ელფოსტაზე bcrypt-ით დაშიფრული სახით ინახება ბაზაში —
+                აღდგენა შეუძლებელია. მხოლოდ ადმინს შეუძლია ახალი generate-ს გაკეთება.
+              </p>
             </div>
 
             {/* Users table */}
@@ -479,11 +512,20 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                           </td>
                           <td className="px-4 py-2.5 text-right">
                             <div className="inline-flex flex-wrap justify-end gap-1 text-xs">
+                              {u.email && !u.is_static && (
+                                <button
+                                  onClick={() => regenerateUserPassword(u)}
+                                  className="rounded border border-[#0071CE]/30 bg-[#E6F2FB] px-2 py-1 font-semibold text-[#0071CE] hover:bg-[#0071CE] hover:text-white"
+                                  title="დააგენერირე ახალი 4-char პაროლი + გააგზავნე მეილით"
+                                >
+                                  🔑 ახალი pw
+                                </button>
+                              )}
                               {u.email && (
                                 <button
                                   onClick={() => sendResetEmail(u)}
                                   className="rounded border border-slate-200 bg-white px-2 py-1 hover:bg-slate-50"
-                                  title="გაუგზავნე პაროლის აღდგენის ბმული ელფოსტაზე"
+                                  title="გაუგზავნე reset ბმული (user ირჩევს ახალ პაროლს)"
                                 >
                                   📧 reset
                                 </button>

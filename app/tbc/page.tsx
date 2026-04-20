@@ -21,6 +21,25 @@ export default async function TbcLoginPage() {
           შესვლისთვის გამოიყენე შენი მომხმარებელი და პაროლი
         </p>
         <TbcLoginForm />
+
+        {/* Security + NDA notice */}
+        <div className="mt-6 space-y-2 rounded-lg bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-600 ring-1 ring-slate-200">
+          <div className="flex items-start gap-2">
+            <span className="shrink-0">🔒</span>
+            <div>
+              <b>პაროლი დაშიფრულია bcrypt-ით</b> (cost 10, salted hash).
+              ორიგინალი პაროლი ბაზაში არ ინახება და მისი აღდგენა
+              მათემატიკურად შეუძლებელია — მხოლოდ reset ბმული ან ადმინის
+              მიერ ხელახლა შექმნა.
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <span className="shrink-0">📋</span>
+            <div>
+              შესვლით ეთანხმები <a href="/tbc/nda" className="font-semibold text-[#0071CE] hover:underline">კონფიდენციალურობის (NDA)</a> წესებს — მონაცემების არ-გავრცელება, მხოლოდ სამუშაო ფარგლებში გამოყენება.
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

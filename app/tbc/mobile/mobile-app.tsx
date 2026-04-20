@@ -28,6 +28,15 @@ type Branch = {
 
 const PHOTO_LABELS = ['ბირკა', 'ახლო', 'მსხვ.', 'გარე', 'დამატ.'];
 
+function cleanBranchLabel(name: string): string {
+  return name
+    .replace(/^თიბისი\s+ბანკის?\s+/i, '')
+    .replace(/\s*&.*$/, '')
+    .replace(/\s*—\s+[^—]+$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function MobileApp({session}: {session: TbcSession}) {
   const router = useRouter();
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -279,12 +288,15 @@ export function MobileApp({session}: {session: TbcSession}) {
           <option value="">
             {loading ? 'იტვირთება…' : '— აირჩიე ფილიალი —'}
           </option>
-          {branches.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.alias ? `${b.alias} · ` : ''}
-              {b.name.slice(0, 60)} — {b.city || ''}
-            </option>
-          ))}
+          {branches.map((b) => {
+            const label = cleanBranchLabel(b.name).slice(0, 60);
+            return (
+              <option key={b.id} value={b.id}>
+                {b.alias ? `${b.alias} · ` : ''}
+                {label}
+              </option>
+            );
+          })}
         </select>
       </div>
 

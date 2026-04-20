@@ -228,6 +228,23 @@ const SECTIONS: Section[] = [
     )
   },
   {
+    id: 'nda',
+    emoji: '🔒',
+    title: 'კონფიდენციალურობა · NDA · პაროლი',
+    body: (
+      <>
+        <p>პაროლები დაშიფრულია <b>bcrypt</b>-ით (cost 10 rounds + salt). ორიგინალი ვერსად არ ინახება — ადმინსაც კი არ უჩანს.</p>
+        <ul className="list-disc pl-5">
+          <li>ახალი user-ი — ადმინი ქმნის → სისტემა გენერირებს 4-სიმბოლოიან ერთჯერად პაროლს (crypto.randomBytes) → ელფოსტაზე იგზავნება</li>
+          <li>პაროლის აღდგენა — <code>/tbc/forgot</code> reset ბმული ელფოსტაზე (1 სთ ვადა)</li>
+          <li>თუ ელფოსტა არ გაქვს — ადმინი "🔑 ახალი pw" ღილაკით გააგზავნის</li>
+          <li>მათემატიკური უკუ-შებრუნება bcrypt-ს <i>შეუძლებელია</i></li>
+        </ul>
+        <p>სრული NDA და მონაცემთა დაცვის წესები: <a href="/tbc/nda" target="_blank" rel="noopener" className="font-semibold text-[#0071CE] hover:underline">/tbc/nda</a></p>
+      </>
+    )
+  },
+  {
     id: 'export',
     emoji: '📥',
     title: 'იმპორტი / ექსპორტი',
