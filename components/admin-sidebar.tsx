@@ -36,6 +36,9 @@ import {
   ScrollText,
   ToggleRight,
   ChevronRight,
+  Building2,
+  FlaskConical,
+  FolderKanban,
   type LucideIcon
 } from 'lucide-react';
 import type {FeatureMap, FeatureStatus} from '@/lib/feature-flags';
@@ -196,6 +199,13 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
           flagKey: 'admin.redirects'
         },
         {
+          key: 'regulations',
+          label: 'წყაროები',
+          href: '/admin/regulations',
+          icon: ScrollText,
+          flagKey: 'admin.regulations'
+        },
+        {
           key: 'banners',
           label: 'ბანერები',
           icon: Images,
@@ -349,6 +359,37 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
           label: 'პაროლის შეცვლა',
           href: '/admin/password',
           icon: KeyRound
+        }
+      ]
+    },
+    {
+      title: 'პროექტები',
+      items: [
+        {
+          key: 'projects-hub',
+          label: 'მიმოხილვა',
+          href: '/admin/projects',
+          icon: FolderKanban
+        },
+        {
+          key: 'tbc-project',
+          label: 'TBC',
+          icon: Building2,
+          onClick: () => {
+            window.open('/tbc/admin', '_blank', 'noopener,noreferrer');
+          }
+        },
+        {
+          key: 'staging-engineering',
+          label: 'Staging · Engineering',
+          icon: FlaskConical,
+          onClick: () => {
+            window.open(
+              'https://engineers-ge-git-staging.vercel.app',
+              '_blank',
+              'noopener,noreferrer'
+            );
+          }
         }
       ]
     },
