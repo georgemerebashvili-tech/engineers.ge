@@ -8,6 +8,7 @@ import type {TbcSession} from '@/lib/tbc/auth';
 type TbcUser = {
   id: string;
   username: string;
+  email: string | null;
   display_name: string | null;
   role: 'admin' | 'user';
   is_static: boolean;
@@ -38,6 +39,7 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newDisplay, setNewDisplay] = useState('');
+  const [newEmail, setNewEmail] = useState('');
   const [newRole, setNewRole] = useState<'admin' | 'user'>('user');
   const [creating, setCreating] = useState(false);
 
@@ -82,6 +84,7 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
           username: newUsername.trim().toLowerCase(),
           password: newPassword,
           display_name: newDisplay || undefined,
+          email: newEmail.trim() || undefined,
           role: newRole
         })
       });
@@ -97,6 +100,7 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
       setNewUsername('');
       setNewPassword('');
       setNewDisplay('');
+      setNewEmail('');
       setNewRole('user');
       flashToast('მომხმარებელი დამატებულია');
       loadAll();
@@ -143,6 +147,43 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
     const pw = prompt(`ახალი პაროლი ${u.username}-სთვის (min 6 სიმბოლო):`);
     if (!pw || pw.length < 6) return;
     await patchUser(u.id, {password: pw}, 'პაროლი შეიცვალა');
+  }
+
+  async function setEmail(u: TbcUser) {
+    const current = u.email || '';
+    const next = prompt(`${u.username}-ის ელფოსტა:`, current);
+    if (next === null) return;
+    await patchUser(u.id, {email: next.trim()}, next.trim() ? 'ელფოსტა განახლდა' : 'ელფოსტა წაიშალა');
+  }
+
+  async function sendResetEmail(u: TbcUser) {
+    if (!u.email) {
+      flashToast('ჯერ დააყენე ელფოსტა');
+      return;
+    }
+    if (!confirm(`გამოიგზავნოს პაროლის აღდგენის ბმული ${u.email}-ზე?`)) return;
+    const res = await fetch(`/api/tbc/users/${u.id}/password-reset`, {
+      method: 'POST'
+    });
+    if (!res.ok) {
+      const b = await res.json().catch(() => ({}));
+      flashToast(
+        b?.error === 'no_email'
+          ? 'ელფოსტა არ არის დაყენებული'
+          : 'ვერ გაიგზავნა'
+      );
+      return;
+    }
+    const body = await res.json().catch(() => ({}));
+    if (body?.stubbed) {
+      const url = body.resetUrl || '';
+      prompt(
+        'RESEND_API_KEY არ არის დაყენებული — მეილი ვერ გაიგზავნა. აქ არის ბმული (copy):',
+        url
+      );
+    } else {
+      flashToast('ბმული გაიგზავნა ელფოსტაზე ✓');
+    }
   }
 
   return (
@@ -208,7 +249,7 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
                 ახალი მომხმარებელი
               </h2>
-              <form onSubmit={createUser} className="grid gap-3 sm:grid-cols-5">
+              <form onSubmit={createUser} className="grid gap-3 sm:grid-cols-6">
                 <input
                   value={newUsername}
                   onChange={(e) => setNewUsername(e.target.value)}
@@ -225,6 +266,13 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                   placeholder="პაროლი (min 6)"
                   minLength={6}
                   required
+                  className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#0071CE] focus:bg-white focus:outline-none"
+                />
+                <input
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  type="email"
+                  placeholder="ელფოსტა (reset-ისთვის)"
                   className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#0071CE] focus:bg-white focus:outline-none"
                 />
                 <input
@@ -267,6 +315,7 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                     <tr>
                       <th className="px-4 py-2 text-left">username</th>
                       <th className="px-4 py-2 text-left">სახელი</th>
+                      <th className="px-4 py-2 text-left">ელფოსტა</th>
                       <th className="px-4 py-2 text-left">როლი</th>
                       <th className="px-4 py-2 text-left">სტატუსი</th>
                       <th className="px-4 py-2 text-left">ბოლო შესვლა</th>
@@ -276,13 +325,13 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-10 text-center text-slate-400">
+                        <td colSpan={7} className="px-4 py-10 text-center text-slate-400">
                           იტვირთება…
                         </td>
                       </tr>
                     ) : users.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-4 py-10 text-center text-slate-400">
+                        <td colSpan={7} className="px-4 py-10 text-center text-slate-400">
                           არ არის მომხმარებელი
                         </td>
                       </tr>
@@ -299,6 +348,20 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                           </td>
                           <td className="px-4 py-2.5 text-slate-700">
                             {u.display_name || '—'}
+                          </td>
+                          <td className="px-4 py-2.5">
+                            {u.email ? (
+                              <span className="font-mono text-xs text-slate-600">
+                                {u.email}
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => setEmail(u)}
+                                className="rounded border border-dashed border-slate-300 px-2 py-0.5 text-xs text-slate-400 hover:border-[#0071CE] hover:text-[#0071CE]"
+                              >
+                                + დაამატე
+                              </button>
+                            )}
                           </td>
                           <td className="px-4 py-2.5">
                             <span
@@ -324,7 +387,22 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                             {u.last_login_at ? formatDate(u.last_login_at) : '—'}
                           </td>
                           <td className="px-4 py-2.5 text-right">
-                            <div className="inline-flex gap-1 text-xs">
+                            <div className="inline-flex flex-wrap justify-end gap-1 text-xs">
+                              {u.email && (
+                                <button
+                                  onClick={() => sendResetEmail(u)}
+                                  className="rounded border border-slate-200 bg-white px-2 py-1 hover:bg-slate-50"
+                                  title="გაუგზავნე პაროლის აღდგენის ბმული ელფოსტაზე"
+                                >
+                                  📧 reset
+                                </button>
+                              )}
+                              <button
+                                onClick={() => setEmail(u)}
+                                className="rounded border border-slate-200 bg-white px-2 py-1 hover:bg-slate-50"
+                              >
+                                ელფოსტა
+                              </button>
                               <button
                                 onClick={() => resetPassword(u)}
                                 className="rounded border border-slate-200 bg-white px-2 py-1 hover:bg-slate-50"

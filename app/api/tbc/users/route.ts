@@ -16,7 +16,7 @@ export async function GET() {
   const res = await db
     .from('tbc_users')
     .select(
-      'id, username, display_name, role, is_static, active, created_at, created_by, last_login_at'
+      'id, username, email, display_name, role, is_static, active, created_at, created_by, last_login_at'
     )
     .order('created_at', {ascending: false});
 
@@ -28,6 +28,7 @@ const CreateBody = z.object({
   username: z.string().min(3).max(64).regex(/^[a-z0-9_\-.]+$/),
   password: z.string().min(6).max(128),
   display_name: z.string().max(128).optional(),
+  email: z.string().email().max(256).optional().or(z.literal('')),
   role: z.enum(['admin', 'user']).optional()
 });
 
@@ -70,12 +71,13 @@ export async function POST(req: Request) {
       username,
       password_hash: hash,
       display_name: parsed.data.display_name || null,
+      email: parsed.data.email ? parsed.data.email.trim().toLowerCase() : null,
       role: parsed.data.role || 'user',
       is_static: false,
       active: true,
       created_by: session.username
     })
-    .select('id, username, display_name, role, active, created_at')
+    .select('id, username, email, display_name, role, active, created_at')
     .single();
 
   if (ins.error) {

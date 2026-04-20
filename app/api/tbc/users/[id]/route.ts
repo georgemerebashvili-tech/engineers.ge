@@ -6,6 +6,7 @@ import {supabaseAdmin} from '@/lib/supabase/admin';
 
 const PatchBody = z.object({
   display_name: z.string().max(128).nullable().optional(),
+  email: z.string().email().max(256).nullable().optional().or(z.literal('')),
   role: z.enum(['admin', 'user']).optional(),
   active: z.boolean().optional(),
   password: z.string().min(6).max(128).optional()
@@ -53,6 +54,8 @@ export async function PATCH(
   const update: Record<string, unknown> = {};
   if (parsed.data.display_name !== undefined)
     update.display_name = parsed.data.display_name;
+  if (parsed.data.email !== undefined)
+    update.email = parsed.data.email ? String(parsed.data.email).trim().toLowerCase() : null;
   if (parsed.data.role !== undefined) update.role = parsed.data.role;
   if (parsed.data.active !== undefined) update.active = parsed.data.active;
   if (parsed.data.password) {

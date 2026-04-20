@@ -2,6 +2,7 @@
 
 import {useEffect, useState, useTransition} from 'react';
 import {useRouter} from 'next/navigation';
+import Link from 'next/link';
 
 const REMEMBER_KEY = 'tbc_remember';
 
@@ -165,6 +166,14 @@ export function TbcLoginForm() {
       >
         {pending ? 'მოითმინე…' : 'შესვლა'}
       </button>
+      <div className="pt-1 text-center text-xs">
+        <Link
+          href="/tbc/forgot"
+          className="text-slate-500 hover:text-[#0071CE] hover:underline"
+        >
+          პაროლი დაგავიწყდა?
+        </Link>
+      </div>
     </form>
   );
 }
