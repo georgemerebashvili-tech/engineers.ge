@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="/calc/_editor-ui.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <script src="/calc/_theme-sync.js"></script>
+<script src="/calc/_i18n.js"></script>
 <script src="/calc/_editor-panels.js"></script>
 <script src="/calc/_project-bridge.js"></script>
 <script src="/calc/_editor-pip.js"></script>
@@ -4252,6 +4253,35 @@ mo.observe(document.documentElement, {attributes: true, attributeFilter: ['class
     setTimeout(onResize3D, 0);
   });
 })();
+
+/* ========== i18n pilot (top UI chrome) ========== */
+if (window.engCalcI18n) {
+  window.engCalcI18n.apply({
+    ka: {title: 'სადარბაზოს დაწნეხვა — 3D სიმულატორი'},
+    en: {
+      title: 'Stairwell Pressurization — 3D Simulator — engineers.ge',
+      selectors: {
+        'header h1': {text: 'Stairwell Pressurization Simulator'},
+        '#btn-save-as': {text: '💾 Save as', title: 'Save as new project'},
+        '#btn-rename': {title: 'Rename'},
+        '#btn-import-json': {text: '⬆ JSON'},
+        '#btn-export-json': {text: '⬇ JSON'},
+        '#btn-gate': {title: 'All projects'}
+      }
+    },
+    ru: {
+      title: 'Подпор воздуха лестницы — 3D симулятор — engineers.ge',
+      selectors: {
+        'header h1': {text: 'Симулятор подпора воздуха лестницы'},
+        '#btn-save-as': {text: '💾 Сохранить как', title: 'Сохранить как новый проект'},
+        '#btn-rename': {title: 'Переименовать'},
+        '#btn-import-json': {text: '⬆ JSON'},
+        '#btn-export-json': {text: '⬇ JSON'},
+        '#btn-gate': {title: 'Все проекты'}
+      }
+    }
+  });
+}
 
 </script>
 </body>
