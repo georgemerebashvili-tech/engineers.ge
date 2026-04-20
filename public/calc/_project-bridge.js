@@ -95,6 +95,7 @@
     const slug = opts.slug;
     const legacyKey = opts.legacyKey;
     const getState = opts.getState || (() => ({}));
+    const getThumbnail = typeof opts.getThumbnail === 'function' ? opts.getThumbnail : null;
     const applyState = opts.applyState || (() => {});
     const onProjectChange = opts.onProjectChange || (() => {});
 
@@ -104,6 +105,9 @@
 
     let saveTimer = null;
     const debounceMs = opts.debounceMs || 1200;
+    const thumbIntervalMs = opts.thumbIntervalMs || 60000;
+    let thumbTimer = null;
+    let thumbPromise = null;
 
     // UTF-8 safe base64 codecs — avoid deprecated escape/unescape globals.
     function b64encodeUtf8(str) {
@@ -154,6 +158,34 @@
       return { loaded: false };
     }
 
+    function captureThumbnail() {
+      if (!projectId || !getThumbnail) return Promise.resolve(null);
+      if (thumbPromise) return thumbPromise;
+      thumbPromise = Promise.resolve()
+        .then(() => getThumbnail())
+        .then(data => {
+          if (typeof data === 'string' && data.startsWith('data:image/')) {
+            updateProject(projectId, { thumbnail: data });
+            return data;
+          }
+          return null;
+        })
+        .catch(err => {
+          console.warn('project-bridge: thumbnail capture failed', err);
+          return null;
+        })
+        .finally(() => {
+          thumbPromise = null;
+        });
+      return thumbPromise;
+    }
+
+    function queueThumbnail(delayMs) {
+      if (!getThumbnail) return;
+      if (thumbTimer) clearTimeout(thumbTimer);
+      thumbTimer = setTimeout(() => { captureThumbnail(); }, Math.max(0, delayMs || 0));
+    }
+
     function save(immediate) {
       if (saveTimer) clearTimeout(saveTimer);
       const run = () => {
@@ -167,6 +199,7 @@
             setUrlProject(p.id, slug);
             onProjectChange({ id: p.id, name: p.name, slug: p.slug });
           }
+          queueThumbnail(80);
         } else if (legacyKey) {
           try { localStorage.setItem(legacyKey, JSON.stringify(st)); } catch {}
         }
@@ -178,6 +211,7 @@
       const st = getState();
       const p = createProject(slug, st, name);
       projectId = p.id;
+      captureThumbnail();
       setUrlProject(p.id, slug);
       onProjectChange({ id: p.id, name: p.name, slug: p.slug });
       return p;
@@ -270,13 +304,25 @@
       }
     }
 
+    function startThumbnailLoop() {
+      if (!getThumbnail) return;
+      queueThumbnail(250);
+      window.setInterval(() => { captureThumbnail(); }, thumbIntervalMs);
+      window.addEventListener('pagehide', () => { captureThumbnail(); });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') captureThumbnail();
+      });
+    }
+
+    startThumbnailLoop();
+
     return {
       slug,
       load, save, saveAs, rename,
       currentProject,
       openGate,
       exportJSON, importJSON, printPDF,
-      shareLink, copyShareLink,
+      shareLink, copyShareLink, captureThumbnail,
       get projectId() { return projectId; }
     };
   }

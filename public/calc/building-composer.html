@@ -300,12 +300,24 @@ function save() {
   if (_bridge) { _bridge.save(); updateProjectBadge(); }
   else { try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch {} }
 }
+
+function buildProjectThumbnail() {
+  try {
+    const canvas = document.querySelector('.bc-stage canvas');
+    if (canvas && typeof canvas.toDataURL === 'function') {
+      return canvas.toDataURL('image/png', 0.78);
+    }
+  } catch {}
+  return null;
+}
+
 function restore() {
   if (!window.ProjectBridge) return false;
   _bridge = ProjectBridge.init({
     slug: 'building-composer',
     legacyKey: STORE_KEY,
     getState: buildSnapshot,
+    getThumbnail: buildProjectThumbnail,
     applyState: applySnapshot,
     onProjectChange: updateProjectBadge
   });

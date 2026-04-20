@@ -109,20 +109,29 @@ export function exportProject(id: string): string {
   return JSON.stringify(p, null, 2);
 }
 
+export function exportProjects(slug?: string): string {
+  return JSON.stringify(listProjects(slug), null, 2);
+}
+
 export function importProject(json: string): Project {
   const parsed = JSON.parse(json);
-  if (!parsed || typeof parsed !== 'object' || !parsed.slug) {
-    throw new Error('invalid project JSON');
-  }
-  const all = readAll();
-  const p: Project = {
-    ...parsed,
-    id: parsed.id && !all.some(x => x.id === parsed.id) ? parsed.id : uuid(),
-    updatedAt: new Date().toISOString()
-  };
-  all.push(p);
-  writeAll(all);
+  const imported = importParsedProjects(parsed);
+  const [p] = imported;
+  if (!p) throw new Error('invalid project JSON');
   return p;
+}
+
+export function importProjects(json: string): Project[] {
+  const parsed = JSON.parse(json);
+  return importParsedProjects(parsed);
+}
+
+export function clearProjects(slug?: string): number {
+  const all = readAll();
+  const next = slug ? all.filter((project) => project.slug !== slug) : [];
+  const removed = all.length - next.length;
+  writeAll(next);
+  return removed;
 }
 
 function defaultName(slug: string): string {
@@ -145,4 +154,52 @@ export function formatRelative(iso: string): string {
   const mo = Math.floor(d / 30);
   if (mo < 12) return `${mo} თვე ადრე`;
   return `${Math.floor(mo / 12)} წელი ადრე`;
+}
+
+function normalizeImportedProject(raw: unknown, usedIds: Set<string>): Project {
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('invalid project JSON');
+  }
+  const parsed = raw as Partial<Project> & {slug?: unknown};
+  if (typeof parsed.slug !== 'string' || !parsed.slug) {
+    throw new Error('invalid project JSON');
+  }
+  const slug = parsed.slug;
+  const createdAt =
+    typeof parsed.createdAt === 'string' && parsed.createdAt
+      ? parsed.createdAt
+      : new Date().toISOString();
+  const candidateId = typeof parsed.id === 'string' && parsed.id ? parsed.id : uuid();
+  const id = usedIds.has(candidateId) ? uuid() : candidateId;
+  usedIds.add(id);
+  return {
+    id,
+    slug,
+    name:
+      typeof parsed.name === 'string' && parsed.name.trim()
+        ? parsed.name.trim()
+        : defaultName(slug),
+    version:
+      typeof parsed.version === 'string' && parsed.version
+        ? parsed.version
+        : 'v1.0',
+    createdAt,
+    updatedAt: new Date().toISOString(),
+    thumbnail: typeof parsed.thumbnail === 'string' ? parsed.thumbnail : undefined,
+    state: parsed.state ?? {},
+    meta:
+      parsed.meta && typeof parsed.meta === 'object'
+        ? parsed.meta
+        : {}
+  };
+}
+
+function importParsedProjects(parsed: unknown): Project[] {
+  const source = Array.isArray(parsed) ? parsed : [parsed];
+  const all = readAll();
+  const usedIds = new Set(all.map((project) => project.id));
+  const imported = source.map((entry) => normalizeImportedProject(entry, usedIds));
+  all.push(...imported);
+  writeAll(all);
+  return imported;
 }

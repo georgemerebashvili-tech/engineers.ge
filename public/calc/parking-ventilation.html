@@ -3054,12 +3054,26 @@ function autosave() {
   updateProjectBadge();
 }
 
+function buildProjectThumbnail() {
+  try {
+    const node = document.getElementById('svg-plan')?.cloneNode(true);
+    if (!node) return null;
+    node.setAttribute('width', '640');
+    node.setAttribute('height', '400');
+    node.style.background = '#ffffff';
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(new XMLSerializer().serializeToString(node))}`;
+  } catch {
+    return null;
+  }
+}
+
 function restoreAutosave() {
   if (!window.ProjectBridge) return false;
   _bridge = ProjectBridge.init({
     slug: 'parking-ventilation',
     legacyKey: LEGACY_BRIDGE_KEY,
     getState: buildSnapshot,
+    getThumbnail: buildProjectThumbnail,
     applyState: applyBridgeSnapshot,
     onProjectChange: updateProjectBadge
   });

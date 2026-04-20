@@ -7951,12 +7951,23 @@ function autosave() {
   updateProjectBadge();
 }
 
+function buildProjectThumbnail() {
+  try {
+    const svg = buildPlanSnapshotSvg({ pad: 1.2, width: 640, height: 400 });
+    if (!svg || !String(svg).includes('<svg')) return null;
+    return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  } catch {
+    return null;
+  }
+}
+
 function restoreAutosave() {
   if (!window.ProjectBridge) return false;
   _bridge = ProjectBridge.init({
     slug: 'wall-editor',
     legacyKey: 'eng_wall_editor_v1',
     getState: buildSnapshot,
+    getThumbnail: buildProjectThumbnail,
     applyState: applySnapshot,
     onProjectChange: updateProjectBadge
   });

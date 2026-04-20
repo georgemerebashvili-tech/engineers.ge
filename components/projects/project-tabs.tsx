@@ -3,7 +3,21 @@
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import type {MouseEvent as ReactMouseEvent} from 'react';
 import {useRouter, usePathname} from 'next/navigation';
-import {Plus, X, ChevronDown, ArrowLeft, Pencil, Check, Copy, Trash2, Search} from 'lucide-react';
+import {
+  Plus,
+  X,
+  ChevronDown,
+  ArrowLeft,
+  Pencil,
+  Check,
+  Copy,
+  Trash2,
+  Search,
+  Settings2,
+  Download,
+  Upload,
+  FolderX
+} from 'lucide-react';
 import {
   listProjects,
   getProject,
@@ -11,6 +25,9 @@ import {
   updateProject,
   duplicateProject,
   deleteProject,
+  exportProjects,
+  importProjects,
+  clearProjects,
   formatRelative,
   type Project
 } from '@/lib/projects';
@@ -64,12 +81,15 @@ export function ProjectTabs({slug, activeId}: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [menuQuery, setMenuQuery] = useState('');
   const [renaming, setRenaming] = useState(false);
   const [projectsVersion, setProjectsVersion] = useState(0);
   const [openIds, setOpenIds] = useState<string[]>(() => readOpenIds(slug));
   const renameInputRef = useRef<HTMLInputElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const settingsRef = useRef<HTMLDivElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const allProjects = useMemo(() => listProjects(slug), [slug, projectsVersion]);
   const knownIds = useMemo(() => new Set(allProjects.map((project) => project.id)), [allProjects]);
@@ -95,6 +115,7 @@ export function ProjectTabs({slug, activeId}: Props) {
   useEffect(() => {
     setOpenIds(readOpenIds(slug));
     setMenuOpen(false);
+    setSettingsOpen(false);
     setMenuQuery('');
     setRenaming(false);
   }, [slug]);
@@ -109,6 +130,9 @@ export function ProjectTabs({slug, activeId}: Props) {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
         setMenuQuery('');
+      }
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
       }
     }
     document.addEventListener('mousedown', onDown);
@@ -180,6 +204,7 @@ export function ProjectTabs({slug, activeId}: Props) {
     setProjectsVersion((value) => value + 1);
     switchTo(p.id);
     setMenuOpen(false);
+    setSettingsOpen(false);
     setMenuQuery('');
   };
 
@@ -196,8 +221,75 @@ export function ProjectTabs({slug, activeId}: Props) {
     setRenaming(false);
   };
 
+  const downloadJson = useCallback((filename: string, content: string) => {
+    const blob = new Blob([content], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  }, []);
+
+  const closeAllTabs = useCallback(() => {
+    syncOpenIds([]);
+    setSettingsOpen(false);
+    router.push(pathname);
+  }, [pathname, router, syncOpenIds]);
+
+  const exportAllForSlug = useCallback(() => {
+    const stamp = new Date().toISOString().slice(0, 10);
+    const filename = `${slug}-projects-${stamp}.json`;
+    downloadJson(filename, exportProjects(slug));
+    setSettingsOpen(false);
+  }, [downloadJson, slug]);
+
+  const openImportPicker = useCallback(() => {
+    setSettingsOpen(false);
+    importInputRef.current?.click();
+  }, []);
+
+  const handleImportFile = useCallback(async (file: File | null) => {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const imported = importProjects(text).filter((project) => project.slug === slug);
+      setProjectsVersion((value) => value + 1);
+      if (imported.length === 1) {
+        switchTo(imported[0].id);
+      }
+    } catch (error) {
+      alert('იმპორტი ვერ შესრულდა: ' + (error as Error).message);
+    } finally {
+      if (importInputRef.current) importInputRef.current.value = '';
+    }
+  }, [slug, switchTo]);
+
+  const clearLocalProjects = useCallback(() => {
+    const count = allProjects.length;
+    if (!count) {
+      setSettingsOpen(false);
+      return;
+    }
+    if (!confirm(`წაიშალოს ამ კალკულატორის ${count} local პროექტი? ქმედება შეუქცევადია.`)) {
+      return;
+    }
+    clearProjects(slug);
+    syncOpenIds([]);
+    setProjectsVersion((value) => value + 1);
+    setSettingsOpen(false);
+    router.push(pathname);
+  }, [allProjects.length, pathname, router, slug, syncOpenIds]);
+
   return (
     <div className="flex items-center gap-0 bg-sur border-b border-bdr px-2 overflow-x-auto" style={{minHeight: 36}}>
+      <input
+        ref={importInputRef}
+        type="file"
+        accept=".json,application/json"
+        hidden
+        onChange={(event) => handleImportFile(event.target.files?.[0] ?? null)}
+      />
       <button
         type="button"
         onClick={goBack}
@@ -289,6 +381,7 @@ export function ProjectTabs({slug, activeId}: Props) {
         <button
           type="button"
           onClick={() => {
+            setSettingsOpen(false);
             setMenuOpen((value) => {
               const next = !value;
               if (!next) setMenuQuery('');
@@ -391,6 +484,55 @@ export function ProjectTabs({slug, activeId}: Props) {
               className="w-full text-left px-3 py-2 hover:bg-blue-lt text-blue text-[11px] font-semibold inline-flex items-center gap-1.5"
             >
               <Plus size={12} /> ახალი პროექტი
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="relative ml-2 flex-shrink-0" ref={settingsRef}>
+        <button
+          type="button"
+          onClick={() => {
+            setMenuOpen(false);
+            setMenuQuery('');
+            setSettingsOpen((value) => !value);
+          }}
+          className="inline-flex items-center justify-center h-7 w-7 text-text-2 hover:text-blue hover:bg-sur-2 border rounded-full transition-colors"
+          title="პროექტების მართვა"
+          aria-label="პროექტების მართვა"
+        >
+          <Settings2 size={13} />
+        </button>
+        {settingsOpen && (
+          <div className="absolute right-0 top-[calc(100%+4px)] z-50 w-[250px] rounded-md border bg-sur py-1 shadow-lg">
+            <button
+              type="button"
+              onClick={exportAllForSlug}
+              className="w-full px-3 py-2 text-left text-[11px] font-semibold text-text hover:bg-blue-lt inline-flex items-center gap-2"
+            >
+              <Download size={12} className="text-blue" /> ყველა პროექტის ექსპორტი
+            </button>
+            <button
+              type="button"
+              onClick={openImportPicker}
+              className="w-full px-3 py-2 text-left text-[11px] font-semibold text-text hover:bg-blue-lt inline-flex items-center gap-2"
+            >
+              <Upload size={12} className="text-blue" /> JSON იმპორტი
+            </button>
+            <button
+              type="button"
+              onClick={closeAllTabs}
+              className="w-full px-3 py-2 text-left text-[11px] font-semibold text-text hover:bg-blue-lt inline-flex items-center gap-2"
+            >
+              <X size={12} className="text-text-2" /> ყველა tab-ის დახურვა
+            </button>
+            <div className="my-1 border-t border-bdr" />
+            <button
+              type="button"
+              onClick={clearLocalProjects}
+              className="w-full px-3 py-2 text-left text-[11px] font-semibold text-red hover:bg-red-lt inline-flex items-center gap-2"
+            >
+              <FolderX size={12} /> ამ კალკულატორის local cache-ის გასუფთავება
             </button>
           </div>
         )}
