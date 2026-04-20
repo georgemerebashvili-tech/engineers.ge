@@ -981,6 +981,46 @@ table.devices-sheet td:last-child { border-right: none; }
 .sheet-cell-check { width: 44px; padding: 7px 9px; text-align: center; }
 .sheet-cell-check input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--amber-500); }
 .sheet-cell-photo { width: 44px; padding: 4px; text-align: center; }
+.sheet-cell-ai { width: 44px; padding: 4px; text-align: center; }
+.ai-icon-btn {
+  width: 34px; height: 34px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--slate-050);
+  cursor: pointer;
+  font-size: 15px;
+  display: inline-flex; align-items: center; justify-content: center;
+  position: relative;
+  transition: all 0.12s;
+  padding: 0;
+  color: var(--slate-600);
+  font-family: inherit;
+}
+.ai-icon-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #8B5CF6, #EC4899);
+  border-color: #8B5CF6;
+  color: white;
+  transform: scale(1.06);
+  box-shadow: 0 2px 6px rgba(139, 92, 246, 0.3);
+}
+.ai-icon-btn.has-result { border-color: var(--dmt-teal); background: var(--dmt-teal-light); color: var(--dmt-teal-dark); }
+.ai-icon-btn.has-result:hover { background: var(--dmt-teal); color: white; }
+.ai-icon-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.ai-icon-btn.loading { pointer-events: none; animation: aiPulse 1.2s infinite; }
+.ai-icon-btn .attempt-pill {
+  position: absolute; top: -4px; right: -4px;
+  background: var(--amber-500); color: white;
+  font-size: 9px; font-weight: 700;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1.5px solid white;
+}
+.ai-icon-btn.exhausted .attempt-pill { background: var(--red-500); }
+@keyframes aiPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.5); }
+  50%      { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
+}
 .sheet-photo-slot {
   width: 36px; height: 36px;
   border: 1px dashed var(--border-strong);
@@ -3339,6 +3379,8 @@ function renderDevicesList(b) {
         <td class="sheet-cell-photo">${renderPhotoSlot(idx, 2, photos[2])}</td>
         <td class="sheet-cell-photo">${renderPhotoSlot(idx, 3, photos[3])}</td>
         <td class="sheet-cell-photo">${renderPhotoSlot(idx, 4, photos[4])}</td>
+        <td class="sheet-cell-ai">${renderAiFillBtn(idx, d)}</td>
+        <td class="sheet-cell-ai">${renderAiMetaBtn(idx, d)}</td>
         <td class="sheet-cell-del">
           <button onclick="deleteDevice(${idx})" title="წაშლა">🗑</button>
         </td>
@@ -3348,7 +3390,7 @@ function renderDevicesList(b) {
   
   const emptyStateRow = devices.length === 0 ? `
     <tr>
-      <td colspan="15" style="padding: 30px; text-align: center; color: var(--slate-400); font-style: italic;">
+      <td colspan="17" style="padding: 30px; text-align: center; color: var(--slate-400); font-style: italic;">
         ჯერ არ არის აღრიცხული დანადგარი — დააჭირე ქვემოთ "+ დამატება"
       </td>
     </tr>
@@ -3373,6 +3415,8 @@ function renderDevicesList(b) {
             <th class="sheet-photo-header" title="მსხვილი ხედი">🔍<br>მსხვილი</th>
             <th class="sheet-photo-header" title="გარე ბლოკი">🌤<br>გარე</th>
             <th class="sheet-photo-header" title="დამატებითი">➕<br>დამ.</th>
+            <th class="sheet-photo-header" title="Claude AI — შევსება ფოტოდან (3 ცდა)">🤖<br>AI</th>
+            <th class="sheet-photo-header" title="AI მოიძიოს დამატებითი ინფო დანადგარზე">📋<br>ინფო</th>
             <th class="sheet-cell-del"></th>
           </tr>
         </thead>
@@ -4590,6 +4634,229 @@ function openInvoice() {
   if (!state.currentBranch) return;
   if (_estimateDirty) flushEstimateSave();
   window.open(`/tbc/invoice/${state.currentBranch.id}`, '_blank', 'noopener');
+}
+
+// ============================================
+// ROW-LEVEL AI (Claude Vision fill + Research)
+// ============================================
+const AI_FILL_MAX = 3;
+
+function renderAiFillBtn(idx, d) {
+  const attempts = d.ai_attempts || 0;
+  const exhausted = attempts >= AI_FILL_MAX;
+  const hasPhotos = (d.photos || []).some(Boolean);
+  const title = exhausted
+    ? 'ლიმიტი ამოიწურა (3 ცდა) — შეიყვანე ხელით'
+    : !hasPhotos
+      ? 'ჯერ გადაიღე/ატვირთე ფოტო'
+      : `Claude შეავსებს ცხრილს ფოტოდან (${AI_FILL_MAX - attempts}/3 დარჩა)`;
+  const disabled = exhausted || !hasPhotos;
+  const pill = attempts > 0
+    ? `<span class="attempt-pill">${AI_FILL_MAX - attempts}</span>`
+    : '';
+  return `<button class="ai-icon-btn ${exhausted ? 'exhausted' : ''}"
+    ${disabled ? 'disabled' : ''}
+    onclick="runAiFillRow(${idx})"
+    title="${escapeHtml(title)}">🤖${pill}</button>`;
+}
+
+function renderAiMetaBtn(idx, d) {
+  const hasInfo = !!d.ai_metadata && Object.keys(d.ai_metadata).length > 0;
+  const canResearch = !!(d.brand || d.model || (d.photos || []).some(Boolean));
+  const title = hasInfo
+    ? 'ნახე AI-ს მიერ ნაპოვნი დამატებითი ინფო'
+    : canResearch
+      ? 'AI მოიძიოს დამატებითი ინფო (სიმძლავრე, SEER, fრეოფი...)'
+      : 'ჯერ შეიყვანე მწარმოებელი / მოდელი ან დაამატე ფოტო';
+  return `<button class="ai-icon-btn ${hasInfo ? 'has-result' : ''}"
+    ${canResearch ? '' : 'disabled'}
+    onclick="runAiResearchRow(${idx})"
+    title="${escapeHtml(title)}">📋</button>`;
+}
+
+async function runAiFillRow(idx) {
+  if (!state.currentBranch) return;
+  const d = state.currentBranch.devices[idx];
+  if (!d) return;
+  const attempts = d.ai_attempts || 0;
+  if (attempts >= AI_FILL_MAX) {
+    showToast('ლიმიტი ამოწურულია — შეიყვანე ხელით', 'error');
+    return;
+  }
+  const photos = (d.photos || []).filter(Boolean);
+  if (!photos.length) {
+    showToast('ჯერ დაამატე ფოტო', 'error');
+    return;
+  }
+
+  // loading state
+  const btn = document.querySelector(`.devices-sheet tbody tr[data-idx="${idx}"] .ai-icon-btn`);
+  if (btn) btn.classList.add('loading');
+
+  try {
+    const r = await fetch('/api/tbc/vision/analyze-device', {
+      method: 'POST',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({
+        photos,
+        hint: d.category || d.subtype ? {category: d.category, subtype: d.subtype} : undefined,
+      }),
+    });
+    if (r.status === 401) { window.location.href = '/tbc'; return; }
+    if (r.status === 503) { showToast('Claude API არ არის ჩართული', 'error'); return; }
+    if (!r.ok) { showToast('AI ვერ იმუშავა', 'error'); return; }
+    const resp = await r.json();
+    const res = resp.result || {};
+
+    // Only fill empty fields
+    let filled = 0;
+    if (!d.category && res.category) { d.category = res.category; filled++; }
+    if (!d.subtype && res.subtype) { d.subtype = res.subtype; filled++; }
+    if (!d.brand && res.brand) { d.brand = res.brand; filled++; }
+    if (!d.model && res.model) { d.model = res.model; filled++; }
+    if (!d.serial && res.serial) { d.serial = res.serial; filled++; }
+    if (!d.location && res.notes) { d.location = res.notes; filled++; }
+
+    d.ai_attempts = attempts + 1;
+    d.ai_missing = res.missing || [];
+
+    saveState();
+    renderDevicesList(state.currentBranch);
+    renderPlannedEquipment(state.currentBranch);
+
+    if (filled === 0) {
+      showToast(`AI-მ ვერაფერი ამოიცნო (ცდა ${d.ai_attempts}/${AI_FILL_MAX})`, 'error');
+    } else {
+      const msg = `${filled} ველი შევსდა ✨ (ცდა ${d.ai_attempts}/${AI_FILL_MAX})`;
+      showToast(msg, 'success');
+    }
+    if ((res.missing || []).length) {
+      setTimeout(() => showToast('ვერ იკითხება: ' + res.missing.join(', '), 'error'), 2000);
+    }
+  } catch(e) {
+    console.error('AI fill failed', e);
+    showToast('შეცდომა', 'error');
+  } finally {
+    if (btn) btn.classList.remove('loading');
+  }
+}
+
+async function runAiResearchRow(idx) {
+  if (!state.currentBranch) return;
+  const d = state.currentBranch.devices[idx];
+  if (!d) return;
+
+  // If already has metadata, just display
+  if (d.ai_metadata && Object.keys(d.ai_metadata).length > 0) {
+    showAiMetaModal(d, idx);
+    return;
+  }
+
+  const hasAnyInput = !!(d.brand || d.model || (d.photos || []).some(Boolean));
+  if (!hasAnyInput) {
+    showToast('ჯერ შეიყვანე მოდელი ან დაამატე ფოტო', 'error');
+    return;
+  }
+
+  const btn = document.querySelectorAll(`.devices-sheet tbody tr[data-idx="${idx}"] .ai-icon-btn`)[1];
+  if (btn) btn.classList.add('loading');
+
+  try {
+    const r = await fetch('/api/tbc/vision/research-device', {
+      method: 'POST',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({
+        category: d.category || '',
+        subtype: d.subtype || '',
+        brand: d.brand || '',
+        model: d.model || '',
+        serial: d.serial || '',
+        photos: (d.photos || []).filter(Boolean).slice(0, 2),
+      }),
+    });
+    if (r.status === 401) { window.location.href = '/tbc'; return; }
+    if (r.status === 503) { showToast('Claude API არ არის ჩართული', 'error'); return; }
+    if (!r.ok) { showToast('AI კვლევა ვერ გაკეთდა', 'error'); return; }
+    const resp = await r.json();
+
+    d.ai_metadata = resp.result || {};
+    d.ai_metadata_at = new Date().toISOString();
+    saveState();
+    renderDevicesList(state.currentBranch);
+    showAiMetaModal(d, idx);
+  } catch(e) {
+    console.error('AI research failed', e);
+    showToast('შეცდომა', 'error');
+  } finally {
+    if (btn) btn.classList.remove('loading');
+  }
+}
+
+function showAiMetaModal(d, idx) {
+  const m = d.ai_metadata || {};
+  const rows = [
+    ['სერიული ნომრის ფორმატი', m.serial_format],
+    ['სიმძლავრე (kW)', m.capacity_kw],
+    ['სიმძლავრე (BTU/h)', m.capacity_btu],
+    ['ფრეონი', m.refrigerant],
+    ['კვება', m.power_supply],
+    ['მოხმარება', m.power_consumption],
+    ['SEER / COP', m.seer_cop],
+    ['წარმოების წელი', m.production_year],
+    ['წონა', m.weight_kg],
+    ['ზომა', m.dimensions],
+    ['ფუნქციები', Array.isArray(m.features) ? m.features.join(' · ') : m.features],
+    ['ბაზრის ფასი', m.typical_price],
+    ['შენიშვნები', m.notes],
+  ];
+  const html = rows
+    .filter(([_, v]) => v != null && v !== '' && v !== 'null')
+    .map(([k, v]) => `
+      <div style="display:grid;grid-template-columns:160px 1fr;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--slate-500);font-weight:600;">${escapeHtml(k)}</div>
+        <div style="font-size:13px;color:var(--slate-900);">${escapeHtml(String(v))}</div>
+      </div>
+    `).join('');
+
+  const when = d.ai_metadata_at ? new Date(d.ai_metadata_at).toLocaleString('ka-GE') : '';
+  const label = [d.brand, d.model, d.serial].filter(Boolean).join(' · ') || '(უსახელო)';
+
+  let overlay = document.getElementById('aiMetaOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'aiMetaOverlay';
+    overlay.className = 'modal-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.classList.remove('active'); };
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:560px;">
+      <div class="modal-header">
+        <h2>🤖 AI-ს მიერ ნაპოვნი ინფო · ${escapeHtml(label)}</h2>
+        <button class="modal-close" onclick="document.getElementById('aiMetaOverlay').classList.remove('active')">×</button>
+      </div>
+      <div class="modal-body" style="padding: 14px 22px;">
+        ${html || '<div class="empty-state" style="padding:24px;">AI-მ ვერაფერი იპოვა</div>'}
+        ${when ? `<div style="margin-top:14px;font-size:11px;color:var(--slate-400);text-align:right;">მოძიებულია: ${escapeHtml(when)}</div>` : ''}
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="document.getElementById('aiMetaOverlay').classList.remove('active')">დახურვა</button>
+        <button class="btn primary" onclick="refreshAiResearch(${idx})">🔄 ხელახლა მოძიება</button>
+      </div>
+    </div>
+  `;
+  overlay.classList.add('active');
+}
+
+async function refreshAiResearch(idx) {
+  if (!state.currentBranch) return;
+  const d = state.currentBranch.devices[idx];
+  if (!d) return;
+  d.ai_metadata = null;
+  d.ai_metadata_at = null;
+  saveState();
+  document.getElementById('aiMetaOverlay').classList.remove('active');
+  await runAiResearchRow(idx);
 }
 
 // ============================================
