@@ -1769,7 +1769,25 @@ table.devices-sheet td:last-child { border-right: none; }
           </div>
         </div>
       </div>
-      
+
+      <!-- Estimate (ხარჯთაღრიცხვა) -->
+      <div class="card" id="estimateCard">
+        <div class="card-header">
+          <div class="card-title">ხარჯთაღრიცხვა</div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span class="mono" style="font-size:11px;color:var(--slate-500)" id="estimateTotalBadge">₾ 0.00</span>
+            <button class="btn sm" id="estimateInvoiceBtn" onclick="openInvoice()">🧾 ინვოისი</button>
+            <button class="btn sm primary" onclick="addEstimateRow()">+ პოზიცია</button>
+          </div>
+        </div>
+        <div id="estimateListWrap">
+          <div class="empty-state" style="padding:40px 20px;">
+            <div class="empty-state-icon">🧾</div>
+            <div>ცარიელია<br>დააჭირე "+ პოზიცია" რომ დაამატო მოწყობილობა/სამუშაო/ამწე</div>
+          </div>
+        </div>
+      </div>
+
       <!-- Notes -->
       <div class="card">
         <div class="card-header">
@@ -3129,6 +3147,7 @@ function openBranch(id) {
   renderProgressSummary(b);
   renderDevicesList(b);
   setupDetailMap(b);
+  loadEstimate(b.id);
 }
 
 function setupDetailMap(b) {
@@ -4342,6 +4361,209 @@ function showToast(msg, type) {
   t.className = 'toast ' + (type || '') + ' show';
   if (toastTimer) clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ============================================
+// ESTIMATE (ხარჯთაღრიცხვა)
+// ============================================
+let _estimateItems = [];      // current branch's working copy
+let _estimateDirty = false;
+let _estimateSaveTimer = null;
+let _estimateCurrentId = null;
+
+async function loadEstimate(branchId) {
+  _estimateCurrentId = branchId;
+  _estimateItems = [];
+  renderEstimateRows();
+  try {
+    const r = await fetch(`/api/tbc/branches/${branchId}/estimate`);
+    if (r.status === 401) { window.location.href = '/tbc'; return; }
+    if (!r.ok) { console.error('[tbc] estimate load', r.status); return; }
+    const d = await r.json();
+    _estimateItems = (d.items || []).map(normalizeEstimateItem);
+    _estimateDirty = false;
+    renderEstimateRows();
+  } catch(e) { console.error('estimate load failed', e); }
+}
+
+function normalizeEstimateItem(it) {
+  return {
+    name: it.name || '',
+    item_type: it.item_type || '',
+    unit: it.unit || '',
+    qty: Number(it.qty || 0),
+    price: Number(it.price || 0),
+    note: it.note || '',
+  };
+}
+
+function addEstimateRow() {
+  if (_apiUser && _apiUser.role !== 'admin') {
+    showToast('მხოლოდ ადმინი აქებს ხარჯთაღრიცხვას', 'error');
+    return;
+  }
+  _estimateItems.push({
+    name: '',
+    item_type: 'დანადგარი',
+    unit: 'ც',
+    qty: 1,
+    price: 0,
+    note: '',
+  });
+  _estimateDirty = true;
+  renderEstimateRows({focusLast: true});
+  scheduleEstimateSave();
+}
+
+function updateEstimateField(idx, field, value) {
+  const it = _estimateItems[idx];
+  if (!it) return;
+  if (field === 'qty' || field === 'price') {
+    const n = parseFloat(String(value).replace(/,/g, '.'));
+    it[field] = isFinite(n) ? n : 0;
+  } else {
+    it[field] = value;
+  }
+  _estimateDirty = true;
+  // recompute row total label without full re-render
+  const totalEl = document.querySelector(`.est-row[data-idx="${idx}"] .est-total`);
+  if (totalEl) totalEl.textContent = (it.qty * it.price).toFixed(2);
+  updateEstimateSumBadge();
+  scheduleEstimateSave();
+}
+
+function deleteEstimateRow(idx) {
+  _estimateItems.splice(idx, 1);
+  _estimateDirty = true;
+  renderEstimateRows();
+  scheduleEstimateSave();
+}
+
+function scheduleEstimateSave() {
+  if (_estimateSaveTimer) clearTimeout(_estimateSaveTimer);
+  _estimateSaveTimer = setTimeout(flushEstimateSave, 800);
+}
+
+async function flushEstimateSave() {
+  if (!_estimateDirty || _estimateCurrentId == null) return;
+  const branchId = _estimateCurrentId;
+  const items = _estimateItems.map((it, idx) => ({
+    sort_order: idx,
+    name: it.name || 'უსათაურო',
+    item_type: it.item_type || null,
+    unit: it.unit || null,
+    qty: Number(it.qty) || 0,
+    price: Number(it.price) || 0,
+    note: it.note || null,
+  }));
+  try {
+    const r = await fetch(`/api/tbc/branches/${branchId}/estimate`, {
+      method: 'PUT',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({items}),
+    });
+    if (r.status === 401) { window.location.href = '/tbc'; return; }
+    if (r.ok) {
+      _estimateDirty = false;
+      // Indicator
+      const badge = document.getElementById('estimateTotalBadge');
+      if (badge) {
+        const prev = badge.textContent;
+        badge.textContent = '✓ შენახულია';
+        badge.style.color = 'var(--dmt-teal-dark)';
+        setTimeout(() => { badge.style.color = ''; updateEstimateSumBadge(); }, 900);
+      }
+    } else {
+      console.error('[tbc] estimate save', r.status);
+      showToast('ხარჯთაღრიცხვა ვერ შეინახა', 'error');
+    }
+  } catch(e) { console.error('estimate save failed', e); }
+}
+
+function renderEstimateRows(opts) {
+  const wrap = document.getElementById('estimateListWrap');
+  if (!wrap) return;
+  updateEstimateSumBadge();
+
+  if (_estimateItems.length === 0) {
+    wrap.innerHTML = `
+      <div class="empty-state" style="padding:40px 20px;">
+        <div class="empty-state-icon">🧾</div>
+        <div>ცარიელია<br>დააჭირე "+ პოზიცია" რომ დაამატო მოწყობილობა/სამუშაო/ამწე</div>
+      </div>`;
+    return;
+  }
+
+  const canEdit = !_apiUser || _apiUser.role === 'admin';
+  const ro = canEdit ? '' : 'disabled';
+
+  const typeOptions = ['დანადგარი', 'სამუშაო', 'ტრანსპორტი', 'ამწე', 'მასალა', 'სხვა'];
+  const unitOptions = ['ც', 'კგ', 'მ', 'მ²', 'მ³', 'ლ', 'სთ', 'კომპლ.'];
+
+  const optHtml = (opts, cur) => opts.map(o => `<option value="${o}"${o===cur?' selected':''}>${o}</option>`).join('')
+    + (cur && !opts.includes(cur) ? `<option value="${escapeHtml(cur)}" selected>${escapeHtml(cur)}</option>` : '');
+
+  const rows = _estimateItems.map((it, idx) => `
+    <tr class="est-row" data-idx="${idx}">
+      <td class="sheet-cell-num">${idx + 1}</td>
+      <td><input class="sheet-input" type="text" value="${escapeHtml(it.name)}" placeholder="დასახელება" onchange="updateEstimateField(${idx}, 'name', this.value)" ${ro}></td>
+      <td><select class="sheet-select" onchange="updateEstimateField(${idx}, 'item_type', this.value)" ${ro}>${optHtml(typeOptions, it.item_type)}</select></td>
+      <td><select class="sheet-select" onchange="updateEstimateField(${idx}, 'unit', this.value)" ${ro}>${optHtml(unitOptions, it.unit)}</select></td>
+      <td><input class="sheet-input mono" type="number" min="0" step="0.01" value="${it.qty}" onchange="updateEstimateField(${idx}, 'qty', this.value)" style="text-align:right;" ${ro}></td>
+      <td><input class="sheet-input mono" type="number" min="0" step="0.01" value="${it.price}" onchange="updateEstimateField(${idx}, 'price', this.value)" style="text-align:right;" ${ro}></td>
+      <td class="mono est-total" style="padding: 7px 9px; text-align:right; font-weight:600; color: var(--slate-900);">${(it.qty*it.price).toFixed(2)}</td>
+      <td class="sheet-cell-del">${canEdit ? `<button onclick="deleteEstimateRow(${idx})" title="წაშლა">🗑</button>` : ''}</td>
+    </tr>
+  `).join('');
+
+  wrap.innerHTML = `
+    <div class="devices-sheet-wrap">
+      <table class="devices-sheet">
+        <thead>
+          <tr>
+            <th class="sheet-cell-num">№</th>
+            <th style="min-width:220px;">დასახელება</th>
+            <th style="min-width:130px;">ტიპი</th>
+            <th style="min-width:90px;">განზ.</th>
+            <th style="min-width:90px;text-align:right;">რაოდ.</th>
+            <th style="min-width:100px;text-align:right;">ფასი ₾</th>
+            <th style="min-width:110px;text-align:right;">ჯამი ₾</th>
+            <th class="sheet-cell-del"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows}
+          ${canEdit ? `
+          <tr class="sheet-add-row">
+            <td colspan="8"><button onclick="addEstimateRow()">+ დაამატე პოზიცია</button></td>
+          </tr>` : ''}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  if (opts && opts.focusLast) {
+    setTimeout(() => {
+      const rows = document.querySelectorAll('.est-row');
+      const last = rows[rows.length - 1];
+      if (last) {
+        const firstInput = last.querySelector('input[type="text"]');
+        if (firstInput) firstInput.focus();
+      }
+    }, 30);
+  }
+}
+
+function updateEstimateSumBadge() {
+  const total = _estimateItems.reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.price) || 0), 0);
+  const badge = document.getElementById('estimateTotalBadge');
+  if (badge) badge.textContent = '₾ ' + total.toFixed(2);
+}
+
+function openInvoice() {
+  if (!state.currentBranch) return;
+  if (_estimateDirty) flushEstimateSave();
+  window.open(`/tbc/invoice/${state.currentBranch.id}`, '_blank', 'noopener');
 }
 
 // ============================================
