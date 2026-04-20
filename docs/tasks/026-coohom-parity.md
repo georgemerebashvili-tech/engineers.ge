@@ -13,7 +13,7 @@
 ## Scope — 5 ფაზა
 
 ### Phase B — UX parity (10–14 დღე)
-- [ ] **Right context panel** refactor: Floor / Wall / Door / Window / Room / Fixture per selection
+- [x] **Right context panel** refactor: Floor / Wall / Door / Window / Room / Fixture per selection · Claude+Codex 2026-04-20
 - [x] **PIP window** — draggable small alt-view (2D ↔ 3D sketch) · Claude 2026-04-18
 - [x] **Selection context menu** — floating toolbar + full actions (duplicate/lock/hide/rotate/flip/reverse/split/align/distribute) · Claude 2026-04-18 + 2026-04-19
 - [x] **Arc wall** tool — 3-point curve drawing (start / end / apex) · Claude 2026-04-18
@@ -35,16 +35,16 @@
 - [x] Scenario selector (stair / corridor / elevator / parking / evac) · Claude 2026-04-18
 - [x] Standard integration shell (EN 12101-6 / NFPA 92 / СП 7.13130) · Claude 2026-04-18
 - [x] Fire source placement (HRR kW, growth t², presets) · Claude 2026-04-18
-- [ ] Physics engine wiring (Task 007) → Codex Task 028
-- [x] Simulation overlays (smoke plume + CO rings + fire core) · Claude 2026-04-18 (MVP visual)
-  - Airflow particles → Codex 028
+- [x] Physics engine wiring (Task 007) → Codex Task 028 · shipped 2026-04-19
+- [x] Simulation overlays (smoke plume + CO rings + fire core) · Claude 2026-04-18 MVP + Task 028 wiring 2026-04-19
+  - Airflow particles ✓ (Task 028)
   - Smoke layer descent (2D schematic) ✓
-  - CO heatmap (3 concentric rings) ✓ → Codex refine with cell grid
-  - Pressure isolines → Codex 028
-  - Evac paths (A*) → Codex 028
-  - Door force gauges → Codex 028
+  - CO heatmap (3 concentric rings) ✓ + cell grid refine ✓ (Task 028)
+  - Pressure isolines ✓ (Task 028)
+  - Evac paths — straight-line with smoke-aware walking speed (A* skipped) ✓ (Task 028)
+  - Door force gauges ✓ (Task 028)
 - [x] Time-lapse (0→600s, play/pause/reset, 1×/5×/10×) · Claude 2026-04-18
-- [ ] Compliance PDF report → Codex Task 028
+- [x] Compliance PDF report → Codex Task 028 · shipped 2026-04-20
 
 ### Phase E — CAD / Cloud
 - Covered by Tasks 018–023 (DXF, AI walls, Supabase)
@@ -173,10 +173,14 @@ Top 10 priority screenshots:
 | D — Fire safety | 7–10d | Codex (physics) + Claude (overlay) |
 | **Total** | **~28 დღე** | პარალელურ |
 
-## Next immediate step (autonomous)
+## Closeout
 
-Starting with **Phase B.1 — Right context panel** refactor of current `wall-editor.html`. Will make each selection (wall, door, window, column, fixture) show a contextual form in right panel matching Coohom style.
+Phases B, C, D shipped — all Claude MVP items + Task 028 physics wiring + compliance report delivered. Phase E (CAD/Cloud) remains gated on Tasks 022/023 (Supabase provision).
+
+**Remaining follow-up:**
+- Manual browser QA pass on `/calc/wall-editor` (all Phase B tools, Phase C library insert, Phase D fire-mode time-lapse + PDF export)
+- Spec screenshot audit (see `docs/TODO.md` line 62 — 20 screenshot items still to capture from Coohom reference)
 
 ---
 
-**Status:** spec done, Phase B.1 starting
+**Status:** ✅ closed 2026-04-21 · code ships · docs synced · manual QA + screenshot audit tracked separately in `docs/TODO.md`

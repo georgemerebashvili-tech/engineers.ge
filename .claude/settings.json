@@ -17,7 +17,22 @@
       "Bash(lsof -iTCP -sTCP:LISTEN)",
       "Bash(open http://localhost:3000/)",
       "Bash(open http://localhost:3000/dashboard)",
-      "Bash(open http://localhost:3000/ads)"
+      "Bash(open http://localhost:3000/ads)",
+      "Bash(vercel:*)",
+      "Bash(npx vercel:*)",
+      "Bash(npx vercel@latest:*)",
+      "Bash(git push:*)",
+      "Bash(git commit:*)",
+      "Bash(git add:*)",
+      "Bash(npm install:*)",
+      "Bash(npm i:*)",
+      "Bash(npx tsc:*)",
+      "Bash(curl:*)",
+      "Bash(lsof:*)",
+      "Bash(pkill:*)",
+      "Bash(pgrep:*)",
+      "Bash(ps:*)",
+      "Bash(ls:*)"
     ],
     "additionalDirectories": [
       "/Users/macbookair/Desktop/engineers.ge/engineers.ge/app",
