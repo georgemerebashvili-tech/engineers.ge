@@ -69,11 +69,25 @@
     const ds = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     return `${slug} · ${ds}`;
   }
-  function setUrlProject(id) {
+  function setUrlProject(id, slug) {
     try {
       const u = new URL(window.location.href);
       u.searchParams.set('project', id);
+      u.searchParams.delete('state');
       history.replaceState(null, '', u.toString());
+    } catch {}
+    try {
+      if (window.parent && window.parent !== window) {
+        const parentUrl = new URL(window.parent.location.href);
+        if (parentUrl.pathname === '/calc/' + slug) {
+          parentUrl.searchParams.set('project', id);
+          parentUrl.searchParams.delete('state');
+          const nextUrl = parentUrl.toString();
+          if (nextUrl !== window.parent.location.href) {
+            window.parent.location.href = nextUrl;
+          }
+        }
+      }
     } catch {}
   }
 
@@ -86,11 +100,37 @@
 
     const params = new URLSearchParams(window.location.search);
     let projectId = params.get('project') || null;
+    const sharedState = params.get('state') || null;
 
     let saveTimer = null;
     const debounceMs = opts.debounceMs || 1200;
 
+    // UTF-8 safe base64 codecs — avoid deprecated escape/unescape globals.
+    function b64encodeUtf8(str) {
+      const bytes = new TextEncoder().encode(str);
+      let bin = '';
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      return btoa(bin);
+    }
+    function b64decodeUtf8(b64) {
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return new TextDecoder().decode(bytes);
+    }
+
     function load() {
+      // Shared-link state takes precedence — base64-encoded project state in
+      // the URL. Loads into the editor but does NOT auto-save to projects
+      // (user must "Save as" to persist).
+      if (sharedState) {
+        try {
+          const data = JSON.parse(b64decodeUtf8(sharedState));
+          applyState(data);
+          onProjectChange({ id: null, name: '🔗 გაზიარებული', slug, shared: true });
+          return { loaded: true, from: 'shared' };
+        } catch (e) { console.warn('shared state decode failed', e); }
+      }
       if (projectId) {
         const p = getProject(projectId);
         if (p && p.state) {
@@ -124,7 +164,7 @@
             // Stale id — promote to new project
             const p = createProject(slug, st);
             projectId = p.id;
-            setUrlProject(p.id);
+            setUrlProject(p.id, slug);
             onProjectChange({ id: p.id, name: p.name, slug: p.slug });
           }
         } else if (legacyKey) {
@@ -138,7 +178,7 @@
       const st = getState();
       const p = createProject(slug, st, name);
       projectId = p.id;
-      setUrlProject(p.id);
+      setUrlProject(p.id, slug);
       onProjectChange({ id: p.id, name: p.name, slug: p.slug });
       return p;
     }
@@ -200,12 +240,43 @@
       window.print();
     }
 
+    // Generate a shareable URL encoding current state into `?state=<base64>`.
+    // Returns the URL string; consumer decides how to present (copy to
+    // clipboard, toast, modal).
+    function shareLink() {
+      const st = getState();
+      const json = JSON.stringify(st);
+      let b64 = '';
+      try {
+        b64 = b64encodeUtf8(json);
+      } catch (e) {
+        throw new Error('state serialization failed: ' + e.message);
+      }
+      const base = window.location.origin + '/calc/' + slug;
+      const url = base + '?state=' + b64;
+      if (url.length > 8000) {
+        console.warn('share URL is long (' + url.length + ' chars); recipient may hit browser URL limits');
+      }
+      return url;
+    }
+
+    async function copyShareLink() {
+      const url = shareLink();
+      try {
+        await navigator.clipboard.writeText(url);
+        return { url, copied: true };
+      } catch {
+        return { url, copied: false };
+      }
+    }
+
     return {
       slug,
       load, save, saveAs, rename,
       currentProject,
       openGate,
       exportJSON, importJSON, printPDF,
+      shareLink, copyShareLink,
       get projectId() { return projectId; }
     };
   }

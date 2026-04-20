@@ -9,6 +9,7 @@
 <script src="/calc/_theme-sync.js"></script>
 <script src="/calc/_editor-panels.js"></script>
 <script src="/calc/_project-bridge.js"></script>
+<script src="/calc/_editor-pip.js"></script>
 <script type="importmap">
 { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
@@ -176,15 +177,15 @@
     <span style="color:var(--text-2)">📁</span>
     <span id="project-badge" style="color:var(--navy);font-weight:700;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">—</span>
   </span>
-  <button id="btn-save-as" title="Save as new project">💾 Save as</button>
-  <button id="btn-rename" title="Rename">✎</button>
+  <button id="btn-save-as" title="ახალ პროექტად შენახვა">💾 შენახვა</button>
+  <button id="btn-rename" title="პროექტის სახელის შეცვლა">✎ სახელი</button>
   <div class="spacer"></div>
   <button id="btn-refresh" title="wall-editor-ის მონაცემების reload">↻ Reload</button>
   <button id="btn-wall-editor" title="wall-editor-ზე გადასვლა">📐 გეგმა</button>
   <button id="btn-import" title="JSON ჩატვირთვა">⬆ JSON</button>
   <button id="btn-export" title="JSON ექსპორტი">⬇ JSON</button>
   <button id="btn-print" title="PDF ბეჭდვა">🖨 PDF</button>
-  <button id="btn-gate" title="ყველა პროექტი">🗂</button>
+  <button id="btn-gate" title="ყველა პროექტი">🗂 პროექტები</button>
 </header>
 
 <div class="bc-root">
@@ -259,6 +260,7 @@
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const uid = () => Math.random().toString(36).slice(2, 10);
+const FLOOR_PALETTE = ['#3a7bd5','#d95f3a','#4aa56a','#9a5aa8','#c8a63a','#3aa8a0','#c83a6f','#6a8ac2'];
 
 // ============== STATE ==============
 const state = {
@@ -266,6 +268,7 @@ const state = {
   floorH: 3.2,             // default inter-floor height
   floors: [],              // { id, label, color, visible, height, data:{walls,columns,openings,fixtures,rooms,dimensions} }
   connections: [],         // { id, kind:'stair'|'elevator'|'slab-opening', pos:[x,y], w, d, fromIdx, toIdx, rot, label }
+  wallSource: null,        // { slug:'wall-editor', projectId?, legacy?, sourceKey, syncedAt }
   version: 1
 };
 const ui = { activeId: null, activeConnId: null, three: null, toolDefaults: {} };
@@ -273,6 +276,7 @@ const ui = { activeId: null, activeConnId: null, three: null, toolDefaults: {} }
 // localStorage keys
 const STORE_KEY = 'eng_building_composer_v1';
 const WALL_STORE_KEY = 'eng_wall_editor_v1';
+const PROJECTS_KEY = 'eng_projects_v1';
 let _bridge = null;
 
 function toast(msg, dur=1800) {
@@ -318,31 +322,227 @@ function updateProjectBadge() {
   el.title = p ? `${p.name} · updated ${new Date(p.updatedAt).toLocaleString()}` : 'პროექტის გარეშე';
 }
 
-// Import floors from wall-editor's localStorage
-function importFromWallEditor() {
+function cloneDeep(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function readProjectsLibrary() {
   try {
-    const raw = localStorage.getItem(WALL_STORE_KEY);
-    if (!raw) { toast('wall-editor-ში ცარიელია'); return; }
-    const wd = JSON.parse(raw);
-    const src = wd._floors && wd._floors.length
-      ? wd._floors
-      : [{ id: uid(), name: '1F', data: { walls: wd.walls||[], columns: wd.columns||[], openings: wd.openings||[], fixtures: wd.fixtures||[], rooms: wd.rooms||[], dimensions: wd.dimensions||[] } }];
-    const palette = ['#3a7bd5','#d95f3a','#4aa56a','#9a5aa8','#c8a63a','#3aa8a0','#c83a6f','#6a8ac2'];
-    const newFloors = src.map((f, i) => ({
-      id: uid(),
-      label: f.name || `F${i+1}`,
-      color: palette[state.floors.length + i] || palette[i % palette.length],
-      visible: true,
-      height: (wd.floor && wd.floor.ceilingHeight) || state.floorH,
-      data: f.data
-    }));
-    state.floors.push(...newFloors);
-    if (!ui.activeId && state.floors.length) ui.activeId = state.floors[0].id;
-    save(); renderStack(); update3D(); renderPanel(); updateStats();
-    toast(`შემოსულია ${newFloors.length} სართული wall-editor-იდან`);
-  } catch (e) {
-    toast('შეცდომა: ' + e.message);
+    const raw = localStorage.getItem(PROJECTS_KEY);
+    if (!raw) return [];
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
   }
+}
+
+function getProjectRecord(id) {
+  return readProjectsLibrary().find(p => p?.id === id) || null;
+}
+
+function wallSourceFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('wallProject')) return { projectId: params.get('wallProject') };
+  if (params.get('wallLegacy')) return { legacy: true };
+  return null;
+}
+
+function clearWallSourceParams() {
+  const params = new URLSearchParams(window.location.search);
+  if (!params.has('wallProject') && !params.has('wallLegacy')) return;
+  const url = new URL(window.location.href);
+  url.searchParams.delete('wallProject');
+  url.searchParams.delete('wallLegacy');
+  history.replaceState(null, '', url.toString());
+}
+
+function normalizeWallSource(source) {
+  return {
+    slug: 'wall-editor',
+    projectId: source?.projectId || null,
+    legacy: !source?.projectId,
+    sourceKey: source?.projectId ? `project:${source.projectId}` : 'legacy',
+    syncedAt: new Date().toISOString()
+  };
+}
+
+function normalizeConnections() {
+  if (!state.floors.length) {
+    state.connections = [];
+    ui.activeId = null;
+    ui.activeConnId = null;
+    return;
+  }
+  const last = state.floors.length - 1;
+  state.connections = (state.connections || []).map(c => {
+    const fromIdx = Math.max(0, Math.min(last, c.fromIdx ?? 0));
+    const toIdx = Math.max(fromIdx, Math.min(last, c.toIdx ?? fromIdx));
+    return { ...c, fromIdx, toIdx };
+  });
+  if (!state.floors.some(f => f.id === ui.activeId)) ui.activeId = state.floors[0].id;
+  if (ui.activeConnId && !state.connections.some(c => c.id === ui.activeConnId)) ui.activeConnId = null;
+}
+
+function readWallStateFromSource(source) {
+  const meta = normalizeWallSource(source);
+  if (meta.projectId) {
+    const project = getProjectRecord(meta.projectId);
+    if (!project || project.slug !== 'wall-editor' || !project.state) {
+      throw new Error('wall-editor project ვერ მოიძებნა');
+    }
+    return { meta, data: project.state, project };
+  }
+  const raw = localStorage.getItem(WALL_STORE_KEY);
+  if (!raw) throw new Error('wall-editor-ში ცარიელია');
+  return { meta, data: JSON.parse(raw), project: null };
+}
+
+function wallArchiveFromState(wd) {
+  if (Array.isArray(wd?._floors) && wd._floors.length) return wd._floors;
+  return [{
+    id: 'wall-floor-0',
+    name: wd?.meta?.name || '1F',
+    height: wd?.floor?.ceilingHeight || wd?.floor?.height || state.floorH,
+    data: {
+      walls: wd?.walls || [],
+      columns: wd?.columns || [],
+      openings: wd?.openings || [],
+      fixtures: wd?.fixtures || [],
+      furniture: wd?.furniture || [],
+      rooms: wd?.rooms || [],
+      dimensions: wd?.dimensions || []
+    }
+  }];
+}
+
+function wallFloorToken(meta, floor, index) {
+  return floor?.id ? `${meta.sourceKey}:${floor.id}` : `${meta.sourceKey}:idx:${index}`;
+}
+
+function composeFloorsFromWallState(wd, meta, opts = {}) {
+  const archive = wallArchiveFromState(wd);
+  const previous = opts.reuseExisting
+    ? new Map(
+        state.floors
+          .filter(f => f?.source?.sourceKey === meta.sourceKey && f?.source?.token)
+          .map(f => [f.source.token, f])
+      )
+    : new Map();
+  const baseOffset = opts.baseOffset ?? state.floors.length;
+
+  return archive.map((floor, index) => {
+    const token = wallFloorToken(meta, floor, index);
+    const prev = previous.get(token);
+    return {
+      id: prev?.id || uid(),
+      label: prev?.label || floor.name || `F${index + 1}`,
+      color: prev?.color || FLOOR_PALETTE[(baseOffset + index) % FLOOR_PALETTE.length],
+      visible: prev?.visible ?? true,
+      height: floor.height || wd?.floor?.ceilingHeight || wd?.floor?.height || prev?.height || state.floorH,
+      data: cloneDeep(floor.data || {}),
+      source: {
+        ...meta,
+        token,
+        floorId: floor.id || null,
+        floorIndex: index,
+        floorName: floor.name || `F${index + 1}`,
+        syncedAt: new Date().toISOString()
+      }
+    };
+  });
+}
+
+function syncComposerFromWallSource(source, opts = {}) {
+  const { meta, data, project } = readWallStateFromSource(source);
+  const mode = opts.mode || 'append';
+  const newFloors = composeFloorsFromWallState(data, meta, {
+    reuseExisting: mode === 'replace',
+    baseOffset: mode === 'append' ? state.floors.length : 0
+  });
+  if (mode === 'replace') {
+    state.floors = newFloors;
+    if (opts.preserveConnections === false) state.connections = [];
+  } else {
+    state.floors.push(...newFloors);
+  }
+  state.wallSource = meta;
+  if ((!state.name || state.name === 'ახალი შენობა') && (project?.name || data?.meta?.name)) {
+    state.name = (project?.name || data.meta.name) + ' · composer';
+  }
+  normalizeConnections();
+  save();
+  renderStack();
+  renderConnList();
+  update3D();
+  renderPanel();
+  updateStats();
+  if (!opts.silent) {
+    const verb = mode === 'replace' ? 'დასინქრდა' : 'შემოსულია';
+    toast(`${verb} ${newFloors.length} სართული wall-editor-იდან`);
+  }
+  return newFloors;
+}
+
+function importFromWallEditor(opts = {}) {
+  const source = opts.source || state.wallSource || wallSourceFromUrl() || { legacy: true };
+  try {
+    return syncComposerFromWallSource(source, {
+      mode: opts.mode || 'append',
+      preserveConnections: opts.preserveConnections,
+      silent: opts.silent
+    });
+  } catch (e) {
+    if (!opts.silent) toast('შეცდომა: ' + e.message);
+    return null;
+  }
+}
+
+function encodeSharedState(data) {
+  const bytes = new TextEncoder().encode(JSON.stringify(data));
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+function floorToWallEditorState(floor) {
+  return {
+    meta: { name: `${state.name || 'Building'} · ${floor.label}` },
+    floor: {
+      height: floor.height || state.floorH,
+      ceilingHeight: floor.height || state.floorH
+    },
+    walls: cloneDeep(floor.data?.walls || []),
+    columns: cloneDeep(floor.data?.columns || []),
+    openings: cloneDeep(floor.data?.openings || []),
+    fixtures: cloneDeep(floor.data?.fixtures || []),
+    furniture: cloneDeep(floor.data?.furniture || []),
+    rooms: cloneDeep(floor.data?.rooms || []),
+    dimensions: cloneDeep(floor.data?.dimensions || [])
+  };
+}
+
+function openFloorInWallEditor(floor) {
+  if (!floor) return;
+  const src = floor.source || state.wallSource;
+  if (src?.projectId) {
+    const url = new URL('/calc/wall-editor', window.location.origin);
+    url.searchParams.set('project', src.projectId);
+    if (src.floorIndex != null) url.searchParams.set('floor', String(src.floorIndex));
+    window.open(url.toString(), '_blank');
+    toast('წყარო პროექტი გაიხსნა wall-editor-ში');
+    return;
+  }
+  if (src?.legacy) {
+    const url = new URL('/calc/wall-editor', window.location.origin);
+    if (src.floorIndex != null) url.searchParams.set('floor', String(src.floorIndex));
+    window.open(url.toString(), '_blank');
+    toast('wall-editor ახალ ტაბში');
+    return;
+  }
+  const url = '/calc/wall-editor?state=' + encodeSharedState(floorToWallEditorState(floor));
+  window.open(url, '_blank');
+  toast('სართული გაიხსნა wall-editor-ში');
 }
 
 // ============== THREE.JS ==============
@@ -426,6 +626,7 @@ function wallPoly(w) {
 }
 
 function update3D() {
+  if (_pip) { try { _pip.update(); } catch {} }
   if (!ui.three) return;
   const { THREE, root } = ui.three;
   while (root.children.length) {
@@ -468,17 +669,71 @@ function update3D() {
       }
     }
 
-    // Walls
+    // Walls — segment-decomposed with door/window cutouts (pier/sill/lintel)
+    const floorOpenings = (floor.data && floor.data.openings) || [];
     for (const w of walls) {
       if (w.hidden) continue;
-      const poly = wallPoly(w);
-      const shape = new THREE.Shape(poly.map(p => new THREE.Vector2(p[0], p[1])));
-      const h = w.height || floor.height || state.floorH || 2.8;
-      const geo = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: false });
-      geo.rotateX(-Math.PI/2);
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.castShadow = true; mesh.receiveShadow = true;
-      group.add(mesh);
+      const H = w.height || floor.height || state.floorH || 2.8;
+
+      // Arc walls: whole polygon extrude (no cutouts supported yet)
+      if (w.kind === 'arc') {
+        const poly = wallPoly(w);
+        const shape = new THREE.Shape(poly.map(p => new THREE.Vector2(p[0], p[1])));
+        const geo = new THREE.ExtrudeGeometry(shape, { depth: H, bevelEnabled: false });
+        geo.rotateX(-Math.PI/2);
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.castShadow = true; mesh.receiveShadow = true;
+        group.add(mesh);
+        continue;
+      }
+
+      const openings = floorOpenings.filter(o => o.wallId === w.id && !o.hidden);
+      const [x1, y1] = w.start, [x2, y2] = w.end;
+      const dx = x2 - x1, dy = y2 - y1;
+      const L = Math.hypot(dx, dy);
+      if (L < 1e-6) continue;
+      const angle = Math.atan2(dy, dx);
+      const thk = w.thickness || 0.15;
+
+      if (openings.length === 0) {
+        const box = new THREE.BoxGeometry(L, H, thk);
+        const m = new THREE.Mesh(box, mat);
+        m.position.set((x1 + x2) / 2, H / 2, (y1 + y2) / 2);
+        m.rotation.y = -angle;
+        m.castShadow = true; m.receiveShadow = true;
+        group.add(m);
+        continue;
+      }
+
+      function chunk(s0, s1, yBot, yTop) {
+        const segL = s1 - s0; const segH = yTop - yBot;
+        if (segL < 0.01 || segH < 0.01) return;
+        const tMid = (s0 + s1) / 2 / L;
+        const cx = x1 + dx * tMid;
+        const cy = y1 + dy * tMid;
+        const box = new THREE.BoxGeometry(segL, segH, thk);
+        const m = new THREE.Mesh(box, mat);
+        m.position.set(cx, yBot + segH / 2, cy);
+        m.rotation.y = -angle;
+        m.castShadow = true; m.receiveShadow = true;
+        group.add(m);
+      }
+
+      const ops = openings.slice().sort((a, b) => (a.offset || 0) - (b.offset || 0));
+      let cursor = 0;
+      for (const o of ops) {
+        const oW = o.width || 0.9;
+        const oH = o.height || 2.1;
+        const sillH = (o.type === 'window') ? (o.sillHeight != null ? o.sillHeight : 0.9) : 0;
+        const s0 = Math.max(0, (o.offset || 0) - oW / 2);
+        const s1 = Math.min(L, (o.offset || 0) + oW / 2);
+        if (s0 > cursor) chunk(cursor, s0, 0, H);
+        if (sillH > 0.01) chunk(s0, s1, 0, sillH);
+        const topH = sillH + oH;
+        if (topH < H - 0.01) chunk(s0, s1, topH, H);
+        cursor = s1;
+      }
+      if (cursor < L - 0.001) chunk(cursor, L, 0, H);
     }
     // Columns
     for (const c of (floor.data && floor.data.columns) || []) {
@@ -490,6 +745,19 @@ function update3D() {
       const mesh = new THREE.Mesh(geo, matCol);
       mesh.position.set(c.position[0], h/2, c.position[1]);
       if (c.rotation) mesh.rotation.y = THREE.MathUtils.degToRad(c.rotation);
+      mesh.castShadow = true; mesh.receiveShadow = true;
+      group.add(mesh);
+    }
+    // Furniture — boxes per kind with appropriate height
+    const furnH = { bed: 0.55, sofa: 0.85, table: 0.75, chair: 0.9, kitchen: 0.9, wc: 0.4, sink: 0.85, shower: 2.0 };
+    for (const fur of (floor.data && floor.data.furniture) || []) {
+      if (fur.hidden) continue;
+      const height = furnH[fur.kind] || 0.8;
+      const geo = new THREE.BoxGeometry(fur.w || 1, height, fur.d || 1);
+      const color = new THREE.Color(fur.color || '#b8a078');
+      const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color, roughness: 0.72 }));
+      mesh.position.set(fur.position[0], height / 2, fur.position[1]);
+      if (fur.rotation) mesh.rotation.y = THREE.MathUtils.degToRad(fur.rotation);
       mesh.castShadow = true; mesh.receiveShadow = true;
       group.add(mesh);
     }
@@ -974,9 +1242,7 @@ function renderPanel() {
             } }, 'დუბლირება'),
           h('button', { class: 'eng-btn',
             onclick: () => {
-              // Open wall-editor with this floor's data
-              window.open('/calc/wall-editor', '_blank');
-              toast('wall-editor ახალ ტაბში');
+              openFloorInWallEditor(active);
             } }, 'რედაქტირება')
         )
       ]
@@ -1132,8 +1398,22 @@ function wire() {
     state.floorH = parseFloat(e.target.value) || 3.0;
     save(); update3D(); renderPanel(); updateStats();
   });
-  $('#btn-refresh').addEventListener('click', () => { update3D(); toast('განახლდა'); });
-  $('#btn-wall-editor').addEventListener('click', () => { window.open('/calc/wall-editor', '_blank'); });
+  $('#btn-refresh').addEventListener('click', () => {
+    if (state.wallSource) {
+      importFromWallEditor({ mode: 'replace', preserveConnections: true });
+      return;
+    }
+    update3D();
+    toast('განახლდა');
+  });
+  $('#btn-wall-editor').addEventListener('click', () => {
+    const src = state.wallSource;
+    if (src?.projectId) {
+      window.open(`/calc/wall-editor?project=${encodeURIComponent(src.projectId)}`, '_blank');
+      return;
+    }
+    window.open('/calc/wall-editor', '_blank');
+  });
   $('#btn-import-wall').addEventListener('click', importFromWallEditor);
   $('#btn-blank').addEventListener('click', addBlankFloor);
   $('#btn-copy').addEventListener('click', copyActive);
@@ -1163,15 +1443,161 @@ function wire() {
   $('#btn-detect-shafts').addEventListener('click', autoDetectShafts);
 }
 
+// ============== PIP ==============
+let _pip = null;
+function initPIP() {
+  if (!window.EditorPIP) return;
+  const stage = $('#stage');
+  if (!stage) return;
+  _pip = window.EditorPIP.attach(stage, {
+    title: 'შენობა',
+    persistKey: 'eng_composer_pip_v1',
+    initialPos: { right: 16, top: 56 },
+    draw2D: (svg) => drawPIP2D(svg),
+    draw3D: (svg) => drawPIP3D(svg)
+  });
+}
+function drawPIP2D(svg) {
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  // Top-down of ground-floor plan; overlay stacked building footprint boxes
+  const floors = state.floors.filter(f => f.visible);
+  if (!floors.length) {
+    svg.setAttribute('viewBox', '0 0 10 10');
+    const t = document.createElementNS(ns, 'text');
+    t.setAttribute('x', '5'); t.setAttribute('y', '5.4');
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('font-size', '0.8');
+    t.setAttribute('fill', 'var(--text-3)');
+    t.textContent = 'ცარიელია';
+    svg.appendChild(t);
+    return;
+  }
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const f of floors) {
+    for (const w of (f.data?.walls || [])) {
+      for (const p of [w.start, w.end, w.apex].filter(Boolean)) {
+        minX = Math.min(minX, p[0]); minY = Math.min(minY, p[1]);
+        maxX = Math.max(maxX, p[0]); maxY = Math.max(maxY, p[1]);
+      }
+    }
+  }
+  if (!isFinite(minX)) { minX = -5; minY = -5; maxX = 5; maxY = 5; }
+  const pad = 1;
+  svg.setAttribute('viewBox', `${minX-pad} ${minY-pad} ${maxX-minX+pad*2} ${maxY-minY+pad*2}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  // Draw top floor's walls (representative footprint)
+  const top = floors[floors.length - 1];
+  for (const w of (top.data?.walls || [])) {
+    const [x1, y1] = w.start, [x2, y2] = w.end;
+    const dx = x2-x1, dy = y2-y1, L = Math.hypot(dx, dy) || 1;
+    const nx = -dy/L, ny = dx/L, t = (w.thickness || 0.15) / 2;
+    const poly = [
+      [x1+nx*t, y1+ny*t], [x2+nx*t, y2+ny*t],
+      [x2-nx*t, y2-ny*t], [x1-nx*t, y1-ny*t]
+    ];
+    const pg = document.createElementNS(ns, 'polygon');
+    pg.setAttribute('points', poly.map(p => p.join(',')).join(' '));
+    pg.setAttribute('fill', top.color || 'var(--navy)');
+    pg.setAttribute('opacity', '0.85');
+    svg.appendChild(pg);
+  }
+  // Connections as dots
+  for (const c of state.connections || []) {
+    const col = c.kind === 'stair' ? '#a08060' : c.kind === 'elevator' ? '#4a6b8f' : '#d95f3a';
+    const r = Math.max(0.1, (c.w || 1) / 4);
+    const circle = document.createElementNS(ns, 'circle');
+    circle.setAttribute('cx', c.pos[0]); circle.setAttribute('cy', c.pos[1]);
+    circle.setAttribute('r', r);
+    circle.setAttribute('fill', col); circle.setAttribute('opacity', '0.8');
+    svg.appendChild(circle);
+  }
+}
+function drawPIP3D(svg) {
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const floors = state.floors;
+  if (!floors.length) {
+    svg.setAttribute('viewBox', '0 0 10 10');
+    return;
+  }
+  // Axonometric stacked blocks — each floor as a rectangle at its height
+  const iso = (x, y, z) => [x - y * 0.5, -z + (x + y) * 0.3];
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  const blocks = [];
+  let zOffset = 0;
+  for (const f of floors) {
+    if (!f.visible) { zOffset += f.height || state.floorH; continue; }
+    let bx1 = Infinity, by1 = Infinity, bx2 = -Infinity, by2 = -Infinity;
+    for (const w of (f.data?.walls || [])) {
+      for (const p of [w.start, w.end]) {
+        bx1 = Math.min(bx1, p[0]); by1 = Math.min(by1, p[1]);
+        bx2 = Math.max(bx2, p[0]); by2 = Math.max(by2, p[1]);
+      }
+    }
+    if (!isFinite(bx1)) { zOffset += f.height || state.floorH; continue; }
+    const h = f.height || state.floorH;
+    const pts = [
+      iso(bx1, by1, zOffset),     iso(bx2, by1, zOffset),
+      iso(bx2, by2, zOffset),     iso(bx1, by2, zOffset),
+      iso(bx1, by1, zOffset + h), iso(bx2, by1, zOffset + h),
+      iso(bx2, by2, zOffset + h), iso(bx1, by2, zOffset + h)
+    ];
+    pts.forEach(p => {
+      minX = Math.min(minX, p[0]); minY = Math.min(minY, p[1]);
+      maxX = Math.max(maxX, p[0]); maxY = Math.max(maxY, p[1]);
+    });
+    blocks.push({ pts, color: f.color || '#4a9eff', label: f.label, isActive: f.id === ui.activeId });
+    zOffset += h;
+  }
+  if (!isFinite(minX)) { minX = -5; minY = -5; maxX = 5; maxY = 5; }
+  const pad = 1;
+  svg.setAttribute('viewBox', `${minX-pad} ${minY-pad} ${maxX-minX+pad*2} ${maxY-minY+pad*2}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  // Draw each block as 3 visible faces
+  for (const b of blocks) {
+    const [p0,p1,p2,p3,p4,p5,p6,p7] = b.pts;
+    // Top
+    const top = [p4, p5, p6, p7];
+    const rt = document.createElementNS(ns, 'polygon');
+    rt.setAttribute('points', top.map(p => p.join(',')).join(' '));
+    rt.setAttribute('fill', b.color); rt.setAttribute('opacity', b.isActive ? '1' : '0.75');
+    rt.setAttribute('stroke', 'var(--navy)'); rt.setAttribute('stroke-width', '0.05');
+    svg.appendChild(rt);
+    // Right face
+    const rightF = [p1, p2, p6, p5];
+    const rr = document.createElementNS(ns, 'polygon');
+    rr.setAttribute('points', rightF.map(p => p.join(',')).join(' '));
+    rr.setAttribute('fill', b.color); rr.setAttribute('opacity', b.isActive ? '0.8' : '0.55');
+    rr.setAttribute('stroke', 'var(--navy)'); rr.setAttribute('stroke-width', '0.05');
+    svg.appendChild(rr);
+    // Front face
+    const frontF = [p0, p1, p5, p4];
+    const rf = document.createElementNS(ns, 'polygon');
+    rf.setAttribute('points', frontF.map(p => p.join(',')).join(' '));
+    rf.setAttribute('fill', b.color); rf.setAttribute('opacity', b.isActive ? '0.9' : '0.65');
+    rf.setAttribute('stroke', 'var(--navy)'); rf.setAttribute('stroke-width', '0.05');
+    svg.appendChild(rf);
+  }
+}
+function updatePIP() { if (_pip) _pip.update(); }
+
 // ============== BOOT ==============
 (async function() {
   restore();
   init3D();
+  const linkedWall = wallSourceFromUrl();
+  if (linkedWall) {
+    importFromWallEditor({ source: linkedWall, mode: 'replace', preserveConnections: false, silent: true });
+    clearWallSourceParams();
+  }
   wire();
   renderStack();
   renderConnList();
   renderPanel();
   update3D();
+  initPIP();
+  updatePIP();
   updateStats();
   $('#inp-name').value = state.name;
   $('#inp-floor-h').value = state.floorH;

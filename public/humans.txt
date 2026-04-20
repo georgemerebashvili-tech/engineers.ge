@@ -1,0 +1,17 @@
+/* TEAM */
+Creator: George Merebashvili
+Contact: georgemerebashvili@gmail.com
+Location: Tbilisi, Georgia
+
+/* SITE */
+Last update: 2026/04/20
+Language: Georgian / English
+Standards: HTML5, CSS3, ECMAScript 2022+
+Components: Next.js 16 (App Router), React 19, Tailwind v4, Three.js, Recharts, KaTeX
+Deployment: Vercel
+Storage: Supabase (Postgres + Storage)
+
+/* THANKS */
+Standards bodies: ASHRAE, CEN (EN), NFPA, ISO, MCHS-RU (СП)
+Icons: Lucide (lucide.dev)
+Fonts: Plus Jakarta Sans, IBM Plex Mono, Noto Sans Georgian

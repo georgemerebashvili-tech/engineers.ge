@@ -151,9 +151,9 @@ export function ShareBar({url, title = ''}: Props) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={name}
-            className="inline-flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-lg border hover:bg-surface-alt transition-colors"
+            className="inline-flex h-7 w-7 md:h-9 md:w-9 items-center justify-center rounded-lg border hover:bg-surface-alt transition-colors"
           >
-            <Icon size={18} />
+            <Icon size={16} />
           </a>
         ))}
         {settings.copy_link && (
@@ -162,9 +162,9 @@ export function ShareBar({url, title = ''}: Props) {
             onClick={copy}
             aria-label={t('copy')}
             title={copied ? t('copied') : t('copy')}
-            className="inline-flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-lg border hover:bg-surface-alt transition-colors"
+            className="inline-flex h-7 w-7 md:h-9 md:w-9 items-center justify-center rounded-lg border hover:bg-surface-alt transition-colors"
           >
-            {copied ? <Check size={18} /> : <LinkIcon size={18} />}
+            {copied ? <Check size={16} /> : <LinkIcon size={16} />}
           </button>
         )}
       </div>

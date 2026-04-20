@@ -5,8 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>პარკინგის ვენტილაცია — CO + Smoke Simulator</title>
 <link rel="stylesheet" href="/calc/_base.css">
+<link rel="stylesheet" href="/calc/_editor-ui.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <script src="/calc/_theme-sync.js"></script>
+<script src="/calc/_editor-panels.js"></script>
+<script src="/calc/_project-bridge.js"></script>
+<script src="/calc/_editor-pip.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script type="importmap">
 {
@@ -622,6 +626,11 @@
   .dark .p-label { fill: #a7b7d1; }
   .dark .p-label-b { fill: #e6ecf5; }
 
+  @media (max-width: 1100px) {
+    /* Collapse the extra ep-panel below 1100px to preserve room for 3D + info */
+    .sp-stage .ep-panel#ctx-panel { display: none; }
+  }
+
   @media (max-width: 820px) {
     .sp-root { grid-template-columns: 1fr; }
     .sp-side {
@@ -648,7 +657,7 @@
       background: #fff !important;
     }
     body { display: block; color: #111; }
-    .sp-side, .sp-resizer, .sp-tabs, .helper-3d, .legend, .screen-only { display: none !important; }
+    .sp-side, .sp-resizer, .sp-tabs, .helper-3d, .legend, .screen-only, .ep-panel#ctx-panel { display: none !important; }
     .sp-root, .sp-main, .sp-stage, .sp-view-area, .sp-info-aside {
       display: block !important;
       min-height: auto !important;
@@ -719,9 +728,16 @@
     <span>ჰაერის ხარჯი: <b id="sm-flow">1.2 მ³/წმ</b></span>
   </div>
   <div class="header-actions screen-only">
+    <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--text-3);font-family:var(--font-mono);padding:4px 8px;background:var(--sur-2);border:1px solid var(--bdr);border-radius:6px">
+      <span style="color:var(--text-2)">📁</span>
+      <span id="project-badge" style="color:var(--navy);font-weight:700;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">— (legacy)</span>
+    </span>
+    <button class="btn" id="btn-save-as" type="button" title="შენახვა როგორც ახალი პროექტი">💾 Save as</button>
+    <button class="btn" id="btn-rename" type="button" title="სახელის შეცვლა">✎</button>
     <button class="btn" id="btn-import-json" type="button">⬆ JSON</button>
     <button class="btn" id="btn-export-json" type="button">⬇ JSON</button>
     <button class="btn primary" id="btn-export-pdf" type="button">⬇ PDF</button>
+    <button class="btn" id="btn-gate" type="button" title="ყველა პროექტი">🗂</button>
   </div>
 </div>
 
@@ -893,6 +909,22 @@
       <aside class="sp-info-aside">
         <div class="std-info" id="std-info"></div>
         <div class="legend" id="legend-panel"></div>
+      </aside>
+
+      <!-- EP-PANEL — portable EditorPanels context panel (Task 027 §9 proof-of-portability) -->
+      <aside class="ep-panel" id="ctx-panel" style="flex:0 0 var(--ep-aside-w);min-width:0;">
+        <div class="ep-panel-head">
+          <span class="ep-icon" id="ctx-panel-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+            </svg>
+          </span>
+          <h2 id="ctx-panel-title">პარამეტრები</h2>
+          <span class="ep-panel-sub" id="ctx-panel-sub">parking</span>
+        </div>
+        <div class="ep-panel-body" id="ctx-panel-body">
+          <!-- EditorPanels.render(ctxPanelBody, ctx, handlers) populates this -->
+        </div>
       </aside>
     </div>
   </main>
@@ -1708,6 +1740,10 @@ let firePulse = null;
 let fireAura = null;
 let fireLamp = null;
 let threeGround, threeGrid;
+// 3D click-selection
+let _ctxOverride = null;
+let _raycaster = null;
+let _mouseNDC = null;
 
 const SCENE_COLORS = {
   light: {fog: 0xdbe6f5, ground: 0xeaf0fa, gridMain: 0xa7b7d1, gridSub: 0xc4d4e8, ambient: 0.85, fill: 0x6ba6ff},
@@ -1779,7 +1815,117 @@ function init3D() {
   const ro = new ResizeObserver(onResize3D);
   ro.observe(mount);
 
+  // 3D click-selection (raycaster bridge → sel:* ctx panels)
+  _raycaster = new THREE.Raycaster();
+  _mouseNDC = new THREE.Vector2();
+  renderer.domElement.addEventListener('pointerdown', onScene3DClick);
+  renderer.domElement.addEventListener('pointermove', onScene3DHover);
+  window.addEventListener('keydown', onScene3DKey);
+
   animate3D();
+}
+
+function _pickUserDataNode(hitObject) {
+  let node = hitObject;
+  while (node) {
+    if (node.userData && node.userData.kind) return node;
+    node = node.parent;
+  }
+  return null;
+}
+
+function onScene3DClick(e) {
+  if (!_raycaster || !camera || !scene || !renderer) return;
+  if (e.button && e.button !== 0) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  _mouseNDC.x = (x / rect.width) * 2 - 1;
+  _mouseNDC.y = -(y / rect.height) * 2 + 1;
+  _raycaster.setFromCamera(_mouseNDC, camera);
+  const hits = _raycaster.intersectObjects(scene.children, true);
+  let picked = null;
+  for (const h of hits) {
+    const node = _pickUserDataNode(h.object);
+    if (node) { picked = node; break; }
+  }
+  if (picked) {
+    const kind = picked.userData.kind;
+    const results = state.results || (computeResults(), state.results);
+    const flowPerFan = (results && results.actualVentFlow && state.fanCount > 0)
+      ? results.actualVentFlow / state.fanCount : null;
+    if (kind === 'jetfan') {
+      _ctxOverride = {
+        type: 'sel:jetfan',
+        data: {
+          id: picked.userData.id,
+          thrust_N: state.fanThrust,
+          flow_m3h: flowPerFan,
+          location: 'ceiling',
+          rotation: picked.userData.rotation || 'forward',
+          reversible: true
+        }
+      };
+    } else if (kind === 'car-source') {
+      _ctxOverride = {
+        type: 'sel:car-source',
+        data: {
+          id: picked.userData.id,
+          position: picked.userData.position || 'parked',
+          co_g_h: 12,
+          co_g_km: 4
+        }
+      };
+    } else if (kind === 'fire-source') {
+      _ctxOverride = {
+        type: 'sel:fire-source',
+        data: {
+          hrr_kw: state.fireSize,
+          growth: state.fireSize >= 20000 ? 'fast' : 'medium',
+          position: 'center'
+        }
+      };
+    } else if (kind === 'exhaust-point') {
+      _ctxOverride = {
+        type: 'sel:exhaust-point',
+        data: {
+          w: 400,
+          h: 400,
+          flow_m3h: flowPerFan,
+          position: 'ceiling'
+        }
+      };
+    } else {
+      _ctxOverride = null;
+    }
+  } else {
+    _ctxOverride = null;
+  }
+  try { renderCtxPanel(); } catch {}
+}
+
+function onScene3DHover(e) {
+  if (!_raycaster || !camera || !scene || !renderer) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  _mouseNDC.x = (x / rect.width) * 2 - 1;
+  _mouseNDC.y = -(y / rect.height) * 2 + 1;
+  _raycaster.setFromCamera(_mouseNDC, camera);
+  const hits = _raycaster.intersectObjects(scene.children, true);
+  let picked = null;
+  for (const h of hits) {
+    const node = _pickUserDataNode(h.object);
+    if (node) { picked = node; break; }
+  }
+  renderer.domElement.style.cursor = picked ? 'pointer' : 'default';
+}
+
+function onScene3DKey(e) {
+  if (e.key === 'Escape' && _ctxOverride) {
+    _ctxOverride = null;
+    try { renderCtxPanel(); } catch {}
+  }
 }
 
 function onResize3D() {
@@ -1867,6 +2013,9 @@ function build3D() {
         const car = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.38, 0.42), carMat);
         car.position.set(x, 0.2, z);
         car.castShadow = true;
+        car.userData.kind = 'car-source';
+        car.userData.id = `car_auto_${index}`;
+        car.userData.position = 'parked';
         parkingGroup.add(car);
       }
       index += 1;
@@ -1878,13 +2027,17 @@ function build3D() {
   ramp.rotation.x = -0.18;
   parkingGroup.add(ramp);
 
-  fanPositions().forEach(fan => {
+  fanPositions().forEach((fan, fanIdx) => {
     const x = -width / 2 + width * fan.xRatio;
     const z = -depth / 2 + depth * fan.yRatio;
+    const fanId = `fan_auto_${fanIdx}`;
     const housing = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.6, 18), fanMat.clone());
     housing.rotation.z = Math.PI / 2;
     housing.position.set(x, wallHeight - 0.22, z);
     housing.castShadow = true;
+    housing.userData.kind = 'jetfan';
+    housing.userData.id = fanId;
+    housing.userData.fanIdx = fanIdx;
     parkingGroup.add(housing);
 
     const cone = new THREE.Mesh(
@@ -1893,9 +2046,44 @@ function build3D() {
     );
     cone.rotation.z = fan.dir > 0 ? -Math.PI / 2 : Math.PI / 2;
     cone.position.set(x + fan.dir * 0.8, wallHeight - 0.22, z);
+    cone.userData.kind = 'jetfan';
+    cone.userData.id = fanId;
+    cone.userData.fanIdx = fanIdx;
+    cone.userData.rotation = fan.dir > 0 ? 'forward' : 'reverse';
     parkingGroup.add(cone);
     thrustCones.push(cone);
   });
+
+  // Exhaust grilles: make the already-wired `sel:exhaust-point` ctx reachable
+  // via canvas click (see onScene3DClick handler for kind:'exhaust-point').
+  // Count scales with parking area; duct systems place grilles on the ceiling,
+  // jet systems place them wall-mounted at the exhaust-end wall.
+  const exhaustMat = new THREE.MeshStandardMaterial({
+    color: 0x3a3f4a,
+    roughness: .45,
+    metalness: .7,
+    emissive: 0x111418,
+    emissiveIntensity: .15
+  });
+  const exhaustCount = state.area >= 2500 ? 4 : state.area >= 1200 ? 3 : 2;
+  const exhaustGeo = new THREE.BoxGeometry(0.6, 0.6, 0.15);
+  for (let i = 0; i < exhaustCount; i++) {
+    const exhaustMesh = new THREE.Mesh(exhaustGeo, exhaustMat.clone());
+    const t = exhaustCount === 1 ? 0.5 : i / (exhaustCount - 1);
+    const spread = width * 0.72;
+    const xPos = -spread / 2 + t * spread;
+    if (state.systemType === 'duct') {
+      // Ceiling-mounted exhaust boxes, distributed across the ceiling span.
+      exhaustMesh.position.set(xPos, wallHeight - 0.08, -depth * 0.32);
+      exhaustMesh.rotation.x = Math.PI / 2;
+    } else {
+      // Jet system: wall-mounted grilles on the far (exhaust-end) wall.
+      exhaustMesh.position.set(xPos, Math.min(wallHeight - 0.35, 2.8), -depth / 2 + 0.09);
+    }
+    exhaustMesh.castShadow = true;
+    exhaustMesh.userData = { kind: 'exhaust-point', id: 'ex_' + i };
+    parkingGroup.add(exhaustMesh);
+  }
 
   const airGeo = new THREE.SphereGeometry(0.05, 8, 6);
   for (let i = 0; i < Math.min(160, 40 + state.fanCount * 10); i++) {
@@ -1919,6 +2107,8 @@ function build3D() {
       new THREE.MeshStandardMaterial({color: 0xff9d52, emissive: 0xff6b1a, emissiveIntensity: 1.45, roughness: 0.3, metalness: 0.05})
     );
     fireCore.position.copy(fireOrigin);
+    fireCore.userData.kind = 'fire-source';
+    fireCore.userData.id = 'fire_source';
     parkingGroup.add(fireCore);
     firePulse = fireCore;
 
@@ -1927,6 +2117,8 @@ function build3D() {
       new THREE.MeshBasicMaterial({color: 0xff8a3d, transparent: true, opacity: 0.16})
     );
     fireHalo.position.copy(fireOrigin);
+    fireHalo.userData.kind = 'fire-source';
+    fireHalo.userData.id = 'fire_source';
     parkingGroup.add(fireHalo);
     fireAura = fireHalo;
 
@@ -2067,6 +2259,142 @@ function redraw() {
   drawPlan();
   drawSection();
   build3D();
+  try { _pip && _pip.update(); } catch {}
+}
+
+// ==== PIP (Picture-in-Picture) — portable .ep-pip mini-view ====
+// Uses window.EditorPIP.attach() from /calc/_editor-pip.js
+let _pip = null;
+
+function _pipGrid() {
+  // derive a simple parking grid from area + spots
+  const W = parkingWidthM();
+  const D = parkingDepthM();
+  const spots = Math.max(1, state.spots | 0);
+  // arrange in a single row or two rows depending on aspect
+  const rows = (W / D > 2) ? 1 : 2;
+  const cols = Math.ceil(spots / rows);
+  return { W, D, rows, cols, spots };
+}
+
+function pipDraw2D(svg) {
+  // Overhead parking plan: bay outline + car grid + fan markers (jet fans)
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const { W, D, rows, cols, spots } = _pipGrid();
+  const pad = 0.4;
+  svg.setAttribute('viewBox', `${-pad} ${-pad} ${W + 2*pad} ${D + 2*pad}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  // bay
+  const bay = document.createElementNS(ns, 'rect');
+  bay.setAttribute('x', 0); bay.setAttribute('y', 0);
+  bay.setAttribute('width', W); bay.setAttribute('height', D);
+  bay.setAttribute('fill', 'var(--sur-2)');
+  bay.setAttribute('stroke', 'var(--navy)');
+  bay.setAttribute('stroke-width', '0.05');
+  svg.appendChild(bay);
+  // cars
+  const carW = Math.min(2.4, W / Math.max(1, cols) * 0.8);
+  const carL = Math.min(4.6, D / (rows * 2 + 0.5) * 0.9);
+  let drawn = 0;
+  for (let r = 0; r < rows && drawn < spots; r++) {
+    const yBase = (rows === 1)
+      ? (D - carL) / 2
+      : (r === 0 ? 0.3 : D - carL - 0.3);
+    for (let c = 0; c < cols && drawn < spots; c++) {
+      const x = (c + 0.5) * (W / cols) - carW / 2;
+      const rect = document.createElementNS(ns, 'rect');
+      rect.setAttribute('x', x); rect.setAttribute('y', yBase);
+      rect.setAttribute('width', carW); rect.setAttribute('height', carL);
+      rect.setAttribute('rx', 0.2);
+      rect.setAttribute('fill', 'var(--bdr-2, #cbd5e1)');
+      rect.setAttribute('stroke', 'var(--text-2)');
+      rect.setAttribute('stroke-width', '0.03');
+      svg.appendChild(rect);
+      drawn++;
+    }
+  }
+  // jet fans along centerline (if jet system)
+  const fanCount = Math.max(0, state.fanCount | 0);
+  if (fanCount > 0) {
+    const yMid = D / 2;
+    for (let i = 0; i < fanCount; i++) {
+      const x = (i + 0.5) * (W / fanCount);
+      const fan = document.createElementNS(ns, 'circle');
+      fan.setAttribute('cx', x); fan.setAttribute('cy', yMid);
+      fan.setAttribute('r', 0.25);
+      fan.setAttribute('fill', 'var(--blue)');
+      fan.setAttribute('stroke', 'var(--navy)');
+      fan.setAttribute('stroke-width', '0.03');
+      svg.appendChild(fan);
+      // arrow indicator
+      const arr = document.createElementNS(ns, 'line');
+      arr.setAttribute('x1', x + 0.25); arr.setAttribute('y1', yMid);
+      arr.setAttribute('x2', x + 0.8);  arr.setAttribute('y2', yMid);
+      arr.setAttribute('stroke', 'var(--blue)');
+      arr.setAttribute('stroke-width', '0.06');
+      arr.setAttribute('stroke-linecap', 'round');
+      svg.appendChild(arr);
+    }
+  }
+}
+
+function pipDraw3D(svg) {
+  // Isometric with simple car boxes
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const { W, D, rows, cols, spots } = _pipGrid();
+  const H = Math.max(2.4, state.height || 3);
+  const iso = (x, y, z) => [x - y * 0.5, -z + (x + y) * 0.3];
+  const bp = [
+    iso(0, 0, 0), iso(W, 0, 0), iso(W, D, 0), iso(0, D, 0),
+    iso(0, 0, H), iso(W, 0, H), iso(W, D, H), iso(0, D, H)
+  ];
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of bp) { minX=Math.min(minX,p[0]); minY=Math.min(minY,p[1]); maxX=Math.max(maxX,p[0]); maxY=Math.max(maxY,p[1]); }
+  const pad = 0.8;
+  svg.setAttribute('viewBox', `${minX-pad} ${minY-pad} ${maxX-minX+pad*2} ${maxY-minY+pad*2}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  // floor slab
+  const slab = document.createElementNS(ns, 'polygon');
+  slab.setAttribute('points', [bp[0], bp[1], bp[2], bp[3]].map(p => p.join(',')).join(' '));
+  slab.setAttribute('fill', 'var(--sur-2)');
+  slab.setAttribute('stroke', 'var(--navy)');
+  slab.setAttribute('stroke-width', '0.04');
+  svg.appendChild(slab);
+  // cars (flat rects) — isometric
+  const carW = Math.min(2.4, W / Math.max(1, cols) * 0.8);
+  const carL = Math.min(4.6, D / (rows * 2 + 0.5) * 0.9);
+  const carH = 1.4;
+  let drawn = 0;
+  for (let r = 0; r < rows && drawn < spots; r++) {
+    const yBase = (rows === 1) ? (D - carL) / 2 : (r === 0 ? 0.3 : D - carL - 0.3);
+    for (let c = 0; c < cols && drawn < spots; c++) {
+      const x = (c + 0.5) * (W / cols) - carW / 2;
+      const y = yBase;
+      const cp = [
+        iso(x, y, 0), iso(x+carW, y, 0), iso(x+carW, y+carL, 0), iso(x, y+carL, 0),
+        iso(x, y, carH), iso(x+carW, y, carH), iso(x+carW, y+carL, carH), iso(x, y+carL, carH)
+      ];
+      for (const f of [[cp[4],cp[5],cp[6],cp[7]], [cp[1],cp[2],cp[6],cp[5]]]) {
+        const pg = document.createElementNS(ns, 'polygon');
+        pg.setAttribute('points', f.map(p => p.join(',')).join(' '));
+        pg.setAttribute('fill', 'var(--bdr-2, #cbd5e1)');
+        pg.setAttribute('stroke', 'var(--text-2)');
+        pg.setAttribute('stroke-width', '0.03');
+        pg.setAttribute('stroke-linejoin', 'round');
+        svg.appendChild(pg);
+      }
+      drawn++;
+    }
+  }
+  // ceiling line
+  const roof = document.createElementNS(ns, 'polyline');
+  roof.setAttribute('points', [bp[4], bp[5], bp[6]].map(p => p.join(',')).join(' '));
+  roof.setAttribute('fill', 'none');
+  roof.setAttribute('stroke', 'var(--text-3)');
+  roof.setAttribute('stroke-width', '0.03');
+  svg.appendChild(roof);
 }
 
 function numberOr(value, fallback) {
@@ -2226,16 +2554,575 @@ function wireUI() {
   });
 }
 
+// ============== EDITOR PANELS INTEGRATION (Task 027 §9) ==============
+// Register parking-specific ctx types with the portable EditorPanels module,
+// then drive a right-side .ep-panel body via renderCtxPanel(). All field/action
+// edits route back into `state` and trigger redraw(), keeping the existing
+// sidebar (templates/standards/inputs) the canonical primary editor.
+function registerParkingPanels() {
+  if (!window.EditorPanels) return;
+  const B = EditorPanels.build;
+
+  // tool:parking-params — default context (no selection)
+  EditorPanels.registerType('tool:parking-params', function (container, ctx, hx) {
+    const d = ctx.data || {};
+    container.innerHTML = '';
+
+    // Geometry
+    container.appendChild(B.section({
+      title: 'გეომეტრია',
+      aux: `${d.area || 0} მ² · ${d.spots || 0} car`,
+      collapsed: false,
+      children: [
+        B.h('div', { class: 'ep-field-grid' },
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'ფართობი ', B.h('span', { class: 'ep-unit' }, '(მ²)')),
+            B.numInput({ value: d.area, min: 500, max: 10000, step: 50, unit: 'მ²',
+              onInput: v => hx.onField('area', v) })
+          ),
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'სიმაღლე ', B.h('span', { class: 'ep-unit' }, '(მ)')),
+            B.numInput({ value: d.height, min: 2.4, max: 4.0, step: 0.1, unit: 'მ',
+              onInput: v => hx.onField('height', v) })
+          )
+        ),
+        B.h('div', { class: 'ep-field-grid' },
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'ადგილები ', B.h('span', { class: 'ep-unit' }, '(car)')),
+            B.numInput({ value: d.spots, min: 10, max: 300, step: 5,
+              onInput: v => hx.onField('spots', v) })
+          ),
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'რამპა L ', B.h('span', { class: 'ep-unit' }, '(მ)')),
+            B.numInput({ value: d.rampL, min: 6, max: 30, step: 0.5, unit: 'მ',
+              onInput: v => hx.onField('rampL', v) })
+          )
+        ),
+        B.field(
+          B.h('label', { class: 'ep-label' }, 'რამპა W ', B.h('span', { class: 'ep-unit' }, '(მ)')),
+          B.numInput({ value: d.rampW, min: 2.8, max: 6, step: 0.1, unit: 'მ',
+            onInput: v => hx.onField('rampW', v) })
+        ),
+        d.volume != null ? B.stat('მოცულობა', d.volume.toFixed(0) + ' მ³') : null
+      ].filter(Boolean)
+    }));
+
+    // Scenario / ventilation mode
+    container.appendChild(B.section({
+      title: 'სცენარი · რეჟიმი',
+      aux: d.scenarioLabel || '',
+      collapsed: false,
+      children: [
+        B.field('ოპერაცია',
+          B.segControl({ value: d.scenario || 'normal',
+            options: [
+              { value: 'normal', label: 'CO ctrl' },
+              { value: 'peak', label: 'Peak' },
+              { value: 'fire', label: 'Smoke' }
+            ],
+            onChange: v => hx.onField('scenario', v) })
+        ),
+        B.field('სისტემა',
+          B.segControl({ value: d.systemType || 'jet',
+            options: [
+              { value: 'jet', label: 'Jet fans' },
+              { value: 'duct', label: 'Supply+exh.' }
+            ],
+            onChange: v => hx.onField('systemType', v) })
+        ),
+        B.h('div', { class: 'ep-field-grid' },
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'მანქ./სთ ', B.h('span', { class: 'ep-unit' }, '(cars/h)')),
+            B.numInput({ value: d.carsPerHour, min: 5, max: 240, step: 5,
+              onInput: v => hx.onField('carsPerHour', v) })
+          ),
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'საწყისი CO ', B.h('span', { class: 'ep-unit' }, '(ppm)')),
+            B.numInput({ value: d.coInitial, min: 0, max: 100, step: 1, unit: 'ppm',
+              onInput: v => hx.onField('coInitial', v) })
+          )
+        ),
+        d.scenario === 'fire' ? B.field('Fire size',
+          B.segControl({ value: String(d.fireSize || 5000),
+            options: [
+              { value: '5000', label: 'Car 5 MW' },
+              { value: '20000', label: 'Truck 20 MW' }
+            ],
+            onChange: v => hx.onField('fireSize', parseInt(v) || 5000) })
+        ) : null
+      ].filter(Boolean)
+    }));
+
+    // Ventilation / fans rollup
+    container.appendChild(B.section({
+      title: 'ვენტილაცია · ფანები',
+      aux: `${d.fanCount || 0} × ${d.fanThrust || 0}N`,
+      collapsed: false,
+      children: [
+        B.h('div', { class: 'ep-field-grid' },
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'რაოდენობა ', B.h('span', { class: 'ep-unit' }, '(#)')),
+            B.numInput({ value: d.fanCount, min: 1, max: 40, step: 1,
+              onInput: v => hx.onField('fanCount', v) })
+          ),
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'Thrust ', B.h('span', { class: 'ep-unit' }, '(N)')),
+            B.numInput({ value: d.fanThrust, min: 30, max: 200, step: 5, unit: 'N',
+              onInput: v => hx.onField('fanThrust', v) })
+          )
+        ),
+        B.field(
+          B.h('label', { class: 'ep-label' }, 'ხმაური ', B.h('span', { class: 'ep-unit' }, '(dBA)')),
+          B.numInput({ value: d.fanNoise, min: 40, max: 100, step: 1, unit: 'dBA',
+            onInput: v => hx.onField('fanNoise', v) })
+        ),
+        d.recommendedFans != null ? B.stat('recommended', String(d.recommendedFans) + ' fans') : null,
+        d.targetACH != null ? B.stat('target ACH', d.targetACH.toFixed(1)) : null,
+        d.actualACH != null ? B.stat('actual ACH', d.actualACH.toFixed(1)) : null,
+        d.requiredFlow != null ? B.stat('Q required', d.requiredFlow.toFixed(2) + ' მ³/წმ') : null,
+        d.actualVentFlow != null ? B.stat('Q actual', d.actualVentFlow.toFixed(2) + ' მ³/წმ') : null,
+        d.maxCO != null ? B.stat('max CO (600s)', d.maxCO.toFixed(0) + ' ppm') : null,
+        d.coLimit != null ? B.stat('CO limit', d.coLimit.toFixed(0) + ' ppm') : null,
+        d.smokeLayer != null ? B.stat('smoke layer', d.smokeLayer.toFixed(2) + ' მ') : null
+      ].filter(Boolean)
+    }));
+
+    // Visualization
+    container.appendChild(B.section({
+      title: 'ვიზუალიზაცია',
+      aux: null,
+      collapsed: true,
+      children: [
+        B.field('Flow cones',
+          B.segControl({ value: d.flowViz || 'on',
+            options: [
+              { value: 'on', label: 'ჩართ' },
+              { value: 'off', label: 'გამორთ' }
+            ],
+            onChange: v => hx.onField('flowViz', v) })
+        ),
+        B.field('CO heatmap',
+          B.segControl({ value: d.heatmap || 'on',
+            options: [
+              { value: 'on', label: 'ჩართ' },
+              { value: 'off', label: 'გამორთ' }
+            ],
+            onChange: v => hx.onField('heatmap', v) })
+        )
+      ]
+    }));
+
+    // Standard
+    container.appendChild(B.section({
+      title: 'სტანდარტი',
+      aux: d.standard || '',
+      collapsed: true,
+      children: [
+        B.field('ნორმა',
+          B.segControl({ value: d.standard || 'ASHRAE',
+            options: [
+              { value: 'ASHRAE', label: 'ASHRAE' },
+              { value: 'EN', label: 'EN 12101-3' },
+              { value: 'SP', label: 'СП 60' }
+            ],
+            onChange: v => hx.onField('standard', v) })
+        ),
+        B.field('ერთეულები',
+          B.segControl({ value: d.units || 'metric',
+            options: [
+              { value: 'metric', label: 'მეტრი' },
+              { value: 'imperial', label: 'ft / cfm' }
+            ],
+            onChange: v => hx.onField('units', v) })
+        ),
+        d.stdNote ? B.h('div', { class: 'ep-hint' }, d.stdNote) : null,
+        B.h('div', { class: 'ep-divider' }),
+        B.h('div', { class: 'ep-btn-row' },
+          B.h('button', { class: 'eng-btn', onclick: () => hx.onAction('reset') }, 'Reset'),
+          B.h('button', { class: 'eng-btn', onclick: () => hx.onAction('rebuild') }, 'Rebuild')
+        )
+      ].filter(Boolean)
+    }));
+  });
+
+  // sel:jetfan — jet fan properties (click-selection hook TBD on 3D scene)
+  EditorPanels.registerType('sel:jetfan', function (container, ctx, hx) {
+    const d = ctx.data || {};
+    container.innerHTML = '';
+    container.appendChild(B.section({
+      title: 'Jet fan',
+      aux: d.model || '',
+      collapsed: false,
+      children: [
+        B.field('მოდელი',
+          B.selectInput({ value: d.model || 'std',
+            options: [
+              { value: 'std', label: 'Standard' },
+              { value: 'hi', label: 'High thrust' },
+              { value: 'rev', label: 'Reversible' }
+            ],
+            onChange: v => hx.onField('model', v) })
+        ),
+        B.h('div', { class: 'ep-field-grid' },
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'Thrust ', B.h('span', { class: 'ep-unit' }, '(N)')),
+            B.numInput({ value: d.thrust, min: 30, max: 200, step: 5, unit: 'N',
+              onInput: v => hx.onField('thrust', v) })
+          ),
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'ხარჯი ', B.h('span', { class: 'ep-unit' }, '(CMH)')),
+            B.numInput({ value: d.flowCmh, min: 500, max: 50000, step: 100, unit: 'CMH',
+              onInput: v => hx.onField('flowCmh', v) })
+          )
+        ),
+        B.field('ადგილმდებ.',
+          B.segControl({ value: d.location || 'mid',
+            options: [
+              { value: 'inlet', label: 'Inlet' },
+              { value: 'mid', label: 'Mid' },
+              { value: 'exhaust', label: 'Exh.' }
+            ],
+            onChange: v => hx.onField('location', v) })
+        ),
+        B.h('div', { class: 'ep-field-grid' },
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'როტაცია ', B.h('span', { class: 'ep-unit' }, '(°)')),
+            B.numInput({ value: d.rotation, min: 0, max: 359, step: 5, unit: '°',
+              onInput: v => hx.onField('rotation', v) })
+          ),
+          B.field('Reversible',
+            B.segControl({ value: d.reversible ? 'yes' : 'no',
+              options: [
+                { value: 'yes', label: 'კი' },
+                { value: 'no', label: 'არა' }
+              ],
+              onChange: v => hx.onField('reversible', v === 'yes') })
+          )
+        ),
+        B.h('div', { class: 'ep-hint' },
+          'Jet fan parameters — უახლოეს ვერსიაში 3D სცენაზე არჩევა გაგრძელდება.')
+      ]
+    }));
+  });
+
+  // sel:exhaust-point — exhaust grille (not yet click-selectable on canvas)
+  EditorPanels.registerType('sel:exhaust-point', function (container, ctx, hx) {
+    const d = ctx.data || {};
+    container.innerHTML = '';
+    container.appendChild(B.section({
+      title: 'Exhaust grille',
+      aux: d.id || '',
+      collapsed: false,
+      children: [
+        B.h('div', { class: 'ep-field-grid' },
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'ზომა W ', B.h('span', { class: 'ep-unit' }, '(მმ)')),
+            B.numInput({ value: d.w, min: 100, max: 2000, step: 10, unit: 'მმ',
+              onInput: v => hx.onField('w', v) })
+          ),
+          B.field(
+            B.h('label', { class: 'ep-label' }, 'ზომა H ', B.h('span', { class: 'ep-unit' }, '(მმ)')),
+            B.numInput({ value: d.h, min: 100, max: 2000, step: 10, unit: 'მმ',
+              onInput: v => hx.onField('h', v) })
+          )
+        ),
+        B.field(
+          B.h('label', { class: 'ep-label' }, 'ხარჯი ', B.h('span', { class: 'ep-unit' }, '(CMH)')),
+          B.numInput({ value: d.flowCmh, min: 100, max: 50000, step: 100, unit: 'CMH',
+            onInput: v => hx.onField('flowCmh', v) })
+        ),
+        B.field('პოზიცია',
+          B.segControl({ value: d.position || 'ceiling',
+            options: [
+              { value: 'ceiling', label: 'ჭერი' },
+              { value: 'wall-hi', label: 'კედ. ზე.' },
+              { value: 'wall-lo', label: 'კედ. ქვ.' }
+            ],
+            onChange: v => hx.onField('position', v) })
+        ),
+        B.h('div', { class: 'ep-hint' },
+          'Exhaust point — placeholder მანამ, სანამ 3D click-selection დაემატება.')
+      ]
+    }));
+  });
+
+  // sel:car-source — parked car as CO source
+  EditorPanels.registerType('sel:car-source', function (container, ctx, hx) {
+    const d = ctx.data || {};
+    container.innerHTML = '';
+    container.appendChild(B.section({
+      title: 'Car · CO source',
+      aux: d.id || '',
+      collapsed: false,
+      children: [
+        B.field('პოზიცია',
+          B.segControl({ value: d.position || 'parked',
+            options: [
+              { value: 'parked', label: 'Parked' },
+              { value: 'idling', label: 'Idling' },
+              { value: 'moving', label: 'Moving' }
+            ],
+            onChange: v => hx.onField('position', v) })
+        ),
+        B.field(
+          B.h('label', { class: 'ep-label' }, 'CO emission ', B.h('span', { class: 'ep-unit' }, '(g/h)')),
+          B.numInput({ value: d.coGH, min: 0, max: 2000, step: 10, unit: 'g/h',
+            onInput: v => hx.onField('coGH', v) })
+        ),
+        B.field(
+          B.h('label', { class: 'ep-label' }, 'CO / km ', B.h('span', { class: 'ep-unit' }, '(g/km)')),
+          B.numInput({ value: d.coGKm, min: 0, max: 200, step: 1, unit: 'g/km',
+            onInput: v => hx.onField('coGKm', v) })
+        ),
+        B.h('div', { class: 'ep-hint' },
+          'Individual car source — aggregate model uses cars/hr field. Click-selection TBD.')
+      ]
+    }));
+  });
+
+  // sel:fire-source — fire scenario source
+  EditorPanels.registerType('sel:fire-source', function (container, ctx, hx) {
+    const d = ctx.data || {};
+    container.innerHTML = '';
+    container.appendChild(B.section({
+      title: 'Fire source',
+      aux: d.label || '',
+      collapsed: false,
+      children: [
+        B.field('სცენარი',
+          B.segControl({ value: String(d.fireSize || 5000),
+            options: [
+              { value: '5000', label: 'Car 5 MW' },
+              { value: '20000', label: 'Truck 20 MW' }
+            ],
+            onChange: v => hx.onField('fireSize', parseInt(v) || 5000) })
+        ),
+        d.hrr != null ? B.stat('HRR', (d.hrr / 1000).toFixed(1) + ' MW') : null,
+        d.plumeFlow != null ? B.stat('plume flow', d.plumeFlow.toFixed(2) + ' kg/s') : null,
+        d.smokeLayer != null ? B.stat('smoke layer', d.smokeLayer.toFixed(2) + ' მ') : null,
+        B.h('div', { class: 'ep-hint' },
+          'Fire source — growth rate არ არის ცალკე, HRR ორი სცენარით იცვლება. 3D picking TBD.')
+      ].filter(Boolean)
+    }));
+  });
+}
+
+function buildCtxFromState() {
+  if (_ctxOverride) return _ctxOverride;
+  const results = state.results || (computeResults(), state.results);
+  const std = currentStd();
+  return {
+    type: 'tool:parking-params',
+    data: {
+      // geometry
+      area: state.area,
+      height: state.height,
+      spots: state.spots,
+      rampW: state.rampW,
+      rampL: state.rampL,
+      volume: results ? results.volume : null,
+      // scenario
+      scenario: state.scenario,
+      scenarioLabel: scenarioLabel(),
+      systemType: state.systemType,
+      carsPerHour: state.carsPerHour,
+      coInitial: state.coInitial,
+      fireSize: state.fireSize,
+      // fans
+      fanCount: state.fanCount,
+      fanThrust: state.fanThrust,
+      fanNoise: state.fanNoise,
+      recommendedFans: results ? results.recommendedFans : null,
+      targetACH: results ? results.targetACH : null,
+      actualACH: results ? results.actualACH : null,
+      requiredFlow: results ? results.requiredFlow : null,
+      actualVentFlow: results ? results.actualVentFlow : null,
+      maxCO: results ? results.maxCO : null,
+      coLimit: results ? results.coLimit : null,
+      smokeLayer: results ? results.smokeLayer : null,
+      // viz
+      flowViz: state.flowViz,
+      heatmap: state.heatmap,
+      // standard
+      standard: state.standard,
+      units: state.units,
+      stdNote: std ? std.note : ''
+    }
+  };
+}
+
+function onCtxField(key, value) {
+  // Numeric
+  if (key === 'area') state.area = clamp(parseFloat(value) || state.area, 500, 10000);
+  else if (key === 'height') state.height = clamp(parseFloat(value) || state.height, 2.4, 4.0);
+  else if (key === 'spots') state.spots = clamp(parseInt(value) || state.spots, 10, 300);
+  else if (key === 'rampW') state.rampW = clamp(parseFloat(value) || state.rampW, 2.8, 6);
+  else if (key === 'rampL') state.rampL = clamp(parseFloat(value) || state.rampL, 6, 30);
+  else if (key === 'fanCount') state.fanCount = clamp(parseInt(value) || state.fanCount, 1, 40);
+  else if (key === 'fanThrust') state.fanThrust = clamp(parseFloat(value) || state.fanThrust, 30, 200);
+  else if (key === 'fanNoise') state.fanNoise = clamp(parseFloat(value) || state.fanNoise, 40, 100);
+  else if (key === 'carsPerHour') state.carsPerHour = clamp(parseInt(value) || state.carsPerHour, 5, 240);
+  else if (key === 'coInitial') state.coInitial = clamp(parseFloat(value) || state.coInitial, 0, 100);
+  else if (key === 'fireSize') state.fireSize = (parseInt(value) === 20000) ? 20000 : 5000;
+  // Seg / select
+  else if (key === 'scenario') state.scenario = ['normal', 'peak', 'fire'].includes(value) ? value : 'normal';
+  else if (key === 'systemType') state.systemType = ['jet', 'duct'].includes(value) ? value : 'jet';
+  else if (key === 'flowViz') state.flowViz = value === 'off' ? 'off' : 'on';
+  else if (key === 'heatmap') state.heatmap = value === 'off' ? 'off' : 'on';
+  else if (key === 'standard') {
+    if (STANDARDS[value]) state.standard = value;
+  } else if (key === 'units') state.units = value === 'imperial' ? 'imperial' : 'metric';
+  else return;
+
+  reflectInputsFromState();
+  syncSegmentsFromState();
+  redraw();
+  renderCtxPanel();
+  autosave();
+}
+
+function onCtxAction(name) {
+  if (name === 'reset') { resetState(); renderCtxPanel(); autosave(); return; }
+  if (name === 'rebuild') { redraw(); renderCtxPanel(); return; }
+}
+
+function renderCtxPanel() {
+  if (!window.EditorPanels) return;
+  const container = document.getElementById('ctx-panel-body');
+  if (!container) return;
+  const ctx = buildCtxFromState();
+  setPanelHead(ctx);
+  EditorPanels.render(container, ctx, {
+    onField: onCtxField,
+    onAction: onCtxAction,
+    onLibPick: () => {}
+  });
+}
+
+function setPanelHead(ctx) {
+  const titleEl = document.getElementById('ctx-panel-title');
+  const subEl = document.getElementById('ctx-panel-sub');
+  const titles = {
+    'tool:parking-params': 'პარამეტრები',
+    'sel:jetfan': 'Jet fan',
+    'sel:exhaust-point': 'Exhaust grille',
+    'sel:car-source': 'Car · CO',
+    'sel:fire-source': 'Fire source'
+  };
+  if (titleEl) titleEl.textContent = titles[ctx.type] || 'პარამეტრები';
+  if (subEl) {
+    const std = currentStd();
+    subEl.textContent = std ? std.name : 'parking';
+  }
+}
+
+// ============== PROJECT BRIDGE (Task 027 §9) ==============
+let _bridge = null;
+const LEGACY_BRIDGE_KEY = 'eng_parking_vent_v1';
+
+function buildSnapshot() {
+  return {
+    standard: state.standard,
+    units: state.units,
+    area: state.area,
+    height: state.height,
+    spots: state.spots,
+    rampW: state.rampW,
+    rampL: state.rampL,
+    systemType: state.systemType,
+    fanCount: state.fanCount,
+    fanThrust: state.fanThrust,
+    fanNoise: state.fanNoise,
+    scenario: state.scenario,
+    carsPerHour: state.carsPerHour,
+    fireSize: state.fireSize,
+    coInitial: state.coInitial,
+    flowViz: state.flowViz,
+    heatmap: state.heatmap
+  };
+}
+
+function applyBridgeSnapshot(data) {
+  if (!data || typeof data !== 'object') return;
+  try {
+    applyImportedState(data);
+  } catch (e) { console.warn('parking-vent: applySnapshot failed', e); }
+}
+
+function autosave() {
+  if (_bridge) _bridge.save();
+  updateProjectBadge();
+}
+
+function restoreAutosave() {
+  if (!window.ProjectBridge) return false;
+  _bridge = ProjectBridge.init({
+    slug: 'parking-ventilation',
+    legacyKey: LEGACY_BRIDGE_KEY,
+    getState: buildSnapshot,
+    applyState: applyBridgeSnapshot,
+    onProjectChange: updateProjectBadge
+  });
+  const r = _bridge.load();
+  return r.loaded;
+}
+
+function updateProjectBadge() {
+  const el = document.getElementById('project-badge');
+  if (!el || !_bridge) return;
+  const p = _bridge.currentProject();
+  el.textContent = p ? p.name : '— (legacy)';
+  el.title = p
+    ? `${p.name} · updated ${new Date(p.updatedAt).toLocaleString()}`
+    : 'პროექტის გარეშე — localStorage';
+}
+
+function wireBridgeButtons() {
+  document.getElementById('btn-save-as')?.addEventListener('click', () => {
+    if (!_bridge) return;
+    const cur = _bridge.currentProject();
+    const name = prompt('პროექტის სახელი', cur ? cur.name + ' (copy)' : 'პარკინგი · ახალი');
+    if (!name) return;
+    _bridge.saveAs(name);
+    updateProjectBadge();
+  });
+  document.getElementById('btn-rename')?.addEventListener('click', () => {
+    if (!_bridge || !_bridge.projectId) { window.alert('ჯერ Save as-ით შექმენი პროექტი'); return; }
+    const cur = _bridge.currentProject();
+    const name = prompt('ახალი სახელი', cur ? cur.name : '');
+    if (!name) return;
+    _bridge.rename(name);
+    updateProjectBadge();
+  });
+  document.getElementById('btn-gate')?.addEventListener('click', () => {
+    if (_bridge) _bridge.openGate();
+  });
+}
+
+// Re-render ctx panel after every redraw (state mutation sync point)
+const _origRedraw = redraw;
+redraw = function() {
+  _origRedraw();
+  try { renderCtxPanel(); } catch {}
+};
+
 document.addEventListener('DOMContentLoaded', () => {
   renderTemplates();
   reflectInputsFromState();
   syncSegmentsFromState();
   renderLegend('plan');
+  registerParkingPanels();
   wireUI();
+  wireBridgeButtons();
   init3D();
 
+  let loadedFromBridge = false;
   try {
-    if (!importStateFromQuery()) {
+    loadedFromBridge = restoreAutosave();
+  } catch (e) { console.warn('bridge init failed', e); }
+
+  try {
+    if (!loadedFromBridge && !importStateFromQuery()) {
       syncSummary();
       drawPlan();
       drawSection();
@@ -2249,6 +3136,19 @@ document.addEventListener('DOMContentLoaded', () => {
     drawSection();
     build3D();
   }
+  updateProjectBadge();
+  renderCtxPanel();
+  try {
+    const stageEl = document.querySelector('.sp-stage');
+    if (stageEl && window.EditorPIP) {
+      _pip = window.EditorPIP.attach(stageEl, {
+        title: 'მიმოხილვა',
+        persistKey: 'eng_parking_pip_v1',
+        draw2D: pipDraw2D,
+        draw3D: pipDraw3D
+      });
+    }
+  } catch (e) { console.warn('PIP attach failed', e); }
 });
 
 window.addEventListener('beforeprint', syncSummary);

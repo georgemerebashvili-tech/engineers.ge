@@ -61,7 +61,11 @@ export function ProfileWorkspace() {
     setLocal(u);
     fetch(`/api/me/profile?email=${encodeURIComponent(u.email)}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((p: Profile) => {
+      .then((p: Profile & {exists?: boolean}) => {
+        if (p.exists === false) {
+          setStatus('error');
+          return;
+        }
         setProfile(p);
         setStatus('ok');
       })

@@ -1,15 +1,20 @@
 'use client';
 
-import {useEffect, useState, useTransition} from 'react';
+import {useEffect, useRef, useState, useTransition} from 'react';
 import {LogIn, Mail, Lock, X, Eye, EyeOff, LogOut, UserCircle2} from 'lucide-react';
 import {saveStoredUser, getStoredUser, clearStoredUser} from '@/lib/user-session';
 
 type StoredUserLite = {email: string; name: string} | null;
 
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])';
+
 export function LoginTrigger({className}: {className?: string}) {
   const [open, setOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [user, setUser] = useState<StoredUserLite>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const sync = () => {
@@ -22,16 +27,55 @@ export function LoginTrigger({className}: {className?: string}) {
     return () => window.removeEventListener('eng_user_change', onChange);
   }, []);
 
+  // Focus first item on menu open; restore trigger focus on close
+  useEffect(() => {
+    if (!menuOpen || !menuRef.current) return;
+    const first = menuRef.current.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+    first?.focus();
+    return () => {
+      triggerRef.current?.focus();
+    };
+  }, [menuOpen]);
+
   if (user) {
     return (
-      <div className="relative">
+      <div
+        className="relative"
+        onKeyDown={(e) => {
+          if (!menuOpen) return;
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            setMenuOpen(false);
+            return;
+          }
+          if (e.key === 'Tab' && menuRef.current) {
+            const items = Array.from(
+              menuRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)
+            );
+            if (items.length === 0) return;
+            const first = items[0];
+            const last = items[items.length - 1];
+            const active = document.activeElement as HTMLElement | null;
+            if (e.shiftKey && active === first) {
+              e.preventDefault();
+              last.focus();
+            } else if (!e.shiftKey && active === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
+        }}
+      >
         <button
+          ref={triggerRef}
           type="button"
           onClick={() => setMenuOpen((v) => !v)}
-          className="inline-flex h-8 items-center gap-1.5 rounded-full border border-bdr bg-sur pl-1 pr-2 text-[11.5px] font-semibold text-text-2 transition-colors hover:border-blue hover:text-blue"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          className="inline-flex h-8 items-center gap-1.5 rounded-full border border-bdr bg-sur pl-1 pr-2 text-[11.5px] font-semibold text-text-2 transition-colors hover:border-blue hover:text-blue focus:outline-none focus:ring-2 focus:ring-blue"
         >
           <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-lt text-blue">
-            <UserCircle2 size={14} />
+            <UserCircle2 size={14} aria-hidden="true" />
           </span>
           <span className="max-w-[140px] truncate">{user.name}</span>
         </button>
@@ -40,8 +84,14 @@ export function LoginTrigger({className}: {className?: string}) {
             <div
               className="fixed inset-0 z-[140]"
               onClick={() => setMenuOpen(false)}
+              aria-hidden="true"
             />
-            <div className="absolute right-0 top-full z-[141] mt-1.5 w-56 overflow-hidden rounded-lg border bg-sur shadow-[var(--shadow-card)]">
+            <div
+              ref={menuRef}
+              role="menu"
+              aria-label="მომხმარებლის მენიუ"
+              className="absolute right-0 top-full z-[141] mt-1.5 w-56 max-w-[calc(100vw-16px)] overflow-hidden rounded-lg border bg-sur shadow-[var(--shadow-card)]"
+            >
               <div className="border-b px-3 py-2">
                 <p className="text-[12px] font-semibold text-navy truncate">
                   {user.name}
@@ -52,34 +102,38 @@ export function LoginTrigger({className}: {className?: string}) {
               </div>
               <a
                 href="/dashboard/profile"
-                className="block px-3 py-2 text-[12px] text-text-2 hover:bg-sur-2 hover:text-blue"
+                role="menuitem"
+                className="block px-3 py-2 text-[12px] text-text-2 hover:bg-sur-2 hover:text-blue focus:bg-sur-2 focus:text-blue focus:outline-none"
                 onClick={() => setMenuOpen(false)}
               >
                 პროფილი
               </a>
               <a
                 href="/dashboard/referrals"
-                className="block px-3 py-2 text-[12px] text-text-2 hover:bg-sur-2 hover:text-blue"
+                role="menuitem"
+                className="block px-3 py-2 text-[12px] text-text-2 hover:bg-sur-2 hover:text-blue focus:bg-sur-2 focus:text-blue focus:outline-none"
                 onClick={() => setMenuOpen(false)}
               >
                 მოწვევები & ბმული
               </a>
               <a
                 href="/dashboard"
-                className="block px-3 py-2 text-[12px] text-text-2 hover:bg-sur-2 hover:text-blue"
+                role="menuitem"
+                className="block px-3 py-2 text-[12px] text-text-2 hover:bg-sur-2 hover:text-blue focus:bg-sur-2 focus:text-blue focus:outline-none"
                 onClick={() => setMenuOpen(false)}
               >
                 Dashboard
               </a>
               <button
                 type="button"
+                role="menuitem"
                 onClick={() => {
                   clearStoredUser();
                   setMenuOpen(false);
                 }}
-                className="flex w-full items-center gap-1.5 border-t px-3 py-2 text-left text-[12px] text-danger hover:bg-red-lt"
+                className="flex w-full items-center gap-1.5 border-t px-3 py-2 text-left text-[12px] text-danger hover:bg-red-lt focus:bg-red-lt focus:outline-none"
               >
-                <LogOut size={12} /> გასვლა
+                <LogOut size={12} aria-hidden="true" /> გასვლა
               </button>
             </div>
           </>

@@ -4,13 +4,12 @@
 
 :root {
   /* Brightness slider drives --bg-tint (0..100).
-   *   Light mode (tint ≥ 50): white (tone-a) → cool gray (tone-b).
-   *     Intra-mode % = (tint − 50) × 2  →  0% at 50, 100% at 100.
-   *   Dark mode (tint < 50): near-black (tone-a) → dark navy blue (tone-b).
-   *     Intra-mode % = tint × 2  →  0% at 0, ~100% at 49 (see .dark override). */
+   *   Light mode (tint ≥ 50): white (tone-a) → near-white light blue tint (tone-b).
+   *     Both endpoints stay "almost white" — the slider only nudges warmth/coolness.
+   *   Dark mode (tint < 50): pure black (tone-a) → dark navy blue (tone-b). */
   --bg-tint: 80;
   --bg-tone-a: #ffffff;
-  --bg-tone-b: #d8dfe8;
+  --bg-tone-b: #edf2fb;
 
   /* Surfaces — within light mode, tint 50→100 maps to 0→100% mix */
   --bg: color-mix(in srgb, var(--bg-tone-a), var(--bg-tone-b) calc((var(--bg-tint) - 50) * 2%));
@@ -54,7 +53,7 @@
   /* Dark-mode: tint 0→49 maps to 0→~100% mix of tone-a → tone-b.
    * Palette: pure black → dark navy blue. */
   --bg-tone-a: #000000;
-  --bg-tone-b: #0b1a3a;
+  --bg-tone-b: #0a1e4a;
   --bg: color-mix(in srgb, var(--bg-tone-a), var(--bg-tone-b) calc(var(--bg-tint) * 2%));
   --sur: #151f2f;
   --sur-2: #1b2638;

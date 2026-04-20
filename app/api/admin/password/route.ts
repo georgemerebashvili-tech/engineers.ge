@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server';
 import {z} from 'zod';
 import bcrypt from 'bcryptjs';
 import {getSession, verifyCredentials} from '@/lib/auth';
+import {getIp, logAdminAction} from '@/lib/admin-audit';
 
 const Body = z.object({
   currentPassword: z.string().min(1),
@@ -119,6 +120,15 @@ export async function POST(req: Request) {
     const hookRes = await fetch(deployHook, {method: 'POST'});
     redeployTriggered = hookRes.ok;
   }
+
+  await logAdminAction({
+    actor: session.user,
+    action: 'admin.password_change',
+    target_type: 'vercel_env',
+    target_id: 'ADMIN_PASS_HASH',
+    metadata: {redeployTriggered},
+    ip: getIp(req.headers)
+  });
 
   return NextResponse.json({
     ok: true,

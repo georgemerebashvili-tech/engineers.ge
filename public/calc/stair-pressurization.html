@@ -10,6 +10,7 @@
 <script src="/calc/_theme-sync.js"></script>
 <script src="/calc/_editor-panels.js"></script>
 <script src="/calc/_project-bridge.js"></script>
+<script src="/calc/_editor-pip.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script type="importmap">
 {
@@ -2457,6 +2458,12 @@ let threeGround, threeGrid, hoverTooltip;
 let pointerStart = null;
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
+// Selectable meshes for ctx-panel click-selection. Populated in build3D().
+// Each entry is a THREE.Mesh with userData.kind ('fan' | 'damper' | 'door-level').
+const selectableTargets = [];
+// Per-session override of the context panel (null → fall through to default logic).
+// Shape: { type: 'sel:stair-fan' | 'sel:stair-damper' | 'sel:door-level', data: {...} }.
+let _ctxOverride = null;
 
 // Theme-aware 3D palette
 const SCENE_COLORS = {
@@ -2605,6 +2612,79 @@ function getForceBarHit(event) {
   return raycaster.intersectObjects(hoverTargets, false)[0] ?? null;
 }
 
+// Selection raycast — walk up parents until we hit a userData.kind marker.
+// Returns { mesh, kind, ... } or null. Doors have a dedicated toggle path so
+// we only surface non-door selectable kinds here (fan/damper); door-level
+// selection is driven by state.activeFloor after toggleDoor().
+function getSelectableHit(event) {
+  if (!selectableTargets.length) return null;
+  setPointerFromEvent(event);
+  const hits = raycaster.intersectObjects(selectableTargets, true);
+  for (const hit of hits) {
+    let obj = hit.object;
+    while (obj && !obj.userData?.kind) obj = obj.parent;
+    if (obj && obj.userData?.kind) return { mesh: obj, ...obj.userData };
+  }
+  return null;
+}
+
+function selectMesh(info) {
+  if (!info || !info.kind) { clearSelection(); return; }
+  if (info.kind === 'fan') {
+    _ctxOverride = {
+      type: 'sel:stair-fan',
+      data: {
+        id: info.id,
+        location: state.supply,
+        flow: state.results?.requiredSupplyQ != null
+          ? +state.results.requiredSupplyQ.toFixed(2)
+          : 0,
+        dp: state.dp,
+        requiredSupplyQ: state.results?.requiredSupplyQ
+      }
+    };
+  } else if (info.kind === 'damper') {
+    // Dampers are not in state yet — surface sane defaults so the panel renders.
+    _ctxOverride = {
+      type: 'sel:stair-damper',
+      data: {
+        id: info.id || ('damper-' + (info.floorId ?? '?')),
+        cls: 'C3',
+        leakage: 10,
+        position: 'closed'
+      }
+    };
+  } else if (info.kind === 'door-level') {
+    // Door clicks go through toggleDoor(); this branch handles programmatic
+    // selection of a closed door without toggling it open.
+    const floorKey = info.floor;
+    if (isValidFloorKey(floorKey)) {
+      state.activeFloor = floorKey;
+      const forceMetrics = computeDoorForce(floorKey);
+      _ctxOverride = {
+        type: 'sel:door-level',
+        data: {
+          floorIndex: floorKey,
+          floorLabel: formatFloorShort(floorKey),
+          isOpen: state.openDoors.has(floorKey),
+          w: state.doorW,
+          h: state.doorH,
+          closer: 30,
+          forceN: forceMetrics.forceN,
+          limitN: forceMetrics.limitN
+        }
+      };
+    }
+  }
+  try { renderCtxPanel(); } catch {}
+}
+
+function clearSelection() {
+  if (_ctxOverride == null) return;
+  _ctxOverride = null;
+  try { renderCtxPanel(); } catch {}
+}
+
 function toggleDoor(floorKey) {
   if (!isValidFloorKey(floorKey)) return;
   if (state.openDoors.has(floorKey)) {
@@ -2635,8 +2715,23 @@ function wire3DInteractions() {
     const travel = Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y);
     pointerStart = null;
     if (travel > 6) return;
-    const hit = getDoorHit(event);
-    if (hit?.object?.userData?.floorKey !== undefined) toggleDoor(hit.object.userData.floorKey);
+
+    // Door clicks keep legacy toggle behavior.
+    const doorHit = getDoorHit(event);
+    if (doorHit?.object?.userData?.floorKey !== undefined) {
+      toggleDoor(doorHit.object.userData.floorKey);
+      return;
+    }
+
+    // Fan / damper clicks drive the ctx override.
+    const selHit = getSelectableHit(event);
+    if (selHit && selHit.kind && selHit.kind !== 'door-level') {
+      selectMesh(selHit);
+      return;
+    }
+
+    // Background click — clear any override so we fall back to tool:stair-params.
+    clearSelection();
   });
 
   canvas.addEventListener('pointermove', event => {
@@ -2649,13 +2744,20 @@ function wire3DInteractions() {
 
     hideTooltip();
     const doorHit = getDoorHit(event);
-    canvas.style.cursor = doorHit ? 'pointer' : 'grab';
+    if (doorHit) { canvas.style.cursor = 'pointer'; return; }
+    const selHit = getSelectableHit(event);
+    canvas.style.cursor = selHit ? 'pointer' : 'grab';
   });
 
   canvas.addEventListener('pointerleave', () => {
     hideTooltip();
     canvas.style.cursor = 'grab';
     pointerStart = null;
+  });
+
+  // Esc clears ctx override selection.
+  window.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && _ctxOverride) clearSelection();
   });
 }
 
@@ -2699,6 +2801,7 @@ function build3D() {
   hoverTargets.length = 0;
   fanRotors.length = 0;
   fanHousings.length = 0;
+  selectableTargets.length = 0;
   hideTooltip();
 
   const W = state.shaftW;
@@ -2846,10 +2949,13 @@ function build3D() {
     leaf.userData.floorKey = floorKey;
     leaf.userData.closedRot = 0;
     leaf.userData.targetRot = 0;
+    leaf.userData.kind = 'door-level';
+    leaf.userData.floor = floorKey;
     leaf.castShadow = true;
     shaftGroup.add(frame);
     shaftGroup.add(leaf);
     doorLeaves.push(leaf);
+    selectableTargets.push(leaf);
 
     const arrow = new THREE.ArrowHelper(
       new THREE.Vector3(side === 'right' ? 1 : -1, 0, 0),
@@ -2885,6 +2991,34 @@ function build3D() {
     shaftGroup.add(barGroup);
     forceBars.push({group: barGroup, track, fill, floorKey});
     hoverTargets.push(track, fill);
+
+    // Damper mesh: small rectangular box above each door (above lintel on the
+    // landing side). Makes the already-wired `sel:stair-damper` ctx reachable
+    // via canvas click (see selectMesh('damper') / _pickUserDataNode).
+    const damperMat = new THREE.MeshStandardMaterial({
+      color: 0x3a3f4a,
+      roughness: .45,
+      metalness: .75,
+      emissive: 0x111418,
+      emissiveIntensity: .12
+    });
+    const damperMesh = new THREE.Mesh(
+      new THREE.BoxGeometry(0.6, 0.15, 0.1),
+      damperMat
+    );
+    const damperY = floorBaseY + floorH - 0.4;
+    if (side === 'right') {
+      damperMesh.position.set(D / 2 + 0.06, damperY, 0);
+      damperMesh.rotation.y = Math.PI / 2;
+    } else {
+      damperMesh.position.set(-D / 2 - 0.06, damperY, 0);
+      damperMesh.rotation.y = -Math.PI / 2;
+    }
+    damperMesh.castShadow = true;
+    const floorIdx = 'f' + floorKey;
+    damperMesh.userData = { kind: 'damper', floorId: floorIdx, id: 'damper-' + floorIdx };
+    shaftGroup.add(damperMesh);
+    selectableTargets.push(damperMesh);
   }
 
   for (let floorKey = -basements; floorKey < floors; floorKey++) {
@@ -2943,14 +3077,17 @@ function build3D() {
     }
   }
 
-  const placeFan = (y, direction) => {
+  const placeFan = (y, direction, id) => {
     const housing = new THREE.Mesh(
       new THREE.CylinderGeometry(0.65, 0.65, 0.35, 16),
       fanHousingMat.clone()
     );
     housing.position.set(0, y, 0);
+    housing.userData.kind = 'fan';
+    housing.userData.id = id;
     shaftGroup.add(housing);
     fanHousings.push(housing);
+    selectableTargets.push(housing);
 
     const rotor = new THREE.Group();
     for (let i = 0; i < 4; i++) {
@@ -2961,18 +3098,23 @@ function build3D() {
       blade.rotation.y = i * Math.PI / 2;
       blade.position.set(0, 0, 0);
       blade.translateX(0.3);
+      blade.userData.kind = 'fan';
+      blade.userData.id = id;
       rotor.add(blade);
+      selectableTargets.push(blade);
     }
     rotor.position.set(0, y, 0);
     rotor.userData.spin = direction === 'up' ? 1 : -1;
+    rotor.userData.kind = 'fan';
+    rotor.userData.id = id;
     shaftGroup.add(rotor);
     fanRotors.push(rotor);
   };
 
   const fanYBottom = -basements * floorH - 0.2;
   const fanYTop = floors * floorH + 0.2;
-  if (state.supply === 'bottom' || state.supply === 'both') placeFan(fanYBottom, 'up');
-  if (state.supply === 'top' || state.supply === 'both') placeFan(fanYTop, 'down');
+  if (state.supply === 'bottom' || state.supply === 'both') placeFan(fanYBottom, 'up', 'bottom');
+  if (state.supply === 'top' || state.supply === 'both') placeFan(fanYTop, 'down', 'top');
   if (state.supply === 'per-floor') {
     for (let idx = 0; idx < floors; idx++) {
       const sideFan = new THREE.Mesh(
@@ -2980,8 +3122,12 @@ function build3D() {
         fanHousingMat.clone()
       );
       sideFan.position.set(-D / 2 + 0.3, idx * floorH + floorH / 2, -W / 2 + 0.3);
+      sideFan.userData.kind = 'fan';
+      sideFan.userData.id = 'mid-' + idx;
+      sideFan.userData.floor = idx;
       shaftGroup.add(sideFan);
       fanHousings.push(sideFan);
+      selectableTargets.push(sideFan);
     }
   }
 
@@ -3167,7 +3313,118 @@ function redraw() {
   drawPlan();
   build3D();
   try { renderCtxPanel(); } catch {}
+  try { _pip && _pip.update(); } catch {}
   try { if (typeof autosave === 'function') autosave(); } catch {}
+}
+
+// ==== PIP (Picture-in-Picture) — portable .ep-pip draggable mini-view ====
+// Uses window.EditorPIP.attach() from /calc/_editor-pip.js
+let _pip = null;
+
+function pipDraw2D(svg) {
+  // Mini plan: shaft rectangle + door markers per floor (top-down schematic)
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const w = Math.max(1, state.shaftW);
+  const d = Math.max(1, state.shaftD);
+  const pad = 0.4;
+  svg.setAttribute('viewBox', `${-pad} ${-pad} ${w + 2*pad} ${d + 2*pad}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  // shaft outline
+  const rect = document.createElementNS(ns, 'rect');
+  rect.setAttribute('x', 0); rect.setAttribute('y', 0);
+  rect.setAttribute('width', w); rect.setAttribute('height', d);
+  rect.setAttribute('fill', 'var(--sur-2)');
+  rect.setAttribute('stroke', 'var(--navy)');
+  rect.setAttribute('stroke-width', '0.04');
+  svg.appendChild(rect);
+  // door — draw on the side indicated by doorPos for active floor
+  const side = getDoorSideForFloor(state.activeFloor || 0);
+  const doorW = Math.min(0.9, w * 0.5);
+  let dx1, dx2, dy;
+  if (state.doorPos === 'front' || state.doorPos === 'alternate') {
+    // front = bottom edge in plan
+    dx1 = (w - doorW) / 2;
+    dx2 = dx1 + doorW;
+    dy = d;
+  } else {
+    // side = left edge
+    dx1 = (side === 'right') ? w : 0;
+    dx2 = dx1;
+    dy = (d - doorW) / 2;
+  }
+  const line = document.createElementNS(ns, 'line');
+  if (dx1 === dx2) {
+    line.setAttribute('x1', dx1); line.setAttribute('y1', dy);
+    line.setAttribute('x2', dx2); line.setAttribute('y2', dy + doorW);
+  } else {
+    line.setAttribute('x1', dx1); line.setAttribute('y1', dy);
+    line.setAttribute('x2', dx2); line.setAttribute('y2', dy);
+  }
+  const isOpen = state.openDoors && state.openDoors.has(state.activeFloor || 0);
+  line.setAttribute('stroke', isOpen ? 'var(--blue)' : 'var(--navy)');
+  line.setAttribute('stroke-width', '0.12');
+  line.setAttribute('stroke-linecap', 'round');
+  if (!isOpen) line.setAttribute('stroke-dasharray', '0.16 0.10');
+  svg.appendChild(line);
+  // label
+  const txt = document.createElementNS(ns, 'text');
+  txt.setAttribute('x', w/2); txt.setAttribute('y', d/2);
+  txt.setAttribute('text-anchor', 'middle');
+  txt.setAttribute('dominant-baseline', 'middle');
+  txt.setAttribute('font-size', Math.min(w, d) * 0.18);
+  txt.setAttribute('fill', 'var(--text-3)');
+  txt.textContent = formatFloorShort(state.activeFloor || 0);
+  svg.appendChild(txt);
+}
+
+function pipDraw3D(svg) {
+  // Axonometric sketch — extruded shaft with per-floor lines
+  svg.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const w = Math.max(1, state.shaftW);
+  const d = Math.max(1, state.shaftD);
+  const H = (state.floors + state.basement) * Math.max(1.8, state.floorH || 3);
+  const iso = (x, y, z) => [x - y * 0.5, -z + (x + y) * 0.3];
+  const pts = [
+    iso(0, 0, 0), iso(w, 0, 0), iso(w, d, 0), iso(0, d, 0),
+    iso(0, 0, H), iso(w, 0, H), iso(w, d, H), iso(0, d, H)
+  ];
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const p of pts) {
+    minX = Math.min(minX, p[0]); minY = Math.min(minY, p[1]);
+    maxX = Math.max(maxX, p[0]); maxY = Math.max(maxY, p[1]);
+  }
+  const pad = 0.6;
+  svg.setAttribute('viewBox', `${minX-pad} ${minY-pad} ${maxX-minX+pad*2} ${maxY-minY+pad*2}`);
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  const faces = [
+    [pts[0], pts[1], pts[5], pts[4]], // front
+    [pts[1], pts[2], pts[6], pts[5]], // right
+    [pts[4], pts[5], pts[6], pts[7]]  // top
+  ];
+  for (const f of faces) {
+    const pg = document.createElementNS(ns, 'polygon');
+    pg.setAttribute('points', f.map(p => p.join(',')).join(' '));
+    pg.setAttribute('fill', 'var(--sur-2)');
+    pg.setAttribute('stroke', 'var(--navy)');
+    pg.setAttribute('stroke-width', '0.04');
+    pg.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(pg);
+  }
+  // per-floor lines on front face
+  const totalFloors = state.floors + state.basement;
+  const fh = H / Math.max(1, totalFloors);
+  for (let i = 1; i < totalFloors; i++) {
+    const z = i * fh;
+    const a = iso(0, 0, z), b = iso(w, 0, z);
+    const ln = document.createElementNS(ns, 'line');
+    ln.setAttribute('x1', a[0]); ln.setAttribute('y1', a[1]);
+    ln.setAttribute('x2', b[0]); ln.setAttribute('y2', b[1]);
+    ln.setAttribute('stroke', 'var(--text-3)');
+    ln.setAttribute('stroke-width', '0.03');
+    svg.appendChild(ln);
+  }
 }
 
 function resetState() {
@@ -3575,6 +3832,21 @@ function registerStairPanels() {
 function buildCtxFromState() {
   const results = state.results || (computeResults(), state.results);
   const cls = currentClass();
+  // Explicit 3D-selection override wins (set by selectMesh via pointerup).
+  if (_ctxOverride && _ctxOverride.type) {
+    // Refresh live-computed fields for known types so the panel reflects
+    // the current state without forcing callers to re-select after edits.
+    if (_ctxOverride.type === 'sel:stair-fan') {
+      _ctxOverride.data = {
+        ..._ctxOverride.data,
+        location: state.supply,
+        dp: state.dp,
+        flow: results ? +((results.requiredSupplyQ ?? 0).toFixed(2)) : (_ctxOverride.data.flow || 0),
+        requiredSupplyQ: results ? results.requiredSupplyQ : null
+      };
+    }
+    return _ctxOverride;
+  }
   // If a door is open we show its sel:door-level context
   const activeFloor = state.activeFloor;
   const hasOpenDoor = state.openDoors.size > 0 && isValidFloorKey(activeFloor) && state.openDoors.has(activeFloor);
@@ -3625,6 +3897,25 @@ function buildCtxFromState() {
 
 function onCtxField(key, value) {
   const ctx = buildCtxFromState();
+  if (ctx.type === 'sel:stair-fan') {
+    if (key === 'location') state.supply = value;
+    else if (key === 'flow') { /* flow is derived from computed Q — not mutated directly */ }
+    else if (key === 'dp') state.dp = Math.round(parseFloat(value) || state.dp);
+    else return;
+    reflectInputsFromState();
+    syncSegmentsFromState();
+    redraw();
+    renderCtxPanel();
+    autosave();
+    return;
+  }
+  if (ctx.type === 'sel:stair-damper') {
+    // Dampers aren't in state yet — just persist edits onto the override so
+    // the panel reflects user input within the session.
+    if (_ctxOverride && _ctxOverride.data) _ctxOverride.data[key] = value;
+    renderCtxPanel();
+    return;
+  }
   if (ctx.type === 'sel:door-level') {
     // Edits on a specific door — currently we update global door dims (same as sidebar).
     if (key === 'w') state.doorW = clamp(parseInt(value) || state.doorW, 700, 1800);
@@ -3834,6 +4125,18 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   updateProjectBadge();
   renderCtxPanel();
+  // Attach portable PIP to stage
+  try {
+    const stageEl = document.querySelector('.sp-stage');
+    if (stageEl && window.EditorPIP) {
+      _pip = window.EditorPIP.attach(stageEl, {
+        title: 'მიმოხილვა',
+        persistKey: 'eng_stair_pip_v1',
+        draw2D: pipDraw2D,
+        draw3D: pipDraw3D
+      });
+    }
+  } catch (e) { console.warn('PIP attach failed', e); }
 });
 
 window.addEventListener('beforeprint', syncSummary);

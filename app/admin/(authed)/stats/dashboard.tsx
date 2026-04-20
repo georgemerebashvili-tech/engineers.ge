@@ -280,8 +280,22 @@ function ChartTooltip({active, payload, label}: {active?: boolean; payload?: {na
   );
 }
 
-function EmptyState() {
-  return <div className="py-8 text-center text-sm text-fg-muted">ცარიელია</div>;
+function EmptyState({label = 'მონაცემები ჯერ არ არის'}: {label?: string} = {}) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 py-10 text-center">
+      <span
+        aria-hidden
+        className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-dashed border-bdr bg-sur-2 text-text-3"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 12a9 9 0 1 0 9-9" />
+          <path d="M3 12 12 3" />
+        </svg>
+      </span>
+      <div className="text-[12px] font-semibold text-text-2">{label}</div>
+      <div className="text-[11px] text-text-3">როცა traffic გაიზრდება, აქ გამოჩნდება ჩარტი</div>
+    </div>
+  );
 }
 
 function formatDuration(ms: number) {

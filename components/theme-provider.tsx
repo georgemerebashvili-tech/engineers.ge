@@ -3,6 +3,8 @@
 import {createContext, useCallback, useContext, useEffect, useMemo, useState} from 'react';
 
 const TINT_KEY = 'bg-tint';
+const LAST_LIGHT_KEY = 'bg-tint-last-light';
+const LAST_DARK_KEY = 'bg-tint-last-dark';
 const DARK_THRESHOLD = 50;
 const DEFAULT_LIGHT = 80;
 const DEFAULT_DARK = 20;
@@ -45,6 +47,8 @@ export function ThemeProvider({children}: {children: React.ReactNode}) {
     apply(tint);
     try {
       localStorage.setItem(TINT_KEY, String(tint));
+      const key = tint < DARK_THRESHOLD ? LAST_DARK_KEY : LAST_LIGHT_KEY;
+      localStorage.setItem(key, String(tint));
     } catch {}
   }, [tint]);
 
@@ -53,7 +57,25 @@ export function ThemeProvider({children}: {children: React.ReactNode}) {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setTintState((prev) => (prev < DARK_THRESHOLD ? DEFAULT_LIGHT : DEFAULT_DARK));
+    setTintState((prev) => {
+      const goingToLight = prev < DARK_THRESHOLD;
+      const storedKey = goingToLight ? LAST_LIGHT_KEY : LAST_DARK_KEY;
+      const fallback = goingToLight ? DEFAULT_LIGHT : DEFAULT_DARK;
+      try {
+        const raw = localStorage.getItem(storedKey);
+        if (raw !== null) {
+          const n = Number(raw);
+          if (Number.isFinite(n)) {
+            const clamped = Math.min(100, Math.max(0, n));
+            const inCorrectZone = goingToLight
+              ? clamped >= DARK_THRESHOLD
+              : clamped < DARK_THRESHOLD;
+            if (inCorrectZone) return clamped;
+          }
+        }
+      } catch {}
+      return fallback;
+    });
   }, []);
 
   const isDark = tint < DARK_THRESHOLD;

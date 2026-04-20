@@ -8,6 +8,8 @@ import {
   Layers,
   Thermometer,
   Gauge,
+  Ruler,
+  Building2,
   type LucideIcon
 } from 'lucide-react';
 import {Container} from './container';
@@ -22,6 +24,7 @@ type System = {
   href: string | null;
   accent: string;
   externalHtml?: string;
+  isNew?: boolean;
 };
 
 const SYSTEMS: System[] = [
@@ -83,6 +86,36 @@ const SYSTEMS: System[] = [
     toolsCount: 2,
     href: '/calc/silencer',
     accent: 'var(--grn)'
+  },
+  {
+    slug: 'plan-editor',
+    icons: [{icon: Ruler, color: 'var(--blue)'}],
+    title: 'გეგმის რედაქტორი',
+    desc: 'Coohom-style CAD: კედლები, კარ/ფანჯარა, ჯეტ ფანები, ოთახები, 3D · DXF import/export · AI walls',
+    toolsCount: 1,
+    href: '/calc/wall-editor',
+    accent: 'var(--blue)',
+    isNew: true
+  },
+  {
+    slug: 'building-composer',
+    icons: [{icon: Building2, color: 'var(--navy)'}],
+    title: 'შენობის აღმშენებლობა',
+    desc: 'მრავალსართულიანი stacked 3D, connections (stair/lift/atrium), auto-detect',
+    toolsCount: 1,
+    href: '/calc/building-composer',
+    accent: 'var(--navy)',
+    isNew: true
+  },
+  {
+    slug: 'ifc-viewer',
+    icons: [{icon: Building2, color: 'var(--blue)'}],
+    title: 'IFC / BIM Viewer',
+    desc: 'IFC მოდელი 3D-ში · walls/spaces/slabs · physics overlay (heat loss, orientation, type)',
+    toolsCount: 1,
+    href: '/calc/ifc-viewer',
+    accent: 'var(--blue)',
+    isNew: true
   }
 ];
 
@@ -108,9 +141,19 @@ export function CalcGrid() {
             const active = s.toolsCount > 0 && !!s.href;
             const card = (
               <div
-                className={`group relative h-full bg-sur border rounded-[var(--radius-card)] p-3.5 md:p-4 lg:p-5 shadow-[var(--shadow-card)] transition-all ${
-                  active ? 'hover:border-blue hover:-translate-y-0.5' : 'opacity-80'
+                className={`group relative h-full bg-sur border rounded-[var(--radius-card)] p-3 md:p-4 lg:p-5 shadow-[var(--shadow-card)] transition-all ${
+                  active
+                    ? 'hover:border-blue hover:-translate-y-0.5'
+                    : 'opacity-60 grayscale-[60%] border-dashed'
                 }`}
+                style={
+                  active
+                    ? undefined
+                    : {
+                        backgroundImage:
+                          'repeating-linear-gradient(-45deg, transparent, transparent 8px, color-mix(in srgb, var(--text-3) 6%, transparent) 8px, color-mix(in srgb, var(--text-3) 6%, transparent) 10px)'
+                      }
+                }
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-1.5">
@@ -129,17 +172,24 @@ export function CalcGrid() {
                       </span>
                     ))}
                   </div>
-                  {active ? (
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-blue bg-blue-lt border border-blue-bd rounded-full px-2 py-0.5">
-                      {s.toolsCount} ხელსაწყო
-                    </span>
-                  ) : (
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-text-3 bg-sur-2 border rounded-full px-2 py-0.5">
-                      მალე
-                    </span>
-                  )}
+                  <div className="flex items-center gap-1.5">
+                    {s.isNew && active && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-red bg-red-lt border border-red rounded-full px-2 py-0.5 animate-pulse">
+                        NEW
+                      </span>
+                    )}
+                    {active ? (
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-blue bg-blue-lt border border-blue-bd rounded-full px-2 py-0.5">
+                        {s.toolsCount} ხელსაწყო
+                      </span>
+                    ) : (
+                      <span className="text-[9px] font-bold uppercase tracking-wider text-ora bg-ora-lt border border-ora-bd rounded-full px-2 py-0.5">
+                        ⏳ მალე
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <h3 className={`text-base font-bold text-navy mb-1.5 ${active ? 'group-hover:text-blue' : ''} transition-colors`}>
+                <h3 className={`text-sm md:text-base font-bold text-navy mb-1.5 ${active ? 'group-hover:text-blue' : ''} transition-colors`}>
                   {s.title}
                 </h3>
                 <p className="text-xs text-text-2 leading-relaxed mb-3 line-clamp-2">

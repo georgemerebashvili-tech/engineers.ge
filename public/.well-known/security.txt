@@ -1,0 +1,4 @@
+Contact: mailto:georgemerebashvili@gmail.com
+Expires: 2027-04-20T23:59:59.000Z
+Preferred-Languages: ka, en, ru
+Canonical: https://engineers.ge/.well-known/security.txt

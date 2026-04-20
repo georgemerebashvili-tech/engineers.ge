@@ -104,7 +104,7 @@ export function RegisterPromptModal({open, onClose}: Props) {
     setError(null);
 
     start(async () => {
-      let payload: {
+      const payload: {
         email: string;
         name: string;
         password: string;
@@ -521,6 +521,9 @@ function CountrySelect({
       <button
         type="button"
         onClick={() => onOpen(!open)}
+        aria-label={value ? `აირჩეული ქვეყანა: ${value.name_ka}. ცვლილებისთვის დააჭირე` : 'აირჩიე ქვეყანა'}
+        aria-haspopup="listbox"
+        aria-expanded={open}
         className="input flex w-full items-center justify-between text-left"
       >
         <span className="truncate text-[13px]">
@@ -534,32 +537,33 @@ function CountrySelect({
             <span className="text-text-3">აირჩიე</span>
           )}
         </span>
-        <ChevronDown size={14} className="text-text-3" />
+        <ChevronDown size={14} className="text-text-3" aria-hidden="true" />
       </button>
       {open && (
         <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-hidden rounded-md border border-bdr bg-sur shadow-lg">
           <div className="flex items-center gap-1.5 border-b border-bdr px-2 py-1.5">
-            <Search size={14} className="text-text-3" />
+            <Search size={14} className="text-text-3" aria-hidden="true" />
             <input
               type="text"
               value={query}
               onChange={(e) => onQuery(e.target.value)}
               placeholder="მოძებნე ან დაამატე"
+              aria-label="ქვეყნის ძებნა"
               className="flex-1 bg-transparent text-[12px] outline-none"
               autoFocus
             />
           </div>
-          <ul className="max-h-52 overflow-y-auto py-1">
+          <ul role="listbox" aria-label="ქვეყნების სია" className="max-h-52 overflow-y-auto py-1">
             {options.map((c) => (
-              <li key={c.id}>
+              <li key={c.id} role="option" aria-selected={value?.id === c.id}>
                 <button
                   type="button"
                   onClick={() => onSelect(c)}
-                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] hover:bg-sur-2 ${
+                  className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] hover:bg-sur-2 focus:bg-sur-2 focus:outline-none ${
                     value?.id === c.id ? 'bg-blue-lt text-blue' : ''
                   }`}
                 >
-                  <span>{c.flag_emoji ?? '🏳️'}</span>
+                  <span aria-hidden="true">{c.flag_emoji ?? '🏳️'}</span>
                   <span className="flex-1 truncate">{c.name_ka}</span>
                   <span className="font-mono text-[10px] text-text-3">
                     {c.code ?? ''}
@@ -579,7 +583,7 @@ function CountrySelect({
                 >
                   <Plus size={14} />
                   <span className="flex-1">
-                    დაამატე: <strong>"{query.trim()}"</strong>
+                    დაამატე: <strong>&ldquo;{query.trim()}&rdquo;</strong>
                   </span>
                 </button>
               </li>

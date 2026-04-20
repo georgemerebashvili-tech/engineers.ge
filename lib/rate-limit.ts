@@ -158,6 +158,41 @@ export async function checkMinGap(
   }
 }
 
+export type RateLimitRow = {
+  bucket: string;
+  key: string;
+  fail_count: number;
+  locked_until: string | null;
+  last_attempt: string;
+};
+
+/**
+ * Admin-only: list all rate-limit rows (both locked and recent-attempt).
+ * Used by /admin/rate-limits panel for launch-day monitoring.
+ */
+export async function listRateLimits(opts?: {
+  lockedOnly?: boolean;
+  bucket?: RateLimitBucket;
+  limit?: number;
+}): Promise<RateLimitRow[]> {
+  try {
+    let q = supabaseAdmin()
+      .from('rate_limits')
+      .select('bucket,key,fail_count,locked_until,last_attempt')
+      .order('last_attempt', {ascending: false})
+      .limit(opts?.limit ?? 300);
+    if (opts?.bucket) q = q.eq('bucket', opts.bucket);
+    if (opts?.lockedOnly) {
+      q = q.not('locked_until', 'is', null).gt('locked_until', new Date().toISOString());
+    }
+    const {data, error} = await q;
+    if (error) throw error;
+    return (data ?? []) as RateLimitRow[];
+  } catch {
+    return [];
+  }
+}
+
 /** Mark the last-attempt timestamp without counting as failure. */
 export async function stampAttempt(
   bucket: RateLimitBucket,

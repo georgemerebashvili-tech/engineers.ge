@@ -7,12 +7,12 @@ import {Globe} from 'lucide-react';
 import {useTransition} from 'react';
 
 const LABELS: Record<Locale, string> = {
-  ka: 'ქართული',
-  en: 'English',
-  ru: 'Русский',
-  tr: 'Türkçe',
-  az: 'Azərbaycan',
-  hy: 'Հայերեն'
+  ka: '🇬🇪 ქართული',
+  en: '🇬🇧 English',
+  ru: '🇷🇺 Русский',
+  tr: '🇹🇷 Türkçe',
+  az: '🇦🇿 Azərbaycan',
+  hy: '🇦🇲 Հայերեն'
 };
 
 export function LangSwitch() {
@@ -21,6 +21,8 @@ export function LangSwitch() {
   const pathname = usePathname();
   const [pending, start] = useTransition();
   const t = useTranslations('lang');
+
+  if (pathname.startsWith('/calc/')) return null;
 
   return (
     <label className="inline-flex items-center gap-2 text-sm">
@@ -33,7 +35,7 @@ export function LangSwitch() {
           const next = e.target.value as Locale;
           start(() => router.replace(pathname, {locale: next}));
         }}
-        className="bg-transparent rounded-md border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]"
+        className="bg-transparent rounded-md border px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue"
       >
         {routing.locales.map((l) => (
           <option key={l} value={l}>

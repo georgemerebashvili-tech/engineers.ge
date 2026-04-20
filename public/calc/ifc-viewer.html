@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IFC / BIM Viewer — engineers.ge</title>
+<link rel="stylesheet" href="/calc/_base.css">
+<script src="/calc/_theme-sync.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+    "web-ifc": "https://unpkg.com/web-ifc@0.0.59/web-ifc-api.js"
+  }
+}
+</script>
+<style>
+  html, body { height: 100%; overflow: hidden; }
+  body { display: flex; flex-direction: column; font-family: var(--font-sans); background: var(--bg); }
+
+  .top {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px;
+    background: var(--sur);
+    border-bottom: 1px solid var(--bdr);
+    flex: 0 0 auto;
+  }
+  .top h1 { font-size: 13px; font-weight: 700; color: var(--navy); display: flex; align-items: center; gap: 6px; }
+  .top .sep { width: 1px; height: 18px; background: var(--bdr); }
+  .top .spacer { flex: 1; }
+  .top button, .top label.btn {
+    background: var(--sur-2); border: 1px solid var(--bdr);
+    border-radius: 4px; padding: 5px 11px;
+    font-size: 11px; font-weight: 600; color: var(--text-2);
+    cursor: pointer; transition: all .12s; font-family: var(--font-sans);
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .top button:hover, .top label.btn:hover { border-color: var(--blue); color: var(--blue); }
+  .top button.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .top button.primary:hover { background: var(--navy-2); border-color: var(--navy-2); }
+  .top button.active { background: var(--blue-lt); color: var(--blue); border-color: var(--blue-bd); }
+  .top input[type=file] { display: none; }
+
+  .root {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
+  #canvas-wrap { position: relative; background: var(--bg); }
+  #canvas-wrap canvas { display: block; width: 100%; height: 100%; }
+
+  .status {
+    position: absolute; top: 10px; left: 10px;
+    background: var(--sur); border: 1px solid var(--bdr);
+    border-radius: 6px; padding: 6px 10px;
+    font-size: 11px; color: var(--text-2);
+    box-shadow: var(--shadow-sticky);
+    pointer-events: none;
+    max-width: 380px;
+  }
+  .status.error { border-color: var(--red); color: var(--red); background: var(--red-lt); }
+  .status.success { border-color: var(--grn-bd); color: var(--grn); background: var(--grn-lt); }
+
+  .legend {
+    position: absolute; bottom: 10px; left: 10px;
+    background: var(--sur); border: 1px solid var(--bdr);
+    border-radius: 6px; padding: 8px 10px;
+    font-size: 10px; color: var(--text-2);
+    box-shadow: var(--shadow-sticky);
+  }
+  .legend-row { display: flex; align-items: center; gap: 6px; padding: 2px 0; }
+  .legend-swatch { width: 14px; height: 10px; border-radius: 2px; border: 1px solid rgba(0,0,0,.15); }
+
+  .overlay-bar {
+    position: absolute; top: 10px; right: 10px;
+    background: var(--sur); border: 1px solid var(--bdr);
+    border-radius: 6px; padding: 6px; display: flex; gap: 4px;
+    box-shadow: var(--shadow-sticky);
+  }
+  .overlay-bar button {
+    background: transparent; border: 1px solid transparent;
+    border-radius: 4px; padding: 4px 10px;
+    font-size: 10px; font-weight: 600; color: var(--text-2);
+    cursor: pointer; transition: all .1s; font-family: var(--font-sans);
+  }
+  .overlay-bar button:hover { background: var(--sur-2); }
+  .overlay-bar button.active { background: var(--blue-lt); color: var(--blue); border-color: var(--blue-bd); }
+
+  .side {
+    background: var(--sur); border-left: 1px solid var(--bdr);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .side-head {
+    padding: 10px 14px; border-bottom: 1px solid var(--bdr);
+    font-size: 11px; font-weight: 700; color: var(--navy); text-transform: uppercase; letter-spacing: .5px;
+  }
+  .side-body { flex: 1; overflow: auto; padding: 10px 14px; }
+  .prop-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid var(--bdr); font-size: 11px; }
+  .prop-row .k { color: var(--text-3); }
+  .prop-row .v { color: var(--text); font-weight: 600; max-width: 180px; text-align: right; word-break: break-word; }
+  .empty { text-align: center; color: var(--text-3); font-size: 11px; padding: 40px 10px; font-style: italic; }
+
+  .stats { padding: 10px 14px; border-top: 1px solid var(--bdr); background: var(--sur-2); }
+  .stats-row { display: flex; justify-content: space-between; padding: 2px 0; font-size: 10px; }
+  .stats-row .k { color: var(--text-3); }
+  .stats-row .v { color: var(--navy); font-weight: 700; font-family: var(--font-mono); }
+
+  .hint {
+    font-size: 10px; color: var(--text-3); line-height: 1.5;
+    padding: 8px 10px; background: var(--blue-lt); border-radius: 6px;
+    margin-top: 10px;
+  }
+
+  /* Heat loss physics panel */
+  .physics {
+    padding: 10px 14px; border-top: 1px solid var(--bdr);
+    background: linear-gradient(180deg, var(--blue-lt) 0%, var(--sur) 100%);
+  }
+  .physics h3 {
+    font-size: 10px; font-weight: 800; color: var(--navy);
+    text-transform: uppercase; letter-spacing: .6px;
+    margin-bottom: 8px; display: flex; align-items: center; gap: 5px;
+  }
+  .phys-row { display: grid; grid-template-columns: 1fr 72px; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .phys-row label { font-size: 10px; color: var(--text-2); }
+  .phys-row input {
+    width: 100%; padding: 3px 6px; font-size: 11px;
+    border: 1px solid var(--bdr-2); border-radius: 3px;
+    background: var(--sur); color: var(--text);
+    font-family: var(--font-mono); text-align: right;
+  }
+  .phys-row input:focus { outline: none; border-color: var(--blue); background: #fff; }
+  .phys-preset {
+    display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0;
+  }
+  .phys-preset button {
+    padding: 3px 7px; font-size: 9px; font-weight: 600;
+    border: 1px solid var(--bdr); background: var(--sur);
+    border-radius: 10px; color: var(--text-2);
+    cursor: pointer; font-family: var(--font-sans);
+  }
+  .phys-preset button:hover { border-color: var(--blue); color: var(--blue); }
+  .phys-preset button.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  .phys-results {
+    margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--bdr);
+  }
+  .phys-total {
+    text-align: center; padding: 8px; border-radius: 6px;
+    background: var(--sur); border: 1px solid var(--bdr);
+    margin-bottom: 8px;
+  }
+  .phys-total .val {
+    font-family: var(--font-mono); font-size: 18px; font-weight: 800; color: var(--navy);
+  }
+  .phys-total .unit { font-size: 10px; color: var(--text-3); margin-left: 4px; }
+  .phys-total .sub { font-size: 9px; color: var(--text-3); margin-top: 2px; }
+  .phys-orient {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+    margin-bottom: 8px;
+  }
+  .phys-orient .o {
+    text-align: center; padding: 5px 3px; border-radius: 4px;
+    background: var(--sur); border: 1px solid var(--bdr);
+  }
+  .phys-orient .o .dir { font-size: 9px; color: var(--text-3); font-weight: 700; letter-spacing: .5px; }
+  .phys-orient .o .q { font-size: 10px; font-weight: 700; color: var(--navy); font-family: var(--font-mono); }
+  .phys-top {
+    font-size: 9px; color: var(--text-2); line-height: 1.7;
+  }
+  .phys-top .t-row {
+    display: flex; justify-content: space-between;
+    padding: 2px 6px; border-radius: 3px; margin-bottom: 2px;
+  }
+  .phys-top .t-row:nth-child(1) { background: rgba(220,30,30,.12); }
+  .phys-top .t-row:nth-child(2) { background: rgba(220,80,30,.1); }
+  .phys-top .t-row:nth-child(3) { background: rgba(220,130,30,.08); }
+  .phys-top .t-row .name { color: var(--text); }
+  .phys-top .t-row .q { color: var(--navy); font-weight: 700; font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>🏠 IFC / BIM Viewer</h1>
+  <span class="sep"></span>
+  <label class="btn" for="file-input">
+    📂 ატვირთე IFC
+    <input id="file-input" type="file" accept=".ifc">
+  </label>
+  <button id="btn-sample" class="primary">📦 Sample მოდელი</button>
+  <span class="sep"></span>
+  <button id="btn-reset">🔄 View Reset</button>
+  <div class="spacer"></div>
+  <span id="file-label" style="font-size:10px;color:var(--text-3)"></span>
+</div>
+
+<div class="root">
+  <div id="canvas-wrap">
+    <div id="status" class="status">მზადაა. დააჭირე "Sample მოდელი"-ს ან ატვირთე IFC ფაილი.</div>
+
+    <div class="overlay-bar">
+      <button id="ov-normal" class="active">🎨 ნორმალური</button>
+      <button id="ov-heat">🌡 Heat Loss</button>
+      <button id="ov-rooms">🚪 Rooms Demand</button>
+      <button id="ov-orient">🧭 Orientation</button>
+      <button id="ov-type">🏷 Type</button>
+    </div>
+
+    <div class="legend" id="legend" style="display:none"></div>
+  </div>
+
+  <aside class="side">
+    <div class="side-head">ელემენტის თვისებები</div>
+    <div class="side-body" id="props">
+      <div class="empty">დააჭირე ელემენტს 3D-ში რომ ნახო property-ები</div>
+    </div>
+
+    <div class="physics" id="physics-panel" style="display:none">
+      <h3>🌡 Heat Loss Calculator</h3>
+      <div class="phys-preset">
+        <button data-city="tbilisi" class="active">თბილისი</button>
+        <button data-city="batumi">ბათუმი</button>
+        <button data-city="kutaisi">ქუთაისი</button>
+        <button data-city="bakuriani">ბაკურიანი</button>
+        <button data-city="custom">Custom</button>
+      </div>
+      <div class="phys-row"><label>Ti — შიდა (°C)</label><input id="p-ti" type="number" value="20" step="0.5"></div>
+      <div class="phys-row"><label>To — გარე (°C)</label><input id="p-to" type="number" value="-5" step="0.5"></div>
+      <div class="phys-row"><label>U კედელი (W/m²K)</label><input id="p-uw" type="number" value="0.35" step="0.05"></div>
+      <div class="phys-row"><label>U ფანჯარა</label><input id="p-ug" type="number" value="1.8" step="0.1"></div>
+      <div class="phys-row"><label>U გადახურვა</label><input id="p-us" type="number" value="0.30" step="0.05"></div>
+      <div class="phys-row"><label>U სახურავი</label><input id="p-ur" type="number" value="0.22" step="0.05"></div>
+      <div class="phys-row"><label>Window area %</label><input id="p-wf" type="number" value="20" step="5"></div>
+      <div class="phys-row"><label>ACH (ventilation)</label><input id="p-ach" type="number" value="0.5" step="0.1"></div>
+
+      <div class="phys-results">
+        <div class="phys-total">
+          <span class="val" id="ph-total">—</span><span class="unit">W</span>
+          <div class="sub" id="ph-total-sub">—</div>
+        </div>
+        <div class="phys-orient">
+          <div class="o"><div class="dir">N</div><div class="q" id="ph-n">—</div></div>
+          <div class="o"><div class="dir">E</div><div class="q" id="ph-e">—</div></div>
+          <div class="o"><div class="dir">S</div><div class="q" id="ph-s">—</div></div>
+          <div class="o"><div class="dir">W</div><div class="q" id="ph-w">—</div></div>
+        </div>
+        <div class="phys-top" id="ph-top"></div>
+      </div>
+    </div>
+
+    <div class="stats" id="stats">
+      <div class="stats-row"><span class="k">ელემენტები</span><span class="v" id="s-count">—</span></div>
+      <div class="stats-row"><span class="k">კედლები</span><span class="v" id="s-walls">—</span></div>
+      <div class="stats-row"><span class="k">ოთახები</span><span class="v" id="s-spaces">—</span></div>
+      <div class="stats-row"><span class="k">გადახურვები</span><span class="v" id="s-slabs">—</span></div>
+      <div class="stats-row"><span class="k">ფანჯრები</span><span class="v" id="s-windows">—</span></div>
+      <div class="stats-row"><span class="k">კარები</span><span class="v" id="s-doors">—</span></div>
+      <div class="hint">ეს არის POC. რეალურ build-ში web-ifc npm package-ით ჩავრთავთ building-composer-ში. რაც აქ ჩანს — იგივე data მიაწვდის heat-loss, stair-press, CFD კალკულატორებს.</div>
+    </div>
+  </aside>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { IfcAPI } from 'web-ifc';
+
+// ==== Constants ====
+const IFC_CDN_VERSION = '0.0.59';
+const IFC_WASM_PATH = `https://unpkg.com/web-ifc@${IFC_CDN_VERSION}/`;
+
+// IFC type codes (from IFC4 spec) we care about
+const IFC_TYPES = {
+  WALL: [3512223829, 2391406946],                 // IFCWALL, IFCWALLSTANDARDCASE
+  SLAB: [1529196076],                              // IFCSLAB
+  SPACE: [3856911033],                             // IFCSPACE
+  WINDOW: [3304561284],                            // IFCWINDOW
+  DOOR: [395920057],                               // IFCDOOR
+  COLUMN: [843113511],                             // IFCCOLUMN
+  BEAM: [753842376],                               // IFCBEAM
+  ROOF: [2016517767],                              // IFCROOF
+  STAIR: [331165859],                              // IFCSTAIR
+  RAILING: [2262370178]                            // IFCRAILING
+};
+
+const TYPE_COLORS = {
+  WALL:    { color: 0xcad4e0, emissive: 0x000000, name: 'კედელი' },
+  SLAB:    { color: 0xa8b5c8, emissive: 0x000000, name: 'გადახურვა' },
+  SPACE:   { color: 0x4a9eff, emissive: 0x000000, name: 'ოთახი', opacity: 0.25 },
+  WINDOW:  { color: 0x7ed4f0, emissive: 0x000000, name: 'ფანჯარა', opacity: 0.55 },
+  DOOR:    { color: 0xc06a2a, emissive: 0x000000, name: 'კარი' },
+  COLUMN:  { color: 0x8a8a8a, emissive: 0x000000, name: 'კოლონა' },
+  BEAM:    { color: 0x9a9a9a, emissive: 0x000000, name: 'კოჭი' },
+  ROOF:    { color: 0x6b5a4a, emissive: 0x000000, name: 'სახურავი' },
+  STAIR:   { color: 0xb8a470, emissive: 0x000000, name: 'კიბე' },
+  RAILING: { color: 0x707080, emissive: 0x000000, name: 'მოაჯირი' },
+  OTHER:   { color: 0xb0b0b0, emissive: 0x000000, name: 'სხვა' }
+};
+
+// ==== Three.js scene ====
+const canvasWrap = document.getElementById('canvas-wrap');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xf5f8fc);
+
+const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 2000);
+camera.position.set(30, 30, 30);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+canvasWrap.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+
+// Lighting
+const hemi = new THREE.HemisphereLight(0xffffff, 0x8099b0, 0.6);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xffffff, 0.9);
+sun.position.set(20, 40, 15);
+sun.castShadow = true;
+sun.shadow.mapSize.width = 2048;
+sun.shadow.mapSize.height = 2048;
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 200;
+sun.shadow.camera.left = -50;
+sun.shadow.camera.right = 50;
+sun.shadow.camera.top = 50;
+sun.shadow.camera.bottom = -50;
+scene.add(sun);
+
+// Grid + ground
+const grid = new THREE.GridHelper(100, 40, 0xc0cfe0, 0xdde6f2);
+scene.add(grid);
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(200, 200),
+  new THREE.MeshStandardMaterial({ color: 0xf0f4f9, roughness: 0.95 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.01;
+ground.receiveShadow = true;
+scene.add(ground);
+
+// Model root
+const modelRoot = new THREE.Group();
+scene.add(modelRoot);
+
+function resize() {
+  const w = canvasWrap.clientWidth;
+  const h = canvasWrap.clientHeight;
+  renderer.setSize(w, h);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+resize();
+window.addEventListener('resize', resize);
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+// ==== State ====
+let ifcApi = null;
+let currentModelID = null;
+let meshes = [];                 // { mesh, typeKey, expressID, props }
+let selectedMesh = null;
+let currentOverlay = 'normal';
+
+const raycaster = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+
+// ==== UI ====
+function setStatus(msg, kind = 'info') {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.className = 'status' + (kind === 'error' ? ' error' : kind === 'success' ? ' success' : '');
+  el.style.display = 'block';
+}
+function hideStatus() { document.getElementById('status').style.display = 'none'; }
+
+function setLegend(entries) {
+  const el = document.getElementById('legend');
+  if (!entries || !entries.length) { el.style.display = 'none'; return; }
+  el.innerHTML = entries.map(e =>
+    `<div class="legend-row"><span class="legend-swatch" style="background:${e.color}"></span>${e.label}</div>`
+  ).join('');
+  el.style.display = 'block';
+}
+
+function updateStats() {
+  const count = meshes.length;
+  const byType = {};
+  meshes.forEach(m => { byType[m.typeKey] = (byType[m.typeKey] || 0) + 1; });
+  document.getElementById('s-count').textContent = count || '—';
+  document.getElementById('s-walls').textContent = byType.WALL || '—';
+  document.getElementById('s-spaces').textContent = byType.SPACE || '—';
+  document.getElementById('s-slabs').textContent = byType.SLAB || '—';
+  document.getElementById('s-windows').textContent = byType.WINDOW || '—';
+  document.getElementById('s-doors').textContent = byType.DOOR || '—';
+}
+
+function setProps(entry) {
+  const host = document.getElementById('props');
+  if (!entry) {
+    host.innerHTML = '<div class="empty">დააჭირე ელემენტს 3D-ში რომ ნახო property-ები</div>';
+    return;
+  }
+  const { typeKey, expressID, props } = entry;
+  const bbox = new THREE.Box3().setFromObject(entry.mesh);
+  const size = new THREE.Vector3();
+  bbox.getSize(size);
+  const area = (size.x * size.z).toFixed(2);
+  const volume = (size.x * size.y * size.z).toFixed(2);
+
+  const fmt = (n) => n >= 1000 ? (n / 1000).toFixed(2) + 'k' : Math.round(n).toString();
+
+  const rows = [
+    ['ტიპი', TYPE_COLORS[typeKey]?.name || 'Other'],
+    ['Express ID', '#' + expressID],
+    ['Name', props?.Name || '—'],
+    ['GlobalId', (props?.GlobalId || '—').slice(0, 22)],
+    ['სიგრძე (X)', size.x.toFixed(2) + ' m'],
+    ['სიმაღლე (Y)', size.y.toFixed(2) + ' m'],
+    ['სიგანე (Z)', size.z.toFixed(2) + ' m'],
+    ['ფართი (proj.)', area + ' m²'],
+    ['მოცულობა (bbox)', volume + ' m³']
+  ];
+
+  // Wall: quick orient + facade area
+  if (typeKey === 'WALL') {
+    const info = wallBoxInfo(entry.mesh);
+    rows.push(['ფასადი (real)', info.area.toFixed(2) + ' m²']);
+    rows.push(['Orientation', info.dir + ' (' + Math.round(info.angle) + '°)']);
+    const Uw = parseFloat(document.getElementById('p-uw')?.value) || 0.35;
+    const dT = (parseFloat(document.getElementById('p-ti')?.value) || 20)
+             - (parseFloat(document.getElementById('p-to')?.value) || -5);
+    rows.push(['Q (this wall)', fmt(info.area * Uw * dT) + ' W']);
+  }
+
+  // Space: full room demand
+  let extraHTML = '';
+  if (typeKey === 'SPACE') {
+    const d = computeRoomDemand(entry);
+    rows.push(['Floor area', d.floorArea.toFixed(1) + ' m²']);
+    rows.push(['Room volume', d.volume.toFixed(1) + ' m³']);
+    rows.push(['Walls found', d.wallsFound.toString()]);
+    const ach = parseFloat(document.getElementById('p-ach')?.value) || 0.5;
+    extraHTML = `
+      <div style="margin-top:12px;padding:10px;background:var(--blue-lt);border-radius:6px">
+        <div style="font-size:10px;font-weight:800;color:var(--navy);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">🚪 Room Heat Demand</div>
+        <div class="prop-row"><span class="k">Transmission Q</span><span class="v">${fmt(d.Qwalls)} W</span></div>
+        <div class="prop-row"><span class="k">Ventilation (ACH ${ach})</span><span class="v">${fmt(d.Qvent)} W</span></div>
+        <div class="prop-row" style="border-bottom:none;margin-top:4px;padding-top:8px;border-top:1px solid var(--bdr)"><span class="k" style="color:var(--navy);font-weight:700">TOTAL</span><span class="v" style="color:var(--ora);font-size:13px">${fmt(d.Qtotal)} W</span></div>
+        <div class="prop-row" style="border-bottom:none"><span class="k">Specific</span><span class="v">${d.wPerM2.toFixed(1)} W/m²</span></div>
+      </div>`;
+  }
+
+  host.innerHTML = rows.map(([k, v]) =>
+    `<div class="prop-row"><span class="k">${k}</span><span class="v">${v}</span></div>`
+  ).join('') + extraHTML;
+}
+
+// ==== web-ifc init ====
+async function ensureApi() {
+  if (ifcApi) return ifcApi;
+  setStatus('web-ifc WASM იტვირთება…');
+  ifcApi = new IfcAPI();
+  ifcApi.SetWasmPath(IFC_WASM_PATH, true);
+  await ifcApi.Init();
+  return ifcApi;
+}
+
+// ==== Load model ====
+async function loadModelFromBuffer(buffer, label) {
+  try {
+    document.getElementById('file-label').textContent = label || '';
+    clearModel();
+    setStatus('IFC-ის parse-ს ვაკეთებ…');
+    await ensureApi();
+    const data = new Uint8Array(buffer);
+    currentModelID = ifcApi.OpenModel(data);
+
+    setStatus('გეომეტრიის ამოღება…');
+    await new Promise(r => setTimeout(r, 30));
+
+    const typeByExpressID = new Map();
+    for (const [key, codes] of Object.entries(IFC_TYPES)) {
+      for (const code of codes) {
+        const ids = ifcApi.GetLineIDsWithType(currentModelID, code);
+        const n = ids.size();
+        for (let i = 0; i < n; i++) typeByExpressID.set(ids.get(i), key);
+      }
+    }
+
+    let total = 0;
+    const transformGroup = new THREE.Group();
+    ifcApi.StreamAllMeshes(currentModelID, (flatMesh) => {
+      const expressID = flatMesh.expressID;
+      const typeKey = typeByExpressID.get(expressID) || 'OTHER';
+      const style = TYPE_COLORS[typeKey] || TYPE_COLORS.OTHER;
+      const placedGeometries = flatMesh.geometries;
+
+      for (let i = 0; i < placedGeometries.size(); i++) {
+        const pg = placedGeometries.get(i);
+        const geom = ifcApi.GetGeometry(currentModelID, pg.geometryExpressID);
+        const verts = ifcApi.GetVertexArray(geom.GetVertexData(), geom.GetVertexDataSize());
+        const idx = ifcApi.GetIndexArray(geom.GetIndexData(), geom.GetIndexDataSize());
+
+        const bg = new THREE.BufferGeometry();
+        const positions = new Float32Array(verts.length / 2);
+        const normals = new Float32Array(verts.length / 2);
+        for (let k = 0, j = 0; j < verts.length; j += 6, k += 3) {
+          positions[k] = verts[j];
+          positions[k + 1] = verts[j + 1];
+          positions[k + 2] = verts[j + 2];
+          normals[k] = verts[j + 3];
+          normals[k + 1] = verts[j + 4];
+          normals[k + 2] = verts[j + 5];
+        }
+        bg.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        bg.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+        bg.setIndex(new THREE.BufferAttribute(new Uint32Array(idx), 1));
+
+        const colorArr = pg.color;
+        const baseColor = style.color;
+
+        const mat = new THREE.MeshStandardMaterial({
+          color: baseColor,
+          emissive: style.emissive || 0x000000,
+          transparent: !!style.opacity,
+          opacity: style.opacity || 1,
+          roughness: 0.75,
+          metalness: 0.05,
+          side: THREE.DoubleSide
+        });
+        // Hide IfcSpace by default — overlay can show them
+        if (typeKey === 'SPACE') mat.visible = false;
+
+        const mesh = new THREE.Mesh(bg, mat);
+        const m = pg.flatTransformation;
+        const matrix = new THREE.Matrix4().fromArray(m);
+        mesh.applyMatrix4(matrix);
+        mesh.castShadow = typeKey !== 'SPACE';
+        mesh.receiveShadow = true;
+        mesh.userData = { expressID, typeKey };
+
+        transformGroup.add(mesh);
+        meshes.push({ mesh, typeKey, expressID, props: null });
+        total++;
+      }
+
+    });
+
+    // IFC is Z-up; three.js is Y-up. Rotate the whole model.
+    transformGroup.rotation.x = -Math.PI / 2;
+    modelRoot.add(transformGroup);
+
+    // Fit camera
+    fitCameraToModel();
+
+    updateStats();
+    applyOverlay(currentOverlay);
+    setStatus(`წარმატებით ჩაიტვირთა — ${total} ელემენტი.`, 'success');
+    setTimeout(hideStatus, 2500);
+  } catch (err) {
+    console.error(err);
+    setStatus('შეცდომა: ' + (err.message || err), 'error');
+  }
+}
+
+function fitCameraToModel() {
+  const box = new THREE.Box3().setFromObject(modelRoot);
+  if (box.isEmpty()) return;
+  const size = new THREE.Vector3();
+  const center = new THREE.Vector3();
+  box.getSize(size);
+  box.getCenter(center);
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const dist = maxDim * 1.6;
+  camera.position.set(center.x + dist * 0.7, center.y + dist * 0.8, center.z + dist * 0.7);
+  controls.target.copy(center);
+  controls.update();
+}
+
+function clearModel() {
+  while (modelRoot.children.length) {
+    const g = modelRoot.children[0];
+    g.traverse(c => {
+      if (c.geometry) c.geometry.dispose();
+      if (c.material) {
+        if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
+        else c.material.dispose();
+      }
+    });
+    modelRoot.remove(g);
+  }
+  meshes = [];
+  selectedMesh = null;
+  if (ifcApi && currentModelID !== null) {
+    try { ifcApi.CloseModel(currentModelID); } catch {}
+    currentModelID = null;
+  }
+  setProps(null);
+  updateStats();
+  resetHeatResults();
+}
+
+// ==== Selection ====
+renderer.domElement.addEventListener('pointerdown', (e) => {
+  if (e.button !== 0) return;
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const intersectables = meshes.filter(m => m.mesh.material.visible !== false).map(m => m.mesh);
+  const hits = raycaster.intersectObjects(intersectables, false);
+  if (!hits.length) { clearSelection(); return; }
+  const hitMesh = hits[0].object;
+  const entry = meshes.find(m => m.mesh === hitMesh);
+  if (!entry) return;
+  selectMesh(entry);
+});
+
+function selectMesh(entry) {
+  clearSelection();
+  selectedMesh = entry;
+  entry.mesh.userData._origEmissive = entry.mesh.material.emissive.getHex();
+  entry.mesh.material.emissive.setHex(0x1f6fd4);
+  entry.mesh.material.emissiveIntensity = 0.35;
+
+  if (ifcApi && currentModelID !== null) {
+    try {
+      const line = ifcApi.GetLine(currentModelID, entry.expressID, true);
+      entry.props = {
+        Name: line?.Name?.value || line?.Name,
+        GlobalId: line?.GlobalId?.value || line?.GlobalId
+      };
+    } catch {}
+  }
+  setProps(entry);
+}
+
+function clearSelection() {
+  if (selectedMesh) {
+    selectedMesh.mesh.material.emissive.setHex(selectedMesh.mesh.userData._origEmissive ?? 0x000000);
+    selectedMesh.mesh.material.emissiveIntensity = 1;
+    selectedMesh = null;
+  }
+  setProps(null);
+}
+
+// ==== Overlays ====
+function applyOverlay(kind) {
+  currentOverlay = kind;
+  document.querySelectorAll('.overlay-bar button').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('ov-' + kind);
+  if (btn) btn.classList.add('active');
+  showPhysicsPanel(kind === 'heat');
+
+  const heatColor = (frac) => {
+    // 0 = blue (good) → 1 = red (bad)
+    const c = new THREE.Color();
+    c.setHSL((1 - frac) * 0.6, 0.75, 0.5);
+    return c;
+  };
+
+  if (kind === 'normal') {
+    meshes.forEach(m => {
+      const style = TYPE_COLORS[m.typeKey] || TYPE_COLORS.OTHER;
+      m.mesh.material.color.setHex(style.color);
+      m.mesh.material.visible = m.typeKey !== 'SPACE';
+      m.mesh.material.opacity = style.opacity || 1;
+      m.mesh.material.transparent = !!style.opacity;
+    });
+    setLegend(null);
+  } else if (kind === 'heat') {
+    computeHeatLoss();
+    setLegend([
+      { color: '#3366ff', label: 'დაბალი Q' },
+      { color: '#44cc66', label: 'საშუალო' },
+      { color: '#ffaa22', label: 'მაღალი' },
+      { color: '#ee3322', label: 'კრიტიკული' }
+    ]);
+  } else if (kind === 'rooms') {
+    computeRoomsDemand();
+    const spaceCount = meshes.filter(m => m.typeKey === 'SPACE').length;
+    if (!spaceCount) {
+      setLegend([{ color: '#999', label: 'ამ მოდელში IfcSpace არ არის' }]);
+    } else {
+      setLegend([
+        { color: '#3366ff', label: 'დაბალი demand' },
+        { color: '#44cc66', label: 'საშუალო' },
+        { color: '#ffaa22', label: 'მაღალი' },
+        { color: '#ee3322', label: 'კრიტიკული' }
+      ]);
+    }
+  } else if (kind === 'orient') {
+    // Color walls by facade orientation (normal direction)
+    meshes.forEach(m => {
+      if (m.typeKey !== 'WALL') {
+        m.mesh.material.opacity = 0.25;
+        m.mesh.material.transparent = true;
+        m.mesh.material.visible = m.typeKey !== 'SPACE';
+        return;
+      }
+      const box = new THREE.Box3().setFromObject(m.mesh);
+      const s = new THREE.Vector3();
+      box.getSize(s);
+      // Detect long axis — horizontal direction
+      const angle = Math.atan2(s.z, s.x);
+      const hue = ((angle + Math.PI) / (2 * Math.PI));
+      m.mesh.material.color.setHSL(hue, 0.55, 0.55);
+      m.mesh.material.visible = true;
+      m.mesh.material.opacity = 1;
+      m.mesh.material.transparent = false;
+    });
+    setLegend([
+      { color: 'hsl(0,55%,55%)', label: 'North-South' },
+      { color: 'hsl(90,55%,55%)', label: 'East-West' },
+      { color: 'hsl(180,55%,55%)', label: 'South-North' },
+      { color: 'hsl(270,55%,55%)', label: 'West-East' }
+    ]);
+  } else if (kind === 'type') {
+    meshes.forEach(m => {
+      const style = TYPE_COLORS[m.typeKey] || TYPE_COLORS.OTHER;
+      m.mesh.material.color.setHex(style.color);
+      m.mesh.material.visible = true;
+      m.mesh.material.opacity = style.opacity || 1;
+      m.mesh.material.transparent = !!style.opacity;
+    });
+    const present = [...new Set(meshes.map(m => m.typeKey))];
+    setLegend(present.map(k => ({
+      color: '#' + TYPE_COLORS[k].color.toString(16).padStart(6, '0'),
+      label: TYPE_COLORS[k].name
+    })));
+  }
+}
+
+// ==== Heat loss physics ====
+const CITY_PRESETS = {
+  tbilisi:   { ti: 20, to: -5, label: 'თბილისი (ზამთრის საანგარიშო)' },
+  batumi:    { ti: 20, to:  2, label: 'ბათუმი' },
+  kutaisi:   { ti: 20, to: -3, label: 'ქუთაისი' },
+  bakuriani: { ti: 20, to: -18, label: 'ბაკურიანი' }
+};
+
+function wallBoxInfo(mesh) {
+  const box = new THREE.Box3().setFromObject(mesh);
+  const size = new THREE.Vector3();
+  const center = new THREE.Vector3();
+  box.getSize(size);
+  box.getCenter(center);
+  // Horizontal long axis determines wall's plane. Normal is perpendicular.
+  let nx, nz;
+  if (size.x >= size.z) { nx = 0; nz = 1; } else { nx = 1; nz = 0; }
+  const longAxis = Math.max(size.x, size.z);
+  const area = longAxis * size.y;
+  // Compass: 0=N (−Z), 90=E (+X), 180=S (+Z), 270=W (−X)
+  const angle = (Math.atan2(nx, -nz) * 180 / Math.PI + 360) % 360;
+  const dir = (angle < 45 || angle >= 315) ? 'N'
+             : angle < 135 ? 'E'
+             : angle < 225 ? 'S'
+             : 'W';
+  return { area, dir, angle, size, center };
+}
+
+function facadeArea(mesh) {
+  const box = new THREE.Box3().setFromObject(mesh);
+  const s = new THREE.Vector3();
+  box.getSize(s);
+  return Math.max(s.x, s.z) * s.y;
+}
+function footprintArea(mesh) {
+  const box = new THREE.Box3().setFromObject(mesh);
+  const s = new THREE.Vector3();
+  box.getSize(s);
+  return s.x * s.z;
+}
+
+function heatColorFrac(frac) {
+  const c = new THREE.Color();
+  c.setHSL((1 - Math.max(0, Math.min(1, frac))) * 0.66, 0.85, 0.52);
+  return c;
+}
+
+function computeHeatLoss() {
+  const ti = parseFloat(document.getElementById('p-ti').value) || 20;
+  const to = parseFloat(document.getElementById('p-to').value) || -5;
+  const Uw = parseFloat(document.getElementById('p-uw').value) || 0.35;
+  const Ug = parseFloat(document.getElementById('p-ug').value) || 1.8;
+  const Us = parseFloat(document.getElementById('p-us').value) || 0.30;
+  const Ur = parseFloat(document.getElementById('p-ur').value) || 0.22;
+  const wf = (parseFloat(document.getElementById('p-wf').value) || 20) / 100;
+  const dT = ti - to;
+
+  const perMesh = []; // { entry, q, dir }
+  const byDir = { N: 0, E: 0, S: 0, W: 0, '—': 0 };
+  let total = 0;
+
+  meshes.forEach(entry => {
+    if (entry.typeKey === 'WALL') {
+      const info = wallBoxInfo(entry.mesh);
+      const wallA = info.area * (1 - wf);
+      const winA = info.area * wf;
+      const q = (wallA * Uw + winA * Ug) * dT;
+      perMesh.push({ entry, q, dir: info.dir, area: info.area });
+      byDir[info.dir] += q;
+      total += q;
+    } else if (entry.typeKey === 'ROOF') {
+      const a = footprintArea(entry.mesh);
+      const q = a * Ur * dT;
+      perMesh.push({ entry, q, dir: '—', area: a });
+      total += q;
+    } else if (entry.typeKey === 'SLAB') {
+      // only top-floor slab / ground floor slab contribute — approximate: use Us, half dT (ground contact)
+      const a = footprintArea(entry.mesh);
+      const q = a * Us * Math.max(0, dT) * 0.5;
+      perMesh.push({ entry, q, dir: '—', area: a });
+      total += q;
+    }
+  });
+
+  // Update colors: normalize by p95 so outliers don't dominate
+  const qs = perMesh.map(p => p.q).sort((a, b) => a - b);
+  const p95 = qs[Math.max(0, Math.floor(qs.length * 0.95) - 1)] || 1;
+  const qmax = Math.max(1, p95);
+
+  meshes.forEach(m => {
+    const found = perMesh.find(p => p.entry === m);
+    if (found) {
+      m.mesh.material.color.copy(heatColorFrac(found.q / qmax));
+      m.mesh.material.visible = true;
+      m.mesh.material.opacity = 1;
+      m.mesh.material.transparent = false;
+    } else if (m.typeKey === 'SPACE') {
+      m.mesh.material.visible = false;
+    } else {
+      const style = TYPE_COLORS[m.typeKey] || TYPE_COLORS.OTHER;
+      m.mesh.material.color.setHex(style.color);
+      m.mesh.material.opacity = 0.35;
+      m.mesh.material.transparent = true;
+      m.mesh.material.visible = true;
+    }
+  });
+
+  // Update UI results
+  const fmt = (n) => n >= 1000 ? (n / 1000).toFixed(2) + 'k' : Math.round(n).toString();
+  document.getElementById('ph-total').textContent = fmt(total);
+  const cityBtn = document.querySelector('.phys-preset button.active');
+  const cityKey = cityBtn?.dataset.city;
+  const cityLabel = CITY_PRESETS[cityKey]?.label || 'Custom';
+  document.getElementById('ph-total-sub').textContent =
+    `ΔT ${dT.toFixed(1)}°C · ${cityLabel} · ${perMesh.length} surface`;
+  document.getElementById('ph-n').textContent = fmt(byDir.N);
+  document.getElementById('ph-e').textContent = fmt(byDir.E);
+  document.getElementById('ph-s').textContent = fmt(byDir.S);
+  document.getElementById('ph-w').textContent = fmt(byDir.W);
+
+  // Top 3 worst
+  const top = [...perMesh].sort((a, b) => b.q - a.q).slice(0, 3);
+  document.getElementById('ph-top').innerHTML = top.map((p, i) => {
+    const name = TYPE_COLORS[p.entry.typeKey]?.name || 'surface';
+    const label = p.entry.typeKey === 'WALL' ? `${name} ${p.dir} · ${p.area.toFixed(1)} m²`
+                : `${name} · ${p.area.toFixed(1)} m²`;
+    return `<div class="t-row"><span class="name">#${i + 1} ${label}</span><span class="q">${fmt(p.q)} W</span></div>`;
+  }).join('');
+}
+
+function resetHeatResults() {
+  ['ph-total','ph-n','ph-e','ph-s','ph-w'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = '—';
+  });
+  document.getElementById('ph-total-sub').textContent = '—';
+  document.getElementById('ph-top').innerHTML = '';
+}
+
+function showPhysicsPanel(show) {
+  document.getElementById('physics-panel').style.display = show ? 'block' : 'none';
+}
+
+// City preset buttons
+document.querySelectorAll('.phys-preset button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.phys-preset button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const key = btn.dataset.city;
+    if (key && key !== 'custom' && CITY_PRESETS[key]) {
+      document.getElementById('p-ti').value = CITY_PRESETS[key].ti;
+      document.getElementById('p-to').value = CITY_PRESETS[key].to;
+      if (currentOverlay === 'heat' && meshes.length) computeHeatLoss();
+    }
+  });
+});
+
+// Live update on input change
+['p-ti','p-to','p-uw','p-ug','p-us','p-ur','p-wf','p-ach'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    // Mark city as custom when user edits T°
+    if (id === 'p-ti' || id === 'p-to') {
+      document.querySelectorAll('.phys-preset button').forEach(b => b.classList.remove('active'));
+      document.querySelector('.phys-preset button[data-city="custom"]').classList.add('active');
+    }
+    if (currentOverlay === 'heat' && meshes.length) computeHeatLoss();
+    if (currentOverlay === 'rooms' && meshes.length) computeRoomsDemand();
+    if (selectedMesh?.typeKey === 'SPACE') setProps(selectedMesh);
+  });
+});
+
+// ==== Per-room heat demand ====
+function boxesOverlap(a, b, tol = 0.3) {
+  // 2D overlap in XZ plane with small tolerance (walls may not exactly touch space box)
+  return !(a.max.x < b.min.x - tol || a.min.x > b.max.x + tol ||
+           a.max.z < b.min.z - tol || a.min.z > b.max.z + tol);
+}
+function boxesVerticallyClose(a, b, tol = 1.5) {
+  // Walls must share Y range with space (floor levels)
+  const overlap = Math.min(a.max.y, b.max.y) - Math.max(a.min.y, b.min.y);
+  return overlap > -tol;
+}
+
+function computeRoomDemand(spaceEntry) {
+  const ti = parseFloat(document.getElementById('p-ti').value) || 20;
+  const to = parseFloat(document.getElementById('p-to').value) || -5;
+  const Uw = parseFloat(document.getElementById('p-uw').value) || 0.35;
+  const Ug = parseFloat(document.getElementById('p-ug').value) || 1.8;
+  const wf = (parseFloat(document.getElementById('p-wf').value) || 20) / 100;
+  const ach = parseFloat(document.getElementById('p-ach').value) || 0.5;
+  const dT = ti - to;
+
+  const spaceBox = new THREE.Box3().setFromObject(spaceEntry.mesh);
+  const size = new THREE.Vector3();
+  spaceBox.getSize(size);
+  const volume = size.x * size.y * size.z;
+  const floorArea = size.x * size.z;
+
+  // Walls touching this space (bbox overlap heuristic)
+  const touchingWalls = [];
+  meshes.forEach(m => {
+    if (m.typeKey !== 'WALL') return;
+    const wb = new THREE.Box3().setFromObject(m.mesh);
+    if (boxesOverlap(wb, spaceBox) && boxesVerticallyClose(wb, spaceBox)) {
+      const info = wallBoxInfo(m.mesh);
+      touchingWalls.push({ entry: m, info });
+    }
+  });
+
+  // Transmission through walls (assume all touching walls are exterior for POC)
+  let Qwalls = 0;
+  touchingWalls.forEach(w => {
+    const wallA = w.info.area * (1 - wf);
+    const winA = w.info.area * wf;
+    Qwalls += (wallA * Uw + winA * Ug) * dT;
+  });
+
+  // Ventilation: Q_vent = 0.34 × V × ACH × ΔT  (W)
+  const Qvent = 0.34 * volume * ach * dT;
+
+  return {
+    volume, floorArea,
+    wallsFound: touchingWalls.length,
+    Qwalls, Qvent,
+    Qtotal: Qwalls + Qvent,
+    wPerM2: floorArea > 0 ? (Qwalls + Qvent) / floorArea : 0
+  };
+}
+
+function computeRoomsDemand() {
+  const spaces = meshes.filter(m => m.typeKey === 'SPACE');
+  if (!spaces.length) return;
+  const results = spaces.map(s => ({ entry: s, demand: computeRoomDemand(s) }));
+  const max = Math.max(1, ...results.map(r => r.demand.Qtotal));
+
+  meshes.forEach(m => {
+    if (m.typeKey === 'SPACE') {
+      const r = results.find(x => x.entry === m);
+      m.mesh.material.color.copy(heatColorFrac(r.demand.Qtotal / max));
+      m.mesh.material.visible = true;
+      m.mesh.material.opacity = 0.55;
+      m.mesh.material.transparent = true;
+    } else if (m.typeKey === 'WALL' || m.typeKey === 'SLAB' || m.typeKey === 'ROOF') {
+      const style = TYPE_COLORS[m.typeKey] || TYPE_COLORS.OTHER;
+      m.mesh.material.color.setHex(style.color);
+      m.mesh.material.visible = true;
+      m.mesh.material.opacity = 0.25;
+      m.mesh.material.transparent = true;
+    } else {
+      const style = TYPE_COLORS[m.typeKey] || TYPE_COLORS.OTHER;
+      m.mesh.material.color.setHex(style.color);
+      m.mesh.material.opacity = style.opacity || 1;
+      m.mesh.material.transparent = !!style.opacity;
+      m.mesh.material.visible = true;
+    }
+  });
+}
+
+// ==== Wire up buttons ====
+document.getElementById('file-input').addEventListener('change', async (e) => {
+  const f = e.target.files?.[0];
+  if (!f) return;
+  const buf = await f.arrayBuffer();
+  await loadModelFromBuffer(buf, f.name);
+});
+
+document.getElementById('btn-sample').addEventListener('click', async () => {
+  setStatus('Sample მოდელის ჩამოტვირთვა…');
+  // Small IFC sample from IFC.js test repo
+  const urls = [
+    'https://cdn.jsdelivr.net/gh/ThatOpen/engine_web-ifc@main/tests/ifcfiles/public/example.ifc',
+    'https://cdn.jsdelivr.net/gh/tomvandig/web-ifc@main/tests/ifcfiles/public/example.ifc'
+  ];
+  let buf = null;
+  let err = null;
+  for (const url of urls) {
+    try {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      buf = await r.arrayBuffer();
+      break;
+    } catch (e) { err = e; }
+  }
+  if (!buf) { setStatus('sample-ის ჩამოტვირთვა ვერ მოხერხდა: ' + err?.message, 'error'); return; }
+  await loadModelFromBuffer(buf, 'sample.ifc');
+});
+
+document.getElementById('btn-reset').addEventListener('click', () => {
+  fitCameraToModel();
+});
+
+document.getElementById('ov-normal').addEventListener('click', () => applyOverlay('normal'));
+document.getElementById('ov-heat').addEventListener('click', () => applyOverlay('heat'));
+document.getElementById('ov-rooms').addEventListener('click', () => applyOverlay('rooms'));
+document.getElementById('ov-orient').addEventListener('click', () => applyOverlay('orient'));
+document.getElementById('ov-type').addEventListener('click', () => applyOverlay('type'));
+
+// Initial overlay
+applyOverlay('normal');
+updateStats();
+</script>
+
+</body>
+</html>

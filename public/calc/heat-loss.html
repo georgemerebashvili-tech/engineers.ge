@@ -4,11 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HVAC კალკულატორი · EN 12831</title>
+<script src="/calc/_theme-sync.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{
-  --bg:#f2f5fa;--sur:#fff;--sur2:#f7f9fd;
+  --bg:#f5f8fc;--sur:#fff;--sur2:#f7f9fd;
   --bdr:#dde6f2;--bdr2:#c4d4e8;
   --navy:#1a3a6b;--blue:#1f6fd4;--blue-lt:#e8f1fd;--blue-bd:#b8d0f0;
   --ora:#c05010;--ora-lt:#fff5ea;--ora-bd:#e8c080;
@@ -17,6 +18,16 @@
   --text:#1a2840;--text2:#3d5470;--text3:#7a96b8;
   --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 14px rgba(0,0,0,.05);
   --r:10px;--mono:'IBM Plex Mono',monospace;--sans:'Plus Jakarta Sans',sans-serif;
+}
+.dark{
+  --bg:#0f1724;--sur:#151f2f;--sur2:#1b2638;
+  --bdr:#253349;--bdr2:#324566;
+  --navy:#e6ecf5;--blue:#4a9eff;--blue-lt:#15294a;--blue-bd:#2a4a7a;
+  --ora:#e87b3a;--ora-lt:#2a1d10;--ora-bd:#5a3a1a;
+  --grn:#4ade80;--grn-lt:#0f2a1a;--grn-bd:#1a4a2e;
+  --red:#f87171;--red-lt:#2a1010;
+  --text:#e6ecf5;--text2:#a7b7d1;--text3:#6b82a6;
+  --shadow:0 1px 3px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{font-size:13px}
@@ -232,7 +243,7 @@ table.eq-tbl .w40{width:40px}.eq-tbl .w50{width:50px}.eq-tbl .w60{width:60px}.eq
 /* ═══ THERMAL WALL CSS ═══ */
 
 :root{
-  --bg:#f2f5fa;--sur:#fff;--sur2:#f7f9fd;
+  --bg:#f5f8fc;--sur:#fff;--sur2:#f7f9fd;
   --bdr:#dde6f2;--bdr2:#c4d4e8;
   --navy:#1a3a6b;--blue:#1f6fd4;--blt:#e8f1fd;--bbd:#b8d0f0;
   --ora:#c05010;--olt:#fff5ea;--obd:#e8c080;
@@ -242,6 +253,16 @@ table.eq-tbl .w40{width:40px}.eq-tbl .w50{width:50px}.eq-tbl .w60{width:60px}.eq
   --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 14px rgba(0,0,0,.05);
   --r:10px;--mono:'IBM Plex Mono',monospace;--sans:'Plus Jakarta Sans',sans-serif;
   --sb:445px;
+}
+.dark{
+  --bg:#0f1724;--sur:#151f2f;--sur2:#1b2638;
+  --bdr:#253349;--bdr2:#324566;
+  --navy:#e6ecf5;--blue:#4a9eff;--blt:#15294a;--bbd:#2a4a7a;
+  --ora:#e87b3a;--olt:#2a1d10;--obd:#5a3a1a;
+  --grn:#4ade80;--glt:#0f2a1a;--gbd:#1a4a2e;
+  --red:#f87171;--rlt:#2a1010;--rbd:#552525;
+  --text:#e6ecf5;--t2:#a7b7d1;--t3:#6b82a6;
+  --shadow:0 1px 3px rgba(0,0,0,.4),0 4px 14px rgba(0,0,0,.3);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -489,7 +510,7 @@ td.dim{color:var(--t3);font-size:10px;font-style:italic;font-family:var(--sans)}
 #tw_right::-webkit-scrollbar{width:3px}
 
 :root{
-  --bg:#f2f5fa;--sur:#fff;--sur2:#f7f9fd;
+  --bg:#f5f8fc;--sur:#fff;--sur2:#f7f9fd;
   --bdr:#dde6f2;--bdr2:#c4d4e8;
   --navy:#1a3a6b;--blue:#1f6fd4;--blue-lt:#e8f1fd;--blue-bd:#b8d0f0;
   --ora:#c05010;--ora-lt:#fff5ea;--ora-bd:#e8c080;

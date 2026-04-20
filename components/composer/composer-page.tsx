@@ -723,8 +723,8 @@ export function ComposerPage() {
       setDxfStatus('parsing');
       const parsed = await parseDxfText(text, file.name);
       const cachedOverrides = parsed.entities.reduce<Record<string, DxfClassification>>((acc, entity) => {
-        if (entity.classification !== undefined) {
-          acc[entity.handle] = entity.classification ?? null;
+        if (entity.classification) {
+          acc[entity.handle] = entity.classification;
         }
         return acc;
       }, {});
@@ -934,8 +934,18 @@ export function ComposerPage() {
               selectedId={selectedId}
               pendingType={pendingType}
               gizmoMode={gizmoMode}
-              onSelect={setSelectedId}
-              onSelectDxfEntity={setDxfSelectedEntityId}
+              onSelect={(id) => {
+                setSelectedId(id);
+                if (id) {
+                  setDxfSelectedEntityId(null);
+                }
+              }}
+              onSelectDxfEntity={(id) => {
+                setDxfSelectedEntityId(id);
+                if (id) {
+                  setSelectedId(null);
+                }
+              }}
               onHoverPoint={setHoverPoint}
               onPlacePending={(transform) => {
                 if (!pendingType) return;
@@ -999,7 +1009,7 @@ export function ComposerPage() {
           <span>
             classes:{' '}
             {dxfClassificationResult
-              ? `${dxfClassificationResult.stats.wall} wall · ${dxfClassificationResult.stats.door} door · ${dxfClassificationResult.stats.window} window · ${dxfClassificationResult.stats.annotation} annotation · ${dxfClassificationResult.stats.ambiguous} ambiguous`
+              ? `${dxfClassificationResult.stats.wall} wall · ${dxfClassificationResult.stats.door} door · ${dxfClassificationResult.stats.window} window · ${dxfClassificationResult.stats.furniture} furniture · ${dxfClassificationResult.stats.annotation} annotation · ${dxfClassificationResult.stats.ambiguous} ambiguous`
               : '—'}
           </span>
           <span className="text-text-3">

@@ -1,16 +1,24 @@
 import {AdminPageHeader, AdminSection} from '@/components/admin-page-header';
 import {
   checkEnv,
+  getQuickCounts,
   listLocalMigrations,
+  probeAnthropic,
   probeMigrations,
-  probeStorageBucket
+  probeStorageBucket,
+  probeSupabaseLatency
 } from '@/lib/system-health';
 import {
   CheckCircle2,
   AlertTriangle,
+  Bug,
   Database,
+  Gauge,
   Key,
   HardDrive,
+  Rocket,
+  Sparkles,
+  ToggleRight,
   XCircle
 } from 'lucide-react';
 
@@ -20,14 +28,62 @@ export const metadata = {title: 'System health · Admin · engineers.ge'};
 export default async function HealthPage() {
   const envs = checkEnv();
   const localMigrations = listLocalMigrations();
-  const migrations = await probeMigrations();
-  const bucketProbe = await probeStorageBucket('public-assets');
+  const [migrations, bucketProbe, supabasePing, anthropicPing, counts] =
+    await Promise.all([
+      probeMigrations(),
+      probeStorageBucket('public-assets'),
+      probeSupabaseLatency(),
+      probeAnthropic(),
+      getQuickCounts()
+    ]);
 
   const requiredMissing = envs.filter((e) => e.required && !e.set);
   const migrationsPending = migrations.filter(
     (m) => m.tableExists === false || m.missingColumns.length > 0
   );
   const migrationsUnknown = migrations.filter((m) => m.tableExists === null);
+
+  // Launch-readiness scorecard — which critical checks pass?
+  const readiness = [
+    {
+      id: 'env',
+      label: 'Required env vars',
+      ok: requiredMissing.length === 0,
+      detail: requiredMissing.length === 0 ? 'ყველაფერი OK' : `${requiredMissing.length} აკლია`
+    },
+    {
+      id: 'supabase',
+      label: 'Supabase კავშირი',
+      ok: supabasePing.ok,
+      detail: supabasePing.detail
+    },
+    {
+      id: 'migrations',
+      label: 'DB migrations',
+      ok: migrationsUnknown.length === 0 && migrationsPending.length === 0,
+      detail:
+        migrationsUnknown.length > 0
+          ? 'Supabase env აკლია'
+          : migrationsPending.length === 0
+          ? 'up-to-date'
+          : `${migrationsPending.length} pending`
+    },
+    {
+      id: 'storage',
+      label: 'Storage bucket',
+      ok: bucketProbe.ok,
+      detail: bucketProbe.detail
+    },
+    {
+      id: 'anthropic',
+      label: 'Anthropic API',
+      ok: anthropicPing.ok,
+      detail: anthropicPing.detail
+    }
+  ];
+  const okCount = readiness.filter((r) => r.ok).length;
+  const totalCount = readiness.length;
+  const allGreen = okCount === totalCount;
 
   return (
     <>
@@ -37,24 +93,121 @@ export default async function HealthPage() {
         description="Env variables, Supabase connectivity, migration სტატუსი და Storage ბუკეტის ხელმისაწვდომობა."
       />
       <AdminSection>
-        <div className="grid gap-3 md:grid-cols-3">
+        {/* Launch readiness scorecard */}
+        <section
+          className={`mb-6 rounded-card border-2 p-5 ${
+            allGreen
+              ? 'border-emerald-300 bg-emerald-50'
+              : okCount >= 3
+              ? 'border-amber-300 bg-amber-50'
+              : 'border-red-300 bg-red-50'
+          }`}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <Rocket
+                  size={18}
+                  className={
+                    allGreen
+                      ? 'text-emerald-600'
+                      : okCount >= 3
+                      ? 'text-amber-600'
+                      : 'text-red-600'
+                  }
+                />
+                <h2
+                  className={`text-[16px] font-bold ${
+                    allGreen
+                      ? 'text-emerald-900'
+                      : okCount >= 3
+                      ? 'text-amber-900'
+                      : 'text-red-900'
+                  }`}
+                >
+                  {allGreen
+                    ? 'სისტემა გაშვებისთვის მზადაა'
+                    : okCount >= 3
+                    ? 'თითქმის მზადაა'
+                    : 'Launch-მდე კრიტიკული items აკლია'}
+                </h2>
+              </div>
+              <p className="mt-1 text-[12px] text-text-2">
+                {okCount}/{totalCount} კრიტიკული check გაიარა
+              </p>
+            </div>
+            <div
+              className={`rounded-full border-2 px-3 py-1 font-mono text-[14px] font-bold ${
+                allGreen
+                  ? 'border-emerald-500 bg-emerald-100 text-emerald-800'
+                  : okCount >= 3
+                  ? 'border-amber-500 bg-amber-100 text-amber-800'
+                  : 'border-red-500 bg-red-100 text-red-800'
+              }`}
+            >
+              {okCount}/{totalCount}
+            </div>
+          </div>
+          <ul className="mt-4 grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+            {readiness.map((item) => (
+              <li
+                key={item.id}
+                className="flex items-start gap-2 rounded-md bg-white/60 px-3 py-2"
+              >
+                {item.ok ? (
+                  <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-emerald-600" />
+                ) : (
+                  <XCircle size={16} className="mt-0.5 shrink-0 text-red-600" />
+                )}
+                <div className="min-w-0">
+                  <p className="text-[12px] font-semibold text-navy">{item.label}</p>
+                  <p className="truncate font-mono text-[10px] text-text-3" title={item.detail}>
+                    {item.detail}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* Quick operational counts */}
+        <div className="mb-6 grid gap-3 md:grid-cols-3">
           <HealthTile
-            title="Required env"
-            value={requiredMissing.length === 0 ? 'ყველაფერი OK' : `${requiredMissing.length} აკლია`}
-            ok={requiredMissing.length === 0}
-            icon={<Key size={14} />}
+            title="Bug reports (open)"
+            value={counts.bug_reports_open === 0 ? 'არ არის' : String(counts.bug_reports_open)}
+            ok={counts.bug_reports_open === 0}
+            icon={<Bug size={14} />}
           />
           <HealthTile
-            title="DB migrations"
+            title="Features in test"
+            value={counts.features_test === 0 ? 'არც ერთი' : String(counts.features_test)}
+            ok={true}
+            icon={<ToggleRight size={14} />}
+          />
+          <HealthTile
+            title="Features hidden"
+            value={counts.features_hidden === 0 ? 'არც ერთი' : String(counts.features_hidden)}
+            ok={true}
+            icon={<ToggleRight size={14} />}
+          />
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-3">
+          <HealthTile
+            title="Supabase ping"
             value={
-              migrationsUnknown.length > 0
-                ? 'Supabase env აკლია'
-                : migrationsPending.length === 0
-                ? 'up-to-date'
-                : `${migrationsPending.length} pending`
+              supabasePing.latency_ms !== null
+                ? `${supabasePing.latency_ms}ms`
+                : supabasePing.detail
             }
-            ok={migrationsUnknown.length === 0 && migrationsPending.length === 0}
-            icon={<Database size={14} />}
+            ok={supabasePing.ok}
+            icon={<Gauge size={14} />}
+          />
+          <HealthTile
+            title="Anthropic API"
+            value={anthropicPing.detail}
+            ok={anthropicPing.ok}
+            icon={<Sparkles size={14} />}
           />
           <HealthTile
             title="Storage bucket"

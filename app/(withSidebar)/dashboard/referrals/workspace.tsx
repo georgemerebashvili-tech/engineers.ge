@@ -443,13 +443,20 @@ export function ReferralsWorkspace() {
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={8}
-                    className="py-10 text-center text-[12px] text-text-3"
-                  >
-                    {contacts.length === 0
-                      ? 'ჯერ არ დაგიმატებია კონტაქტი. ზემოთ შეავსე ფორმა.'
-                      : 'ფილტრს არ შეესაბამება კონტაქტი'}
+                  <td colSpan={8} className="py-10">
+                    <div className="flex flex-col items-center gap-2 text-center">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-dashed border-bdr bg-sur-2 text-text-3">
+                        <TagIcon size={16} />
+                      </span>
+                      <div className="text-[12px] font-semibold text-text-2">
+                        {contacts.length === 0 ? 'კონტაქტები ცარიელია' : 'ფილტრს არ შეესაბამება'}
+                      </div>
+                      <div className="text-[11px] text-text-3">
+                        {contacts.length === 0
+                          ? 'ზემოთ შეავსე ფორმა და პირველ კონტაქტს დაამატებ'
+                          : 'სცადე სხვა ფილტრი ან search query'}
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ) : (

@@ -1,6 +1,7 @@
 import {NextResponse, type NextRequest} from 'next/server';
 import {getSession} from '@/lib/auth';
 import {purgeUser, softDeleteUser} from '@/lib/users';
+import {getIp, logAdminAction} from '@/lib/admin-audit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -26,6 +27,14 @@ export async function DELETE(
     } else {
       await softDeleteUser(id);
     }
+    await logAdminAction({
+      actor: session.user,
+      action: purge ? 'user.purge' : 'user.soft_delete',
+      target_type: 'users',
+      target_id: id,
+      metadata: {},
+      ip: getIp(req.headers)
+    });
     return NextResponse.json({ok: true});
   } catch (e) {
     return NextResponse.json(

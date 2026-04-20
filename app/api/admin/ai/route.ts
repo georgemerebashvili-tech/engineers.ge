@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server';
 import {z} from 'zod';
 import {getSession} from '@/lib/auth';
 import {getAiSettings, updateAiSettings} from '@/lib/ai-settings';
+import {getIp, logAdminAction} from '@/lib/admin-audit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -58,6 +59,19 @@ export async function POST(req: Request) {
   }
   try {
     const updated = await updateAiSettings(patch);
+    await logAdminAction({
+      actor: session.user,
+      action: 'ai.update',
+      target_type: 'ai_settings',
+      target_id: '1',
+      metadata: {
+        key_changed: 'anthropic_api_key' in patch || !!clear_key,
+        clear_key: !!clear_key,
+        default_model: patch.default_model,
+        enabled: patch.enabled
+      },
+      ip: getIp(req.headers)
+    });
     return NextResponse.json({
       ok: true,
       settings: {

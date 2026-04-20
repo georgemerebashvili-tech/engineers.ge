@@ -3,6 +3,7 @@ import {z} from 'zod';
 import {getSession} from '@/lib/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
 import {HERO_SLOT_KEYS} from '@/lib/hero-ads';
+import {getIp, logAdminAction} from '@/lib/admin-audit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -52,6 +53,14 @@ export async function PUT(req: NextRequest) {
       );
 
     if (error) throw error;
+    await logAdminAction({
+      actor: session.user,
+      action: 'tile.upsert',
+      target_type: 'hero_ad_slots',
+      target_id: body.slots.map((s) => s.slot_key).join(','),
+      metadata: {count: body.slots.length},
+      ip: getIp(req.headers)
+    });
     return NextResponse.json({ok: true});
   } catch (error) {
     console.error('[admin/tiles] upsert failed', error);

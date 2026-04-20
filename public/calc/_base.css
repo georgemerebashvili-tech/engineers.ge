@@ -5,7 +5,7 @@
  */
 
 :root {
-  --bg: #f2f5fa;
+  --bg: #f5f8fc;
   --sur: #ffffff;
   --sur-2: #f7f9fd;
   --bdr: #dde6f2;
@@ -35,7 +35,7 @@
 }
 
 .dark {
-  --bg: #0f1724;
+  --bg: #0a1230;
   --sur: #151f2f;
   --sur-2: #1b2638;
   --bdr: #253349;

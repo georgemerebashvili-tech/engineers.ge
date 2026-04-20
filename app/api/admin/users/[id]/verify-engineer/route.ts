@@ -2,6 +2,7 @@ import {NextResponse, type NextRequest} from 'next/server';
 import {z} from 'zod';
 import {getSession} from '@/lib/auth';
 import {setVerifiedEngineer} from '@/lib/users';
+import {getIp, logAdminAction} from '@/lib/admin-audit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,6 +31,14 @@ export async function POST(
       user_id: id,
       verified: body.verified,
       admin_id: null
+    });
+    await logAdminAction({
+      actor: session.user,
+      action: 'user.verify_engineer',
+      target_type: 'users',
+      target_id: id,
+      metadata: {verified: body.verified},
+      ip: getIp(req.headers)
     });
     return NextResponse.json({ok: true});
   } catch (e) {

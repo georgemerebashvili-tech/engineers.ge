@@ -2,6 +2,8 @@ import {redirect} from 'next/navigation';
 import {getSession} from '@/lib/auth';
 import {NavBar} from '@/components/nav-bar';
 import {AdminSidebar} from '@/components/admin-sidebar';
+import {AdminBreadcrumbs} from '@/components/admin-breadcrumbs';
+import {getFeatureFlags} from '@/lib/feature-flags';
 
 export default async function AuthedAdminLayout({
   children
@@ -11,6 +13,8 @@ export default async function AuthedAdminLayout({
   const session = await getSession();
   if (!session) redirect('/admin');
 
+  const flags = await getFeatureFlags();
+
   return (
     <>
       <NavBar />
@@ -18,8 +22,13 @@ export default async function AuthedAdminLayout({
         ⚠ ადმინისტრატორის პანელი · {session.user} ⚠
       </div>
       <div className="flex min-h-[calc(100vh-56px)]">
-        <AdminSidebar />
-        <main className="flex-1 bg-bg">{children}</main>
+        <AdminSidebar flags={flags} />
+        <main id="main-content" className="flex-1 bg-bg">
+          <div className="border-b bg-sur">
+            <AdminBreadcrumbs />
+          </div>
+          {children}
+        </main>
       </div>
     </>
   );

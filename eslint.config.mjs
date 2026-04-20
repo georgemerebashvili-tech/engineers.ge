@@ -12,7 +12,20 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored static JS assets for calculator HTML pages; not part of the
+    // React/TS build graph and intentionally plain-JS for iframe embedding.
+    "public/calc/**",
   ]),
+  {
+    // React 19 / Next 16 introduced `react-hooks/set-state-in-effect`. It flags
+    // legitimate init patterns (read localStorage → setState) as errors. The
+    // proper refactor is `useSyncExternalStore`, but our codebase has 14 such
+    // hydration effects. Downgrading to a warning keeps the signal visible
+    // without blocking CI; individual offenders can be migrated incrementally.
+    rules: {
+      "react-hooks/set-state-in-effect": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;

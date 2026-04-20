@@ -1,12 +1,13 @@
 import {NextResponse} from 'next/server';
 import {getSession} from '@/lib/auth';
 import {restoreUser} from '@/lib/users';
+import {getIp, logAdminAction} from '@/lib/admin-audit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function POST(
-  _req: Request,
+  req: Request,
   {params}: {params: Promise<{id: string}>}
 ) {
   const session = await getSession();
@@ -17,6 +18,13 @@ export async function POST(
 
   try {
     await restoreUser(id);
+    await logAdminAction({
+      actor: session.user,
+      action: 'user.restore',
+      target_type: 'users',
+      target_id: id,
+      ip: getIp(req.headers)
+    });
     return NextResponse.json({ok: true});
   } catch (e) {
     return NextResponse.json(

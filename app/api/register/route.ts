@@ -10,6 +10,7 @@ import {
 import {checkEmail} from '@/lib/email-fraud';
 import {issueVerifyToken, sendVerifyEmail} from '@/lib/email-verify';
 import {checkRateLimit, recordFailure} from '@/lib/rate-limit';
+import {sendWelcomeEmail} from '@/lib/email-admin';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -159,6 +160,13 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.error('[register] verify-email issuance failed', e);
     }
+
+    // Welcome email (fire-and-forget — user already got the 200)
+    void sendWelcomeEmail({
+      email: user.email,
+      name: user.name,
+      language: data.language
+    });
 
     const res = NextResponse.json({
       ok: true,

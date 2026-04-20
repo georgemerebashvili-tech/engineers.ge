@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# engineers.ge · pre-push hook
+# Runs the local launch-check gate (typecheck + lint advisory + smoke) before
+# code reaches the remote. Prevents "oops-CI-failed" rounds.
+#
+# Installed via `core.hooksPath .githooks` (see package.json `prepare` script).
+# Bypass in true emergencies with: git push --no-verify
+#
+# Skip conditions:
+#   - Pushing to a tag ref → skip (releases should be explicit)
+#   - CI env detected → skip (CI will run its own checks)
+#   - SMOKE_URL unreachable → skip the smoke step, still run typecheck
+
+set -e
+
+if [ -n "$CI" ]; then
+  echo "→ CI detected; skipping pre-push checks (CI will run them)."
+  exit 0
+fi
+
+if [ -n "$SKIP_GIT_HOOKS" ]; then
+  echo "→ SKIP_GIT_HOOKS set; skipping pre-push checks."
+  exit 0
+fi
+
+RED=$'\033[31m'
+GREEN=$'\033[32m'
+YELLOW=$'\033[33m'
+DIM=$'\033[2m'
+BOLD=$'\033[1m'
+RESET=$'\033[0m'
+
+echo ""
+echo "${BOLD}engineers.ge · pre-push gate${RESET}"
+echo "${DIM}(override with: git push --no-verify)${RESET}"
+echo ""
+
+# Typecheck is cheap + high signal; always run.
+echo "${BOLD}▶ typecheck${RESET}"
+if ! npm run -s typecheck; then
+  echo ""
+  echo "${RED}✗ typecheck failed — push aborted.${RESET}"
+  exit 1
+fi
+
+# Smoke — only if a dev server appears to be running. We don't want to boot one
+# here (slow); if user hasn't got dev:3001 up, skip smoke with a note.
+SMOKE_URL="${SMOKE_URL:-http://localhost:3001}"
+if curl -s -o /dev/null --max-time 2 "$SMOKE_URL/robots.txt"; then
+  echo ""
+  echo "${BOLD}▶ smoke${RESET} ${DIM}(${SMOKE_URL})${RESET}"
+  if ! SMOKE_URL="$SMOKE_URL" npm run -s smoke; then
+    echo ""
+    echo "${RED}✗ smoke failed — push aborted.${RESET}"
+    exit 1
+  fi
+else
+  echo "${YELLOW}⚠ skipping smoke — no dev server reachable at $SMOKE_URL${RESET}"
+  echo "${DIM}  (start with \`npm run dev\` or override: SMOKE_URL=… git push)${RESET}"
+fi
+
+echo ""
+echo "${GREEN}${BOLD}✓ pre-push OK — proceeding with push${RESET}"
+echo ""

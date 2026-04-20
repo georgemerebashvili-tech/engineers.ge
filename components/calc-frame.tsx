@@ -27,6 +27,7 @@ export function CalcFrame({slug: _slug, title, icon: _icon, standard: _standard,
     return (
       <div className="fixed inset-0 z-[60] flex flex-col bg-bg">
         <iframe
+          key={src}
           src={src}
           title={title}
           className="w-full flex-1 block"
@@ -56,6 +57,7 @@ export function CalcFrame({slug: _slug, title, icon: _icon, standard: _standard,
   return (
     <div className="relative bg-bg w-full h-full">
       <iframe
+        key={src}
         src={src}
         title={title}
         className="w-full h-full block"

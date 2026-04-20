@@ -32,6 +32,7 @@ const FILTER_OPTIONS: Array<{value: DxfClassificationFilter; label: string}> = [
   {value: 'wall', label: 'კედლები'},
   {value: 'door', label: 'კარები'},
   {value: 'window', label: 'ფანჯრები'},
+  {value: 'furniture', label: 'ავეჯი'},
   {value: 'annotation', label: 'ანოტაციები'},
   {value: 'ambiguous', label: 'გაურკვეველი'}
 ];
@@ -152,6 +153,7 @@ export function DxfPanel({
                 <div className="rounded-[6px] border border-blue-bd bg-white px-2.5 py-2">
                   {classificationResult.stats.total} entities · {classificationResult.stats.wall} walls ·{' '}
                   {classificationResult.stats.door} doors · {classificationResult.stats.window} windows ·{' '}
+                  {classificationResult.stats.furniture} furniture ·{' '}
                   {classificationResult.stats.annotation} annotations ·{' '}
                   {classificationResult.stats.ambiguous} ambiguous
                 </div>

@@ -781,6 +781,15 @@
               ],
               onChange: v => hx.onField('swing', v) })
           ) : null,
+          kind === 'door' ? field('მდგომარეობა',
+            segControl({ value: d.doorState || 'auto',
+              options: [
+                { value: 'auto', label: 'Auto' },
+                { value: 'open', label: 'ღია' },
+                { value: 'closed', label: 'დახურულ.' }
+              ],
+              onChange: v => hx.onField('doorState', v) })
+          ) : null,
           kind === 'door' ? field('სახანძრო კლასი',
             selectInput({ value: d.fireRating || 'none',
               options: [
@@ -791,6 +800,10 @@
                 { value: 'ei120', label: 'EI 120' }
               ],
               onChange: v => hx.onField('fireRating', v) })
+          ) : null,
+          kind === 'door' ? field('ევაკუაცია',
+            toggle({ value: !!d.leadsOutside, label: 'გარეთ გასასვლელია',
+              onChange: v => hx.onField('leadsOutside', v) })
           ) : null,
           kind === 'window' ? field('ჩარჩო',
             selectInput({ value: d.frame || 'pvc-white',
@@ -1036,6 +1049,7 @@
                 { value: 'bathroom', label: 'სველი წერტ.' },
                 { value: 'corridor', label: 'დერეფანი' },
                 { value: 'stair', label: 'სადარბაზო' },
+                { value: 'elevator', label: 'ლიფტის უჯრედი' },
                 { value: 'parking', label: 'პარკინგი' },
                 { value: 'tech', label: 'სატექნიკო' }
               ],
@@ -1043,6 +1057,24 @@
           ),
           d.perim != null ? stat('პერიმეტრი', d.perim.toFixed(2) + ' მ') : null,
           d.volume != null ? stat('მოცულობა', d.volume.toFixed(2) + ' მ³') : null,
+          d.type === 'parking' ? h('div', { class: 'ep-field-grid' },
+            field(
+              h('label', { class: 'ep-label' }, 'მანქანები'),
+              numInput({ value: d.carCount, min: 0, max: 5000, step: 1,
+                onInput: v => hx.onField('carCount', v) })
+            ),
+            field(
+              h('label', { class: 'ep-label' }, 'ციკლი/სთ'),
+              numInput({ value: d.carTurnoverPerHour, min: 0, max: 10, step: 0.05,
+                onInput: v => hx.onField('carTurnoverPerHour', v) })
+            )
+          ) : null,
+          d.type === 'parking' ? field(
+            h('label', { class: 'ep-label' }, 'CO ',
+              h('span', { class: 'ep-unit' }, '(გ/ციკლი)')),
+            numInput({ value: d.coGramsPerCycle, min: 0, max: 500, step: 1, unit: 'გ',
+              onInput: v => hx.onField('coGramsPerCycle', v) })
+          ) : null,
           h('div', { class: 'ep-divider' }),
           toggle({ value: !!d.labelVisible, label: 'ლეიბლი ჩანს',
             onChange: v => hx.onField('labelVisible', v) }),
@@ -1210,11 +1242,33 @@
       case 'column':
         return o.shape === 'round'
           ? `<svg width="100%" height="100%" viewBox="0 0 28 28"><circle cx="14" cy="14" r="8" fill="${c}" opacity=".85"/></svg>`
+          : o.shape === 'rect'
+            ? `<svg width="100%" height="100%" viewBox="0 0 28 28"><rect x="8" y="4" width="12" height="20" fill="${c}" opacity=".85"/></svg>`
+            : o.shape === 'l-shape'
+              ? `<svg width="100%" height="100%" viewBox="0 0 28 28"><path d="M6 6h16v5h-11v11H6z" fill="${c}" opacity=".85"/></svg>`
           : `<svg width="100%" height="100%" viewBox="0 0 28 28"><rect x="6" y="6" width="16" height="16" fill="${c}" opacity=".85"/></svg>`;
       case 'jetfan':
         return `<svg width="100%" height="100%" viewBox="0 0 48 28"><circle cx="14" cy="14" r="9" fill="none" stroke="${c}" stroke-width="1.6"/><path d="M14 6v16M6 14h16" stroke="${c}" stroke-width="1"/><path d="M25 14h18M40 11l3 3-3 3" fill="none" stroke="${c}" stroke-width="1.4"/></svg>`;
       case 'exhaust':
-        return `<svg width="100%" height="100%" viewBox="0 0 28 28"><rect x="4" y="4" width="20" height="20" fill="none" stroke="${c}" stroke-width="1.5"/><path d="M8 8l12 12M20 8l-12 12" stroke="${c}" stroke-width="1"/></svg>`;
+        if (o.family === 'ahu') {
+          return `<svg width="100%" height="100%" viewBox="0 0 36 24"><rect x="3" y="5" width="30" height="14" fill="rgba(56,85,114,.12)" stroke="#385572" stroke-width="1.2"/><path d="M9 9h18M9 12h18M9 15h18" stroke="#385572" stroke-width=".9"/><text x="18" y="21" font-size="5" text-anchor="middle" fill="#385572" font-family="monospace">AHU</text></svg>`;
+        }
+        if (o.family === 'smoke-fan') {
+          return `<svg width="100%" height="100%" viewBox="0 0 28 28"><rect x="4" y="4" width="20" height="20" fill="rgba(212,74,60,.12)" stroke="#d44a3c" stroke-width="1.4"/><circle cx="14" cy="14" r="3.2" fill="#d44a3c" opacity=".85"/><path d="M8 14h12M14 8v12" stroke="#d44a3c" stroke-width="1"/></svg>`;
+        }
+        if (o.shape === 'round') {
+          return o.system === 'supply'
+            ? `<svg width="100%" height="100%" viewBox="0 0 28 28"><circle cx="14" cy="14" r="9" fill="none" stroke="${c}" stroke-width="1.5"/><path d="M14 8v12M8 14h12" stroke="${c}" stroke-width="1.2"/></svg>`
+            : `<svg width="100%" height="100%" viewBox="0 0 28 28"><circle cx="14" cy="14" r="9" fill="none" stroke="#4d6580" stroke-width="1.5"/><path d="M9 9l10 10M19 9L9 19" stroke="#4d6580" stroke-width="1.1"/></svg>`;
+        }
+        if (o.shape === 'rect') {
+          return o.system === 'supply'
+            ? `<svg width="100%" height="100%" viewBox="0 0 32 24"><rect x="4" y="5" width="24" height="14" fill="none" stroke="${c}" stroke-width="1.4"/><path d="M16 8v8M10 12h12" stroke="${c}" stroke-width="1.1"/></svg>`
+            : `<svg width="100%" height="100%" viewBox="0 0 32 24"><rect x="4" y="5" width="24" height="14" fill="none" stroke="#4d6580" stroke-width="1.4"/><path d="M10 8l12 8M22 8l-12 8" stroke="#4d6580" stroke-width="1"/></svg>`;
+        }
+        return o.system === 'supply'
+          ? `<svg width="100%" height="100%" viewBox="0 0 28 28"><rect x="4" y="4" width="20" height="20" fill="none" stroke="${c}" stroke-width="1.5"/><path d="M14 8v12M8 14h12" stroke="${c}" stroke-width="1"/></svg>`
+          : `<svg width="100%" height="100%" viewBox="0 0 28 28"><rect x="4" y="4" width="20" height="20" fill="none" stroke="#4d6580" stroke-width="1.5"/><path d="M8 8l12 12M20 8l-12 12" stroke="#4d6580" stroke-width="1"/></svg>`;
       case 'furniture': {
         const k = (o.kind || '');
         const bg = '#b8a078';

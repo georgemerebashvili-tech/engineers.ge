@@ -113,12 +113,10 @@
 
   function debounce(fn, ms) {
     let t;
-    return function () {
-      const args = arguments;
-      const ctx = this;
+    return function (...args) {
       clearTimeout(t);
       t = setTimeout(function () {
-        fn.apply(ctx, args);
+        fn.apply(null, args);
       }, ms);
     };
   }

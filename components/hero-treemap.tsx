@@ -261,9 +261,22 @@ function Cell(props: CellProps) {
                   img
                 });
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onBio?.({
+                    name: personalName,
+                    title: personalTitle,
+                    bio: bioText,
+                    img
+                  });
+                }
+              }}
+              tabIndex={0}
               style={{cursor: 'pointer'}}
               role="button"
-              aria-label="ბიოგრაფია"
+              aria-label={`ბიოგრაფია${personalName ? `: ${personalName}` : ''}`}
             >
               <rect
                 x={bx}
@@ -335,6 +348,13 @@ function Cell(props: CellProps) {
     return (
       <g
         onClick={handleClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
+        tabIndex={0}
         style={{cursor: 'pointer'}}
         role="button"
         aria-label={ariaLabel}
@@ -522,6 +542,8 @@ export function HeroTreemap({slots = DEFAULT_SLOTS}: {slots?: HeroAdSlot[]}) {
             <img
               src={lightbox.img.replace(/w=\d+/, 'w=1800').replace(/q=\d+/, 'q=90')}
               alt={lightbox.label}
+              loading="lazy"
+              decoding="async"
               className="max-h-[80vh] w-auto rounded-lg shadow-2xl"
             />
             <figcaption className="text-white/90 text-sm font-medium">
@@ -559,6 +581,8 @@ export function HeroTreemap({slots = DEFAULT_SLOTS}: {slots?: HeroAdSlot[]}) {
               <img
                 src={bio.img.replace(/w=\d+/, 'w=1200').replace(/q=\d+/, 'q=85')}
                 alt={bio.name}
+                loading="lazy"
+                decoding="async"
                 className="w-full h-64 object-cover"
               />
             )}

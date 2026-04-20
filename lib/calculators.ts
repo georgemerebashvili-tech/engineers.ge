@@ -109,6 +109,15 @@ export const CALCULATORS: CalcMeta[] = [
     tag: 'CAD',
     standard: 'Building composer',
     useProjects: true
+  },
+  {
+    slug: 'ifc-viewer',
+    icon: '🏠',
+    title: 'IFC / BIM Viewer',
+    desc: 'IFC მოდელების 3D viewer · walls, spaces, slabs, physics overlay (heat loss, orientation)',
+    tag: 'CAD',
+    standard: 'IFC 4 · web-ifc',
+    useProjects: false
   }
 ];
 

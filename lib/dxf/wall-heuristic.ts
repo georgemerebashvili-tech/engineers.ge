@@ -209,16 +209,17 @@ function gatherLineSegments(entities: DxfEntity[], predicate?: (entity: DxfEntit
 
 function applyLayerRules(entities: DxfEntity[], overrides: Record<string, DxfClassification>) {
   return entities.map((entity) => {
-    const override = Object.prototype.hasOwnProperty.call(overrides, entity.handle)
+    const hasOverride = Object.prototype.hasOwnProperty.call(overrides, entity.handle);
+    const classification = hasOverride
       ? overrides[entity.handle]
-      : entity.classification;
-    const classification = override ?? classificationFromLayer(entity.layer) ?? (entity.geometry.kind === 'text' ? 'annotation' : null);
+      : entity.classification ?? classificationFromLayer(entity.layer) ?? (entity.geometry.kind === 'text' ? 'annotation' : null);
     return withClassification(entity, classification);
   });
 }
 
-function applyClosedPolylineWalls(entities: DxfEntity[]) {
+function applyClosedPolylineWalls(entities: DxfEntity[], lockedHandles: Set<string>) {
   return entities.map((entity) => {
+    if (lockedHandles.has(entity.handle)) return entity;
     if (entity.classification) return entity;
     if (entity.geometry.kind !== 'polyline') return entity;
     if (!entity.geometry.closed || entity.geometry.points.length < 3) return entity;
@@ -226,19 +227,21 @@ function applyClosedPolylineWalls(entities: DxfEntity[]) {
   });
 }
 
-function applyParallelWallPairs(entities: DxfEntity[]) {
+function applyParallelWallPairs(entities: DxfEntity[], lockedHandles: Set<string>) {
   const nextEntities = [...entities];
   const byId = new Map(nextEntities.map((entity, index) => [entity.id, index]));
   const groups = new Map<string, Segment[]>();
 
-  gatherLineSegments(nextEntities, (entity) => !entity.classification || entity.classification === 'wall').forEach(
-    (segment) => {
-      const bucket = `${segment.layer}:${Math.round(segment.angleDeg)}`;
-      const list = groups.get(bucket) ?? [];
-      list.push(segment);
-      groups.set(bucket, list);
-    }
-  );
+  gatherLineSegments(
+    nextEntities,
+    (entity) =>
+      !lockedHandles.has(entity.handle) && (!entity.classification || entity.classification === 'wall')
+  ).forEach((segment) => {
+    const bucket = `${segment.layer}:${Math.round(segment.angleDeg)}`;
+    const list = groups.get(bucket) ?? [];
+    list.push(segment);
+    groups.set(bucket, list);
+  });
 
   groups.forEach((segments) => {
     for (let leftIndex = 0; leftIndex < segments.length; leftIndex += 1) {
@@ -257,10 +260,10 @@ function applyParallelWallPairs(entities: DxfEntity[]) {
 
         const leftIndexInEntities = byId.get(left.entityId);
         const rightIndexInEntities = byId.get(right.entityId);
-        if (leftIndexInEntities != null) {
+        if (leftIndexInEntities != null && !lockedHandles.has(nextEntities[leftIndexInEntities].handle)) {
           nextEntities[leftIndexInEntities] = withClassification(nextEntities[leftIndexInEntities], 'wall');
         }
-        if (rightIndexInEntities != null) {
+        if (rightIndexInEntities != null && !lockedHandles.has(nextEntities[rightIndexInEntities].handle)) {
           nextEntities[rightIndexInEntities] = withClassification(nextEntities[rightIndexInEntities], 'wall');
         }
       }
@@ -270,13 +273,13 @@ function applyParallelWallPairs(entities: DxfEntity[]) {
   return nextEntities;
 }
 
-function applyDoorLineHeuristic(entities: DxfEntity[]) {
+function applyDoorLineHeuristic(entities: DxfEntity[], lockedHandles: Set<string>) {
   const nextEntities = [...entities];
   const byId = new Map(nextEntities.map((entity, index) => [entity.id, index]));
   const wallSegments = nextEntities.flatMap((entity) => (entity.classification === 'wall' ? entitySegments(entity) : []));
   const candidates = gatherLineSegments(
     nextEntities,
-    (entity) => !entity.classification && entity.geometry.kind === 'line'
+    (entity) => !lockedHandles.has(entity.handle) && !entity.classification && entity.geometry.kind === 'line'
   );
 
   candidates.forEach((candidate) => {
@@ -304,20 +307,22 @@ function applyDoorLineHeuristic(entities: DxfEntity[]) {
   return nextEntities;
 }
 
-function applyDoorArcHeuristic(entities: DxfEntity[]) {
+function applyDoorArcHeuristic(entities: DxfEntity[], lockedHandles: Set<string>) {
   const nextEntities = [...entities];
   const byId = new Map(nextEntities.map((entity, index) => [entity.id, index]));
   const wallSegments = nextEntities.flatMap((entity) => (entity.classification === 'wall' ? entitySegments(entity) : []));
 
   nextEntities.forEach((entity) => {
+    if (lockedHandles.has(entity.handle)) return;
     if (entity.classification || entity.geometry.kind !== 'arc') return;
-    if (entity.geometry.radius < MIN_DOOR_ARC_RADIUS || entity.geometry.radius > MAX_DOOR_ARC_RADIUS) return;
+    const geometry = entity.geometry;
+    if (geometry.radius < MIN_DOOR_ARC_RADIUS || geometry.radius > MAX_DOOR_ARC_RADIUS) return;
 
-    const sweep = Math.abs(entity.geometry.endAngle - entity.geometry.startAngle);
+    const sweep = Math.abs(geometry.endAngle - geometry.startAngle);
     if (sweep < Math.PI / 8 || sweep > (3 * Math.PI) / 4) return;
 
     const nearWall = wallSegments.some(
-      (segment) => pointToSegmentDistance(entity.geometry.center, segment) <= DOOR_WALL_DISTANCE
+      (segment) => pointToSegmentDistance(geometry.center, segment) <= DOOR_WALL_DISTANCE
     );
     if (!nearWall) return;
 
@@ -369,7 +374,9 @@ function buildLayerStats(entities: DxfEntity[]) {
 
 function buildCache(entities: DxfEntity[]) {
   return entities.reduce<Record<string, DxfClassification>>((acc, entity) => {
-    acc[entity.handle] = entity.classification ?? null;
+    if (entity.classification) {
+      acc[entity.handle] = entity.classification;
+    }
     return acc;
   }, {});
 }
@@ -385,11 +392,12 @@ export function classifyEntities(
   dxf: DxfLoaded,
   overrides: Record<string, DxfClassification> = {}
 ): ClassificationResult {
+  const lockedHandles = new Set(Object.keys(overrides));
   const withLayers = applyLayerRules(dxf.entities, overrides);
-  const withClosedPolylines = applyClosedPolylineWalls(withLayers);
-  const withParallelWalls = applyParallelWallPairs(withClosedPolylines);
-  const withDoorLines = applyDoorLineHeuristic(withParallelWalls);
-  const nextEntities = applyDoorArcHeuristic(withDoorLines);
+  const withClosedPolylines = applyClosedPolylineWalls(withLayers, lockedHandles);
+  const withParallelWalls = applyParallelWallPairs(withClosedPolylines, lockedHandles);
+  const withDoorLines = applyDoorLineHeuristic(withParallelWalls, lockedHandles);
+  const nextEntities = applyDoorArcHeuristic(withDoorLines, lockedHandles);
   const classified = nextEntities.filter((entity) => Boolean(entity.classification));
   const ambiguous = nextEntities.filter((entity) => !entity.classification);
 

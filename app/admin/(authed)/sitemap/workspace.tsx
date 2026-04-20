@@ -194,7 +194,7 @@ export function SitemapWorkspace({
           {!deployHookConfigured && (
             <p className="mt-2 text-[11px] text-text-3">
               დასაყენებლად: Vercel Dashboard → Project → Settings → Git → Deploy
-              Hooks → "Create Hook" (production). URL-ი ჩაწერე{' '}
+              Hooks → &ldquo;Create Hook&rdquo; (production). URL-ი ჩაწერე{' '}
               <code className="rounded bg-sur-2 px-1">VERCEL_DEPLOY_HOOK_URL</code>{' '}
               env-ში (Preview + Production).
             </p>

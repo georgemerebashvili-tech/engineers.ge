@@ -68,9 +68,17 @@ export default async function AdminReferralsPage() {
             <h2 className="text-sm font-bold text-navy">Top referrers</h2>
           </div>
           {topReferrers.length === 0 ? (
-            <p className="px-4 py-4 text-xs text-text-3">
-              ჯერ არცერთი referral არ გამოეგზავნილა.
-            </p>
+            <div className="flex flex-col items-center gap-1.5 px-4 py-8 text-center">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-bdr bg-sur-2 text-text-3">
+                <Users size={16} />
+              </span>
+              <p className="text-[12px] font-semibold text-text-2">
+                ჯერ არცერთი referral არ გამოეგზავნილა
+              </p>
+              <p className="text-[11px] text-text-3">
+                პირველი დარეგისტრირებული მოწვევის შემდეგ აქ top-referrers სია გამოჩნდება
+              </p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-[12px]">
@@ -119,7 +127,17 @@ export default async function AdminReferralsPage() {
             </Link>
           </div>
           {referredUsers.length === 0 ? (
-            <p className="px-4 py-4 text-xs text-text-3">ცარიელი.</p>
+            <div className="flex flex-col items-center gap-1.5 px-4 py-8 text-center">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-dashed border-bdr bg-sur-2 text-text-3">
+                <Users size={16} />
+              </span>
+              <p className="text-[12px] font-semibold text-text-2">
+                referred მომხმარებლები ჯერ არ არიან
+              </p>
+              <p className="text-[11px] text-text-3">
+                ვინც referral ბმულით დარეგისტრირდება, იქ გამოჩნდება ვერიფიკაციისთვის
+              </p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-[12px]">

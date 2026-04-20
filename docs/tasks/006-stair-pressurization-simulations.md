@@ -178,5 +178,5 @@ Reuse Mesh+BoxGeometry per door, parented to door frame. material.color გა�
 
 ---
 
-**Status:** pending
+**Status:** completed (2026-04-19 · build verified)
 **Handoff to Codex after:** Claude approves visual refinements finished

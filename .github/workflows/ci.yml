@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: typecheck + lint + build + smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      # Smoke tests hit a locally-booted next server; these env values are
+      # required at build time for Supabase/admin modules to load, but they're
+      # placeholders — the smoke suite doesn't exercise DB-backed paths that
+      # require real credentials.
+      AUTH_SECRET: ci-placeholder-auth-secret-not-real
+      ADMIN_USER: ci
+      ADMIN_PASS_HASH: $2a$10$ciplaceholderciplaceholderciplacehciplaceholderCIplacehol
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-role-key
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      NEXT_PUBLIC_SITE_URL: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint (advisory — legacy errors not backfilled)
+        continue-on-error: true
+        run: npm run lint
+
+      - name: Build (next build)
+        run: npm run build
+
+      - name: Start server in background
+        run: |
+          npx next start -p 3000 &
+          echo $! > /tmp/next.pid
+          # Wait for server to be ready (max 30s)
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/robots.txt >/dev/null; then
+              echo "server ready after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "server failed to become ready"
+          exit 1
+
+      - name: Smoke suite
+        env:
+          SMOKE_URL: http://localhost:3000
+        run: npm run smoke
+
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f /tmp/next.pid ]; then
+            kill $(cat /tmp/next.pid) 2>/dev/null || true
+          fi

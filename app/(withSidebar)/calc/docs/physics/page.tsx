@@ -79,7 +79,7 @@ const USED_IN = {
   floor: {href: '/calc/floor-pressurization', label: 'კორიდორის დაწნეხვა'}
 } as const;
 
-const FORMULAS: FormulaDoc[] = [
+const FORMULAS = [
   {
     id: 'air-change-rate',
     title: 'ჰაერცვლის კოეფიციენტი',
@@ -371,7 +371,8 @@ const FORMULAS: FormulaDoc[] = [
     },
     usedIn: [USED_IN.stair, USED_IN.floor]
   }
-].sort((a, b) => a.title.localeCompare(b.title, 'ka'));
+] satisfies FormulaDoc[];
+FORMULAS.sort((a, b) => a.title.localeCompare(b.title, 'ka'));
 
 function fmtHeight(value: number) {
   return `${f2(value)} მ`;
@@ -631,7 +632,7 @@ export default function PhysicsDocsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {active.variables.map((item) => (
+                    {(active.variables as FormulaVar[]).map((item) => (
                       <tr key={item.symbol} className="border-b border-bdr last:border-b-0">
                         <td className="px-3 py-2 text-[12px] font-semibold text-navy">
                           <InlineMath math={item.symbol} />

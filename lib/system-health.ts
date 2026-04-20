@@ -58,12 +58,17 @@ const ENV_SPECS: Array<Omit<EnvCheck, 'set'>> = [
   {
     key: 'RESEND_API_KEY',
     required: false,
-    purpose: 'email verification sender (Resend)'
+    purpose: 'email sender (verification + admin bug notifications)'
   },
   {
     key: 'MAIL_FROM',
     required: false,
-    purpose: 'from-address for verification emails'
+    purpose: 'from-address for outgoing emails'
+  },
+  {
+    key: 'ADMIN_EMAIL',
+    required: false,
+    purpose: 'recipient for admin alerts (bug reports, incidents)'
   },
   {
     key: 'CRON_SECRET',
@@ -84,6 +89,11 @@ const ENV_SPECS: Array<Omit<EnvCheck, 'set'>> = [
     key: 'NEXT_PUBLIC_SITE_URL',
     required: false,
     purpose: 'canonical origin for sitemap/robots (prod)'
+  },
+  {
+    key: 'CLAUDE_HOOK_SECRET',
+    required: false,
+    purpose: 'Bearer token for Claude Code hook → /api/claude-sessions'
   }
 ];
 
@@ -176,6 +186,66 @@ const MIGRATION_PROBES: Array<
     probeTable: 'password_reset_tokens',
     columns: ['token', 'user_id', 'expires_at'],
     note: 'password reset tokens (1h TTL)'
+  },
+  {
+    file: '0014_claude_sessions.sql',
+    probeTable: 'claude_session_events',
+    columns: ['id', 'session_id', 'kind', 'event_at'],
+    note: 'Claude Code hook events → admin dashboard'
+  },
+  {
+    file: '0015_feature_flags.sql',
+    probeTable: 'feature_flags',
+    columns: ['key', 'status', 'updated_at'],
+    note: 'admin → feature visibility toggles (active/test/hidden)'
+  },
+  {
+    file: '0016_bug_reports.sql',
+    probeTable: 'bug_reports',
+    columns: ['id', 'feature_key', 'pathname', 'message', 'status'],
+    note: 'user-submitted bug reports from test-mode banner'
+  },
+  {
+    file: '0017_admin_audit_log.sql',
+    probeTable: 'admin_audit_log',
+    columns: ['id', 'actor', 'action', 'target_type', 'metadata'],
+    note: 'admin action forensic trail (who did what when)'
+  },
+  {
+    file: '0018_error_events.sql',
+    probeTable: 'error_events',
+    columns: ['id', 'message', 'stack', 'digest', 'pathname', 'kind', 'resolved'],
+    note: 'frontend runtime errors captured via sendBeacon'
+  },
+  {
+    file: '0019_not_found_events.sql',
+    probeTable: 'not_found_events',
+    columns: ['id', 'pathname', 'referrer', 'user_agent', 'visitor_id'],
+    note: '404 tracking — broken inbound links + referrer breakdown'
+  },
+  {
+    file: '0020_redirects.sql',
+    probeTable: 'redirects',
+    columns: ['id', 'source', 'destination', 'status_code', 'enabled', 'hit_count'],
+    note: 'admin-editable redirects (consulted by proxy, 60s cache)'
+  },
+  {
+    file: '0021_consent_log.sql',
+    probeTable: 'consent_log',
+    columns: ['id', 'visitor_id', 'analytics', 'marketing', 'action', 'pathname'],
+    note: 'cookie consent decisions — GDPR audit trail'
+  },
+  {
+    file: '0022_csp_violations.sql',
+    probeTable: 'csp_violations',
+    columns: ['id', 'document_uri', 'blocked_uri', 'violated_directive'],
+    note: 'CSP violation reports posted by browsers'
+  },
+  {
+    file: '0023_web_vitals.sql',
+    probeTable: 'web_vitals',
+    columns: ['id', 'metric', 'value', 'rating', 'pathname'],
+    note: 'Core Web Vitals (LCP/CLS/INP/FCP/TTFB) from visitors'
   }
 ];
 
@@ -221,6 +291,108 @@ export async function probeMigrations(): Promise<MigrationCheck[]> {
     });
   }
   return results;
+}
+
+export type LatencyProbe = ProbeResult & {latency_ms: number | null};
+
+/** Round-trip ping to Supabase via HEAD select. Returns latency in ms. */
+export async function probeSupabaseLatency(): Promise<LatencyProbe> {
+  let client;
+  try {
+    client = supabaseAdmin();
+  } catch (e) {
+    return {
+      ok: false,
+      latency_ms: null,
+      detail: e instanceof Error ? e.message : 'env not set'
+    };
+  }
+  const started = performance.now();
+  try {
+    const {error} = await client
+      .from('users')
+      .select('id', {count: 'exact', head: true})
+      .limit(0);
+    const latency = Math.round(performance.now() - started);
+    if (error) {
+      return {ok: false, latency_ms: latency, detail: error.message};
+    }
+    return {ok: true, latency_ms: latency, detail: `${latency}ms round-trip`};
+  } catch (e) {
+    return {
+      ok: false,
+      latency_ms: Math.round(performance.now() - started),
+      detail: e instanceof Error ? e.message : 'network error'
+    };
+  }
+}
+
+/** Verify Anthropic API key is valid by calling /v1/models (free, no token usage). */
+export async function probeAnthropic(): Promise<ProbeResult> {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) {
+    return {ok: false, detail: 'ANTHROPIC_API_KEY not set'};
+  }
+  if (!key.startsWith('sk-ant-')) {
+    return {ok: false, detail: 'key format suspicious (expected sk-ant-…)'};
+  }
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/models', {
+      method: 'GET',
+      headers: {
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01'
+      },
+      signal: AbortSignal.timeout(5000)
+    });
+    if (res.ok) return {ok: true, detail: 'API key valid'};
+    if (res.status === 401) return {ok: false, detail: 'invalid key (401)'};
+    return {ok: false, detail: `API returned ${res.status}`};
+  } catch (e) {
+    return {ok: false, detail: e instanceof Error ? e.message : 'network error'};
+  }
+}
+
+/** Quick counts for admin dashboard at-a-glance. */
+export type QuickCounts = {
+  bug_reports_open: number;
+  features_test: number;
+  features_hidden: number;
+  errors_open: number;
+};
+
+export async function getQuickCounts(): Promise<QuickCounts> {
+  const out: QuickCounts = {
+    bug_reports_open: 0,
+    features_test: 0,
+    features_hidden: 0,
+    errors_open: 0
+  };
+  try {
+    const client = supabaseAdmin();
+    const [bugs, flags, errors] = await Promise.all([
+      client
+        .from('bug_reports')
+        .select('id', {count: 'exact', head: true})
+        .in('status', ['open', 'in_progress']),
+      client.from('feature_flags').select('status'),
+      client
+        .from('error_events')
+        .select('id', {count: 'exact', head: true})
+        .eq('resolved', false)
+    ]);
+    if (!bugs.error) out.bug_reports_open = bugs.count ?? 0;
+    if (!flags.error) {
+      for (const row of (flags.data ?? []) as {status: string}[]) {
+        if (row.status === 'test') out.features_test++;
+        else if (row.status === 'hidden') out.features_hidden++;
+      }
+    }
+    if (!errors.error) out.errors_open = errors.count ?? 0;
+  } catch {
+    // Tables may not exist yet — return zeros.
+  }
+  return out;
 }
 
 export async function probeStorageBucket(bucket: string): Promise<ProbeResult> {

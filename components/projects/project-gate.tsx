@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useMemo, useRef, useState, useCallback} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {
   Plus,
@@ -20,9 +20,10 @@ import {
   duplicateProject,
   exportProject,
   importProject,
-  formatRelative,
-  type Project
+  formatRelative
 } from '@/lib/projects';
+import {Breadcrumbs} from '@/components/breadcrumbs';
+import {getTemplatesForSlug} from '@/lib/project-templates';
 
 type Props = {
   slug: string;
@@ -34,22 +35,14 @@ const PREVIEW_LIMIT = 7;
 
 export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
   const router = useRouter();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [mounted, setMounted] = useState(false);
+  const [, setRefreshIndex] = useState(0);
   const [query, setQuery] = useState('');
   const [showAll, setShowAll] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const nameInputRef = useRef<HTMLInputElement>(null);
 
-  const refresh = useCallback(() => {
-    setProjects(listProjects(slug));
-  }, [slug]);
-
-  useEffect(() => {
-    setMounted(true);
-    refresh();
-  }, [refresh]);
+  const projects = listProjects(slug);
 
   useEffect(() => {
     if (creating) nameInputRef.current?.focus();
@@ -70,6 +63,15 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
     router.push(`/calc/${slug}?project=${p.id}`);
   };
 
+  const openTemplate = (key: string) => {
+    const tmpl = getTemplatesForSlug(slug).find((t) => t.key === key);
+    if (!tmpl) return;
+    const p = createProject(slug, tmpl.state, tmpl.name);
+    router.push(`/calc/${slug}?project=${p.id}`);
+  };
+
+  const templates = getTemplatesForSlug(slug);
+
   const cancelNew = () => {
     setCreating(false);
     setNewName('');
@@ -82,12 +84,12 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
   const handleDelete = (id: string, name: string) => {
     if (!confirm(`წაშალო "${name}"? ქმედება შეუქცევადია.`)) return;
     deleteProject(id);
-    refresh();
+    setRefreshIndex((value) => value + 1);
   };
 
   const handleDuplicate = (id: string) => {
     duplicateProject(id);
-    refresh();
+    setRefreshIndex((value) => value + 1);
   };
 
   const handleExport = (id: string) => {
@@ -112,7 +114,7 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
       try {
         const text = await file.text();
         importProject(text);
-        refresh();
+        setRefreshIndex((value) => value + 1);
       } catch (e) {
         alert('JSON წაკითხვა ვერ მოხერხდა: ' + (e as Error).message);
       }
@@ -120,11 +122,13 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
     input.click();
   };
 
-  if (!mounted) return null;
-
   return (
     <div className="w-full bg-bg min-h-[calc(100vh-56px)]">
-      <div className="max-w-[1280px] mx-auto px-4 md:px-6 pt-16 md:pt-24 pb-10">
+      <div className="max-w-[1280px] mx-auto px-4 md:px-6 pt-10 md:pt-12 pb-10">
+        {/* Breadcrumb */}
+        <div className="mb-3">
+          <Breadcrumbs items={[{label: calcTitle}]} />
+        </div>
         {/* Header */}
         <div className="mb-4 flex items-end gap-3">
           {calcIcon && (
@@ -175,7 +179,7 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
               onClick={() => setShowAll((v) => !v)}
               className="inline-flex items-center gap-1.5 rounded-full border bg-sur px-3 py-2 text-xs font-semibold text-text-2 transition-colors hover:text-blue hover:border-blue"
             >
-              {showAll ? 'დაკეცვა' : `Show all · ${projects.length}`}
+              {showAll ? 'დაკეცვა' : `ყველა · ${projects.length}`}
             </button>
           )}
           <button
@@ -186,6 +190,45 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
             <Upload size={13} /> იმპორტი
           </button>
         </div>
+
+        {/* Demo templates (if available for this slug) */}
+        {templates.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-baseline gap-2 mb-3">
+              <h2 className="text-sm font-bold text-navy">სწრაფი დაწყება</h2>
+              <span className="text-[10px] text-text-3 font-mono">
+                ნიმუში პროექტები — click → ჩატვირთვა
+              </span>
+            </div>
+            <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+              {templates.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => openTemplate(t.key)}
+                  className="group flex h-[140px] flex-col items-start gap-2 rounded-[var(--radius-card)] border-2 border-bdr bg-sur p-4 text-left transition-all hover:border-blue hover:bg-blue-lt hover:shadow-[var(--shadow-card)]"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl" aria-hidden>
+                      {t.icon}
+                    </span>
+                    <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-text-3 group-hover:text-blue">
+                      დემო
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-[13px] font-bold text-navy group-hover:text-blue leading-tight">
+                      {t.name}
+                    </div>
+                    <div className="text-[11px] text-text-3 leading-snug mt-1 line-clamp-2">
+                      {t.description}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Grid */}
         <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
@@ -294,7 +337,7 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
                 <div className="aspect-[4/3] bg-bg border-b flex items-center justify-center overflow-hidden">
                   {p.thumbnail ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={p.thumbnail} alt="" className="w-full h-full object-cover" />
+                    <img src={p.thumbnail} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-text-3">
                       <FolderOpen size={36} strokeWidth={1.4} />
@@ -326,7 +369,7 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
 
         {query && filtered.length === 0 && (
           <div className="mt-6 text-center text-xs text-text-3 font-mono">
-            „{query}"-ზე შედეგი ვერ მოიძებნა
+            {`„${query}“-ზე შედეგი ვერ მოიძებნა`}
           </div>
         )}
 
@@ -337,7 +380,7 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
               onClick={() => setShowAll(true)}
               className="inline-flex items-center gap-1.5 rounded-full border bg-sur px-4 py-2 text-xs font-semibold text-blue transition-colors hover:bg-blue-lt"
             >
-              Show all · კიდევ {hiddenCount}
+              ყველა · კიდევ {hiddenCount}
             </button>
           </div>
         )}

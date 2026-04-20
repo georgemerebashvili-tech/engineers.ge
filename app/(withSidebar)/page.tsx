@@ -4,12 +4,14 @@ import {Hero} from '@/components/hero';
 import {HomeStats} from '@/components/home-stats';
 import {LegalPills} from '@/components/legal-pills';
 import {ReferralBanner} from '@/components/referral-banner';
+import {StructuredData, homeStructuredData} from '@/components/structured-data';
 
 export const revalidate = 60;
 
 export default function Page() {
   return (
     <>
+      <StructuredData data={homeStructuredData()} />
       <Container className="pt-2 pb-0">
         <ReferralBanner />
       </Container>

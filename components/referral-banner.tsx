@@ -71,24 +71,26 @@ export function ReferralBanner({
       role="status"
       className="relative overflow-hidden rounded-[var(--radius-card)] border border-blue-bd bg-blue-lt px-4 py-3 shadow-[var(--shadow-sticky)]"
     >
-      <div className="flex flex-wrap items-center gap-3">
-        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-bd bg-sur text-blue">
-          <Gift size={18} />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-semibold text-navy">
-            <span className="text-blue">{name}</span>-მა შენ მოგიწვია engineers.ge-ზე 👋
-          </p>
-          <p className="mt-0.5 text-[11.5px] text-text-2">
-            დარეგისტრირდი უფასოდ — ინჟინრულ ხელსაწყოებს გამოიყენებ და {name}-საც
-            დაეხმარები 10 ₾-ით referral პროგრამაში.
-          </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-blue-bd bg-sur text-blue">
+            <Gift size={18} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] font-semibold text-navy">
+              <span className="text-blue">{name}</span>-მა შენ მოგიწვია engineers.ge-ზე 👋
+            </p>
+            <p className="mt-0.5 text-[11.5px] text-text-2">
+              დარეგისტრირდი უფასოდ — ინჟინრულ ხელსაწყოებს გამოიყენებ და {name}-საც
+              დაეხმარები 10 ₾-ით referral პროგრამაში.
+            </p>
+          </div>
         </div>
         {onInviteClick ? (
           <button
             type="button"
             onClick={onInviteClick}
-            className="inline-flex h-9 items-center gap-1.5 rounded-full bg-blue px-3 text-[12px] font-semibold text-white transition-colors hover:bg-navy-2"
+            className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full bg-blue px-3 text-[12px] font-semibold text-white transition-colors hover:bg-navy-2 sm:w-auto"
           >
             <UserPlus size={13} /> რეგისტრაცია
           </button>

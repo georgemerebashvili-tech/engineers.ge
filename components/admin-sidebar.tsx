@@ -7,6 +7,9 @@ import {
   Pin,
   PinOff,
   LayoutDashboard,
+  Zap,
+  Mail,
+  DatabaseBackup,
   Megaphone,
   Images,
   BarChart3,
@@ -16,19 +19,33 @@ import {
   ArrowLeft,
   Users,
   Sparkles,
+  Cookie,
   Share2,
   Network,
   Activity,
+  Gauge,
+  Shield,
+  Lock,
   ListTodo,
+  Bot,
+  Bug,
+  AlertTriangle,
+  FileQuestion,
+  Rocket,
+  ArrowRightLeft,
+  ScrollText,
+  ToggleRight,
   ChevronRight,
   type LucideIcon
 } from 'lucide-react';
+import type {FeatureMap, FeatureStatus} from '@/lib/feature-flags';
 
 type NavChild = {
   label: string;
   href: string;
   disabled?: boolean;
   badge?: string;
+  flagKey?: string;
 };
 
 type NavItem = {
@@ -39,6 +56,7 @@ type NavItem = {
   onClick?: () => void;
   disabled?: boolean;
   children?: NavChild[];
+  flagKey?: string;
 };
 
 type NavSection = {
@@ -46,10 +64,15 @@ type NavSection = {
   items: NavItem[];
 };
 
+function statusOf(flags: FeatureMap | undefined, key?: string): FeatureStatus {
+  if (!key) return 'active';
+  return flags?.[key] ?? 'active';
+}
+
 const PIN_KEY = 'eng_admin_sidebar_pinned';
 const OPEN_KEY = 'eng_admin_sidebar_open_keys';
 
-export function AdminSidebar() {
+export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
   const pathname = usePathname();
   const [pinned, setPinned] = useState(false);
   const [hover, setHover] = useState(false);
@@ -110,6 +133,8 @@ export function AdminSidebar() {
 
   async function handleLogout() {
     await fetch('/api/admin/logout', {method: 'POST'});
+    // Full reload to flush admin session state after logout — intentional.
+    // eslint-disable-next-line react-hooks/immutability
     window.location.href = '/admin';
   }
 
@@ -124,16 +149,32 @@ export function AdminSidebar() {
           icon: LayoutDashboard
         },
         {
+          key: 'launch-checklist',
+          label: 'Launch checklist',
+          href: '/admin/launch-checklist',
+          icon: Rocket,
+          flagKey: 'admin.launch-checklist'
+        },
+        {
+          key: 'activity',
+          label: 'Activity',
+          href: '/admin/activity',
+          icon: Zap,
+          flagKey: 'admin.activity'
+        },
+        {
           key: 'sitemap',
           label: 'Sitemap & deploy',
           href: '/admin/sitemap',
-          icon: Network
+          icon: Network,
+          flagKey: 'admin.sitemap'
         },
         {
           key: 'todos',
           label: 'TODO pipeline',
           href: '/admin/todos',
-          icon: ListTodo
+          icon: ListTodo,
+          flagKey: 'admin.todos'
         }
       ]
     },
@@ -144,12 +185,21 @@ export function AdminSidebar() {
           key: 'hero-ads',
           label: 'Hero Ads',
           href: '/admin/tiles',
-          icon: Images
+          icon: Images,
+          flagKey: 'admin.hero-ads'
+        },
+        {
+          key: 'redirects',
+          label: 'URL redirects',
+          href: '/admin/redirects',
+          icon: ArrowRightLeft,
+          flagKey: 'admin.redirects'
         },
         {
           key: 'banners',
           label: 'ბანერები',
           icon: Images,
+          flagKey: 'admin.banners',
           children: [
             {label: 'მიმოხილვა', href: '/admin/banners'},
             {label: 'Hero Ads მართვა', href: '/admin/banners/manage'},
@@ -167,13 +217,22 @@ export function AdminSidebar() {
           key: 'users',
           label: 'რეგისტრაციები',
           href: '/admin/users',
-          icon: Users
+          icon: Users,
+          flagKey: 'admin.users'
         },
         {
           key: 'referrals',
           label: 'Referrals',
           href: '/admin/referrals',
-          icon: Share2
+          icon: Share2,
+          flagKey: 'admin.referrals'
+        },
+        {
+          key: 'consent-log',
+          label: 'Consent log',
+          href: '/admin/consent-log',
+          icon: Cookie,
+          flagKey: 'admin.consent-log'
         }
       ]
     },
@@ -184,10 +243,46 @@ export function AdminSidebar() {
           key: 'analytics',
           label: 'სტატისტიკა',
           icon: BarChart3,
+          flagKey: 'admin.stats',
           children: [
             {label: 'ზოგადი', href: '/admin/stats'},
             {label: 'კალკულატორები', href: '/admin/stats#calcs'}
           ]
+        },
+        {
+          key: 'claude-sessions',
+          label: 'Claude სესიები',
+          href: '/admin/claude-sessions',
+          icon: Bot,
+          flagKey: 'admin.claude-sessions'
+        },
+        {
+          key: 'bug-reports',
+          label: 'ხარვეზები',
+          href: '/admin/bug-reports',
+          icon: Bug,
+          flagKey: 'admin.bug-reports'
+        },
+        {
+          key: 'errors',
+          label: 'Errors (frontend)',
+          href: '/admin/errors',
+          icon: AlertTriangle,
+          flagKey: 'admin.errors'
+        },
+        {
+          key: '404s',
+          label: '404 tracking',
+          href: '/admin/404s',
+          icon: FileQuestion,
+          flagKey: 'admin.404s'
+        },
+        {
+          key: 'web-vitals',
+          label: 'Web Vitals',
+          href: '/admin/web-vitals',
+          icon: Gauge,
+          flagKey: 'admin.web-vitals'
         }
       ]
     },
@@ -195,16 +290,59 @@ export function AdminSidebar() {
       title: 'პარამეტრები',
       items: [
         {
+          key: 'features',
+          label: 'ფიჩერ-მართვა',
+          href: '/admin/features',
+          icon: ToggleRight
+        },
+        {
+          key: 'audit-log',
+          label: 'Audit log',
+          href: '/admin/audit-log',
+          icon: ScrollText,
+          flagKey: 'admin.audit-log'
+        },
+        {
           key: 'ai',
           label: 'AI (Claude)',
           href: '/admin/ai',
-          icon: Sparkles
+          icon: Sparkles,
+          flagKey: 'admin.ai'
+        },
+        {
+          key: 'emails',
+          label: 'Email preview',
+          href: '/admin/emails',
+          icon: Mail,
+          flagKey: 'admin.emails'
         },
         {
           key: 'health',
           label: 'System health',
           href: '/admin/health',
-          icon: Activity
+          icon: Activity,
+          flagKey: 'admin.health'
+        },
+        {
+          key: 'rate-limits',
+          label: 'Rate limits',
+          href: '/admin/rate-limits',
+          icon: Lock,
+          flagKey: 'admin.rate-limits'
+        },
+        {
+          key: 'csp-violations',
+          label: 'CSP violations',
+          href: '/admin/csp-violations',
+          icon: Shield,
+          flagKey: 'admin.csp-violations'
+        },
+        {
+          key: 'backup',
+          label: 'DB backup',
+          href: '/admin/backup',
+          icon: DatabaseBackup,
+          flagKey: 'admin.backup'
         },
         {
           key: 'password',
@@ -218,7 +356,7 @@ export function AdminSidebar() {
       title: 'სხვა',
       items: [
         {key: 'site', label: 'საჯარო საიტი', href: '/', icon: Home},
-        {key: 'ads-preview', label: 'რეკლამის preview', href: '/ads', icon: Megaphone},
+        {key: 'ads-preview', label: 'რეკლამის preview', href: '/ads', icon: Megaphone, flagKey: 'admin.ads-preview'},
         {
           key: 'logout',
           label: 'გასვლა',
@@ -230,15 +368,26 @@ export function AdminSidebar() {
   ];
 
   return (
-    <div
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      style={{width: pinned ? 240 : 56}}
-      className="relative shrink-0 transition-[width] duration-150 ease-out"
-    >
+    <>
+      {expanded && (
+        <button
+          type="button"
+          aria-label="დახურე admin sidebar"
+          onClick={() => { setPinned(false); setHover(false); }}
+          className="fixed inset-0 top-14 z-20 bg-navy/40 backdrop-blur-sm md:hidden"
+        />
+      )}
+      <div
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+        style={{width: pinned ? 240 : 56}}
+        className="relative shrink-0 transition-[width] duration-150 ease-out"
+      >
     <aside
       style={{width: expanded ? 240 : 56}}
-      className={`sticky top-[calc(3.5rem+1.5rem)] md:top-[calc(4rem+1.5rem)] z-30 flex h-[calc(100vh-5rem)] md:h-[calc(100vh-5.5rem)] flex-col border-r border-bdr bg-sur transition-[width] duration-150 ease-out ${
+      className={`${
+        expanded ? 'fixed md:sticky' : 'sticky'
+      } top-[calc(3.5rem+1.5rem)] md:top-[calc(4rem+1.5rem)] z-30 flex h-[calc(100vh-5rem)] md:h-[calc(100vh-5.5rem)] flex-col border-r border-bdr bg-sur shadow-lg md:shadow-none transition-[width] duration-150 ease-out ${
         !pinned && hover ? 'shadow-xl' : ''
       }`}
       aria-expanded={expanded}
@@ -274,137 +423,150 @@ export function AdminSidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto py-2">
-        {SECTIONS.map((section) => (
-          <div key={section.title} className={expanded ? 'mb-3' : 'mb-1'}>
-            {expanded && (
-              <div className="px-3 pb-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-text-3">
-                {section.title}
-              </div>
-            )}
-            <ul className="space-y-0.5 px-1.5">
-              {section.items.map((item) => {
-                const Icon = item.icon;
-                const hasChildren = !!item.children?.length;
-                const isOpen = !!openKeys[item.key];
-                const active = item.href ? isActive(item.href) : false;
-                const groupHasActiveChild = !!item.children?.some((c) =>
-                  isActive(c.href)
-                );
-                const rowBase =
-                  'group relative flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[13px] transition-colors w-full text-left';
-                const rowState = item.disabled
-                  ? 'text-text-3 opacity-60 cursor-not-allowed'
-                  : active || groupHasActiveChild
-                  ? 'bg-blue-lt text-blue font-semibold'
-                  : 'text-text-2 hover:bg-sur-2 hover:text-navy';
+        {SECTIONS.map((section) => {
+          const visibleItems = section.items.filter(
+            (item) => statusOf(flags, item.flagKey) !== 'hidden'
+          );
+          if (visibleItems.length === 0) return null;
+          return (
+            <div key={section.title} className={expanded ? 'mb-3' : 'mb-1'}>
+              {expanded && (
+                <div className="px-3 pb-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-text-3">
+                  {section.title}
+                </div>
+              )}
+              <ul className="space-y-0.5 px-1.5">
+                {visibleItems.map((item) => {
+                  const Icon = item.icon;
+                  const hasChildren = !!item.children?.length;
+                  const isOpen = !!openKeys[item.key];
+                  const active = item.href ? isActive(item.href) : false;
+                  const groupHasActiveChild = !!item.children?.some((c) =>
+                    isActive(c.href)
+                  );
+                  const itemStatus = statusOf(flags, item.flagKey);
+                  const rowBase =
+                    'group relative flex h-9 items-center gap-2.5 rounded-md px-2.5 text-[13px] transition-colors w-full text-left';
+                  const rowState = item.disabled
+                    ? 'text-text-3 opacity-60 cursor-not-allowed'
+                    : active || groupHasActiveChild
+                    ? 'bg-blue-lt text-blue font-semibold'
+                    : 'text-text-2 hover:bg-sur-2 hover:text-navy';
 
-                const rowInner = (
-                  <>
-                    <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                      <Icon size={16} strokeWidth={1.8} />
-                    </span>
-                    <span
-                      className={`flex-1 truncate transition-opacity ${
-                        expanded ? 'opacity-100' : 'opacity-0'
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-                    {hasChildren && expanded && (
-                      <ChevronRight
-                        size={14}
-                        strokeWidth={2}
-                        className={`shrink-0 text-text-3 transition-transform ${
-                          isOpen ? 'rotate-90' : ''
-                        }`}
-                      />
-                    )}
-                    {!expanded && (
+                  const rowInner = (
+                    <>
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                        <Icon size={16} strokeWidth={1.8} />
+                      </span>
                       <span
-                        role="tooltip"
-                        className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-navy px-2 py-1 text-[11px] text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+                        className={`flex-1 truncate transition-opacity ${
+                          expanded ? 'opacity-100' : 'opacity-0'
+                        }`}
                       >
                         {item.label}
                       </span>
-                    )}
-                  </>
-                );
+                      {itemStatus === 'test' && expanded && (
+                        <span className="shrink-0 rounded-full border border-amber-300 bg-amber-100 px-1.5 py-[1px] font-mono text-[9px] font-semibold text-amber-700" title="სატესტო რეჟიმი">
+                          test
+                        </span>
+                      )}
+                      {hasChildren && expanded && (
+                        <ChevronRight
+                          size={14}
+                          strokeWidth={2}
+                          aria-hidden="true"
+                          className={`shrink-0 text-text-3 transition-transform ${
+                            isOpen ? 'rotate-90' : ''
+                          }`}
+                        />
+                      )}
+                      {!expanded && (
+                        <span
+                          role="tooltip"
+                          className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-navy px-2 py-1 text-[11px] text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100"
+                        >
+                          {item.label}
+                        </span>
+                      )}
+                    </>
+                  );
 
-                return (
-                  <li key={item.key}>
-                    {hasChildren ? (
-                      <button
-                        type="button"
-                        onClick={() => toggleGroup(item.key)}
-                        className={`${rowBase} ${rowState}`}
-                        aria-expanded={isOpen}
-                      >
-                        {rowInner}
-                      </button>
-                    ) : item.onClick ? (
-                      <button
-                        type="button"
-                        onClick={item.onClick}
-                        className={`${rowBase} ${rowState}`}
-                      >
-                        {rowInner}
-                      </button>
-                    ) : item.disabled ? (
-                      <span className={`${rowBase} ${rowState}`}>{rowInner}</span>
-                    ) : (
-                      <Link href={item.href!} className={`${rowBase} ${rowState}`}>
-                        {rowInner}
-                      </Link>
-                    )}
+                  return (
+                    <li key={item.key}>
+                      {hasChildren ? (
+                        <button
+                          type="button"
+                          onClick={() => toggleGroup(item.key)}
+                          className={`${rowBase} ${rowState}`}
+                          aria-expanded={isOpen}
+                        >
+                          {rowInner}
+                        </button>
+                      ) : item.onClick ? (
+                        <button
+                          type="button"
+                          onClick={item.onClick}
+                          className={`${rowBase} ${rowState}`}
+                        >
+                          {rowInner}
+                        </button>
+                      ) : item.disabled ? (
+                        <span className={`${rowBase} ${rowState}`}>{rowInner}</span>
+                      ) : (
+                        <Link href={item.href!} className={`${rowBase} ${rowState}`}>
+                          {rowInner}
+                        </Link>
+                      )}
 
-                    {hasChildren && expanded && isOpen && (
-                      <ul className="mt-0.5 ml-[22px] space-y-0.5 border-l border-bdr pl-2">
-                        {item.children!.map((child) => {
-                          const cActive = isActive(child.href);
-                          const cState = child.disabled
-                            ? 'text-text-3 opacity-50 cursor-not-allowed'
-                            : cActive
-                            ? 'text-blue font-semibold bg-blue-lt'
-                            : 'text-text-2 hover:bg-sur-2 hover:text-navy';
-                          const cBase =
-                            'flex h-8 items-center gap-2 rounded-md px-2.5 text-[12px] transition-colors';
-                          const inner = (
-                            <>
-                              <span className="flex-1 truncate">{child.label}</span>
-                              {child.badge && (
-                                <span className="shrink-0 rounded-full border border-bdr bg-sur-2 px-1.5 py-[1px] font-mono text-[9px] font-semibold text-text-3">
-                                  {child.badge}
-                                </span>
-                              )}
-                            </>
-                          );
-                          return (
-                            <li key={`${child.label}-${child.href}`}>
-                              {child.disabled ? (
-                                <span className={`${cBase} ${cState}`}>{inner}</span>
-                              ) : (
-                                <Link
-                                  href={child.href}
-                                  className={`${cBase} ${cState}`}
-                                  onClick={() => {
-                                    const h = child.href.split('#')[1];
-                                    setHash(h ? `#${h}` : '');
-                                  }}
-                                >
-                                  {inner}
-                                </Link>
-                              )}
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ))}
+                      {hasChildren && expanded && isOpen && (
+                        <ul className="mt-0.5 ml-[22px] space-y-0.5 border-l border-bdr pl-2">
+                          {item.children!.map((child) => {
+                            const cActive = isActive(child.href);
+                            const cState = child.disabled
+                              ? 'text-text-3 opacity-50 cursor-not-allowed'
+                              : cActive
+                              ? 'text-blue font-semibold bg-blue-lt'
+                              : 'text-text-2 hover:bg-sur-2 hover:text-navy';
+                            const cBase =
+                              'flex h-8 items-center gap-2 rounded-md px-2.5 text-[12px] transition-colors';
+                            const inner = (
+                              <>
+                                <span className="flex-1 truncate">{child.label}</span>
+                                {child.badge && (
+                                  <span className="shrink-0 rounded-full border border-bdr bg-sur-2 px-1.5 py-[1px] font-mono text-[9px] font-semibold text-text-3">
+                                    {child.badge}
+                                  </span>
+                                )}
+                              </>
+                            );
+                            return (
+                              <li key={`${child.label}-${child.href}`}>
+                                {child.disabled ? (
+                                  <span className={`${cBase} ${cState}`}>{inner}</span>
+                                ) : (
+                                  <Link
+                                    href={child.href}
+                                    className={`${cBase} ${cState}`}
+                                    onClick={() => {
+                                      const h = child.href.split('#')[1];
+                                      setHash(h ? `#${h}` : '');
+                                    }}
+                                  >
+                                    {inner}
+                                  </Link>
+                                )}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
       </nav>
 
       {expanded && (
@@ -416,5 +578,6 @@ export function AdminSidebar() {
       )}
     </aside>
     </div>
+    </>
   );
 }

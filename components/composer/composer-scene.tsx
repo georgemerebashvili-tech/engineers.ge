@@ -1,12 +1,13 @@
 'use client';
 
 import {forwardRef, useEffect, useMemo, useRef, useState, type RefObject} from 'react';
-import {Canvas, useThree} from '@react-three/fiber';
+import {Canvas, useThree, type ThreeEvent} from '@react-three/fiber';
 import {Grid, Html, Line, OrbitControls, TransformControls} from '@react-three/drei';
 import * as THREE from 'three';
 import type {OrbitControls as OrbitControlsImpl} from 'three-stdlib';
 import {buildDxfThreeGroup} from '@/lib/dxf/to-three';
 import type {DxfLoaded} from '@/lib/dxf/parse';
+import type {DxfClassificationFilter} from '@/lib/dxf/wall-heuristic';
 import type {TBuilding, TModule, TModuleType, TTransform} from '@/lib/building/module-schema';
 
 type HoverPoint = {x: number; z: number} | null;
@@ -24,10 +25,13 @@ type ComposerSceneProps = {
   dxfModel: DxfLoaded | null;
   dxfVisibleLayers: string[];
   dxfShowText: boolean;
+  dxfClassificationFilter: DxfClassificationFilter;
+  dxfSelectedEntityId: string | null;
   selectedId: string | null;
   pendingType: TModuleType | null;
   gizmoMode: 'translate' | 'rotate';
   onSelect: (id: string | null) => void;
+  onSelectDxfEntity: (id: string | null) => void;
   onPlacePending: (transform: Partial<TTransform>) => void;
   onHoverPoint: (point: HoverPoint) => void;
   onTransformChange: (id: string, transform: Partial<TTransform>) => void;
@@ -62,15 +66,27 @@ function disposeObject3D(object: THREE.Object3D) {
 function DxfLayerObject({
   model,
   visibleLayers,
-  showText
+  showText,
+  classificationFilter,
+  selectedEntityId,
+  onSelectEntity
 }: {
   model: DxfLoaded;
   visibleLayers: string[];
   showText: boolean;
+  classificationFilter: DxfClassificationFilter;
+  selectedEntityId: string | null;
+  onSelectEntity: (id: string | null) => void;
 }) {
   const group = useMemo(
-    () => buildDxfThreeGroup(model, {visibleLayers, showText}),
-    [model, showText, visibleLayers]
+    () =>
+      buildDxfThreeGroup(model, {
+        visibleLayers,
+        showText,
+        classificationFilter,
+        selectedEntityId
+      }),
+    [classificationFilter, model, selectedEntityId, showText, visibleLayers]
   );
 
   useEffect(() => {
@@ -79,7 +95,17 @@ function DxfLayerObject({
     };
   }, [group]);
 
-  return <primitive object={group} />;
+  return (
+    <primitive
+      object={group}
+      onClick={(event: ThreeEvent<MouseEvent>) => {
+        const entityId = event.object.userData?.entityId as string | undefined;
+        if (!entityId) return;
+        event.stopPropagation();
+        onSelectEntity(entityId);
+      }}
+    />
+  );
 }
 
 function CameraAutoFit({
@@ -432,10 +458,13 @@ function SceneContent({
   dxfModel,
   dxfVisibleLayers,
   dxfShowText,
+  dxfClassificationFilter,
+  dxfSelectedEntityId,
   selectedId,
   pendingType,
   gizmoMode,
   onSelect,
+  onSelectDxfEntity,
   onPlacePending,
   onHoverPoint,
   onTransformChange,
@@ -608,6 +637,7 @@ function SceneContent({
             onPlacePending({x: point.x, y: 0, z: point.z, rotY: 0});
             return;
           }
+          onSelectDxfEntity(null);
           onSelect(null);
         }}
       >
@@ -635,6 +665,9 @@ function SceneContent({
             model={dxfModel}
             visibleLayers={dxfVisibleLayers}
             showText={dxfShowText}
+            classificationFilter={dxfClassificationFilter}
+            selectedEntityId={dxfSelectedEntityId}
+            onSelectEntity={onSelectDxfEntity}
           />
           <CameraAutoFit model={dxfModel} controlsRef={controlsRef} />
         </>
@@ -741,6 +774,9 @@ export function ComposerScene(props: ComposerSceneProps) {
         shadows
         camera={{position: [12, 11, 14], fov: 46}}
         gl={{antialias: true}}
+        onCreated={({raycaster}) => {
+          raycaster.params.Line.threshold = 0.2;
+        }}
         className="h-full w-full rounded-card"
       >
         <SceneContent {...props} />

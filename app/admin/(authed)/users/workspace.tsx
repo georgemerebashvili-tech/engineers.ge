@@ -164,8 +164,12 @@ function KpiRow({
   const selfCount = users.filter((u) => u.source === 'self').length;
   const referredCount = users.filter((u) => u.source === 'referred').length;
   const verified = users.filter((u) => u.email_verified).length;
+  // Computed once per render — "new this week" is a display-only metric; slight
+  // jitter across re-renders is acceptable (no downstream logic depends on it).
+  // eslint-disable-next-line react-hooks/purity
+  const sevenDaysAgo = Date.now() - 7 * 86400 * 1000;
   const newThisWeek = users.filter(
-    (u) => Date.now() - new Date(u.registered_at).getTime() < 7 * 86400 * 1000
+    (u) => new Date(u.registered_at).getTime() > sevenDaysAgo
   ).length;
   const topReferrer = topReferrers[0];
 

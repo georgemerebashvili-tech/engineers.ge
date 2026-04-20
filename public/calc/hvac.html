@@ -4,27 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ჰაერსადენის სქემა — engineers.ge</title>
-<script>
-(function(){
-  try {
-    var stored = localStorage.getItem('theme') || 'system';
-    var dark = stored === 'dark' || (stored === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    if (window.parent && window.parent !== window) {
-      try {
-        dark = window.parent.document.documentElement.classList.contains('dark');
-      } catch (e) {}
-    }
-    if (dark) document.documentElement.classList.add('dark');
-    document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
-  } catch (e) {}
-})();
-</script>
+<script src="/calc/_theme-sync.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+Georgian:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #f2f5fa;
+  --bg: #f5f8fc;
   --sur: #ffffff;
   --sur-2: #f7f9fd;
   --bdr: #dde6f2;
@@ -51,7 +37,7 @@
   --font-sans: 'Plus Jakarta Sans', 'Noto Sans Georgian', system-ui, sans-serif;
 }
 .dark {
-  --bg: #0f1724;
+  --bg: #0a1230;
   --sur: #151f2f;
   --sur-2: #1b2638;
   --bdr: #253349;

@@ -1,7 +1,20 @@
+import type {Metadata} from 'next';
 import Link from 'next/link';
 import {Tag, Sparkles, Clock} from 'lucide-react';
 
-export const metadata = {title: 'აქციები · engineers.ge'};
+export const metadata: Metadata = {
+  title: 'აქციები',
+  description: 'მიმდინარე აქციები და სპეციალური შეთავაზებები engineers.ge-ზე — referral პროგრამა, დამატებითი ფუნქციები',
+  alternates: {canonical: '/promotions'},
+  openGraph: {
+    type: 'website',
+    locale: 'ka_GE',
+    siteName: 'engineers.ge',
+    title: 'აქციები — engineers.ge',
+    description: 'მიმდინარე აქციები · referral პროგრამა · 3000₾-მდე',
+    url: '/promotions'
+  }
+};
 
 export default function PromotionsPage() {
   return (
