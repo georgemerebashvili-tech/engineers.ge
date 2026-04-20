@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server';
 import {z} from 'zod';
 import {getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
+import {writeAudit, truncate} from '@/lib/tbc/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,5 +94,25 @@ export async function POST(
     console.error('[tbc] comment insert', ins.error);
     return NextResponse.json({error: 'db_error'}, {status: 500});
   }
+
+  const kindLabel: Record<string, string> = {
+    note: 'შენიშვნა',
+    blocker: 'პრობლემა',
+    info: 'ინფო',
+    done: 'დასრულდა'
+  };
+  await writeAudit({
+    actor: session.username,
+    action: 'comment.post',
+    targetType: 'comment',
+    targetId: ins.data.id as number,
+    summary: `დაწერა [${kindLabel[parsed.data.kind] || parsed.data.kind}] ფილიალი #${branchId}: "${truncate(parsed.data.body, 120)}"`,
+    metadata: {
+      branch_id: branchId,
+      kind: parsed.data.kind,
+      body: parsed.data.body
+    }
+  });
+
   return NextResponse.json({ok: true, comment: ins.data});
 }

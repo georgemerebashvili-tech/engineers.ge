@@ -6,6 +6,7 @@ import {
   issueTbcResetToken,
   sendTbcResetEmail
 } from '@/lib/tbc/password-reset';
+import {writeAudit} from '@/lib/tbc/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -52,6 +53,19 @@ export async function POST(
     username: row.data.username as string,
     displayName: (row.data.display_name as string) || null,
     resetUrl
+  });
+
+  await writeAudit({
+    actor: session.username,
+    action: 'password_reset.admin_send',
+    targetType: 'user',
+    targetId: id,
+    summary: `გაუგზავნა პაროლის აღდგენის ბმული ${row.data.username}-ს (${row.data.email})`,
+    metadata: {
+      username: row.data.username,
+      email: row.data.email,
+      stubbed: 'stubbed' in send ? send.stubbed : false
+    }
   });
 
   return NextResponse.json({

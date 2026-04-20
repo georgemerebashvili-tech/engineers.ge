@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import {z} from 'zod';
 import {getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
+import {writeAudit} from '@/lib/tbc/audit';
 
 const PatchBody = z.object({
   display_name: z.string().max(128).nullable().optional(),
@@ -72,6 +73,23 @@ export async function PATCH(
     .select('id, username, display_name, role, active')
     .single();
   if (res.error) return NextResponse.json({error: 'db_error'}, {status: 500});
+
+  const changes: Record<string, unknown> = {};
+  for (const k of Object.keys(update)) {
+    if (k === 'password_hash') changes[k] = '***changed***';
+    else changes[k] = update[k];
+  }
+  await writeAudit({
+    actor: session.username,
+    action: update.password_hash ? 'user.reset_password' : 'user.update',
+    targetType: 'user',
+    targetId: id,
+    summary: update.password_hash
+      ? `პაროლი შეცვალა ${res.data.username}-ს`
+      : `განაახლა ${res.data.username}: ${Object.keys(changes).join(', ')}`,
+    metadata: {username: res.data.username, changes}
+  });
+
   return NextResponse.json({ok: true, user: res.data});
 }
 
@@ -88,7 +106,7 @@ export async function DELETE(
   const db = supabaseAdmin();
   const target = await db
     .from('tbc_users')
-    .select('id, is_static')
+    .select('id, username, is_static, role, email, display_name')
     .eq('id', id)
     .maybeSingle();
   if (!target.data) return NextResponse.json({error: 'not_found'}, {status: 404});
@@ -98,5 +116,20 @@ export async function DELETE(
 
   const res = await db.from('tbc_users').delete().eq('id', id);
   if (res.error) return NextResponse.json({error: 'db_error'}, {status: 500});
+
+  await writeAudit({
+    actor: session.username,
+    action: 'user.delete',
+    targetType: 'user',
+    targetId: id,
+    summary: `წაშალა მომხმარებელი "${target.data.username}"`,
+    metadata: {
+      username: target.data.username,
+      role: target.data.role,
+      email: target.data.email,
+      display_name: target.data.display_name
+    }
+  });
+
   return NextResponse.json({ok: true});
 }

@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server';
 import {z} from 'zod';
 import {getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
+import {writeAudit} from '@/lib/tbc/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -103,6 +104,36 @@ export async function POST(
     console.error('[tbc] device append', upd.error);
     return NextResponse.json({error: 'db_error'}, {status: 500});
   }
+
+  const photoCount = newDevice.photos.filter(Boolean).length;
+  const labelParts = [
+    newDevice.category,
+    newDevice.subtype,
+    newDevice.brand,
+    newDevice.model,
+    newDevice.serial ? `S/N ${newDevice.serial}` : ''
+  ].filter(Boolean);
+  await writeAudit({
+    actor: session.username,
+    action: 'device.add',
+    targetType: 'branch',
+    targetId: branchId,
+    summary: `დაამატა მოწყობილობა: ${labelParts.join(' · ') || '(empty)'}${
+      photoCount ? ` · ${photoCount} ფოტო` : ''
+    }${newDevice.unplanned ? ' · დაუგეგმავი' : ''}`,
+    metadata: {
+      branch_id: branchId,
+      category: newDevice.category,
+      subtype: newDevice.subtype,
+      brand: newDevice.brand,
+      model: newDevice.model,
+      serial: newDevice.serial,
+      location: newDevice.location,
+      unplanned: newDevice.unplanned,
+      photo_count: photoCount,
+      total_devices_now: devices.length + 1
+    }
+  });
 
   return NextResponse.json({ok: true, count: devices.length + 1});
 }

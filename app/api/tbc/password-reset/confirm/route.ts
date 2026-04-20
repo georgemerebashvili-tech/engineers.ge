@@ -1,6 +1,7 @@
 import {NextResponse} from 'next/server';
 import {z} from 'zod';
 import {consumeTbcResetToken} from '@/lib/tbc/password-reset';
+import {writeAudit} from '@/lib/tbc/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,15 @@ export async function POST(req: Request) {
   if (!res.ok) {
     return NextResponse.json({error: res.reason}, {status: 400});
   }
+
+  await writeAudit({
+    actor: res.username,
+    action: 'password_reset.confirm',
+    targetType: 'user',
+    targetId: res.userId,
+    summary: `${res.username}-მ დააყენა ახალი პაროლი (reset bmulit)`,
+    metadata: {username: res.username}
+  });
 
   return NextResponse.json({ok: true, username: res.username});
 }

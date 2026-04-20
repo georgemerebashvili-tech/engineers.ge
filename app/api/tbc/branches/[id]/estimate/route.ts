@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server';
 import {z} from 'zod';
 import {getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
+import {writeAudit} from '@/lib/tbc/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -137,6 +138,41 @@ export async function PUT(
     console.error('[tbc] estimate insert', ins.error);
     return NextResponse.json({error: 'db_error'}, {status: 500});
   }
+
+  const total = (ins.data || []).reduce(
+    (s, r) => s + Number((r as {total?: number}).total || 0),
+    0
+  );
+  await writeAudit({
+    actor: session.username,
+    action: 'estimate.save',
+    targetType: 'branch',
+    targetId: branchId,
+    summary: `განაახლა ხარჯთაღრიცხვა ფილიალი #${branchId}: ${ins.data?.length || 0} პოზიცია, ჯამი ₾${total.toFixed(2)}`,
+    metadata: {
+      branch_id: branchId,
+      count: ins.data?.length || 0,
+      total,
+      items: (ins.data || []).map((r) => {
+        const row = r as {
+          name: string;
+          item_type: string | null;
+          unit: string | null;
+          qty: number;
+          price: number;
+          total: number;
+        };
+        return {
+          name: row.name,
+          item_type: row.item_type,
+          unit: row.unit,
+          qty: row.qty,
+          price: row.price,
+          total: row.total
+        };
+      })
+    }
+  });
 
   return NextResponse.json({ok: true, items: ins.data || []});
 }

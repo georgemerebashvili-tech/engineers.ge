@@ -5,6 +5,7 @@ import {
   issueTbcSession,
   logLoginEvent
 } from '@/lib/tbc/auth';
+import {writeAudit} from '@/lib/tbc/audit';
 
 const Body = z.object({
   username: z.string().min(1).max(64),
@@ -28,11 +29,24 @@ export async function POST(req: Request) {
 
   if (!user) {
     await logLoginEvent({username, success: false});
+    await writeAudit({
+      actor: username,
+      action: 'login.fail',
+      summary: `ცდა შემოვიდე username-ით "${username}"`
+    });
     return NextResponse.json({error: 'invalid_credentials'}, {status: 401});
   }
 
   await issueTbcSession(user);
   await logLoginEvent({username, userId: user.id, success: true});
+  await writeAudit({
+    actor: user.username,
+    action: 'login.success',
+    targetType: 'user',
+    targetId: user.id,
+    summary: `${user.displayName || user.username} შემოვიდა`,
+    metadata: {role: user.role}
+  });
 
   return NextResponse.json({
     ok: true,

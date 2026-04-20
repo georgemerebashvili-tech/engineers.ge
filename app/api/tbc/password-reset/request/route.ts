@@ -6,6 +6,7 @@ import {
   issueTbcResetToken,
   sendTbcResetEmail
 } from '@/lib/tbc/password-reset';
+import {writeAudit} from '@/lib/tbc/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -77,6 +78,19 @@ export async function POST(req: Request) {
       username: user.username as string,
       displayName: (user.display_name as string) || null,
       resetUrl
+    });
+
+    await writeAudit({
+      actor: user.username as string,
+      action: 'password_reset.request',
+      targetType: 'user',
+      targetId: user.id as string,
+      summary: `${user.username}-მ ითხოვა პაროლის აღდგენა (საჯარო)`,
+      metadata: {
+        username: user.username,
+        email: user.email,
+        via: 'public_forgot_form'
+      }
     });
   } catch (e) {
     console.error('[tbc password-reset] request failed', e);

@@ -1,6 +1,7 @@
 import {NextResponse} from 'next/server';
 import {getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
+import {writeAudit} from '@/lib/tbc/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -100,5 +101,18 @@ export async function POST(req: Request) {
   const count = await db
     .from('tbc_branches')
     .select('id', {count: 'exact', head: true});
+
+  await writeAudit({
+    actor: session.username,
+    action: 'seed',
+    summary: `bulk seed: mode=${mode}, branches=${body.branches?.length || 0}, types=${body.equipment_types?.length || 0}`,
+    metadata: {
+      mode,
+      branch_count: body.branches?.length || 0,
+      type_count: body.equipment_types?.length || 0,
+      total_after: count.count ?? 0
+    }
+  });
+
   return NextResponse.json({ok: true, total: count.count ?? 0});
 }

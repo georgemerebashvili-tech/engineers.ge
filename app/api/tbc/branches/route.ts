@@ -1,6 +1,7 @@
 import {NextResponse} from 'next/server';
 import {getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
+import {writeAudit, diffBranch} from '@/lib/tbc/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,10 +91,42 @@ export async function PUT(req: Request) {
     updated_by: session.username
   };
 
-  const res = await db.from('tbc_branches').upsert(row).select('id').single();
+  // Snapshot existing row for audit diff
+  const prev = await db
+    .from('tbc_branches')
+    .select(
+      'alias, name, type, region, city, address, status, director, director_phone, dmt_manager, dmt_manager_phone, tbc_manager, tbc_manager_phone, planned_start, planned_end, annotation, act, notes'
+    )
+    .eq('id', row.id)
+    .maybeSingle();
+
+  const res = await db.from('tbc_branches').upsert(row).select('id, name').single();
   if (res.error) {
     console.error('[tbc] branches upsert', res.error);
     return NextResponse.json({error: 'db_error'}, {status: 500});
+  }
+
+  const isCreate = !prev.data;
+  const changes = isCreate
+    ? {}
+    : diffBranch(
+        prev.data as Record<string, unknown>,
+        row as Record<string, unknown>
+      );
+
+  // Skip audit if nothing meaningful changed (dirty detector in client may
+  // false-positive). Only log if there are changes or it's a new branch.
+  if (isCreate || Object.keys(changes).length > 0) {
+    await writeAudit({
+      actor: session.username,
+      action: isCreate ? 'branch.create' : 'branch.update',
+      targetType: 'branch',
+      targetId: row.id,
+      summary: isCreate
+        ? `შექმნა ფილიალი "${row.name}"`
+        : `განაახლა "${row.name}" (${Object.keys(changes).join(', ')})`,
+      metadata: {branch_name: row.name, changes}
+    });
   }
 
   return NextResponse.json({ok: true, id: res.data.id});

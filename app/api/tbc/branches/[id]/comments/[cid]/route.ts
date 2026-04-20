@@ -1,6 +1,7 @@
 import {NextResponse} from 'next/server';
 import {getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
+import {writeAudit, truncate} from '@/lib/tbc/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,7 +21,7 @@ export async function DELETE(
   const db = supabaseAdmin();
   const row = await db
     .from('tbc_branch_comments')
-    .select('id, author, branch_id')
+    .select('id, author, branch_id, kind, body')
     .eq('id', commentId)
     .eq('branch_id', branchId)
     .maybeSingle();
@@ -32,5 +33,23 @@ export async function DELETE(
 
   const del = await db.from('tbc_branch_comments').delete().eq('id', commentId);
   if (del.error) return NextResponse.json({error: 'db_error'}, {status: 500});
+
+  await writeAudit({
+    actor: session.username,
+    action: 'comment.delete',
+    targetType: 'comment',
+    targetId: commentId,
+    summary: `წაშალა ${row.data.author}-ის განცხადება ფილიალი #${branchId}: "${truncate(
+      row.data.body as string,
+      120
+    )}"`,
+    metadata: {
+      branch_id: branchId,
+      original_author: row.data.author,
+      kind: row.data.kind,
+      body: row.data.body
+    }
+  });
+
   return NextResponse.json({ok: true});
 }

@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import {z} from 'zod';
 import {getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
+import {writeAudit} from '@/lib/tbc/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,6 +85,20 @@ export async function POST(req: Request) {
     console.error('[tbc] user create', ins.error);
     return NextResponse.json({error: 'db_error'}, {status: 500});
   }
+
+  await writeAudit({
+    actor: session.username,
+    action: 'user.create',
+    targetType: 'user',
+    targetId: ins.data.id as string,
+    summary: `დაამატა მომხმარებელი "${ins.data.username}" (${ins.data.role})`,
+    metadata: {
+      username: ins.data.username,
+      role: ins.data.role,
+      email: ins.data.email,
+      display_name: ins.data.display_name
+    }
+  });
 
   return NextResponse.json({ok: true, user: ins.data});
 }
