@@ -385,7 +385,7 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
           icon: FlaskConical,
           onClick: () => {
             window.open(
-              'https://engineers-ge-git-staging.vercel.app',
+              'https://engineers-ge-staging.vercel.app',
               '_blank',
               'noopener,noreferrer'
             );
