@@ -27,8 +27,14 @@ function secret() {
  */
 async function ensureStaticAdmin(username: string, password: string) {
   const envMap: Record<string, string | undefined> = {
+    admin: process.env.TBC_ADMIN_PASS_HASH,
     admin_givi: process.env.TBC_ADMIN_GIVI_PASS_HASH,
     admin_temo: process.env.TBC_ADMIN_TEMO_PASS_HASH
+  };
+  const displayMap: Record<string, string> = {
+    admin: 'Admin',
+    admin_givi: 'Givi (Admin)',
+    admin_temo: 'Temo (Admin)'
   };
   const hash = envMap[username];
   if (!hash) return null;
@@ -64,7 +70,7 @@ async function ensureStaticAdmin(username: string, password: string) {
     .insert({
       username,
       password_hash: hash,
-      display_name: username === 'admin_givi' ? 'Givi (Admin)' : 'Temo (Admin)',
+      display_name: displayMap[username] || username,
       role: 'admin',
       is_static: true,
       active: true,
