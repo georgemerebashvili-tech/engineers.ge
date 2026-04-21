@@ -1,7 +1,7 @@
 'use client';
 
 import {Fragment, useCallback, useEffect, useMemo, useState} from 'react';
-import {ChevronDown, ChevronRight, Filter, RefreshCw, ShieldCheck} from 'lucide-react';
+import {ChevronDown, ChevronLeft, ChevronRight, Filter, RefreshCw, ShieldCheck} from 'lucide-react';
 import {DmtPageShell} from '@/components/dmt/page-shell';
 import {ResizableTable} from '@/components/dmt/resizable-table';
 
@@ -54,6 +54,9 @@ const ACTION_FILTERS = [
   'user.delete.denied'
 ];
 
+const PAGE_SIZES = [100, 200, 500] as const;
+type PageSize = (typeof PAGE_SIZES)[number];
+
 export default function DmtAuditPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [total, setTotal] = useState(0);
@@ -62,11 +65,16 @@ export default function DmtAuditPage() {
   const [q, setQ] = useState('');
   const [actionFilter, setActionFilter] = useState<string>('');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [pageSize, setPageSize] = useState<PageSize>(200);
+  const [offset, setOffset] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({limit: '200'});
+      const params = new URLSearchParams({
+        limit: String(pageSize),
+        offset: String(offset)
+      });
       if (actionFilter) params.set('action', actionFilter);
       const res = await fetch(`/api/dmt/audit?${params.toString()}`);
       const data = await res.json();
@@ -82,11 +90,15 @@ export default function DmtAuditPage() {
     } finally {
       setLoading(false);
     }
-  }, [actionFilter]);
+  }, [actionFilter, pageSize, offset]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    setOffset(0);
+  }, [actionFilter, pageSize]);
 
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -151,10 +163,30 @@ export default function DmtAuditPage() {
           </button>
         </div>
 
-        <div className="mb-3 font-mono text-[11px] text-text-3">
-          {loading
-            ? 'იტვირთება…'
-            : `${filtered.length} / ${total} ჩანაწერი${actionFilter ? ` · filter: ${actionFilter}` : ''}`}
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 font-mono text-[11px] text-text-3">
+          <div>
+            {loading
+              ? 'იტვირთება…'
+              : total === 0
+                ? '0 ჩანაწერი'
+                : `${offset + 1}–${Math.min(offset + filtered.length, total)} / ${total}${actionFilter ? ` · filter: ${actionFilter}` : ''}`}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span>გვერდზე:</span>
+            {PAGE_SIZES.map((n) => (
+              <button
+                key={n}
+                onClick={() => setPageSize(n)}
+                className={`rounded-md border px-2 py-0.5 text-[10.5px] font-semibold transition-colors ${
+                  pageSize === n
+                    ? 'border-blue bg-blue text-white'
+                    : 'border-bdr bg-sur text-text-2 hover:border-blue'
+                }`}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
         </div>
 
         {error && (
@@ -266,6 +298,30 @@ export default function DmtAuditPage() {
           </table>
           </ResizableTable>
         </div>
+
+        {total > pageSize && (
+          <div className="mt-3 flex items-center justify-between font-mono text-[11px] text-text-3">
+            <div>
+              გვერდი {Math.floor(offset / pageSize) + 1} / {Math.max(1, Math.ceil(total / pageSize))}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setOffset((o) => Math.max(0, o - pageSize))}
+                disabled={offset === 0 || loading}
+                className="inline-flex items-center gap-1 rounded-md border border-bdr bg-sur px-2.5 py-1 text-[11px] font-semibold text-text-2 hover:border-blue hover:text-blue disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft size={12} /> წინა
+              </button>
+              <button
+                onClick={() => setOffset((o) => o + pageSize)}
+                disabled={offset + pageSize >= total || loading}
+                className="inline-flex items-center gap-1 rounded-md border border-bdr bg-sur px-2.5 py-1 text-[11px] font-semibold text-text-2 hover:border-blue hover:text-blue disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                შემდეგი <ChevronRight size={12} />
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="mt-4 rounded-[10px] border border-bdr bg-sur-2 p-3 text-[11.5px] leading-relaxed text-text-2">
           <span className="inline-flex items-center gap-1 font-semibold text-navy">
