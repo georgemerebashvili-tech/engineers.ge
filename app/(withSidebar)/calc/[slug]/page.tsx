@@ -23,6 +23,7 @@ const CATEGORY_BY_SLUG: Record<string, Crumb> = {
   'stair-pressurization': {label: 'სახანძრო სისტემები', href: '/#calculators'},
   'elevator-shaft-press': {label: 'სახანძრო სისტემები', href: '/#calculators'},
   'parking-ventilation': {label: 'სახანძრო სისტემები', href: '/#calculators'},
+  'sprinklers': {label: 'სახანძრო სისტემები', href: '/#calculators'},
   'floor-pressurization': {label: 'სახანძრო სისტემები', href: '/#calculators'},
   'wall-editor': {label: 'CAD · გეგმები', href: '/#calculators'},
   'building-composer': {label: 'CAD · გეგმები', href: '/#calculators'},

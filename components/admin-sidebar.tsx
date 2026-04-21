@@ -39,6 +39,7 @@ import {
   Building2,
   FlaskConical,
   FolderKanban,
+  Droplets,
   type LucideIcon
 } from 'lucide-react';
 import type {FeatureMap, FeatureStatus} from '@/lib/feature-flags';
@@ -397,7 +398,15 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
       title: 'სხვა',
       items: [
         {key: 'site', label: 'საჯარო საიტი', href: '/', icon: Home},
+        {key: 'calc-preview', label: 'კალკულატორები', href: '/calc', icon: FlaskConical},
         {key: 'ads-preview', label: 'რეკლამის preview', href: '/ads', icon: Megaphone, flagKey: 'admin.ads-preview'},
+        {
+          key: 'sprinkler-sim',
+          label: 'სპრინკლერი (3D sim) · prototype',
+          href: '/experiments/sprinkler-sim.html',
+          icon: Droplets,
+          flagKey: 'admin.sprinkler-sim'
+        },
         {
           key: 'dmt',
           label: 'DMT ops panel',

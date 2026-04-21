@@ -86,6 +86,14 @@ export const CALCULATORS: CalcMeta[] = [
     useProjects: true
   },
   {
+    slug: 'sprinklers',
+    icon: '💧',
+    title: 'სპრინკლერები',
+    desc: '3D სიმულატორი · L×W×H ოთახი, წვეთების ფიზიკა, heatmap, დაფარვის ანალიზი',
+    tag: 'სახანძრო',
+    standard: 'EN 12845 · NFPA 13'
+  },
+  {
     slug: 'floor-pressurization',
     icon: '🚪',
     title: 'კორიდორის დაწნეხვა',

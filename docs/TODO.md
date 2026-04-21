@@ -8,6 +8,16 @@
 
 ---
 
+## 🟢 Sprinklers simulator — Phase 2 (post-MVP)
+
+MVP shipped 2026-04-21 at `/calc/sprinklers`: L×W×H room, K-factor + pressure + hazard class, 3D droplet physics, heatmap, radial profile, compliance check.
+
+- [ ] 2026-04-21 — **Phase 2 — building editor** 🟢 — draw walls/rooms on top of the floor (click-to-place corners, wall segments), multiple sprinklers at chosen positions, grid spacing tool (EN 12845 max spacing per hazard class).
+- [ ] 2026-04-21 — **Phase 3 — object library** 🟢 — drag-in obstructions (cars, shelves, furniture) that block droplets via collision → heatmap "shadows". Library: parking (car, van, truck), storage (shelving, pallet racks), office (desk, partition).
+- [ ] 2026-04-21 — **Phase 4 — multi-sprinkler hydraulics** 🟢 — pipe network from main to heads with pressure loss (Hazen-Williams), per-head Q reduction, auto-layout to meet dReq.
+
+---
+
 ## 🟡 Unified "ჩემი პროექტები" hub — Phase 1 shipped
 
 One Building (სპორტდარბაზი / სუპერმარკეტი / ოფისი) groups N calculator projects (wall-thermal, heat-loss, HVAC …). Replaces per-calc silos.

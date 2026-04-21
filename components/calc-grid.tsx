@@ -53,8 +53,8 @@ const SYSTEMS: System[] = [
     slug: 'fire-safety',
     icons: [{icon: Siren, color: 'var(--red)'}],
     title: 'სახანძრო სისტემები',
-    desc: 'EN 12101 · სადარბაზო, ლიფტი, პარკინგი და corridor/lobby refuge სიმულატორები',
-    toolsCount: 4,
+    desc: 'EN 12101 · სადარბაზო, ლიფტი, პარკინგი, corridor/lobby refuge და სპრინკლერების 3D სიმულატორები',
+    toolsCount: 5,
     href: '/calc/stair-pressurization',
     accent: 'var(--red)'
   },

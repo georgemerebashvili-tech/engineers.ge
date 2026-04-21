@@ -1,0 +1,1817 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>სპრინკლერის 3D სიმულატორი — engineers.ge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+Georgian:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/calc/_base.css" />
+<script src="/calc/_theme-sync.js"></script>
+<style>
+  :root {
+    --navy-local: #0a2540;
+    --blue-local: #2563eb;
+    --blue-dark-local: #1d4ed8;
+    --orange-local: #ea580c;
+    --green-local: #16a34a;
+    --red-local: #dc2626;
+    --border-local: #cbd5e1;
+    --border-strong-local: #94a3b8;
+    --muted-local: #64748b;
+    --dim-local: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.45;
+    overflow: hidden;
+  }
+  .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  .app { display: grid; grid-template-rows: 40px 1fr; height: 100vh; }
+
+  header.topbar {
+    background: var(--navy-local);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    gap: 14px;
+    border-bottom: 2px solid var(--orange-local);
+  }
+  header.topbar .logo { font-weight: 700; letter-spacing: 0.5px; font-size: 13px; }
+  header.topbar .sub { font-size: 11px; color: #93c5fd; }
+  header.topbar .spec {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: #cbd5e1;
+    letter-spacing: 0.5px;
+  }
+
+  main { display: grid; grid-template-columns: 280px 1fr 300px; min-height: 0; }
+
+  .panel {
+    background: var(--sur);
+    border-right: 1px solid var(--bdr);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel.right { border-right: none; border-left: 1px solid var(--bdr); }
+
+  .panel-header {
+    padding: 10px 14px;
+    background: var(--sur-2);
+    border-bottom: 1px solid var(--bdr);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--navy-local);
+  }
+
+  .section { padding: 12px 14px; border-bottom: 1px solid var(--bdr); }
+  .section h3 {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted-local);
+    margin-bottom: 10px;
+  }
+
+  .field { margin-bottom: 12px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 11px;
+    color: var(--text);
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  .field label .val {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--blue-local);
+    font-size: 12px;
+  }
+
+  select, input[type="number"], input[type="text"] {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid var(--border-strong-local);
+    background: var(--sur);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text);
+    border-radius: 3px;
+  }
+  select:focus, input:focus { outline: 2px solid var(--blue-local); outline-offset: -1px; }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--bdr);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--blue-local);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px var(--blue-local);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: var(--blue-local);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .btn-row { display: flex; gap: 6px; }
+  button {
+    flex: 1;
+    padding: 8px 10px;
+    background: var(--sur);
+    border: 1px solid var(--border-strong-local);
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: all 0.12s;
+    border-radius: 3px;
+  }
+  button:hover { background: var(--sur-2); border-color: var(--navy-local); }
+  button.primary { background: var(--blue-local); color: #fff; border-color: var(--blue-local); }
+  button.primary:hover { background: var(--blue-dark-local); border-color: var(--blue-dark-local); }
+  button.warn { background: var(--orange-local); color: #fff; border-color: var(--orange-local); }
+
+  .viewport {
+    position: relative;
+    background: linear-gradient(180deg, #e8eef6 0%, #d2dae6 100%);
+    overflow: hidden;
+  }
+  #canvas { width: 100%; height: 100%; display: block; }
+
+  .hud {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: rgba(10, 37, 64, 0.75);
+    backdrop-filter: blur(4px);
+    padding: 8px 10px;
+    border-radius: 3px;
+    border-left: 2px solid var(--orange-local);
+    line-height: 1.6;
+  }
+  .hud .row { display: flex; gap: 12px; }
+  .hud .label { color: #93c5fd; }
+
+  .view-toggle { position: absolute; bottom: 12px; left: 12px; display: flex; gap: 4px; }
+  .view-toggle button {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.2);
+    backdrop-filter: blur(4px);
+    padding: 6px 10px;
+    font-size: 10px;
+    flex: 0 0 auto;
+  }
+  .view-toggle button.active { background: var(--blue-local); border-color: var(--blue-local); }
+
+  .legend {
+    position: absolute;
+    bottom: 12px;
+    right: 12px;
+    background: rgba(10, 37, 64, 0.75);
+    backdrop-filter: blur(4px);
+    padding: 8px 10px;
+    border-radius: 3px;
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    border-left: 2px solid var(--orange-local);
+  }
+  .legend-bar {
+    height: 8px;
+    width: 180px;
+    background: linear-gradient(to right, #1e3a8a, #2563eb, #22c55e, #eab308, #ea580c, #dc2626);
+    margin: 4px 0;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .legend-ticks { display: flex; justify-content: space-between; font-size: 9px; color: #cbd5e1; }
+
+  .metric {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--bdr);
+  }
+  .metric:last-child { border-bottom: none; }
+  .metric .k { font-size: 11px; color: var(--muted-local); }
+  .metric .v {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 13px;
+    color: var(--navy-local);
+  }
+  .metric .u { font-size: 10px; color: var(--dim-local); margin-left: 3px; }
+
+  .compliance-box {
+    padding: 10px;
+    border: 1px solid var(--bdr);
+    background: var(--sur-2);
+    border-radius: 3px;
+  }
+  .compliance-box .title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--muted-local);
+    margin-bottom: 6px;
+  }
+  .compliance-box .big {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--navy-local);
+  }
+  .compliance-box .small { font-size: 10px; color: var(--muted-local); margin-top: 4px; }
+
+  .histo {
+    height: 80px;
+    width: 100%;
+    background: var(--sur-2);
+    border: 1px solid var(--bdr);
+    border-radius: 3px;
+  }
+  .histo canvas { width: 100%; height: 100%; display: block; }
+
+  .formula {
+    background: var(--sur-2);
+    border-left: 3px solid var(--blue-local);
+    padding: 8px 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--navy-local);
+    margin-top: 6px;
+    border-radius: 3px;
+  }
+  .formula .note { color: var(--muted-local); font-size: 10px; margin-top: 4px; }
+
+  .dim-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .dim-row .field { margin-bottom: 0; }
+
+  .panel::-webkit-scrollbar { width: 6px; }
+  .panel::-webkit-scrollbar-track { background: var(--sur-2); }
+  .panel::-webkit-scrollbar-thumb { background: var(--border-strong-local); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="logo">ENGINEERS.GE</div>
+    <div class="sub">სპრინკლერის 3D სიმულატორი</div>
+    <div class="spec">EN 12845 · NFPA 13 · СП 5.13130</div>
+  </header>
+
+  <main>
+
+    <aside class="panel">
+      <div class="panel-header">შემავალი მონაცემები</div>
+
+      <div class="section">
+        <h3>სპრინკლერი</h3>
+
+        <div class="field">
+          <label>ტიპი <span class="val" id="typeVal">Pendant</span></label>
+          <select id="type">
+            <option value="pendant">Pendant (ჩამოკიდებული)</option>
+            <option value="upright">Upright (ვერტიკალური)</option>
+            <option value="sidewall">Sidewall (კედლის)</option>
+            <option value="esfr">ESFR (მაღალი ხარჯი)</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>K-ფაქტორი <span class="val" id="kVal">K-80</span></label>
+          <select id="k">
+            <option value="57">K-57 — რეზიდენტული</option>
+            <option value="80" selected>K-80 — სტანდარტი</option>
+            <option value="115">K-115 — OH</option>
+            <option value="160">K-160 — HH</option>
+            <option value="200">K-200 — HH/ESFR</option>
+            <option value="240">K-240 — ESFR</option>
+            <option value="360">K-360 — ESFR large drop</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>წნევა <span class="val"><span id="pVal">1.50</span> bar</span></label>
+          <input type="range" id="p" min="0.5" max="7.0" step="0.05" value="1.5" />
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>ოთახის გეომეტრია</h3>
+
+        <div class="field">
+          <label>სიგრძე (L) <span class="val"><span id="lVal">10.0</span> m</span></label>
+          <input type="range" id="roomL" min="4" max="20" step="0.5" value="10" />
+        </div>
+
+        <div class="field">
+          <label>სიგანე (W) <span class="val"><span id="wVal">10.0</span> m</span></label>
+          <input type="range" id="roomW" min="4" max="20" step="0.5" value="10" />
+        </div>
+
+        <div class="field">
+          <label>სიმაღლე (H) <span class="val"><span id="hVal">3.0</span> m</span></label>
+          <input type="range" id="h" min="2.4" max="13.7" step="0.1" value="3.0" />
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>IFC / გეგმა</h3>
+        <div class="btn-row">
+          <button id="ifcBtn" class="primary">📂 ატვირთე IFC</button>
+          <button id="ifcClearBtn" title="წაშალე ატვირთული IFC">✕</button>
+        </div>
+        <input type="file" id="ifcFile" accept=".ifc" style="display:none" />
+        <div id="ifcStatus" style="margin-top: 8px; font-size: 11px; color: var(--muted-local);">
+          IFC არ არის ჩატვირთული.
+        </div>
+
+        <div id="ifcTransformBox" style="margin-top: 12px; display:none;">
+          <div class="field">
+            <label>როტაცია Y <span class="val"><span id="ifcRotVal">0</span>°</span></label>
+            <input type="range" id="ifcRot" min="-180" max="180" step="1" value="0" />
+          </div>
+          <div class="btn-row" style="margin-bottom: 8px;">
+            <button id="ifcRot90">+90°</button>
+            <button id="ifcRotN90">−90°</button>
+            <button id="ifcRotFlip">180°</button>
+            <button id="ifcRotReset">0°</button>
+          </div>
+          <div class="field">
+            <label>როტაცია X <span class="val"><span id="ifcRotXVal">0</span>°</span></label>
+            <input type="range" id="ifcRotX" min="-180" max="180" step="1" value="0" />
+          </div>
+          <div class="btn-row" style="margin-bottom: 8px;">
+            <button id="ifcRotX90">+90°</button>
+            <button id="ifcRotXN90">−90°</button>
+            <button id="ifcRotXFlip">180°</button>
+            <button id="ifcRotXReset">0°</button>
+          </div>
+          <div class="field">
+            <label>როტაცია Z <span class="val"><span id="ifcRotZVal">0</span>°</span></label>
+            <input type="range" id="ifcRotZ" min="-180" max="180" step="1" value="0" />
+          </div>
+          <div class="btn-row" style="margin-bottom: 8px;">
+            <button id="ifcRotZ90">+90°</button>
+            <button id="ifcRotZN90">−90°</button>
+            <button id="ifcRotZFlip">180°</button>
+            <button id="ifcRotZReset">0°</button>
+          </div>
+          <div class="field">
+            <label>Offset X <span class="val"><span id="ifcOffXVal">0.0</span> m</span></label>
+            <input type="range" id="ifcOffX" min="-30" max="30" step="0.1" value="0" />
+          </div>
+          <div class="field">
+            <label>Offset Z <span class="val"><span id="ifcOffZVal">0.0</span> m</span></label>
+            <input type="range" id="ifcOffZ" min="-30" max="30" step="0.1" value="0" />
+          </div>
+          <div class="btn-row">
+            <button id="ifcCenter">ცენტრში დააბრუნე</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>რედაქტირება</h3>
+        <div class="field">
+          <label style="display:flex;gap:6px;align-items:center;cursor:pointer;">
+            <input type="checkbox" id="editMode" style="width:auto;margin:0;" />
+            <span>რედაქტირების რეჟიმი (drag)</span>
+          </label>
+        </div>
+        <div style="font-size: 10px; color: var(--muted-local); line-height: 1.5;">
+          ჩართე → დააჭირე სპრინკლერს → გაათრიე იატაკზე. mesh spacing უგულვებელყოფილი.
+        </div>
+        <div id="selInfo" style="margin-top: 8px; font-size: 11px; font-family: var(--font-mono); color: var(--navy-local); display:none;">
+          მონიშნული: #<span id="selId">—</span> @ (<span id="selXZ">—</span>)
+        </div>
+        <div class="btn-row" style="margin-top: 8px;">
+          <button id="resetMeshBtn">↻ mesh-ზე დაბრუნება</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>სპრინკლერების mesh</h3>
+
+        <div class="field">
+          <label>დაშორება X (სიგრძის ღერძი) <span class="val"><span id="sxVal">3.0</span> m</span></label>
+          <input type="range" id="spacingX" min="1.5" max="6.0" step="0.1" value="3.0" />
+        </div>
+
+        <div class="field">
+          <label>დაშორება Z (სიგანის ღერძი) <span class="val"><span id="szVal">3.0</span> m</span></label>
+          <input type="range" id="spacingZ" min="1.5" max="6.0" step="0.1" value="3.0" />
+        </div>
+
+        <div class="btn-row" style="margin-top: 8px;">
+          <button id="applyHazSpacing" title="მიანიჭოს მაქსიმუმი კლასის მიხედვით">auto (კლასი)</button>
+          <button id="presetSquare">3×3</button>
+          <button id="presetRect">3×4</button>
+        </div>
+
+        <div style="margin-top: 10px; padding: 8px 10px; background: var(--blue-lt); border-left: 3px solid var(--blue-local); border-radius: 3px; font-family: var(--font-mono); font-size: 11px; color: var(--navy-local);">
+          <div>N = <span id="meshCount" style="font-weight: 600;">—</span> სპრინკლერი (<span id="meshNx">—</span>×<span id="meshNz">—</span>)</div>
+          <div style="margin-top: 2px; color: var(--muted-local); font-size: 10px;">
+            ფართობი/თავი: <span id="meshPerHead">—</span> m² ·
+            კედლიდან: <span id="meshWallOff">—</span> m
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>საშიშროების კლასი</h3>
+        <div class="field">
+          <select id="hazard">
+            <option value="LH">LH — Light Hazard (2.25 mm/min)</option>
+            <option value="OH1" selected>OH1 — Ordinary Haz. I (5.0 mm/min)</option>
+            <option value="OH2">OH2 — Ordinary Haz. II (5.0 mm/min)</option>
+            <option value="OH3">OH3 — Ordinary Haz. III (5.0 mm/min)</option>
+            <option value="OH4">OH4 — Ordinary Haz. IV (5.0 mm/min)</option>
+            <option value="HHP1">HHP1 — High Haz. Proc. (7.5 mm/min)</option>
+            <option value="HHP2">HHP2 — High Haz. Proc. (10 mm/min)</option>
+            <option value="HHP3">HHP3 — High Haz. Proc. (12.5 mm/min)</option>
+            <option value="HHS">HHS — High Haz. Storage (per NFPA)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>სიმულაცია</h3>
+
+        <div class="field">
+          <label>წვეთების რაოდენობა <span class="val" id="nVal">600</span></label>
+          <input type="range" id="n" min="100" max="2000" step="50" value="600" />
+        </div>
+
+        <div class="field">
+          <label>სიჩქარე <span class="val"><span id="spVal">1.0</span>×</span></label>
+          <input type="range" id="sp" min="0.25" max="3" step="0.25" value="1.0" />
+        </div>
+
+        <div class="field">
+          <label>წვეთის ფერი <span class="val" id="dColorVal">ლურჯი</span></label>
+          <select id="dColor">
+            <option value="blue" selected>ლურჯი (წყალი)</option>
+            <option value="red">წითელი (საშიშროება)</option>
+            <option value="cyan">ცისფერი ღია</option>
+            <option value="white">თეთრი</option>
+          </select>
+        </div>
+
+        <div class="btn-row" style="margin-top: 10px;">
+          <button id="playBtn" class="primary">⏸ პაუზა</button>
+          <button id="resetBtn">↻ reset</button>
+        </div>
+        <div class="btn-row" style="margin-top: 6px;">
+          <button id="clearHeatBtn">heatmap-ის გასუფთავება</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>ფორმულები</h3>
+        <div class="formula">
+          Q = K·√(10·P)<br/>
+          v₀ = √(2P/ρ)·C_v<br/>
+          <span class="note">P [bar], ρ=1000 kg/m³, C_v≈0.88</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>სამომავლო ფაზა</h3>
+        <div style="font-size: 11px; color: var(--muted-local); line-height: 1.6;">
+          შემდეგ: შენობის დახატვა (walls, rooms), ობიექტების ბიბლიოთეკა (მანქანები, ავეჯი, თაროები) და მათი გავლენა სპრინკლერის დაფარვაზე.
+        </div>
+      </div>
+    </aside>
+
+    <section class="viewport">
+      <canvas id="canvas"></canvas>
+
+      <div class="hud" id="hud">
+        <div class="row"><span class="label">Q:</span><span id="hudQ">—</span></div>
+        <div class="row"><span class="label">v₀:</span><span id="hudV">—</span></div>
+        <div class="row"><span class="label">R:</span><span id="hudR">—</span></div>
+        <div class="row"><span class="label">FPS:</span><span id="hudFps">—</span></div>
+      </div>
+
+      <div class="view-toggle">
+        <button data-view="persp" class="active">3D</button>
+        <button data-view="side">გვერდიდან</button>
+        <button data-view="top">ზემოდან</button>
+      </div>
+
+      <div class="legend">
+        <div>ინტენსივობა (mm/min)</div>
+        <div class="legend-bar"></div>
+        <div class="legend-ticks">
+          <span>0</span><span id="legHalf">—</span><span id="legMax">—</span>
+        </div>
+      </div>
+    </section>
+
+    <aside class="panel right">
+      <div class="panel-header">ანალიზი</div>
+
+      <div class="section">
+        <h3>ჰიდრავლიკა</h3>
+        <div class="metric">
+          <span class="k">ხარჯი Q</span>
+          <span><span class="v" id="mQ">—</span><span class="u">L/min</span></span>
+        </div>
+        <div class="metric">
+          <span class="k">საწყისი სიჩქარე v₀</span>
+          <span><span class="v" id="mV">—</span><span class="u">m/s</span></span>
+        </div>
+        <div class="metric">
+          <span class="k">დაფარვის რადიუსი</span>
+          <span><span class="v" id="mR">—</span><span class="u">m</span></span>
+        </div>
+        <div class="metric">
+          <span class="k">დაფარვის ფართობი</span>
+          <span><span class="v" id="mA">—</span><span class="u">m²</span></span>
+        </div>
+        <div class="metric">
+          <span class="k">ოთახის ფართობი</span>
+          <span><span class="v" id="mRoomA">—</span><span class="u">m²</span></span>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>ინტენსივობა</h3>
+        <div class="metric">
+          <span class="k">საშუალო</span>
+          <span><span class="v" id="mDavg">—</span><span class="u">mm/min</span></span>
+        </div>
+        <div class="metric">
+          <span class="k">მაქსიმუმი (ცენტრი)</span>
+          <span><span class="v" id="mDmax">—</span><span class="u">mm/min</span></span>
+        </div>
+        <div class="metric">
+          <span class="k">მოთხოვნილი (კლასი)</span>
+          <span><span class="v" id="mDreq">—</span><span class="u">mm/min</span></span>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>რადიალური პროფილი</h3>
+        <div class="histo"><canvas id="radialChart"></canvas></div>
+        <div style="font-size: 10px; color: var(--muted-local); margin-top: 6px;">
+          ცენტრიდან მანძილი → ინტენსივობა
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>შესაბამისობა</h3>
+        <div class="compliance-box">
+          <div class="title">კლასი <span id="complClass">—</span></div>
+          <div class="big" id="complStatus">—</div>
+          <div class="small" id="complDetail">გაანგარიშება...</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>შენიშვნა</h3>
+        <div style="font-size: 11px; color: var(--muted-local); line-height: 1.6;">
+          სიმულაცია იყენებს გამარტივებულ პროექტილური მოძრაობის მოდელს ჰაერის წინააღმდეგობით.
+          რეალური ქარხნული მონაცემებისთვის გაიარეთ ლაბორატორიული ტესტი (VdS, UL, FM).
+        </div>
+      </div>
+    </aside>
+
+  </main>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+    "web-ifc": "https://unpkg.com/web-ifc@0.0.59/web-ifc-api.js"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const IFC_CDN_VERSION = '0.0.59';
+const IFC_WASM_PATH = `https://unpkg.com/web-ifc@${IFC_CDN_VERSION}/`;
+
+/* ============================================================
+   სპრინკლერის 3D სიმულატორი — engineers.ge
+   ============================================================
+   ფიზიკა:
+   - Q = K·√(10·P) [L/min]
+   - v₀ = C_v·√(2P/ρ) — Bernoulli
+   - წვეთების ემიტერი: ქოლგისებრი (umbrella) პატერნი
+   - Euler integration: gravity + quadratic drag
+   - Floor grid accumulator → density heatmap (mm/min)
+
+   გეომეტრია: სიგრძე (L, X-ღერძი) × სიგანე (W, Z-ღერძი) × სიმაღლე (H, Y-ღერძი)
+============================================================ */
+
+const state = {
+  k: 80,
+  p: 1.5,
+  h: 3.0,
+  roomL: 10.0,   // length (X-axis)
+  roomW: 10.0,   // width  (Z-axis)
+  type: 'pendant',
+  hazard: 'OH1',
+  spacingX: 3.0,
+  spacingZ: 3.0,
+  nDroplets: 600,
+  speedMul: 1.0,
+  playing: true,
+  view: 'persp',
+  droplets: [],
+  sprinklers: [],  // [{x, z}]
+  editMode: false,
+  selectedIdx: -1,
+  ifcTransform: { rotX: 0, rotY: 0, rotZ: 0, offX: 0, offZ: 0, baseY: 0 },
+  emitRate: 0,
+  totalEmitted: 0,
+  totalLanded: 0,
+  simTime: 0,
+};
+
+// EN 12845 max spacing by hazard class (m)
+const MAX_SPACING = {
+  LH: 4.6, OH1: 4.0, OH2: 4.0, OH3: 4.0, OH4: 4.0,
+  HHP1: 3.7, HHP2: 3.7, HHP3: 3.7, HHS: 3.7,
+};
+
+const TYPE_PROFILES = {
+  pendant:  { angleMin: 0.52, angleMax: 1.40, Cv: 0.88, elevUp: 0.15, label: 'Pendant'  },
+  upright:  { angleMin: 0.17, angleMax: 1.22, Cv: 0.85, elevUp: 0.60, label: 'Upright'   },
+  sidewall: { angleMin: 0.70, angleMax: 1.50, Cv: 0.80, elevUp: 0.10, label: 'Sidewall'  },
+  esfr:     { angleMin: 0.35, angleMax: 1.22, Cv: 0.92, elevUp: 0.10, label: 'ESFR'      },
+};
+
+const HAZARD_DENSITY = {
+  LH: 2.25, OH1: 5.0, OH2: 5.0, OH3: 5.0, OH4: 5.0,
+  HHP1: 7.5, HHP2: 10.0, HHP3: 12.5, HHS: 15.0,
+};
+
+function computeHydraulics() {
+  const Q = state.k * Math.sqrt(10 * state.p);
+  const prof = TYPE_PROFILES[state.type];
+  const v0 = prof.Cv * Math.sqrt(2 * state.p * 1e5 / 1000);
+  return { Q, v0, prof };
+}
+
+function computeCoverageRadius(v0, h, prof) {
+  const theta = (prof.angleMin + prof.angleMax) * 0.5 + 0.2;
+  let x = 0, y = h, z = 0;
+  let vx = v0 * Math.sin(theta);
+  let vy = -v0 * Math.cos(theta) * 0.6 + v0 * prof.elevUp;
+  const g = 9.81;
+  const dragK = 0.18;
+  const dt = 0.005;
+  let steps = 0;
+  while (y > 0 && steps < 2000) {
+    const speed = Math.sqrt(vx*vx + vy*vy);
+    const aDragX = -dragK * vx * speed;
+    const aDragY = -dragK * vy * speed;
+    vx += aDragX * dt;
+    vy += (-g + aDragY) * dt;
+    x += vx * dt;
+    y += vy * dt;
+    steps++;
+  }
+  return Math.max(0.5, Math.abs(x));
+}
+
+function emitDroplet(v0, prof) {
+  const phi = Math.random() * Math.PI * 2;
+  const u = Math.random();
+  const biased = 0.3 * Math.pow(u, 0.7) + 0.7 * (1 - Math.pow(1-u, 0.5));
+  const theta = prof.angleMin + biased * (prof.angleMax - prof.angleMin);
+
+  const speed = v0 * (0.85 + Math.random() * 0.3);
+
+  let vx = speed * Math.sin(theta) * Math.cos(phi);
+  let vz = speed * Math.sin(theta) * Math.sin(phi);
+  let vy;
+  if (state.type === 'upright') {
+    vy = speed * Math.cos(theta) * (prof.elevUp - 0.3);
+  } else if (state.type === 'sidewall') {
+    vy = -speed * Math.cos(theta) * 0.4;
+  } else {
+    vy = -speed * Math.cos(theta) * 0.7 + speed * prof.elevUp;
+  }
+
+  // Pick a random sprinkler as emission source (covers full mesh)
+  const src = state.sprinklers.length
+    ? state.sprinklers[(Math.random() * state.sprinklers.length) | 0]
+    : { x: 0, z: 0 };
+
+  return {
+    x: src.x, y: state.h - 0.24, z: src.z,
+    vx, vy, vz,
+    life: 0,
+    alive: true,
+  };
+}
+
+function stepDroplet(d, dt) {
+  const g = 9.81;
+  const dragK = 0.18;
+  const speed = Math.sqrt(d.vx*d.vx + d.vy*d.vy + d.vz*d.vz);
+  d.vx += -dragK * d.vx * speed * dt;
+  d.vy += (-g - dragK * d.vy * speed) * dt;
+  d.vz += -dragK * d.vz * speed * dt;
+  d.x += d.vx * dt;
+  d.y += d.vy * dt;
+  d.z += d.vz * dt;
+  d.life += dt;
+  if (d.y <= 0) {
+    d.y = 0;
+    d.alive = false;
+    return { landed: true, x: d.x, z: d.z };
+  }
+  return { landed: false };
+}
+
+// ====== HEATMAP (floor density) — L × W rectangle, GRID_N × GRID_N cells ======
+const GRID_N = 60;
+const grid = new Float32Array(GRID_N * GRID_N);
+let cellX = state.roomL / GRID_N;
+let cellZ = state.roomW / GRID_N;
+
+function gridIdx(x, z) {
+  const halfL = state.roomL / 2;
+  const halfW = state.roomW / 2;
+  if (Math.abs(x) >= halfL || Math.abs(z) >= halfW) return -1;
+  const i = Math.floor((x + halfL) / cellX);
+  const j = Math.floor((z + halfW) / cellZ);
+  if (i < 0 || i >= GRID_N || j < 0 || j >= GRID_N) return -1;
+  return j * GRID_N + i;
+}
+
+function clearHeatmap() {
+  grid.fill(0);
+  state.totalEmitted = 0;
+  state.totalLanded = 0;
+  state.simTime = 0;
+  updateHeatmapTexture();
+}
+
+let scene, camera, renderer, controls;
+let sprinklerGroup, floorMesh, roomMesh, gridHelperMesh, sprinklerMarkers;
+let dropletPoints, dropletGeometry, dropletMaterial;
+let heatmapCanvas, heatmapCtx, heatmapTexture;
+let ifcGroup = null;  // loaded IFC model (separate group)
+let ifcApi = null;
+const sprinklerHitMeshes = []; // picking targets, aligned with state.sprinklers[i]
+const raycaster = new THREE.Raycaster();
+const pointerNDC = new THREE.Vector2();
+const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // y=0 plane for XZ drag
+
+function computeSprinklerPositions() {
+  // Fit max count along each axis so that spacing between is ≤ state.spacingX/Z
+  // and grid is centered → wall offset = (room - span) / 2
+  const nX = Math.max(1, Math.floor((state.roomL - 0.5) / state.spacingX) + 1);
+  const nZ = Math.max(1, Math.floor((state.roomW - 0.5) / state.spacingZ) + 1);
+  const spanX = (nX - 1) * state.spacingX;
+  const spanZ = (nZ - 1) * state.spacingZ;
+  const wallOffX = (state.roomL - spanX) / 2;
+  const wallOffZ = (state.roomW - spanZ) / 2;
+  const startX = -spanX / 2;
+  const startZ = -spanZ / 2;
+  const positions = [];
+  for (let i = 0; i < nX; i++) {
+    for (let j = 0; j < nZ; j++) {
+      positions.push({ x: startX + i * state.spacingX, z: startZ + j * state.spacingZ });
+    }
+  }
+  return { positions, nX, nZ, wallOffX, wallOffZ };
+}
+
+function initScene() {
+  const canvas = document.getElementById('canvas');
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xdde4ee);
+  scene.fog = new THREE.Fog(0xdde4ee, 25, 80);
+
+  const w = canvas.clientWidth, hgt = canvas.clientHeight;
+  camera = new THREE.PerspectiveCamera(45, w/hgt, 0.1, 200);
+  camera.position.set(state.roomL * 0.7, state.h * 1.5, state.roomW * 0.7);
+
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setSize(w, hgt, false);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+  controls = new OrbitControls(camera, canvas);
+  controls.target.set(0, 1.5, 0);
+  controls.enableDamping = true;
+
+  const amb = new THREE.AmbientLight(0xffffff, 0.7);
+  scene.add(amb);
+  const dir = new THREE.DirectionalLight(0xffffff, 0.85);
+  dir.position.set(5, 10, 5);
+  scene.add(dir);
+  const fill = new THREE.DirectionalLight(0xcdd8ea, 0.4);
+  fill.position.set(-5, 3, -5);
+  scene.add(fill);
+
+  heatmapCanvas = document.createElement('canvas');
+  heatmapCanvas.width = 256;
+  heatmapCanvas.height = 256;
+  heatmapCtx = heatmapCanvas.getContext('2d');
+  heatmapTexture = new THREE.CanvasTexture(heatmapCanvas);
+  heatmapTexture.minFilter = THREE.LinearFilter;
+  heatmapTexture.magFilter = THREE.LinearFilter;
+
+  buildRoom();
+
+  dropletGeometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(state.nDroplets * 3);
+  dropletGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+  dropletMaterial = new THREE.PointsMaterial({
+    color: 0x1d4ed8,
+    size: 0.008,
+    transparent: true,
+    opacity: 0.95,
+    sizeAttenuation: true,
+    depthWrite: false,
+  });
+  dropletPoints = new THREE.Points(dropletGeometry, dropletMaterial);
+  scene.add(dropletPoints);
+
+  window.addEventListener('resize', onResize);
+}
+
+function buildRoom() {
+  if (floorMesh) scene.remove(floorMesh);
+  if (roomMesh) scene.remove(roomMesh);
+  if (gridHelperMesh) scene.remove(gridHelperMesh);
+  if (sprinklerGroup) scene.remove(sprinklerGroup);
+  if (sprinklerMarkers) scene.remove(sprinklerMarkers);
+
+  const floorGeom = new THREE.PlaneGeometry(state.roomL, state.roomW);
+  const floorMat = new THREE.MeshStandardMaterial({ map: heatmapTexture, roughness: 0.9 });
+  floorMesh = new THREE.Mesh(floorGeom, floorMat);
+  floorMesh.rotation.x = -Math.PI / 2;
+  scene.add(floorMesh);
+
+  // custom L×W mesh grid — 1m major, 0.5m minor
+  gridHelperMesh = new THREE.Group();
+  const halfL = state.roomL / 2;
+  const halfW = state.roomW / 2;
+  const minorStep = 0.5;
+  const majorMat = new THREE.LineBasicMaterial({ color: 0x607088, transparent: true, opacity: 0.55 });
+  const minorMat = new THREE.LineBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.25 });
+  const makeLine = (x1, z1, x2, z2, mat) => {
+    const g = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(x1, 0, z1),
+      new THREE.Vector3(x2, 0, z2),
+    ]);
+    return new THREE.Line(g, mat);
+  };
+  // lines along X (varying Z)
+  for (let z = -halfW; z <= halfW + 1e-6; z += minorStep) {
+    const isMajor = Math.abs(z - Math.round(z)) < 1e-3;
+    gridHelperMesh.add(makeLine(-halfL, z, halfL, z, isMajor ? majorMat : minorMat));
+  }
+  // lines along Z (varying X)
+  for (let x = -halfL; x <= halfL + 1e-6; x += minorStep) {
+    const isMajor = Math.abs(x - Math.round(x)) < 1e-3;
+    gridHelperMesh.add(makeLine(x, -halfW, x, halfW, isMajor ? majorMat : minorMat));
+  }
+  gridHelperMesh.position.y = 0.008;
+  scene.add(gridHelperMesh);
+
+  const roomGeom = new THREE.BoxGeometry(state.roomL, state.h, state.roomW);
+  const edges = new THREE.EdgesGeometry(roomGeom);
+  const roomLines = new THREE.LineSegments(
+    edges,
+    new THREE.LineBasicMaterial({ color: 0x1e3a6b, opacity: 0.55, transparent: true })
+  );
+  roomLines.position.y = state.h / 2;
+  scene.add(roomLines);
+  roomMesh = roomLines;
+
+  // Compute sprinkler positions from spacing
+  const { positions, nX, nZ, wallOffX, wallOffZ } = computeSprinklerPositions();
+  state.sprinklers = positions;
+
+  // Shared geometries / materials for all heads (perf)
+  const pipeGeom = new THREE.CylinderGeometry(0.025, 0.025, 0.18, 10);
+  const pipeMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.7, roughness: 0.3 });
+  const headGeom = new THREE.CylinderGeometry(0.055, 0.035, 0.04, 10);
+  const headMat = new THREE.MeshStandardMaterial({ color: 0xea580c, metalness: 0.5, roughness: 0.4 });
+  const deflGeom = new THREE.CylinderGeometry(0.07, 0.07, 0.008, 14);
+  const deflMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.8, roughness: 0.2 });
+
+  sprinklerGroup = new THREE.Group();
+  sprinklerMarkers = new THREE.Group();
+  sprinklerHitMeshes.length = 0;
+  state.selectedIdx = -1;
+  const selInfo = document.getElementById('selInfo');
+  if (selInfo) selInfo.style.display = 'none';
+
+  // Floor marker ring geom/mat (shared)
+  const ringGeom = new THREE.RingGeometry(0.12, 0.16, 24);
+  const ringMat = new THREE.MeshBasicMaterial({ color: 0xea580c, side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
+  const dotGeom = new THREE.CircleGeometry(0.06, 16);
+  const dotMat = new THREE.MeshBasicMaterial({ color: 0xdc2626 });
+
+  // Enlarged invisible pick helper per sprinkler (easier to click)
+  const pickGeom = new THREE.CylinderGeometry(0.18, 0.18, 0.30, 10);
+  const pickMat = new THREE.MeshBasicMaterial({ visible: false });
+
+  positions.forEach((p, idx) => {
+    const unit = new THREE.Group();
+    const pipe = new THREE.Mesh(pipeGeom, pipeMat);
+    pipe.position.y = state.h - 0.09;
+    unit.add(pipe);
+    const head = new THREE.Mesh(headGeom, headMat);
+    head.position.y = state.h - 0.20;
+    unit.add(head);
+    const defl = new THREE.Mesh(deflGeom, deflMat);
+    defl.position.y = state.h - 0.235;
+    unit.add(defl);
+    const pick = new THREE.Mesh(pickGeom, pickMat);
+    pick.position.y = state.h - 0.15;
+    pick.userData.sprinklerIdx = idx;
+    unit.add(pick);
+
+    unit.position.set(p.x, 0, p.z);
+    sprinklerGroup.add(unit);
+    sprinklerHitMeshes.push(pick);
+
+    // Floor marker: ring + center dot
+    const ring = new THREE.Mesh(ringGeom, ringMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(p.x, 0.012, p.z);
+    ring.userData.sprinklerIdx = idx;
+    ring.userData.isRing = true;
+    sprinklerMarkers.add(ring);
+    const dot = new THREE.Mesh(dotGeom, dotMat);
+    dot.rotation.x = -Math.PI / 2;
+    dot.position.set(p.x, 0.013, p.z);
+    sprinklerMarkers.add(dot);
+  });
+
+  scene.add(sprinklerGroup);
+  scene.add(sprinklerMarkers);
+
+  // Update mesh info panel
+  const meshCountEl = document.getElementById('meshCount');
+  if (meshCountEl) {
+    meshCountEl.textContent = positions.length;
+    document.getElementById('meshNx').textContent = nX;
+    document.getElementById('meshNz').textContent = nZ;
+    const perHead = (state.roomL * state.roomW) / Math.max(1, positions.length);
+    document.getElementById('meshPerHead').textContent = perHead.toFixed(2);
+    document.getElementById('meshWallOff').textContent =
+      `${wallOffX.toFixed(2)}×${wallOffZ.toFixed(2)}`;
+  }
+
+  if (controls) controls.target.set(0, Math.min(1.5, state.h/2), 0);
+}
+
+function onResize() {
+  const canvas = document.getElementById('canvas');
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false);
+}
+
+function updateHeatmapTexture() {
+  const img = heatmapCtx.createImageData(256, 256);
+  let maxVal = 0;
+  for (let i = 0; i < grid.length; i++) if (grid[i] > maxVal) maxVal = grid[i];
+  if (maxVal <= 0) {
+    heatmapCtx.fillStyle = '#1e293b';
+    heatmapCtx.fillRect(0, 0, 256, 256);
+    heatmapTexture.needsUpdate = true;
+    return;
+  }
+
+  for (let py = 0; py < 256; py++) {
+    for (let px = 0; px < 256; px++) {
+      const gx = Math.floor(px / 256 * GRID_N);
+      const gy = Math.floor((255 - py) / 256 * GRID_N);
+      const v = grid[gy * GRID_N + gx] / maxVal;
+      const col = colorRamp(v);
+      const idx = (py * 256 + px) * 4;
+      img.data[idx] = col[0];
+      img.data[idx+1] = col[1];
+      img.data[idx+2] = col[2];
+      img.data[idx+3] = 255;
+    }
+  }
+  heatmapCtx.putImageData(img, 0, 0);
+  heatmapTexture.needsUpdate = true;
+}
+
+function colorRamp(t) {
+  t = Math.max(0, Math.min(1, t));
+  const stops = [
+    [0.00, [30, 41, 90]],
+    [0.15, [30, 58, 138]],
+    [0.35, [37, 99, 235]],
+    [0.55, [34, 197, 94]],
+    [0.75, [234, 179, 8]],
+    [0.88, [234, 88, 12]],
+    [1.00, [220, 38, 38]],
+  ];
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (t <= stops[i+1][0]) {
+      const [a, ca] = stops[i];
+      const [b, cb] = stops[i+1];
+      const f = (t - a) / (b - a);
+      return [
+        Math.round(ca[0] + (cb[0]-ca[0])*f),
+        Math.round(ca[1] + (cb[1]-ca[1])*f),
+        Math.round(ca[2] + (cb[2]-ca[2])*f),
+      ];
+    }
+  }
+  return stops[stops.length-1][1];
+}
+
+let lastTime = performance.now();
+let frameCount = 0;
+let fpsLast = performance.now();
+let fps = 0;
+
+function animate() {
+  requestAnimationFrame(animate);
+  const now = performance.now();
+  let dt = Math.min(0.05, (now - lastTime) / 1000);
+  lastTime = now;
+
+  frameCount++;
+  if (now - fpsLast > 500) {
+    fps = Math.round(frameCount * 1000 / (now - fpsLast));
+    fpsLast = now;
+    frameCount = 0;
+    document.getElementById('hudFps').textContent = fps;
+  }
+
+  if (state.playing) {
+    const simDt = dt * state.speedMul;
+    state.simTime += simDt;
+
+    const { v0, prof } = computeHydraulics();
+
+    const targetLife = 1.2;
+    const desiredEmitPerSec = state.nDroplets / targetLife;
+    const toEmit = Math.floor(desiredEmitPerSec * simDt);
+    for (let i = 0; i < toEmit; i++) {
+      if (state.droplets.length < state.nDroplets * 2) {
+        state.droplets.push(emitDroplet(v0, prof));
+        state.totalEmitted++;
+      }
+    }
+
+    const subSteps = 3;
+    const subDt = simDt / subSteps;
+    for (let s = 0; s < subSteps; s++) {
+      for (let i = state.droplets.length - 1; i >= 0; i--) {
+        const d = state.droplets[i];
+        if (!d.alive) continue;
+        const res = stepDroplet(d, subDt);
+        if (res.landed) {
+          const idx = gridIdx(res.x, res.z);
+          if (idx >= 0) {
+            grid[idx] += 1;
+            state.totalLanded++;
+          }
+        }
+      }
+    }
+    state.droplets = state.droplets.filter(d => d.alive);
+
+    const positions = dropletGeometry.attributes.position.array;
+    const n = Math.min(state.droplets.length, state.nDroplets);
+    for (let i = 0; i < n; i++) {
+      positions[i*3] = state.droplets[i].x;
+      positions[i*3+1] = state.droplets[i].y;
+      positions[i*3+2] = state.droplets[i].z;
+    }
+    for (let i = n; i < state.nDroplets; i++) {
+      positions[i*3+1] = -10;
+    }
+    dropletGeometry.attributes.position.needsUpdate = true;
+    dropletGeometry.setDrawRange(0, state.nDroplets);
+
+    if (frameCount % 3 === 0) updateHeatmapTexture();
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+function recomputeMetrics() {
+  const { Q, v0, prof } = computeHydraulics(); // per-head
+  const N = Math.max(1, state.sprinklers.length);
+  const Qtotal = Q * N;
+  const R = computeCoverageRadius(v0, state.h, prof);
+  const A = Math.PI * R * R;
+  const roomA = state.roomL * state.roomW;
+
+  // mesh covers roomA → density = total flow / room area
+  const dAvg = Qtotal / roomA;
+
+  let gridMax = 0;
+  for (let i = 0; i < grid.length; i++) {
+    if (grid[i] > gridMax) gridMax = grid[i];
+  }
+
+  const cellArea = cellX * cellZ;
+  let dMax = 0;
+  if (state.totalLanded > 0) {
+    dMax = Qtotal * gridMax / state.totalLanded / cellArea;
+  }
+
+  const dReq = HAZARD_DENSITY[state.hazard];
+
+  document.getElementById('mQ').textContent = Qtotal.toFixed(1);
+  document.getElementById('mV').textContent = v0.toFixed(2);
+  document.getElementById('mR').textContent = R.toFixed(2);
+  document.getElementById('mA').textContent = A.toFixed(2);
+  document.getElementById('mRoomA').textContent = roomA.toFixed(2);
+  document.getElementById('mDavg').textContent = dAvg.toFixed(2);
+  document.getElementById('mDmax').textContent = (dMax || dAvg*2.5).toFixed(2);
+  document.getElementById('mDreq').textContent = dReq.toFixed(2);
+
+  document.getElementById('hudQ').textContent = `${Qtotal.toFixed(1)} L/min (×${N})`;
+  document.getElementById('hudV').textContent = v0.toFixed(1) + ' m/s';
+  document.getElementById('hudR').textContent = R.toFixed(2) + ' m';
+
+  const legMax = (dMax || dAvg*2.5);
+  document.getElementById('legMax').textContent = legMax.toFixed(1);
+  document.getElementById('legHalf').textContent = (legMax/2).toFixed(1);
+
+  document.getElementById('complClass').textContent = state.hazard;
+  const compl = dAvg >= dReq;
+  const complEl = document.getElementById('complStatus');
+  const detail = document.getElementById('complDetail');
+  const maxSp = MAX_SPACING[state.hazard] || 4.0;
+  const spacingOk = state.spacingX <= maxSp && state.spacingZ <= maxSp;
+  const spacingNote = spacingOk
+    ? `დაშორება ${state.spacingX.toFixed(1)}×${state.spacingZ.toFixed(1)} ≤ max ${maxSp} m`
+    : `⚠ დაშორება ${state.spacingX.toFixed(1)}×${state.spacingZ.toFixed(1)} > EN 12845 max ${maxSp} m`;
+
+  if (compl && spacingOk) {
+    complEl.textContent = '✓ შესაბამისია';
+    complEl.style.color = 'var(--green-local)';
+    detail.innerHTML = `საშ. ${dAvg.toFixed(2)} ≥ მოთხოვნ. ${dReq} mm/min<br>${spacingNote}`;
+  } else if (!compl) {
+    complEl.textContent = '✗ არაშესაბამისი';
+    complEl.style.color = 'var(--red-local)';
+    detail.innerHTML = `საშ. ${dAvg.toFixed(2)} < მოთხოვნ. ${dReq} mm/min — გაზარდე წნევა, K ან შეამცირე დაშორება<br>${spacingNote}`;
+  } else {
+    complEl.textContent = '⚠ დაშორება აჭარბებს';
+    complEl.style.color = '#a16207';
+    detail.innerHTML = `dens. OK, მაგრამ ${spacingNote}`;
+  }
+
+  drawRadialChart(R);
+}
+
+function drawRadialChart(coverageR) {
+  const canvas = document.getElementById('radialChart');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, w, h);
+
+  const bins = 25;
+  const maxR = Math.max(state.roomL, state.roomW) / 2;
+  const binCounts = new Float32Array(bins);
+  const binAreas = new Float32Array(bins);
+
+  const halfL = state.roomL / 2;
+  const halfW = state.roomW / 2;
+  for (let j = 0; j < GRID_N; j++) {
+    for (let i = 0; i < GRID_N; i++) {
+      const x = (i + 0.5) * cellX - halfL;
+      const z = (j + 0.5) * cellZ - halfW;
+      const r = Math.sqrt(x*x + z*z);
+      const b = Math.floor(r / maxR * bins);
+      if (b < bins) {
+        binCounts[b] += grid[j * GRID_N + i];
+        binAreas[b] += cellX * cellZ;
+      }
+    }
+  }
+
+  const { Q } = computeHydraulics();
+  const Qtotal = Q * Math.max(1, state.sprinklers.length);
+  const densities = new Float32Array(bins);
+  let maxD = 0;
+  for (let b = 0; b < bins; b++) {
+    if (binAreas[b] > 0 && state.totalLanded > 0) {
+      const flowInBin = Qtotal * binCounts[b] / state.totalLanded;
+      densities[b] = flowInBin / binAreas[b];
+      if (densities[b] > maxD) maxD = densities[b];
+    }
+  }
+
+  const dReq = HAZARD_DENSITY[state.hazard];
+  const yMax = Math.max(maxD, dReq) * 1.2;
+
+  const yReq = h - (dReq / yMax) * (h - 6) - 3;
+  ctx.strokeStyle = '#dc2626';
+  ctx.setLineDash([3, 3]);
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, yReq);
+  ctx.lineTo(w, yReq);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#dc2626';
+  ctx.font = '9px "IBM Plex Mono"';
+  ctx.fillText(`${dReq} mm/min`, 4, yReq - 2);
+
+  const barW = w / bins;
+  for (let b = 0; b < bins; b++) {
+    const d = densities[b];
+    const barH = yMax > 0 ? (d / yMax) * (h - 6) : 0;
+    const color = colorRamp(yMax > 0 ? d / yMax : 0);
+    ctx.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+    ctx.fillRect(b * barW + 0.5, h - barH - 3, barW - 1, barH);
+  }
+
+  const rX = (coverageR / maxR) * w;
+  ctx.strokeStyle = '#ea580c';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(rX, 0);
+  ctx.lineTo(rX, h);
+  ctx.stroke();
+  ctx.fillStyle = '#ea580c';
+  ctx.fillText(`R=${coverageR.toFixed(1)}m`, rX + 2, 10);
+}
+
+function rebuildOnDimsChange() {
+  cellX = state.roomL / GRID_N;
+  cellZ = state.roomW / GRID_N;
+  buildRoom();
+  clearHeatmap();
+  onParamsChange();
+}
+
+function bindUI() {
+  document.getElementById('k').addEventListener('change', e => {
+    state.k = parseFloat(e.target.value);
+    document.getElementById('kVal').textContent = 'K-' + state.k;
+    onParamsChange();
+  });
+
+  document.getElementById('type').addEventListener('change', e => {
+    state.type = e.target.value;
+    document.getElementById('typeVal').textContent = TYPE_PROFILES[state.type].label;
+    onParamsChange();
+  });
+
+  document.getElementById('p').addEventListener('input', e => {
+    state.p = parseFloat(e.target.value);
+    document.getElementById('pVal').textContent = state.p.toFixed(2);
+    onParamsChange();
+  });
+
+  document.getElementById('h').addEventListener('input', e => {
+    state.h = parseFloat(e.target.value);
+    document.getElementById('hVal').textContent = state.h.toFixed(1);
+    rebuildOnDimsChange();
+  });
+
+  document.getElementById('roomL').addEventListener('input', e => {
+    state.roomL = parseFloat(e.target.value);
+    document.getElementById('lVal').textContent = state.roomL.toFixed(1);
+    rebuildOnDimsChange();
+  });
+
+  document.getElementById('roomW').addEventListener('input', e => {
+    state.roomW = parseFloat(e.target.value);
+    document.getElementById('wVal').textContent = state.roomW.toFixed(1);
+    rebuildOnDimsChange();
+  });
+
+  document.getElementById('spacingX').addEventListener('input', e => {
+    state.spacingX = parseFloat(e.target.value);
+    document.getElementById('sxVal').textContent = state.spacingX.toFixed(1);
+    rebuildOnDimsChange();
+  });
+
+  document.getElementById('spacingZ').addEventListener('input', e => {
+    state.spacingZ = parseFloat(e.target.value);
+    document.getElementById('szVal').textContent = state.spacingZ.toFixed(1);
+    rebuildOnDimsChange();
+  });
+
+  document.getElementById('applyHazSpacing').addEventListener('click', () => {
+    const maxSp = MAX_SPACING[state.hazard] || 3.0;
+    state.spacingX = maxSp;
+    state.spacingZ = maxSp;
+    document.getElementById('spacingX').value = maxSp;
+    document.getElementById('spacingZ').value = maxSp;
+    document.getElementById('sxVal').textContent = maxSp.toFixed(1);
+    document.getElementById('szVal').textContent = maxSp.toFixed(1);
+    rebuildOnDimsChange();
+  });
+
+  document.getElementById('presetSquare').addEventListener('click', () => {
+    state.spacingX = 3.0;
+    state.spacingZ = 3.0;
+    document.getElementById('spacingX').value = 3.0;
+    document.getElementById('spacingZ').value = 3.0;
+    document.getElementById('sxVal').textContent = '3.0';
+    document.getElementById('szVal').textContent = '3.0';
+    rebuildOnDimsChange();
+  });
+
+  document.getElementById('presetRect').addEventListener('click', () => {
+    state.spacingX = 3.0;
+    state.spacingZ = 4.0;
+    document.getElementById('spacingX').value = 3.0;
+    document.getElementById('spacingZ').value = 4.0;
+    document.getElementById('sxVal').textContent = '3.0';
+    document.getElementById('szVal').textContent = '4.0';
+    rebuildOnDimsChange();
+  });
+
+  document.getElementById('hazard').addEventListener('change', e => {
+    state.hazard = e.target.value;
+    onParamsChange();
+  });
+
+  document.getElementById('n').addEventListener('input', e => {
+    state.nDroplets = parseInt(e.target.value);
+    document.getElementById('nVal').textContent = state.nDroplets;
+    const positions = new Float32Array(state.nDroplets * 3);
+    dropletGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  });
+
+  document.getElementById('sp').addEventListener('input', e => {
+    state.speedMul = parseFloat(e.target.value);
+    document.getElementById('spVal').textContent = state.speedMul.toFixed(2);
+  });
+
+  const COLOR_MAP = {
+    blue:  { hex: 0x1d4ed8, label: 'ლურჯი'       },
+    red:   { hex: 0xdc2626, label: 'წითელი'       },
+    cyan:  { hex: 0x06b6d4, label: 'ცისფერი ღია'  },
+    white: { hex: 0xffffff, label: 'თეთრი'        },
+  };
+  document.getElementById('dColor').addEventListener('change', e => {
+    const c = COLOR_MAP[e.target.value] || COLOR_MAP.blue;
+    dropletMaterial.color.setHex(c.hex);
+    document.getElementById('dColorVal').textContent = c.label;
+  });
+
+  document.getElementById('playBtn').addEventListener('click', () => {
+    state.playing = !state.playing;
+    document.getElementById('playBtn').textContent = state.playing ? '⏸ პაუზა' : '▶ დაწყება';
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    state.droplets = [];
+    clearHeatmap();
+  });
+
+  document.getElementById('clearHeatBtn').addEventListener('click', clearHeatmap);
+
+  document.querySelectorAll('.view-toggle button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.view-toggle button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const v = btn.dataset.view;
+      const maxDim = Math.max(state.roomL, state.roomW);
+      if (v === 'persp') {
+        camera.position.set(state.roomL*0.7, state.h*1.5, state.roomW*0.7);
+        controls.target.set(0, state.h/3, 0);
+      } else if (v === 'side') {
+        camera.position.set(state.roomL*0.9, state.h*0.6, 0.1);
+        controls.target.set(0, state.h/2, 0);
+      } else if (v === 'top') {
+        camera.position.set(0, maxDim*1.4, 0.1);
+        controls.target.set(0, 0, 0);
+      }
+    });
+  });
+}
+
+function onParamsChange() {
+  recomputeMetrics();
+}
+
+// ============================================================
+// SELECT + DRAG on XZ plane
+// ============================================================
+let dragging = false;
+let dragOffset = new THREE.Vector3();
+let dragIdx = -1;
+
+function setPointerNDC(ev) {
+  const canvas = document.getElementById('canvas');
+  const rect = canvas.getBoundingClientRect();
+  pointerNDC.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+  pointerNDC.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+}
+
+function highlightSelected() {
+  sprinklerMarkers.children.forEach(m => {
+    if (m.userData && m.userData.isRing) {
+      m.material = m.userData.sprinklerIdx === state.selectedIdx
+        ? new THREE.MeshBasicMaterial({ color: 0x22c55e, side: THREE.DoubleSide, transparent: true, opacity: 0.95 })
+        : new THREE.MeshBasicMaterial({ color: 0xea580c, side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
+    }
+  });
+}
+
+function updateSelInfo() {
+  const selInfo = document.getElementById('selInfo');
+  if (!selInfo) return;
+  if (state.selectedIdx < 0) {
+    selInfo.style.display = 'none';
+    return;
+  }
+  const s = state.sprinklers[state.selectedIdx];
+  selInfo.style.display = '';
+  document.getElementById('selId').textContent = state.selectedIdx + 1;
+  document.getElementById('selXZ').textContent = `${s.x.toFixed(2)}, ${s.z.toFixed(2)}`;
+}
+
+function moveSprinkler(idx, x, z) {
+  // Clamp to room bounds with a small margin
+  const halfL = state.roomL / 2 - 0.1;
+  const halfW = state.roomW / 2 - 0.1;
+  x = Math.max(-halfL, Math.min(halfL, x));
+  z = Math.max(-halfW, Math.min(halfW, z));
+  state.sprinklers[idx] = { x, z };
+
+  const unit = sprinklerGroup.children[idx];
+  if (unit) unit.position.set(x, 0, z);
+
+  // markers: each index uses 2 children (ring then dot)
+  const ring = sprinklerMarkers.children[idx * 2];
+  const dot = sprinklerMarkers.children[idx * 2 + 1];
+  if (ring) ring.position.set(x, 0.012, z);
+  if (dot) dot.position.set(x, 0.013, z);
+  updateSelInfo();
+}
+
+function bindDrag() {
+  const canvas = document.getElementById('canvas');
+
+  canvas.addEventListener('pointerdown', (ev) => {
+    if (!state.editMode) return;
+    setPointerNDC(ev);
+    raycaster.setFromCamera(pointerNDC, camera);
+    const hits = raycaster.intersectObjects(sprinklerHitMeshes, false);
+    if (hits.length) {
+      const idx = hits[0].object.userData.sprinklerIdx;
+      state.selectedIdx = idx;
+      dragIdx = idx;
+      dragging = true;
+      controls.enabled = false;
+      const hitPoint = new THREE.Vector3();
+      raycaster.ray.intersectPlane(dragPlane, hitPoint);
+      const cur = state.sprinklers[idx];
+      dragOffset.set(cur.x - hitPoint.x, 0, cur.z - hitPoint.z);
+      highlightSelected();
+      updateSelInfo();
+      canvas.setPointerCapture(ev.pointerId);
+    } else {
+      state.selectedIdx = -1;
+      highlightSelected();
+      updateSelInfo();
+    }
+  });
+
+  canvas.addEventListener('pointermove', (ev) => {
+    if (!dragging || dragIdx < 0) return;
+    setPointerNDC(ev);
+    raycaster.setFromCamera(pointerNDC, camera);
+    const hitPoint = new THREE.Vector3();
+    if (raycaster.ray.intersectPlane(dragPlane, hitPoint)) {
+      moveSprinkler(dragIdx, hitPoint.x + dragOffset.x, hitPoint.z + dragOffset.z);
+    }
+  });
+
+  const endDrag = (ev) => {
+    if (!dragging) return;
+    dragging = false;
+    dragIdx = -1;
+    controls.enabled = true;
+    try { canvas.releasePointerCapture(ev.pointerId); } catch {}
+    clearHeatmap(); // previous heatmap no longer reflects new layout
+  };
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+}
+
+// ============================================================
+// IFC LOADER
+// ============================================================
+async function loadWebIfc() {
+  if (ifcApi) return ifcApi;
+  const mod = await import('web-ifc');
+  ifcApi = new mod.IfcAPI();
+  ifcApi.SetWasmPath(IFC_WASM_PATH, true);
+  await ifcApi.Init();
+  return ifcApi;
+}
+
+function setIfcStatus(msg, err = false) {
+  const el = document.getElementById('ifcStatus');
+  el.textContent = msg;
+  el.style.color = err ? 'var(--red-local)' : 'var(--muted-local)';
+}
+
+function clearIfc() {
+  if (ifcGroup) {
+    scene.remove(ifcGroup);
+    ifcGroup.traverse(o => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) {
+        if (Array.isArray(o.material)) o.material.forEach(m => m.dispose());
+        else o.material.dispose();
+      }
+    });
+    ifcGroup = null;
+  }
+  const tb = document.getElementById('ifcTransformBox');
+  if (tb) tb.style.display = 'none';
+  setIfcStatus('IFC არ არის ჩატვირთული.');
+}
+
+function applyIfcTransform() {
+  if (!ifcGroup) return;
+  const t = state.ifcTransform;
+  const deg2rad = Math.PI / 180;
+  // YXZ order: yaw first (ground rotation), then pitch (X), then roll (Z) —
+  // matches intuition when user drags Y then tilts.
+  ifcGroup.rotation.order = 'YXZ';
+  ifcGroup.rotation.set(t.rotX * deg2rad, t.rotY * deg2rad, t.rotZ * deg2rad);
+  ifcGroup.position.x = t.offX;
+  ifcGroup.position.z = t.offZ;
+}
+
+async function loadIfcFile(file) {
+  try {
+    setIfcStatus(`იტვირთება ${file.name}…`);
+    await loadWebIfc();
+    const buf = new Uint8Array(await file.arrayBuffer());
+    const modelId = ifcApi.OpenModel(buf);
+
+    clearIfc();
+    ifcGroup = new THREE.Group();
+
+    let meshCount = 0;
+    const box = new THREE.Box3();
+    const tempBox = new THREE.Box3();
+
+    ifcApi.StreamAllMeshes(modelId, (flatMesh) => {
+      const placedGeoms = flatMesh.geometries;
+      for (let i = 0; i < placedGeoms.size(); i++) {
+        const pg = placedGeoms.get(i);
+        const geom = ifcApi.GetGeometry(modelId, pg.geometryExpressID);
+        const verts = ifcApi.GetVertexArray(geom.GetVertexData(), geom.GetVertexDataSize());
+        const idx = ifcApi.GetIndexArray(geom.GetIndexData(), geom.GetIndexDataSize());
+
+        // verts layout: [x,y,z,nx,ny,nz] repeating
+        const positions = new Float32Array(verts.length / 2);
+        const normals = new Float32Array(verts.length / 2);
+        for (let v = 0; v < verts.length; v += 6) {
+          const k = (v / 6) * 3;
+          positions[k] = verts[v];
+          positions[k+1] = verts[v+1];
+          positions[k+2] = verts[v+2];
+          normals[k] = verts[v+3];
+          normals[k+1] = verts[v+4];
+          normals[k+2] = verts[v+5];
+        }
+        const bg = new THREE.BufferGeometry();
+        bg.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        bg.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+        bg.setIndex(new THREE.BufferAttribute(new Uint32Array(idx), 1));
+
+        const m = new THREE.Matrix4().fromArray(pg.flatTransformation);
+        const c = pg.color || { x: 0.7, y: 0.75, z: 0.8, w: 1 };
+        const mat = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(c.x, c.y, c.z),
+          transparent: c.w < 1,
+          opacity: c.w,
+          metalness: 0.05,
+          roughness: 0.85,
+          side: THREE.DoubleSide,
+        });
+        const mesh = new THREE.Mesh(bg, mat);
+        mesh.applyMatrix4(m);
+        mesh.raycast = () => {}; // exclude from raycast (don't steal sprinkler picks)
+        ifcGroup.add(mesh);
+        meshCount++;
+
+        tempBox.setFromObject(mesh);
+        box.union(tempBox);
+      }
+    });
+
+    // web-ifc geometry: Z-up → we want Y-up, so wrap in outer group rotated -PI/2 around X
+    const outer = new THREE.Group();
+    ifcGroup.rotation.x = -Math.PI / 2;
+    outer.add(ifcGroup);
+
+    // Compute bounds after the Z→Y rotation
+    box.applyMatrix4(new THREE.Matrix4().makeRotationX(-Math.PI / 2));
+    const center = new THREE.Vector3();
+    box.getCenter(center);
+    ifcGroup.position.x -= center.x;
+    ifcGroup.position.z -= center.z;
+    ifcGroup.position.y -= box.min.y; // bottom sits at outer-group y=0
+
+    // outer = the transformable container (rotate around Y, translate XZ)
+    scene.remove(ifcGroup);
+    scene.add(outer);
+    ifcGroup = outer;
+
+    state.ifcTransform = { rotX: 0, rotY: 0, rotZ: 0, offX: 0, offZ: 0, baseY: 0 };
+    applyIfcTransform();
+
+    // show transform controls
+    document.getElementById('ifcTransformBox').style.display = '';
+    ['ifcRot','ifcRotX','ifcRotZ','ifcOffX','ifcOffZ'].forEach(id => { document.getElementById(id).value = 0; });
+    document.getElementById('ifcRotVal').textContent = '0';
+    document.getElementById('ifcRotXVal').textContent = '0';
+    document.getElementById('ifcRotZVal').textContent = '0';
+    document.getElementById('ifcOffXVal').textContent = '0.0';
+    document.getElementById('ifcOffZVal').textContent = '0.0';
+
+    ifcApi.CloseModel(modelId);
+    setIfcStatus(`✓ ${file.name} · ${meshCount} mesh`);
+  } catch (err) {
+    console.error(err);
+    setIfcStatus('შეცდომა: ' + (err.message || err), true);
+  }
+}
+
+function bindIfc() {
+  document.getElementById('ifcBtn').addEventListener('click', () => {
+    document.getElementById('ifcFile').click();
+  });
+  document.getElementById('ifcFile').addEventListener('change', (e) => {
+    const f = e.target.files?.[0];
+    if (f) loadIfcFile(f);
+    e.target.value = '';
+  });
+  document.getElementById('ifcClearBtn').addEventListener('click', clearIfc);
+
+  const rotEl = document.getElementById('ifcRot');
+  const rotValEl = document.getElementById('ifcRotVal');
+  rotEl.addEventListener('input', (e) => {
+    state.ifcTransform.rotY = parseFloat(e.target.value);
+    rotValEl.textContent = Math.round(state.ifcTransform.rotY);
+    applyIfcTransform();
+  });
+  const bumpRot = (delta) => {
+    let v = state.ifcTransform.rotY + delta;
+    // normalize to [-180, 180]
+    while (v > 180) v -= 360;
+    while (v < -180) v += 360;
+    state.ifcTransform.rotY = v;
+    rotEl.value = v;
+    rotValEl.textContent = Math.round(v);
+    applyIfcTransform();
+  };
+  document.getElementById('ifcRot90').addEventListener('click', () => bumpRot(90));
+  document.getElementById('ifcRotN90').addEventListener('click', () => bumpRot(-90));
+  document.getElementById('ifcRotFlip').addEventListener('click', () => bumpRot(180));
+  document.getElementById('ifcRotReset').addEventListener('click', () => {
+    state.ifcTransform.rotY = 0;
+    rotEl.value = 0;
+    rotValEl.textContent = '0';
+    applyIfcTransform();
+  });
+
+  // Axis rotation helper (reused for X and Z)
+  function bindAxisRotation(axisKey, sliderId, valId, btnPlus, btnMinus, btnFlip, btnReset) {
+    const el = document.getElementById(sliderId);
+    const valEl = document.getElementById(valId);
+    el.addEventListener('input', (e) => {
+      state.ifcTransform[axisKey] = parseFloat(e.target.value);
+      valEl.textContent = Math.round(state.ifcTransform[axisKey]);
+      applyIfcTransform();
+    });
+    const bump = (delta) => {
+      let v = state.ifcTransform[axisKey] + delta;
+      while (v > 180) v -= 360;
+      while (v < -180) v += 360;
+      state.ifcTransform[axisKey] = v;
+      el.value = v;
+      valEl.textContent = Math.round(v);
+      applyIfcTransform();
+    };
+    document.getElementById(btnPlus).addEventListener('click', () => bump(90));
+    document.getElementById(btnMinus).addEventListener('click', () => bump(-90));
+    document.getElementById(btnFlip).addEventListener('click', () => bump(180));
+    document.getElementById(btnReset).addEventListener('click', () => {
+      state.ifcTransform[axisKey] = 0;
+      el.value = 0;
+      valEl.textContent = '0';
+      applyIfcTransform();
+    });
+  }
+  bindAxisRotation('rotX', 'ifcRotX', 'ifcRotXVal', 'ifcRotX90', 'ifcRotXN90', 'ifcRotXFlip', 'ifcRotXReset');
+  bindAxisRotation('rotZ', 'ifcRotZ', 'ifcRotZVal', 'ifcRotZ90', 'ifcRotZN90', 'ifcRotZFlip', 'ifcRotZReset');
+
+  const offXEl = document.getElementById('ifcOffX');
+  const offZEl = document.getElementById('ifcOffZ');
+  offXEl.addEventListener('input', (e) => {
+    state.ifcTransform.offX = parseFloat(e.target.value);
+    document.getElementById('ifcOffXVal').textContent = state.ifcTransform.offX.toFixed(1);
+    applyIfcTransform();
+  });
+  offZEl.addEventListener('input', (e) => {
+    state.ifcTransform.offZ = parseFloat(e.target.value);
+    document.getElementById('ifcOffZVal').textContent = state.ifcTransform.offZ.toFixed(1);
+    applyIfcTransform();
+  });
+  document.getElementById('ifcCenter').addEventListener('click', () => {
+    state.ifcTransform.offX = 0;
+    state.ifcTransform.offZ = 0;
+    offXEl.value = 0;
+    offZEl.value = 0;
+    document.getElementById('ifcOffXVal').textContent = '0.0';
+    document.getElementById('ifcOffZVal').textContent = '0.0';
+    applyIfcTransform();
+  });
+}
+
+function bindEditMode() {
+  document.getElementById('editMode').addEventListener('change', (e) => {
+    state.editMode = e.target.checked;
+    document.getElementById('canvas').style.cursor = state.editMode ? 'grab' : 'default';
+  });
+  document.getElementById('resetMeshBtn').addEventListener('click', () => {
+    rebuildOnDimsChange();
+  });
+}
+
+initScene();
+bindUI();
+bindDrag();
+bindIfc();
+bindEditMode();
+recomputeMetrics();
+lastTime = performance.now();
+animate();
+
+setInterval(() => {
+  if (state.playing) recomputeMetrics();
+}, 500);
+</script>
+</body>
+</html>
