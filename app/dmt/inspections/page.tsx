@@ -293,7 +293,7 @@ export default function InspectionsPage() {
           <StatCard label="დაგეგმილი" value={String((stats.byStatus.scheduled ?? 0) + (stats.byStatus.onsite ?? 0))} accent="blue" />
           <StatCard label="რეპორტში" value={String(stats.byStatus.report ?? 0)} accent="ora" />
           <StatCard label="დასრულებული" value={String(stats.byStatus.done ?? 0)} accent="grn" />
-          <StatCard label="Pipeline $" value={`₾ ${fmt(stats.pipeline)}`} />
+          <StatCard label="Pipeline ₾" value={`₾ ${fmt(stats.pipeline)}`} />
         </div>
 
         <div className="mb-3 flex items-center justify-end">

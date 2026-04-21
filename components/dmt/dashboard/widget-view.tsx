@@ -60,7 +60,7 @@ export function WidgetView({widget, globalStatus}: {widget: Widget; globalStatus
             className="font-mono text-[28px] font-bold leading-none"
             style={{color: tok.text}}
           >
-            {config.field === 'contract' || config.agg === 'sum' || config.agg === 'avg' ? '$ ' : ''}
+            {config.field === 'contract' || config.agg === 'sum' || config.agg === 'avg' ? '₾ ' : ''}
             {formatValue(value)}
           </div>
           <div className="mt-1 flex items-center gap-1 text-[11px] text-text-3">

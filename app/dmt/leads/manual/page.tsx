@@ -288,7 +288,7 @@ export default function ManualLeadsPage() {
           <StatCard label="სულ ჩანაწერი" value={String(filtered.length)} />
           <StatCard label="მოლაპარ. პროცესში" value={String(grouped['მოლაპარაკების პროცესი'].length)} accent="pur" />
           <StatCard label="მოგება" value={String(grouped['დახურული-მოგება'].length)} accent="grn" />
-          <StatCard label="Σ კონტრაქტი" value={`$ ${fmt(totalContract)}`} />
+          <StatCard label="Σ კონტრაქტი" value={`₾ ${fmt(totalContract)}`} />
         </div>
 
         <div className="overflow-x-auto rounded-[10px] border border-bdr bg-sur">
@@ -475,7 +475,7 @@ export default function ManualLeadsPage() {
                   }`}
                 >
                   {c.kind === 'number' ? (
-                    <span className="text-navy">SUM $ {fmt(totalContract)}</span>
+                    <span className="text-navy">SUM ₾ {fmt(totalContract)}</span>
                   ) : (
                     <span>COUNT {filtered.length}</span>
                   )}
