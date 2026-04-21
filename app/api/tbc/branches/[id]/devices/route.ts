@@ -52,6 +52,17 @@ const DeviceSchema = z.object({
     .array(z.string().nullable())
     .max(5)
     .default([null, null, null, null, null]),
+  photo_meta: z
+    .array(
+      z
+        .object({
+          by: z.string().max(128).optional(),
+          at: z.string().max(64).optional()
+        })
+        .nullable()
+    )
+    .max(5)
+    .optional(),
   situational_photos: z.array(SituationalPhoto).max(50).default([]),
   needs: z.array(TodoItem).max(100).default([]),
   prohibitions: z.array(TodoItem).max(100).default([]),
@@ -110,6 +121,10 @@ export async function POST(
     photos:
       parsed.data.photos && parsed.data.photos.length === 5
         ? parsed.data.photos
+        : [null, null, null, null, null],
+    photo_meta:
+      parsed.data.photo_meta && parsed.data.photo_meta.length === 5
+        ? parsed.data.photo_meta
         : [null, null, null, null, null],
     situational_photos: parsed.data.situational_photos || [],
     needs: parsed.data.needs || [],

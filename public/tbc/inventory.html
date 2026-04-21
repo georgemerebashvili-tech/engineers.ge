@@ -1050,6 +1050,14 @@ table.devices-sheet td:last-child { border-right: none; }
   padding: 0;
 }
 .sheet-photo-slot.has-image:hover .photo-del { display: inline-flex; }
+.sheet-photo-slot .sheet-photo-dot {
+  position: absolute; bottom: -2px; left: -2px;
+  width: 8px; height: 8px;
+  background: var(--tbc-blue);
+  border: 1.5px solid white;
+  border-radius: 50%;
+  pointer-events: none;
+}
 .sheet-cell-del { width: 40px; padding: 7px 9px; text-align: center; }
 .sheet-cell-del button { background: transparent; border: none; color: var(--slate-400); cursor: pointer; font-size: 14px; padding: 4px 7px; border-radius: 5px; font-family: inherit; }
 .sheet-cell-del button:hover { background: var(--red-100); color: var(--red-600); }
@@ -1335,6 +1343,24 @@ table.devices-sheet td:last-child { border-right: none; }
   justify-content: center;
 }
 .photo-slot-upload.has-image .photo-remove { display: flex; }
+.photo-slot-upload .photo-meta-chip {
+  position: absolute;
+  left: 4px; right: 4px; top: 4px;
+  z-index: 3;
+  padding: 2px 6px;
+  font-size: 9px;
+  line-height: 1.15;
+  font-weight: 600;
+  color: white;
+  background: rgba(15, 23, 42, 0.72);
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* Photo viewer */
 .photo-viewer {
@@ -1366,6 +1392,22 @@ table.devices-sheet td:last-child { border-right: none; }
   font-size: 20px;
   cursor: pointer;
 }
+.photo-viewer-meta {
+  position: absolute;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  background: rgba(15, 23, 42, 0.82);
+  color: white;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+  max-width: 80vw;
+  text-align: center;
+}
+.photo-viewer-meta:empty { display: none; }
 
 /* Confirm dialog */
 .confirm-overlay {
@@ -2084,6 +2126,7 @@ table.devices-sheet td:last-child { border-right: none; }
 <div class="photo-viewer" id="photoViewer" onclick="closePhotoViewer()">
   <button class="photo-viewer-close" onclick="closePhotoViewer()">×</button>
   <img id="photoViewerImg" src="" alt="">
+  <div class="photo-viewer-meta" id="photoViewerMeta"></div>
 </div>
 
 <!-- Confirm dialog -->
@@ -2119,7 +2162,7 @@ let state = {
   filters: { search: '', region: '', type: '', status: '' },
   selectedId: null,
   currentBranch: null,
-  pendingDevice: { photos: [null, null, null, null, null] },
+  pendingDevice: { photos: [null, null, null, null, null], photo_meta: [null, null, null, null, null] },
   currentPhotoSlot: 0,
   dashMap: null,       // dashboard map (all branches)
   slideMap: null,      // slide panel map (single branch)
@@ -2128,6 +2171,18 @@ let state = {
 };
 
 const PHOTO_LABELS = ['ბირკა', 'ახლო ხედი', 'მსხვილი ხედი', 'გარე ბლოკი', 'დამატებითი'];
+
+function _uploaderName() {
+  return _apiUser?.displayName || _apiUser?.username || 'უცნობი';
+}
+function _fmtPhotoMeta(meta) {
+  if (!meta || !meta.at) return '';
+  const d = new Date(meta.at);
+  if (isNaN(d.getTime())) return meta.by || '';
+  const dateStr = d.toLocaleDateString('ka-GE', { day: '2-digit', month: '2-digit', year: '2-digit' });
+  const timeStr = d.toLocaleTimeString('ka-GE', { hour: '2-digit', minute: '2-digit' });
+  return `${meta.by || 'უცნობი'} · ${dateStr} ${timeStr}`;
+}
 const STATUS_LABELS = {
   done: 'დასრულებული',
   progress: 'მიმდინარე',
@@ -3327,12 +3382,16 @@ function renderDevicesList(b) {
     ).join('') + (selected && !subs.includes(selected) ? `<option value="${escapeHtml(selected)}" selected>${escapeHtml(selected)} (custom)</option>` : '');
   };
   
-  const renderPhotoSlot = (devIdx, slotIdx, photo) => {
+  const renderPhotoSlot = (devIdx, slotIdx, photo, meta) => {
     const label = PHOTO_LABELS[slotIdx];
     if (photo) {
+      const metaStr = _fmtPhotoMeta(meta);
+      const tooltip = metaStr ? `${label} — ${metaStr}` : label;
+      const metaArg = metaStr ? encodeURIComponent(`${label} — ${metaStr}`) : '';
       return `
-        <div class="sheet-photo-slot has-image" title="${escapeHtml(label)}" onclick="viewPhoto('${encodeURIComponent(photo)}')">
+        <div class="sheet-photo-slot has-image" title="${escapeHtml(tooltip)}" onclick="viewPhoto('${encodeURIComponent(photo)}', '${metaArg}')">
           <img src="${photo}" alt="${escapeHtml(label)}" loading="lazy">
+          ${metaStr ? '<span class="sheet-photo-dot" aria-hidden="true"></span>' : ''}
           <button class="photo-del" onclick="event.stopPropagation(); clearDevicePhoto(${devIdx}, ${slotIdx})" title="წაშლა">×</button>
         </div>
       `;
@@ -3346,6 +3405,7 @@ function renderDevicesList(b) {
   
   const rows = devices.map((d, idx) => {
     const photos = d.photos || [null, null, null, null, null];
+    const photoMetaArr = d.photo_meta || [null, null, null, null, null];
     const isCustomCat = d.category === 'სხვა' || (d.category && !categories.includes(d.category));
     const isCustomSub = d.subtype === 'სხვა' || (d.subtype && !subtypesByCategory[d.category]?.includes(d.subtype));
     return `
@@ -3371,11 +3431,11 @@ function renderDevicesList(b) {
         <td class="sheet-cell-check">
           <input type="checkbox" ${d.unplanned ? 'checked' : ''} onchange="updateDeviceField(${idx}, 'unplanned', this.checked)" title="გაუთვალისწინებელი">
         </td>
-        <td class="sheet-cell-photo">${renderPhotoSlot(idx, 0, photos[0])}</td>
-        <td class="sheet-cell-photo">${renderPhotoSlot(idx, 1, photos[1])}</td>
-        <td class="sheet-cell-photo">${renderPhotoSlot(idx, 2, photos[2])}</td>
-        <td class="sheet-cell-photo">${renderPhotoSlot(idx, 3, photos[3])}</td>
-        <td class="sheet-cell-photo">${renderPhotoSlot(idx, 4, photos[4])}</td>
+        <td class="sheet-cell-photo">${renderPhotoSlot(idx, 0, photos[0], photoMetaArr[0])}</td>
+        <td class="sheet-cell-photo">${renderPhotoSlot(idx, 1, photos[1], photoMetaArr[1])}</td>
+        <td class="sheet-cell-photo">${renderPhotoSlot(idx, 2, photos[2], photoMetaArr[2])}</td>
+        <td class="sheet-cell-photo">${renderPhotoSlot(idx, 3, photos[3], photoMetaArr[3])}</td>
+        <td class="sheet-cell-photo">${renderPhotoSlot(idx, 4, photos[4], photoMetaArr[4])}</td>
         <td class="sheet-cell-ai">${renderAiFillBtn(idx, d)}</td>
         <td class="sheet-cell-ai">${renderAiMetaBtn(idx, d)}</td>
         <td class="sheet-cell-del">
@@ -3541,6 +3601,8 @@ function handleSheetPhotoUpload(e, devIdx, slotIdx) {
       if (!d) return;
       if (!d.photos) d.photos = [null, null, null, null, null];
       d.photos[slotIdx] = dataUrl;
+      if (!d.photo_meta) d.photo_meta = [null, null, null, null, null];
+      d.photo_meta[slotIdx] = { by: _uploaderName(), at: new Date().toISOString() };
       saveState();
       renderDevicesList(state.currentBranch);
     };
@@ -3554,6 +3616,7 @@ function clearDevicePhoto(devIdx, slotIdx) {
   const d = state.currentBranch.devices[devIdx];
   if (!d || !d.photos) return;
   d.photos[slotIdx] = null;
+  if (d.photo_meta) d.photo_meta[slotIdx] = null;
   saveState();
   renderDevicesList(state.currentBranch);
 }
@@ -3675,6 +3738,7 @@ function editDevice(idx) {
   document.getElementById('dev_specs').value = d.specs || '';
   document.getElementById('dev_unplanned').checked = !!d.unplanned;
   state.pendingDevice.photos = [...(d.photos || [null, null, null, null, null])];
+  state.pendingDevice.photo_meta = [...(d.photo_meta || [null, null, null, null, null])];
   renderPhotoSlots();
   document.getElementById('deviceModal').classList.add('active');
 }
@@ -3730,6 +3794,7 @@ function resetDeviceForm() {
   document.getElementById('dev_specs').value = '';
   document.getElementById('dev_unplanned').checked = false;
   state.pendingDevice.photos = [null, null, null, null, null];
+  state.pendingDevice.photo_meta = [null, null, null, null, null];
   renderPhotoSlots();
 }
 
@@ -3756,6 +3821,7 @@ function saveDevice() {
     specs: document.getElementById('dev_specs').value.trim(),
     unplanned: document.getElementById('dev_unplanned').checked,
     photos: [...state.pendingDevice.photos],
+    photo_meta: [...(state.pendingDevice.photo_meta || [null, null, null, null, null])],
     added_at: new Date().toISOString(),
   };
   if (!state.currentBranch.devices) state.currentBranch.devices = [];
@@ -3807,6 +3873,8 @@ function handlePhotoFile(e) {
       ctx.drawImage(img, 0, 0, width, height);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
       state.pendingDevice.photos[state.currentPhotoSlot] = dataUrl;
+      if (!state.pendingDevice.photo_meta) state.pendingDevice.photo_meta = [null, null, null, null, null];
+      state.pendingDevice.photo_meta[state.currentPhotoSlot] = { by: _uploaderName(), at: new Date().toISOString() };
       renderPhotoSlots();
     };
     img.src = ev.target.result;
@@ -3817,34 +3885,53 @@ function handlePhotoFile(e) {
 function removePhoto(e, slotIdx) {
   e.stopPropagation();
   state.pendingDevice.photos[slotIdx] = null;
+  if (state.pendingDevice.photo_meta) state.pendingDevice.photo_meta[slotIdx] = null;
   renderPhotoSlots();
 }
 
 function renderPhotoSlots() {
   const slots = document.querySelectorAll('#photoSlots .photo-slot-upload');
+  const metaArr = state.pendingDevice.photo_meta || [];
   slots.forEach((slot, i) => {
     const photo = state.pendingDevice.photos[i];
-    // Remove existing img
+    // Remove existing img + meta chip
     const existingImg = slot.querySelector('img');
     if (existingImg) existingImg.remove();
+    const existingChip = slot.querySelector('.photo-meta-chip');
+    if (existingChip) existingChip.remove();
     if (photo) {
       slot.classList.add('has-image');
       const img = document.createElement('img');
       img.src = photo;
       slot.insertBefore(img, slot.firstChild);
+      const metaStr = _fmtPhotoMeta(metaArr[i]);
+      if (metaStr) {
+        slot.title = metaStr;
+        const chip = document.createElement('div');
+        chip.className = 'photo-meta-chip';
+        chip.textContent = metaStr;
+        slot.appendChild(chip);
+      } else {
+        slot.title = '';
+      }
     } else {
       slot.classList.remove('has-image');
+      slot.title = '';
     }
   });
 }
 
-function viewPhoto(src) {
+function viewPhoto(src, metaStr) {
   document.getElementById('photoViewerImg').src = decodeURIComponent(src);
+  const metaEl = document.getElementById('photoViewerMeta');
+  if (metaEl) metaEl.textContent = metaStr ? decodeURIComponent(metaStr) : '';
   document.getElementById('photoViewer').classList.add('active');
 }
 
 function closePhotoViewer() {
   document.getElementById('photoViewer').classList.remove('active');
+  const metaEl = document.getElementById('photoViewerMeta');
+  if (metaEl) metaEl.textContent = '';
 }
 
 // ============================================
