@@ -15,7 +15,8 @@ export const CALCULATORS: CalcMeta[] = [
     title: 'თბოდანაკარგები',
     desc: 'EN 12831 · შენობის სითბური დატვირთვა, FCU სელექშენი, PDF ანგარიში',
     tag: 'HVAC',
-    standard: 'EN 12831 · ASHRAE'
+    standard: 'EN 12831 · ASHRAE',
+    useProjects: true
   },
   {
     slug: 'wall-thermal',
@@ -23,7 +24,8 @@ export const CALCULATORS: CalcMeta[] = [
     title: 'თბოგადაცემის კოეფიციენტის გაანგარიშება',
     desc: 'ISO 6946 · მრავალშრიანი კედლის U-ფაქტორი, კონდენსაცია, Glaser',
     tag: 'შრეები',
-    standard: 'ISO 6946 · ISO 13788'
+    standard: 'ISO 6946 · ISO 13788',
+    useProjects: true
   },
   {
     slug: 'hvac',
@@ -44,8 +46,8 @@ export const CALCULATORS: CalcMeta[] = [
   {
     slug: 'silencer-kaya',
     icon: '🔕',
-    title: 'KAYA ხმაურდამხშობი',
-    desc: 'KAYA ბრენდის ხმაურდამხშობის დეტალური სელექცია და ფასი',
+    title: 'ხმაურდამხშობის კატალოგი',
+    desc: 'ხმაურდამხშობის დეტალური სელექცია და ფასი',
     tag: 'აკუსტიკა'
   },
   {
@@ -113,11 +115,36 @@ export const CALCULATORS: CalcMeta[] = [
   {
     slug: 'ifc-viewer',
     icon: '🏠',
-    title: 'IFC / BIM Viewer',
+    title: 'IFC Viewer',
     desc: 'IFC მოდელების 3D viewer · walls, spaces, slabs, physics overlay (heat loss, orientation)',
     tag: 'CAD',
     standard: 'IFC 4 · web-ifc',
     useProjects: false
+  },
+  {
+    slug: 'floor-plan',
+    icon: '🗺️',
+    title: 'გეგმის შედგენა (FloorspaceJS)',
+    desc: '2D→3D floor plan editor · spaces, stories, thermal zones → heat-loss/HVAC input; AI prompt → JSON',
+    tag: 'CAD',
+    standard: 'NREL FloorspaceJS · OpenStudio',
+    useProjects: true
+  },
+  {
+    slug: 'duct-layout',
+    icon: '🧩',
+    title: 'Duct Layout (MakerJS)',
+    desc: 'Parametric duct cross-section · width/height/thickness → DXF/SVG export',
+    tag: 'CAD',
+    standard: 'MakerJS parametric'
+  },
+  {
+    slug: 'hvac-python',
+    icon: '🐍',
+    title: 'HVAC · Python in-browser',
+    desc: 'Cooling coil psychrometric analysis · CPython 3.13 via Pyodide/WASM · python-hvac-style API',
+    tag: 'HVAC',
+    standard: 'ASHRAE psychrometrics · Pyodide'
   }
 ];
 

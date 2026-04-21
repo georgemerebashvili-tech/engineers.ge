@@ -14,6 +14,8 @@ export interface Project {
 }
 
 const KEY = 'eng_projects_v1';
+const LAST_KEY = 'eng_projects_last';
+const GATE_PREF_KEY = 'eng_projects_gate_pref';
 
 function readAll(): Project[] {
   if (typeof window === 'undefined') return [];
@@ -31,6 +33,58 @@ function writeAll(list: Project[]): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(KEY, JSON.stringify(list));
+  } catch (e) {
+    console.warn('projects: localStorage write failed', e);
+  }
+}
+
+function readStringMap(key: string): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        (entry): entry is [string, string] => typeof entry[0] === 'string' && typeof entry[1] === 'string'
+      )
+    );
+  } catch {
+    return {};
+  }
+}
+
+function writeStringMap(key: string, value: Record<string, string>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    console.warn('projects: localStorage write failed', e);
+  }
+}
+
+function readBooleanMap(key: string): Record<string, boolean> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+    return Object.fromEntries(
+      Object.entries(parsed).filter(
+        (entry): entry is [string, boolean] => typeof entry[0] === 'string' && typeof entry[1] === 'boolean'
+      )
+    );
+  } catch {
+    return {};
+  }
+}
+
+function writeBooleanMap(key: string, value: Record<string, boolean>): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
     console.warn('projects: localStorage write failed', e);
   }
@@ -96,7 +150,11 @@ export function duplicateProject(id: string, newName?: string): Project | null {
 }
 
 export function deleteProject(id: string): void {
+  const project = getProject(id);
   writeAll(readAll().filter(p => p.id !== id));
+  if (project && getLastProjectId(project.slug) === id) {
+    setLastProjectId(project.slug, null);
+  }
 }
 
 export function saveThumbnail(id: string, dataURL: string): void {
@@ -131,7 +189,31 @@ export function clearProjects(slug?: string): number {
   const next = slug ? all.filter((project) => project.slug !== slug) : [];
   const removed = all.length - next.length;
   writeAll(next);
+  if (slug) setLastProjectId(slug, null);
   return removed;
+}
+
+export function getLastProjectId(slug: string): string | null {
+  const map = readStringMap(LAST_KEY);
+  return map[slug] || null;
+}
+
+export function setLastProjectId(slug: string, projectId: string | null): void {
+  const map = readStringMap(LAST_KEY);
+  if (projectId) map[slug] = projectId;
+  else delete map[slug];
+  writeStringMap(LAST_KEY, map);
+}
+
+export function getAlwaysShowGateOnEntry(slug: string): boolean {
+  const map = readBooleanMap(GATE_PREF_KEY);
+  return map[slug] === true;
+}
+
+export function setAlwaysShowGateOnEntry(slug: string, value: boolean): void {
+  const map = readBooleanMap(GATE_PREF_KEY);
+  map[slug] = value;
+  writeBooleanMap(GATE_PREF_KEY, map);
 }
 
 function defaultName(slug: string): string {

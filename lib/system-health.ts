@@ -246,6 +246,36 @@ const MIGRATION_PROBES: Array<
     probeTable: 'web_vitals',
     columns: ['id', 'metric', 'value', 'rating', 'pathname'],
     note: 'Core Web Vitals (LCP/CLS/INP/FCP/TTFB) from visitors'
+  },
+  {
+    file: '0027_regulation_sources.sql',
+    probeTable: 'regulation_sources',
+    columns: ['id', 'key', 'status', 'last_checked_at'],
+    note: 'admin regulations monitor + cron source registry'
+  },
+  {
+    file: '0028_hero_ad_slots_marketing_meta.sql',
+    probeTable: 'hero_ad_slots',
+    columns: ['contact_phone', 'promo_badge'],
+    note: 'hero ads WhatsApp contact + promo badge metadata'
+  },
+  {
+    file: '0029_hero_ad_payments.sql',
+    probeTable: 'hero_ad_payments',
+    columns: ['id', 'slot_key', 'invoice_no', 'amount_gel', 'status', 'due_date'],
+    note: 'hero ads invoice/payment ledger'
+  },
+  {
+    file: '0030_hero_ad_upload_requests.sql',
+    probeTable: 'hero_ad_upload_requests',
+    columns: ['id', 'slot_key', 'company_name', 'asset_url', 'status'],
+    note: 'public ad uploads pending admin approval'
+  },
+  {
+    file: '0031_regulation_publish_workflow.sql',
+    probeTable: 'regulation_sources',
+    columns: ['published_hash', 'published_excerpt', 'published_snapshot_id', 'published_at'],
+    note: 'regulations approve/publish workflow metadata'
   }
 ];
 

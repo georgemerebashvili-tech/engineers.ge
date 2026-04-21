@@ -1,5 +1,6 @@
 import {notFound} from 'next/navigation';
 import type {Metadata} from 'next';
+import {getLocale} from 'next-intl/server';
 import {CalcFrame} from '@/components/calc-frame';
 import {Breadcrumbs, type Crumb} from '@/components/breadcrumbs';
 import {ProjectGate} from '@/components/projects/project-gate';
@@ -25,7 +26,10 @@ const CATEGORY_BY_SLUG: Record<string, Crumb> = {
   'floor-pressurization': {label: 'სახანძრო სისტემები', href: '/#calculators'},
   'wall-editor': {label: 'CAD · გეგმები', href: '/#calculators'},
   'building-composer': {label: 'CAD · გეგმები', href: '/#calculators'},
-  'ifc-viewer': {label: 'CAD · გეგმები', href: '/#calculators'}
+  'ifc-viewer': {label: 'CAD · გეგმები', href: '/#calculators'},
+  'floor-plan': {label: 'CAD · გეგმები', href: '/#calculators'},
+  'duct-layout': {label: 'CAD · გეგმები', href: '/#calculators'},
+  'hvac-python': {label: 'გათბობა · კონდიცირება', href: '/#calculators'}
 };
 
 export function generateStaticParams() {
@@ -91,6 +95,8 @@ export default async function CalcPage({
   }
 
   const query = new URLSearchParams();
+  const locale = await getLocale();
+  if (locale) query.set('lang', locale);
   if (project) query.set('project', project);
   if (state) query.set('state', state);
   const src = query.size

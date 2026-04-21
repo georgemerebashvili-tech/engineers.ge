@@ -75,7 +75,22 @@ function StatCard({
   );
 }
 
-export function BannersOverview({slots}: {slots: HeroAdSlot[]}) {
+type HistoryItem = {
+  id: number;
+  actor: string;
+  action: string;
+  targetId: string | null;
+  createdAt: string;
+  metadata: Record<string, unknown>;
+};
+
+export function BannersOverview({
+  slots,
+  history = []
+}: {
+  slots: HeroAdSlot[];
+  history?: HistoryItem[];
+}) {
   const adSlots = useMemo(() => slots.filter((s) => s.is_ad_slot), [slots]);
   const totalPrice = useMemo(
     () => adSlots.reduce((sum, s) => sum + (s.price_gel ?? 0), 0),
@@ -144,6 +159,59 @@ export function BannersOverview({slots}: {slots: HeroAdSlot[]}) {
           ცოცხალი preview · მთავარი გვერდი
         </h3>
         <HeroTreemap slots={slots} />
+      </div>
+
+      <div className="mt-5 rounded-card border border-bdr bg-sur p-4">
+        <h3 className="mb-3 text-[13px] font-semibold text-navy">
+          ბოლო ცვლილებები
+        </h3>
+        {history.length === 0 ? (
+          <p className="text-[11px] text-text-3">ჯერ audit ჩანაწერი არ ფიქსირდება.</p>
+        ) : (
+          <div className="space-y-2">
+            {history.map((entry) => {
+              const slotsMeta = Array.isArray(entry.metadata?.slots)
+                ? (entry.metadata.slots as Array<Record<string, unknown>>)
+                : [];
+              return (
+                <div
+                  key={entry.id}
+                  className="rounded-md border border-bdr bg-sur-2 px-3 py-2"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="font-mono text-[11px] text-navy">
+                      {entry.actor} · {entry.action}
+                    </div>
+                    <div className="font-mono text-[10px] text-text-3">
+                      {new Date(entry.createdAt).toLocaleString('ka-GE', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </div>
+                  </div>
+                  <div className="mt-1 text-[11px] text-text-2">
+                    {entry.targetId || 'hero_ad_slots'}
+                  </div>
+                  {slotsMeta.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {slotsMeta.slice(0, 6).map((slot, index) => (
+                        <span
+                          key={`${entry.id}-${index}`}
+                          className="inline-flex items-center gap-1 rounded-full border border-bdr bg-sur px-2 py-0.5 font-mono text-[10px] text-text-2"
+                        >
+                          {String(slot.key ?? 'slot')}
+                          {slot.promo ? ` · ${String(slot.promo)}` : ''}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </BannersShell>
   );

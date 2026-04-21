@@ -2913,6 +2913,107 @@ mo.observe(document.documentElement, {attributes: true, attributeFilter: ['class
   window.addEventListener('pointerup', onUp);
   window.addEventListener('pointercancel', onUp);
 })();
+
+if (window.engCalcI18n) {
+  window.engCalcI18n.apply({
+    ka: {title: 'კორიდორის დაწნეხვის სიმულატორი'},
+    en: {
+      title: 'Corridor Pressurization Simulator — engineers.ge',
+      selectors: {
+        '.fp-header h1': {text: 'Corridor Pressurization Simulator'},
+        '#btn-save-as': {text: '💾 Save as', title: 'Save as new project'},
+        '#btn-rename': {text: '✎ Rename', title: 'Rename'},
+        '#btn-import-json': {text: '⬆ Import JSON'},
+        '#btn-export-json': {text: '⬇ Export JSON'},
+        '#btn-export-pdf': {text: '⬇ Export PDF'},
+        '#btn-gate': {text: '🗂 Projects', title: 'All projects'},
+        '#btn-seal': {text: 'Close all doors'},
+        '#btn-reset': {text: 'Reset'},
+        '#btn-rebuild': {text: 'Refresh'},
+        '.fp-tab[data-view="plan"]': {text: 'Plan'},
+        '.fp-tab[data-view="section"]': {text: 'Section'},
+        '.fp-tab[data-view="d3"]': {text: '3D Scene'},
+        '.fp-tab[data-view="formulas"]': {text: 'Formulas'}
+      }
+    },
+    ru: {
+      title: 'Симулятор подпора воздуха коридора — engineers.ge',
+      selectors: {
+        '.fp-header h1': {text: 'Симулятор подпора воздуха коридора'},
+        '#btn-save-as': {text: '💾 Сохранить как', title: 'Сохранить как новый проект'},
+        '#btn-rename': {text: '✎ Имя', title: 'Переименовать'},
+        '#btn-import-json': {text: '⬆ Импорт JSON'},
+        '#btn-export-json': {text: '⬇ Экспорт JSON'},
+        '#btn-export-pdf': {text: '⬇ Экспорт PDF'},
+        '#btn-gate': {text: '🗂 Проекты', title: 'Все проекты'},
+        '#btn-seal': {text: 'Закрыть все двери'},
+        '#btn-reset': {text: 'Сброс'},
+        '#btn-rebuild': {text: 'Обновить'},
+        '.fp-tab[data-view="plan"]': {text: 'План'},
+        '.fp-tab[data-view="section"]': {text: 'Разрез'},
+        '.fp-tab[data-view="d3"]': {text: '3D'},
+        '.fp-tab[data-view="formulas"]': {text: 'Формулы'}
+      }
+    },
+    tr: {
+      title: 'Koridor Basınçlandırma Simülatörü — engineers.ge',
+      selectors: {
+        '.fp-header h1': {text: 'Koridor Basınçlandırma Simülatörü'},
+        '#btn-save-as': {text: '💾 Farklı kaydet', title: 'Yeni proje olarak kaydet'},
+        '#btn-rename': {text: '✎ Ad', title: 'Yeniden adlandır'},
+        '#btn-import-json': {text: '⬆ JSON al'},
+        '#btn-export-json': {text: '⬇ JSON dışa aktar'},
+        '#btn-export-pdf': {text: '⬇ PDF dışa aktar'},
+        '#btn-gate': {text: '🗂 Projeler', title: 'Tüm projeler'},
+        '#btn-seal': {text: 'Tum kapilari kapat'},
+        '#btn-reset': {text: 'Sifirla'},
+        '#btn-rebuild': {text: 'Yenile'},
+        '.fp-tab[data-view="plan"]': {text: 'Plan'},
+        '.fp-tab[data-view="section"]': {text: 'Kesit'},
+        '.fp-tab[data-view="d3"]': {text: '3D'},
+        '.fp-tab[data-view="formulas"]': {text: 'Formuller'}
+      }
+    },
+    az: {
+      title: 'Dəhliz Təzyiqləndirmə Simulyatoru — engineers.ge',
+      selectors: {
+        '.fp-header h1': {text: 'Dəhliz Təzyiqləndirmə Simulyatoru'},
+        '#btn-save-as': {text: '💾 Fərqli saxla', title: 'Yeni layihə kimi saxla'},
+        '#btn-rename': {text: '✎ Ad', title: 'Adını dəyiş'},
+        '#btn-import-json': {text: '⬆ JSON idxal et'},
+        '#btn-export-json': {text: '⬇ JSON ixrac et'},
+        '#btn-export-pdf': {text: '⬇ PDF ixrac et'},
+        '#btn-gate': {text: '🗂 Layihələr', title: 'Bütün layihələr'},
+        '#btn-seal': {text: 'Bütün qapıları bağla'},
+        '#btn-reset': {text: 'Sifirla'},
+        '#btn-rebuild': {text: 'Yenilə'},
+        '.fp-tab[data-view="plan"]': {text: 'Plan'},
+        '.fp-tab[data-view="section"]': {text: 'Kəsik'},
+        '.fp-tab[data-view="d3"]': {text: '3D'},
+        '.fp-tab[data-view="formulas"]': {text: 'Formullar'}
+      }
+    },
+    hy: {
+      title: 'Միջանցքի Ճնշման Սիմուլյատոր — engineers.ge',
+      selectors: {
+        '.fp-header h1': {text: 'Միջանցքի ճնշման սիմուլյատոր'},
+        '#btn-save-as': {text: '💾 Պահել որպես', title: 'Պահել որպես նոր նախագիծ'},
+        '#btn-rename': {text: '✎ Անուն', title: 'Վերանվանել'},
+        '#btn-import-json': {text: '⬆ Ներմուծել JSON'},
+        '#btn-export-json': {text: '⬇ Արտահանել JSON'},
+        '#btn-export-pdf': {text: '⬇ Արտահանել PDF'},
+        '#btn-gate': {text: '🗂 Նախագծեր', title: 'Բոլոր նախագծերը'},
+        '#btn-seal': {text: 'Փակել բոլոր դռները'},
+        '#btn-reset': {text: 'Վերակայել'},
+        '#btn-rebuild': {text: 'Թարմացնել'},
+        '.fp-tab[data-view="plan"]': {text: 'Պլան'},
+        '.fp-tab[data-view="section"]': {text: 'Հատված'},
+        '.fp-tab[data-view="d3"]': {text: '3D'},
+        '.fp-tab[data-view="formulas"]': {text: 'Բանաձեւեր'}
+      }
+    }
+  });
+}
 </script>
 </body>
 </html>

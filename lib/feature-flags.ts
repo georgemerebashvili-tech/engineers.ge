@@ -47,7 +47,7 @@ export const FEATURE_REGISTRY: FeatureDef[] = [
   {key: 'calc.wall-thermal', label: 'კედლის U-ფაქტორი', section: 'კალკულატორები', routes: ['/calc/wall-thermal']},
   {key: 'calc.heat-loss', label: 'EN 12831 Heat Load', section: 'კალკულატორები', routes: ['/calc/heat-loss']},
   {key: 'calc.silencer', label: 'ხმაურდამხშობი', section: 'კალკულატორები', routes: ['/calc/silencer']},
-  {key: 'calc.silencer-kaya', label: 'KAYA სელექცია', section: 'კალკულატორები', routes: ['/calc/silencer-kaya']},
+  {key: 'calc.silencer-kaya', label: 'ხმაურდამხშობის კატალოგი', section: 'კალკულატორები', routes: ['/calc/silencer-kaya']},
   {key: 'calc.wall-editor', label: 'გეგმის რედაქტორი', section: 'CAD', routes: ['/calc/wall-editor']},
   {key: 'calc.building-composer', label: 'შენობის აღმშენებლობა', section: 'CAD', routes: ['/calc/building-composer']},
   {key: 'calc.physics-docs', label: 'ფიზიკის ფორმულები', section: 'დოკუმენტაცია', routes: ['/calc/docs/physics']},
@@ -57,6 +57,7 @@ export const FEATURE_REGISTRY: FeatureDef[] = [
   {key: 'admin.activity', label: 'Activity feed', section: 'Admin სიდბარი', routes: ['/admin/activity']},
   {key: 'admin.todos', label: 'TODO pipeline', section: 'Admin სიდბარი', routes: ['/admin/todos']},
   {key: 'admin.hero-ads', label: 'Hero Ads', section: 'Admin სიდბარი', routes: ['/admin/tiles']},
+  {key: 'admin.regulations', label: 'სტანდარტები & წყაროები', section: 'Admin სიდბარი', routes: ['/admin/regulations']},
   {key: 'admin.banners', label: 'ბანერები', section: 'Admin სიდბარი', routes: ['/admin/banners']},
   {key: 'admin.redirects', label: 'URL redirects', section: 'Admin სიდბარი', routes: ['/admin/redirects']},
   {key: 'admin.users', label: 'რეგისტრაციები', section: 'Admin სიდბარი', routes: ['/admin/users']},
@@ -90,6 +91,12 @@ export const FEATURE_REGISTRY: FeatureDef[] = [
     label: 'Welcome email (ახალი user)',
     section: 'Admin ნოტიფიკაციები',
     description: '🔴 დამალული = welcome-ი არ იგზავნება რეგისტრაციისას. RESEND_API_KEY env საჭიროა.'
+  },
+  {
+    key: 'notify.regulations',
+    label: 'Email alert: regulation source changed',
+    section: 'Admin ნოტიფიკაციები',
+    description: '🔴 დამალული = regulation watcher ცვლილებაზე email აღარ გავა. ADMIN_EMAIL + RESEND_API_KEY საჭიროა.'
   },
 
   // --- Top-level site pages ---

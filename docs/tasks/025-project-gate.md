@@ -231,9 +231,9 @@ Parent auto-captures on tab close and on 60s interval.
 - [ ] Round-trip: save → reload page → open same project → exact state restored
 
 ### Cross-calculator
-- [ ] Pattern works for: stair-pressurization, elevator-shaft-press, wall-editor, parking, corridor
-- [ ] Each simulator can opt-in via single switch (`useProjects: true` in calc metadata)
-- [ ] If opt-in: shows gate; if not: direct open (current behavior)
+- [x] Pattern works for: stair-pressurization, elevator-shaft-press, wall-editor, parking, corridor, heat-loss, wall-thermal
+- [x] Each simulator can opt-in via single switch (`useProjects: true` in calc metadata)
+- [x] If opt-in: shows gate; if not: direct open (current behavior)
 
 ### Visual
 - [ ] Card design matches DESIGN_RULES tokens
@@ -300,4 +300,4 @@ Not on: ads-simulator, static single-calc pages.
 
 ---
 
-**Status:** pending Claude MVP · then Codex expansion
+**Status:** implemented in code on 2026-04-20 · manual browser QA still pending · Supabase sync stays in Task 022

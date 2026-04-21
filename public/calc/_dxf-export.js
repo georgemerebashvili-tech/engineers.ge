@@ -1,7 +1,7 @@
 /* engineers.ge — minimal DXF exporter (ASCII, AutoCAD R2000 / AC1015)
  *
  * Inverse of _dxf-parser.js. Takes wall-editor state and emits a DXF text
- * blob that AutoCAD, Revit, LibreCAD, QCAD can open.
+ * blob that AutoCAD, LibreCAD, QCAD can open.
  *
  * Emitted sections: HEADER (units, $EXTMIN/$EXTMAX), TABLES (LAYER table),
  * ENTITIES, EOF. Block/BlockRecord tables are intentionally omitted — we

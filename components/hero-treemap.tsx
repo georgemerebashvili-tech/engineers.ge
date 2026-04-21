@@ -2,9 +2,11 @@
 
 import {useEffect, useState} from 'react';
 import {
+  HERO_OWNER_DEFAULTS,
   HERO_OWNER_NAME,
   getDefaultHeroAdSlots,
-  type HeroAdSlot
+  type HeroAdSlot,
+  type HeroOwner
 } from '@/lib/hero-ads';
 
 type Tile = {
@@ -20,6 +22,7 @@ type Tile = {
   occupiedUntil?: string | null;
   clientName?: string;
   ownerName?: string;
+  promoBadge?: string;
   personalName?: string;
   personalTitle?: string;
   bio?: string;
@@ -97,7 +100,7 @@ const TILE_LAYOUT: TileFrame[] = [
   }
 ];
 
-function buildTileMap(slots: HeroAdSlot[]) {
+function buildTileMap(slots: HeroAdSlot[], owner: HeroOwner) {
   const byKey = new Map(slots.map((slot) => [slot.slot_key, slot]));
   const slot = (key: HeroAdSlot['slot_key']) => byKey.get(key) ?? DEFAULT_SLOTS.find((item) => item.slot_key === key)!;
 
@@ -105,23 +108,23 @@ function buildTileMap(slots: HeroAdSlot[]) {
     headline: {
       name: 'headline',
       kind: 'headline' as const,
-      img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=900&q=75',
-      personalName: HERO_OWNER_NAME,
-      personalTitle: 'HVAC ინჟინერი · ენტერპრენერი',
-      bio: 'გამარჯობა! მე ვარ გიორგი მერებაშვილი — HVAC ინჟინერი და engineers.ge-ის დამფუძნებელი. 10+ წელი ვმუშაობ საინჟინრო პროექტებზე — თბოდანაკარგების გაანგარიშება, ვენტილაციის სისტემის დიზაინი, შენობის ენერგოეფექტურობა. ეს პლატფორმა ქართველი ინჟინრების კოლექტიური ხელსაწყოა: უფასო კალკულატორები EN 12831, ISO 6946 და ASHRAE სტანდარტებით. ჩემი მიზანია გავხადო ქართული ენგინიერინგი უფრო სწრაფი, ზუსტი და ხელმისაწვდომი.'
+      img: owner.image_url,
+      personalName: owner.name,
+      personalTitle: owner.title,
+      bio: owner.bio
     },
-    site: toPhotoTile(slot('site')),
-    cta: toPhotoTile(slot('cta')),
-    slogan: toPhotoTile(slot('slogan')),
-    business: toPhotoTile(slot('business')),
-    childhood: toPhotoTile(slot('childhood')),
-    b1: toPhotoTile(slot('b1')),
-    b2: toPhotoTile(slot('b2')),
-    b3: toPhotoTile(slot('b3'))
+    site: toPhotoTile(slot('site'), owner.name),
+    cta: toPhotoTile(slot('cta'), owner.name),
+    slogan: toPhotoTile(slot('slogan'), owner.name),
+    business: toPhotoTile(slot('business'), owner.name),
+    childhood: toPhotoTile(slot('childhood'), owner.name),
+    b1: toPhotoTile(slot('b1'), owner.name),
+    b2: toPhotoTile(slot('b2'), owner.name),
+    b3: toPhotoTile(slot('b3'), owner.name)
   };
 }
 
-function toPhotoTile(slot: HeroAdSlot): Tile {
+function toPhotoTile(slot: HeroAdSlot, ownerName: string): Tile {
   return {
     name: slot.slot_key,
     kind: 'photo',
@@ -134,7 +137,8 @@ function toPhotoTile(slot: HeroAdSlot): Tile {
     priceGel: slot.price_gel,
     occupiedUntil: slot.occupied_until,
     clientName: slot.client_name,
-    ownerName: slot.client_name || HERO_OWNER_NAME
+    ownerName: slot.client_name || ownerName,
+    promoBadge: slot.promo_badge
   };
 }
 
@@ -155,6 +159,7 @@ type CellProps = {
   priceGel?: number;
   occupiedUntil?: string | null;
   ownerName?: string;
+  promoBadge?: string;
   onOpen?: (state: LightboxState) => void;
   onBio?: (state: BioState) => void;
 };
@@ -172,6 +177,7 @@ function Cell(props: CellProps) {
   const priceGel = props.priceGel ?? props.payload?.priceGel ?? 0;
   const occupiedUntil = props.occupiedUntil ?? props.payload?.occupiedUntil ?? null;
   const ownerName = props.ownerName ?? props.payload?.ownerName ?? HERO_OWNER_NAME;
+  const promoBadge = (props.promoBadge ?? props.payload?.promoBadge ?? '').trim();
 
   const padding = 4;
   const innerX = x + padding;
@@ -431,6 +437,32 @@ function Cell(props: CellProps) {
             </text>
           );
         })()}
+        {promoBadge && innerW > 70 && innerH > 34 && (() => {
+          const badgeW = Math.max(46, promoBadge.length * 6.2 + 16);
+          return (
+            <g pointerEvents="none">
+              <rect
+                x={innerX + 8}
+                y={innerY + 8}
+                width={badgeW}
+                height={20}
+                rx={10}
+                ry={10}
+                fill="rgba(251,191,36,0.96)"
+              />
+              <text
+                x={innerX + 8 + badgeW / 2}
+                y={innerY + 21}
+                textAnchor="middle"
+                fill="#7c2d12"
+                fontSize={10}
+                fontWeight={800}
+              >
+                {promoBadge}
+              </text>
+            </g>
+          );
+        })()}
         {innerW > 80 && innerH > 50 && (() => {
           const ls = Math.max(11, Math.min(15, innerW / 14));
           const ss = Math.max(9, Math.min(11, innerW / 18));
@@ -466,11 +498,14 @@ function Cell(props: CellProps) {
   return null;
 }
 
-export function HeroTreemap({slots = DEFAULT_SLOTS}: {slots?: HeroAdSlot[]}) {
+export function HeroTreemap({
+  slots = DEFAULT_SLOTS,
+  owner = HERO_OWNER_DEFAULTS
+}: {slots?: HeroAdSlot[]; owner?: HeroOwner}) {
   const [lightbox, setLightbox] = useState<LightboxState>(null);
   const [bio, setBio] = useState<BioState>(null);
   const modalOpen = !!lightbox || !!bio;
-  const tiles = buildTileMap(slots);
+  const tiles = buildTileMap(slots, owner);
 
   useEffect(() => {
     if (!modalOpen) return;

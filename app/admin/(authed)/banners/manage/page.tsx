@@ -1,4 +1,4 @@
-import {getHeroAdSlots} from '@/lib/hero-ads-store';
+import {getHeroAdSlots, listHeroAdUploadRequests} from '@/lib/hero-ads-store';
 import {BannersManage} from '@/components/admin/banners/manage';
 import {AdminPageHeader, AdminSection} from '@/components/admin-page-header';
 
@@ -6,7 +6,10 @@ export const dynamic = 'force-dynamic';
 export const metadata = {title: 'Hero Ads მართვა · Admin'};
 
 export default async function BannersManagePage() {
-  const slots = await getHeroAdSlots();
+  const [slots, requestSnapshot] = await Promise.all([
+    getHeroAdSlots(),
+    listHeroAdUploadRequests()
+  ]);
   return (
     <>
       <AdminPageHeader
@@ -15,7 +18,11 @@ export default async function BannersManagePage() {
         description="აირჩიე slot → შეცვალე ფასი, ვადა, სურათი → შენახვა."
       />
       <AdminSection>
-        <BannersManage slots={slots} />
+        <BannersManage
+          slots={slots}
+          requests={requestSnapshot.requests}
+          requestsSource={requestSnapshot.source}
+        />
       </AdminSection>
     </>
   );

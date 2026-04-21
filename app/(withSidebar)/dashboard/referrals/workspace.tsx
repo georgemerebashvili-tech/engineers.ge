@@ -71,6 +71,8 @@ export function ReferralsWorkspace() {
   const [q, setQ] = useState('');
   const [filterStatus, setFilterStatus] = useState<ReferralStatus | 'all'>('all');
   const [filterCategory, setFilterCategory] = useState<ReferralCategory | 'all'>('all');
+  const [rowsPerPage, setRowsPerPage] = useState<50 | 100 | 200>(50);
+  const [page, setPage] = useState(1);
   const [form, setForm] = useState(EMPTY_FORM);
   const [tagInput, setTagInput] = useState('');
   const [refCode, setRefCode] = useState('anon');
@@ -122,6 +124,20 @@ export function ReferralsWorkspace() {
       return hay.includes(query);
     });
   }, [contacts, q, filterStatus, filterCategory]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
+  const pageSafe = Math.min(page, totalPages);
+  const pageStart = filtered.length === 0 ? 0 : (pageSafe - 1) * rowsPerPage;
+  const pageEnd = filtered.length === 0 ? 0 : Math.min(filtered.length, pageStart + rowsPerPage);
+  const paged = filtered.slice(pageStart, pageEnd);
+
+  useEffect(() => {
+    setPage(1);
+  }, [q, filterStatus, filterCategory, rowsPerPage]);
+
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
 
   const canSubmit =
     form.firstName.trim().length >= 2 &&
@@ -460,7 +476,7 @@ export function ReferralsWorkspace() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((c) => (
+                paged.map((c) => (
                   <tr key={c.id} className="border-t border-bdr hover:bg-sur-2/60">
                     <Td>
                       <div className="font-semibold text-navy">
@@ -587,6 +603,52 @@ export function ReferralsWorkspace() {
               )}
             </tbody>
           </table>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-bdr bg-sur-2 px-4 py-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-2 text-[12px] text-text-2">
+              <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.06em] text-text-3">
+                გვერდზე
+              </span>
+              <select
+                className="h-8 rounded-md border border-bdr bg-sur px-2 text-[12px]"
+                value={rowsPerPage}
+                onChange={(e) => setRowsPerPage(Number(e.target.value) as 50 | 100 | 200)}
+              >
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value={200}>200</option>
+              </select>
+            </label>
+            <span className="text-[11px] text-text-3">
+              {filtered.length === 0
+                ? '0 შედეგი'
+                : `${pageStart + 1}-${pageEnd} / ${filtered.length}`}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={pageSafe <= 1}
+              className="inline-flex h-8 items-center rounded-md border border-bdr bg-sur px-2.5 text-[12px] text-text-2 transition-colors hover:border-blue hover:text-blue disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              ← წინა
+            </button>
+            <span className="min-w-[72px] text-center font-mono text-[11px] text-text-2">
+              {pageSafe} / {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={pageSafe >= totalPages}
+              className="inline-flex h-8 items-center rounded-md border border-bdr bg-sur px-2.5 text-[12px] text-text-2 transition-colors hover:border-blue hover:text-blue disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              შემდეგი →
+            </button>
+          </div>
         </div>
       </section>
 

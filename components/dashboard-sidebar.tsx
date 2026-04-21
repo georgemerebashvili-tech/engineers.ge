@@ -137,7 +137,7 @@ const SECTIONS: NavSection[] = [
         icon: Gauge,
         children: [
           {label: 'ხმაურდამხშობი', href: '/calc/silencer', badge: 'ISO 7235', flagKey: 'calc.silencer'},
-          {label: 'KAYA სელექცია', href: '/calc/silencer-kaya', flagKey: 'calc.silencer-kaya'}
+          {label: 'ხმაურდამხშობის კატალოგი', href: '/calc/silencer-kaya', flagKey: 'calc.silencer-kaya'}
         ]
       },
       {

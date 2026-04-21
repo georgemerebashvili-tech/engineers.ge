@@ -8,6 +8,20 @@
 
 ---
 
+## 🟡 DMT internal ops app (`/dmt/*`)
+
+Standalone multi-user portal for ინვოისები, ლიდები, ინვენტარიზაცია. Separate user pool — შიდა გუნდი.
+
+- [x] 2026-04-21 — **DMT skeleton + 3 tabs** — `/dmt/layout.tsx` collapsible sidebar (hover→pin, localStorage), `/dmt`, `/dmt/invoices`, `/dmt/leads`, `/dmt/inventory` with mock data + live search + stat cards.
+- [x] 2026-04-21 — **Leads expanded** — `/dmt/leads/facebook` (Meta Lead Ads mock, campaign/adset/ad/form, CPL/CPA), `/dmt/leads/manual` (Airtable-style grouped editable grid, localStorage persistence, "+ column" button, group collapse, aggregation footer).
+- [x] 2026-04-21 — **Variables library** — `/dmt/variables` (CRUD option sets: label + color palette, 10 colors), `lib/dmt/variables.ts` (shared types + localStorage + 3 default sets — Lead status / Role / Priority). Wired into manual grid's "+ column" (kind: text/number/select) — select columns reference variable sets.
+- [x] 2026-04-21 — **Auth + user management** — migration `0033_dmt_users.sql` (id uuid, email, password_hash, name, role=owner/admin/member/viewer, status=active/invited/suspended), `lib/dmt/auth.ts` (JWT cookie `dmt_session` 30d, bcrypt hash, session helpers), `middleware.ts` root-level gate /dmt/*, `/dmt/login|register|forgot|reset`, `/dmt/users` admin page, API `/api/dmt/auth/{login,register,logout,bootstrap-check}` + `/api/dmt/users` (GET list, PATCH update, DELETE). First-user bootstrap: if table empty → auto-owner on register. Admin sidebar: "DMT ops panel" link added.
+- [ ] 2026-04-21 — **DMT email reset** 🟢 — SMTP კონფიგურაცია (`EMAIL_*` env) + `/api/dmt/auth/reset-request` + `/api/dmt/auth/reset` + token storage (already in migration: `reset_token_hash`, `reset_token_expires_at`). ⚠ ⚠ `/dmt/forgot` currently stub.
+- [ ] 2026-04-21 — **DMT Supabase backend** 🟡 — მიგრაცია real invoices/leads/inventory table-ებისთვის; ახლა mock-ია.
+- [ ] 2026-04-21 — **DMT audit log** 🟢 — parallel to `admin_audit_log` for dmt_users actions.
+
+---
+
 ## 🟢 Delegated to Codex
 
 ### Phase 1 — Ventilation suite (master plan: [`PLAN-ventilation-suite.md`](./PLAN-ventilation-suite.md))
@@ -73,6 +87,7 @@
 
 ## 🔴 Blockers (online go-live)
 
+- [ ] 2026-04-21 — **Apply migration `0032_hero_owner.sql`** (Supabase prod + local) — Owner tile (გიორგი-ს headline) admin მართვა მოითხოვს `hero_owner` table-ს. `npm run db:migrate` ან Supabase SQL Editor. მანამდე fallback HERO_OWNER_DEFAULTS-ზე (UI-ზე გავლენა არ აქვს, მაგრამ admin "Save" ვერ იმუშავებს). 🔴
 - [ ] 2026-04-18 — **Supabase project provision** — user-ის action. დაარეგისტრიროს Supabase project (ან Vercel Marketplace-ის Neon Postgres-ს) და .env.local-ში ჩააწეროს:
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
@@ -83,6 +98,7 @@
 
 ## 🟡 Auth & Session
 
+- [x] 2026-04-21 — Admin password recovery via email (`ADMIN_RECOVERY_EMAIL=g_merebashvili@yahoo.com`) — `/admin/forgot` → email link → `/admin/reset?token=…`. Migration `0026_admin_password_reset.sql`. Requires prod env: `ADMIN_RECOVERY_EMAIL`, `RESEND_API_KEY`, `VERCEL_TOKEN`, `VERCEL_PROJECT_ID` + migration applied on Supabase. *(done 2026-04-21)*
 - [x] 2026-04-18 — Admin login "დამახსოვრება" checkbox (username localStorage) *(done 2026-04-18)*
 - [ ] 2026-04-18 — Admin login credentials → Supabase-based (currently hardcoded env vars per PRD). გადავწყვიტოთ: დავტოვოთ env-ში (მფლობელი ერთადერთი) თუ გადავიტანოთ Supabase-ზე (extensibility)?
 - [ ] 2026-04-18 — "Sign in with Google/email" — ვიზიტორებისთვის, რომ პროექტები შეინახონ (Supabase Auth)
@@ -103,7 +119,7 @@
 
 ## 🟡 Online project storage (visitor-level)
 
-- [ ] 2026-04-18 — **Visitor sign-in** (email/Google) — რომ ცვლადი მომხმარებელს შეეძლოს საკუთარი კალკულაციის შენახვა
+- [x] 2026-04-21 — **Visitor sign-in** · email/password login + register modal + Google/Facebook/LinkedIn OAuth + profile/referrals cabinet shipped [`/api/login`](../app/api/login/route.ts), [`/api/register`](../app/api/register/route.ts), [`/auth/callback`](../app/auth/callback/route.ts), [components/login-trigger.tsx](../components/login-trigger.tsx), [components/register-prompt-modal.tsx](../components/register-prompt-modal.tsx). ონლაინ project storage ჯერ ისევ ცალკე open item-ად რჩება. *(done 2026-04-21)*
 - [ ] 2026-04-18 — Data model: `calc_projects` table
   ```sql
   id uuid pk
@@ -115,7 +131,7 @@
   created_at, updated_at timestamptz
   ```
 - [ ] 2026-04-18 — კალკულატორის გვერდზე "შენახვა online"-ის ღილაკი (logged-in users-ისთვის)
-- [ ] 2026-04-18 — "ჩემი პროექტები" გვერდი `/dashboard`-ში (list + edit + duplicate + delete)
+- [x] 2026-04-18 — "ჩემი პროექტები" გვერდი `/dashboard`-ში (list + edit + duplicate + delete) *(done 2026-04-21 — local MVP recent-projects panel [app/(withSidebar)/dashboard/page.tsx](../app/(withSidebar)/dashboard/page.tsx) + [components/dashboard-projects-panel.tsx](../components/dashboard-projects-panel.tsx): open/edit(rename)/duplicate/delete for project-aware calculators; Supabase-backed global projects grid remains future work under Task 022.)*
 - [x] 2026-04-18 — Cookie-based calc state fallback: [`public/calc/_draft-store.js`](../public/calc/_draft-store.js) — localStorage primary + 30-დღიანი cookie fallback (privacy-mode proof), auto `restoreInputs` + `autosaveInputs({debounce:400})`, cookie 3.5KB cap (pare-to-inputs fallback). Integrated პირველ calc-ში (`wall-thermal`). სხვა HTML კალკები მიიღებენ 2 ხაზით (`<script src>` + `DraftStore.create(slug).autosaveInputs()`). *(done 2026-04-18)*
 
 ## Admin-editable content (older)
@@ -148,62 +164,15 @@
 
 User brief: homepage-ზე მოცურავე ღილაკი (chat-bubble style, bottom-right) "იშოვე 3000 ლარამდე". Click → modal წესებით. Ცნება: ვიზიტორი მოიწვევს ინჟინრებს → თუ ისინი დარეგისტრირდებიან → 10 ლარი მოწვეულ უნიკალურ კონტაქტზე (მაქს 3000 ლარი = 300 კაცი ერთ მონაწილეზე, ან dynamic cap).
 
-- [ ] 2026-04-18 — **Referral floating widget** homepage-ზე (და საიტზე საერთოდ)
-  - პოზიცია: `fixed bottom-right`, z-index 90 (modal-ზე ქვემოთ)
-  - pill/bubble design: ფულის ნიშნით ikon + text "იშოვე 3000 ლარამდე"
-  - click → program rules modal
-  - mobile: compact (icon only + small label)
-  - dismissible (x) → cookie `referral_widget_dismissed=1` 30 დღე
+- [x] 2026-04-21 — **Referral floating widget** · site-wide `fixed bottom-right` bubble + dismiss `x` + 30-დღიანი localStorage hide + mobile compact label, ჩართული feature-flag-ით [components/referral-widget.tsx](../components/referral-widget.tsx). *(done 2026-04-21)*
 
-- [ ] 2026-04-18 — **Program rules modal**
-  - Title: "მოიწვიე ინჟინრები · მიიღე ფული"
-  - Rules:
-    - გიორგი მერებაშვილი, კეთილი საქმის პოპულარიზაციის მიზნით, გარკვეულ პერიოდში იხდის გასამრჯელოს
-    - ფასი: **10 ლარი** თითოეული უნიკალური დარეგისტრირებული კონტაქტისთვის
-    - მაქსიმუმი 1 მონაწილეზე: **3000 ლარი** (= 300 კონტაქტი)
-    - წესი: კონტაქტი უნიკალური უნდა იყოს (ემაილი + ტელეფონი ჯვარედინი შემოწმება); სისტემა ავტომატურად ამოწმებს რეგისტრირებულ users-ს
-    - გადახდა: კონტაქტი რომ დარეგისტრირდება → status → "rewarded"
-    - კონტაქტს უნდა ჰქონდეს სამომხმარებლო წესებზე თანხმობა რეგისტრაციისას (ჩართულია — RegisterPromptModal + RegistrationTrigger გვაქვს)
-  - CTA: "მოიწვიე ახლა" → redirect `/dashboard/referrals`
-  - ეშმაკური მონატანი: "ჩვენ დაგეხმარებით — გაგიმარტივებთ"
+- [x] 2026-04-21 — **Program rules modal** · widget click-ზე იხსნება წესების modal: 10₾/კონტაქტი, 3000₾ cap, უნიკალურობის წესი, privacy note, share buttons და CTA `/dashboard/referrals` [components/referral-widget.tsx](../components/referral-widget.tsx). *(done 2026-04-21)*
 
-- [ ] 2026-04-18 — **`/dashboard/referrals` page** (public, არა admin)
-  - KPI zone ზემოდან (dashboard-style):
-    - სულ დამატებული კონტაქტი
-    - გაგზავნილი მოწვევა
-    - რეგისტრირებული (გამწვანებული)
-    - დასარიცხი ჯამი (GEL)
-  - Add contact form:
-    - სახელი, გვარი
-    - კატეგორია (dropdown): ელექტრო ინჟინერი / სუსტი დენების ინჟინერი / მექანიკური ინჟინერი / HVAC ინჟინერი / არქიტექტორი / სტუდენტი / სხვა
-    - Hashtags (multi-select chip input): #ventilation #hvac #electrical #fire-safety #bim #cad …
-    - ტელეფონი (WhatsApp-ისთვის) · ერთჯერადი flag (gaagzavnis mere system წაშლის თუ user არჩევს)
-    - Email
-    - LinkedIn URL (optional)
-    - Facebook URL (optional)
-    - Submit → ინახავს
-  - Contacts table (mepflow stylistic reference):
-    - columns: სახელი · გვარი · კატეგორია · tags · ტელ. · email · LinkedIn · FB · status · action
-    - status values: `draft` | `sent` | `registered` | `rewarded`
-    - search bar full-system
-    - filter per column (popover)
-    - pagination 50/100/200 (DESIGN_RULES §12 compliance — ეს KAYA rule-ია, მაგრამ engineers.ge-ზე ჯერ არა — bootstrap-ად საკმარისია basic table)
-    - action per row: "გაგზავნე WhatsApp-ზე" (opens `wa.me/<phone>?text=<msg+link>`)
-    - WhatsApp link template-ში — referral URL-ში UTM/ref კოდი (=sender id + contact id) რომ auto-attribute-ს გავაკეთოთ რეგისტრაციისას
-  - Cross-check logic:
-    - როცა ახალი user დარეგისტრირდება RegistrationTrigger-ით → match email/phone referred_contacts-ში → თუ match → ref contact status=`registered`, increment referrer balance
-    - admin panel-ში cross-check view: referrals ↔ users table join (data-health tool)
-  - Privacy:
-    - ერთჯერადი ტელეფონი option (default checked): გაგზავნის შემდეგ ტელეფონი ჩანაცვლდება `+***` placeholder-ით bazaში
-    - თუ user არჩევს "დატოვე ტელეფონი" — შენახდება, მაგრამ პერსონალური მონაცემების პოლიტიკაში user უნდა დაეთანხმოს (UI-ზე hint)
-    - referrer-მა რეგისტრაციისას მიიღო თანხმობა (გასწორდება ცალკე გვერდით: "პერსონალური მონაცემების დამუშავების წესები კონტაქტების დამატებისას")
+- [x] 2026-04-21 — **`/dashboard/referrals` page** · localStorage MVP shipped: KPI cards, add-contact form, hashtag chips, consent gate, search, status/category filters, table actions, WhatsApp send, manual register, და pagination `50 / 100 / 200` [app/(withSidebar)/dashboard/referrals/workspace.tsx](../app/(withSidebar)/dashboard/referrals/workspace.tsx). Cross-check with real users remains future Supabase work. *(done 2026-04-21)*
 
-- [ ] 2026-04-18 — **WhatsApp send scheme**
-  - MVP: `wa.me/<phone>?text=<encoded>` link (user-ს ხელით გადავამისამართებთ — free, არანაირი API)
-  - message template (ka): "გამარჯობა, {სახელი}! გეკაცნებათ გიორგი მერებაშვილი. engineers.ge-ზე უფასო საინჟინრო ხელსაწყოებს ვთავაზობთ — დაარეგისტრირდი ამ ლინკზე: {REF_URL}"
-  - Phase 2 (optional): Meta WhatsApp Business API / Twilio Conversations — require business account approval, ~$0.005/msg
+- [x] 2026-04-21 — **WhatsApp send scheme** · `wa.me/<phone>?text=<encoded>` MVP live via `buildWhatsAppLink()` with `ref` + `rc` params on engineers.ge URL [lib/referrals.ts](../lib/referrals.ts). *(done 2026-04-21)*
 
-- [ ] 2026-04-18 — **Sidebar nav entry** "მოიწვიე მეგობრები" (Users icon) → /dashboard/referrals (logged-in ან open)
+- [x] 2026-04-21 — **Sidebar nav entry** · dashboard sidebar / footer / dashboard cards / login trigger უკვე უთითებს `/dashboard/referrals`-ზე [components/dashboard-sidebar.tsx](../components/dashboard-sidebar.tsx), [components/footer.tsx](../components/footer.tsx). *(done 2026-04-21)*
 
 - [x] 2026-04-18 — **Admin cross-check page** [`/admin/referrals`](../app/admin/(authed)/referrals/page.tsx) — top referrers + referred users table (verified / flagged / disposable markers). Sidebar entry დამატდა `მომხმარებლები` სექციაში. *(done 2026-04-18)*
   - ✅ referrer-ების balance (reward_gel)
@@ -258,33 +227,32 @@ User brief: homepage-ზე მოცურავე ღილაკი (chat-bu
 
 ## Admin panel → "სტანდარტები & წყაროები" (Regulations Watcher)
 
-- [ ] 2026-04-18 — 🟡 გარე წყაროების მონიტორი admin panel-ში:
-  - [ ] `regulation_sources` table: `id, title, url, selector (optional), last_hash, last_checked_at, last_changed_at, status`
-  - [ ] Vercel Cron (daily/6h) — fetch each URL → hash(content) → compare with `last_hash` → if diff: snapshot + mark changed
-  - [ ] Admin UI: list of sources, "changed" badge, diff viewer (old vs new), "approve & publish" button
-  - [ ] Seed რამდენიმე კრიტიკული matsne.gov.ge URL-ი (სახანძრო ტექრეგლამენტი, სამშენებლო კოდექსი, HVAC-related normative acts)
-  - [ ] Notification: email admin-ს როცა წყარო შეიცვალა (optional Slack/Telegram webhook)
+- [x] 2026-04-18 — 🟡 გარე წყაროების მონიტორი admin panel-ში:
+  - [x] 2026-04-21 — `regulation_sources` + `regulation_source_snapshots` schema მზადაა [`supabase/migrations/0027_regulation_sources.sql`](../supabase/migrations/0027_regulation_sources.sql)
+  - [x] 2026-04-21 — Vercel/cron-ready fetch pipeline: [`app/api/cron/regulation-sources/route.ts`](../app/api/cron/regulation-sources/route.ts) + [`lib/regulation-sources.ts`](../lib/regulation-sources.ts) — URL → normalized text hash → snapshot on change
+  - [x] 2026-04-21 — Admin UI MVP: [`/admin/regulations`](../app/admin/(authed)/regulations/page.tsx) — list, stale/error badges, recent snapshot compare, manual `Run now`
+  - [x] 2026-04-21 — Seed რამდენიმე საწყისი წყარო (matsne + EN/NFPA/ASHRAE reference URLs)
+  - [x] 2026-04-21 — approve & publish workflow: migration [`0031_regulation_publish_workflow.sql`](../supabase/migrations/0031_regulation_publish_workflow.sql) + [`/api/admin/regulations/publish`](../app/api/admin/regulations/publish/route.ts) + admin `Approve + publish` CTA latest snapshot-ზე
+  - [x] 2026-04-21 — Notification email admin-ს როცა წყარო შეიცვალა: `sendRegulationChangeNotification()` + `notify.regulations` feature flag + cron/manual regulation run hooks
 
 ## User-facing → "სტანდარტთან შესაბამისობის შემოწმება"
 
 - [ ] 2026-04-18 — 🟡 compliance helper კალკულატორებში:
-  - [ ] კალკულაციის შედეგი → button "შევამოწმო სტანდარტთან შესაბამისობა"
+  - [x] 2026-04-21 — Phase 1 ნაწილობრივ უკვე ცოცხალია `heat-loss` / `wall-thermal` envelope flow-ში: `renderUAssess()` standard ladder + Georgian Decree №354 selectors, dedicated standards/Umax modals, და PDF-ში standards compliance tables [`public/calc/heat-loss.html`](../public/calc/heat-loss.html). ანუ “U-value compliance helper” არსებობს, უბრალოდ generic rule-engine დონემდე ჯერ არ ასულა.
+  - [ ] კალკულაციის შედეგი → უფრო ზოგადი button/section "შევამოწმო სტანდარტთან შესაბამისობა" სხვა calculators-ზეც
   - [ ] კონკრეტული rule-set-ები (მაგ: `min_fresh_air_per_person_m3h`, `max_U_value_wall`, `min_fire_escape_width_m`) — ინახება `standards_rules` table-ში
   - [ ] შედეგი: ✅ აკმაყოფილებს / ⚠️ საზღვართან / ❌ არ აკმაყოფილებს + reference წყაროზე (matsne URL)
   - [ ] Admin-ს შეუძლია rule-ები დაარედაქტიროს (value, reference URL, applicable calc slugs)
-  - [ ] Phase 1: 3-5 ძირითადი rule ერთი კალკულატორისთვის (heat-loss ან HVAC) → iterate
 
 ## Admin panel → სარეკლამო (Ads) ტაბი
 
-- [ ] 2026-04-17 — დამოუკიდებელი **"სარეკლამო"** ტაბი admin panel-ში:
-  - [ ] სტატისტიკა (views, CTR, revenue per slot, active/inactive)
-  - [ ] ცხრილები — არსებული ბანერების სია: დასახელება, slot, clients, ფასი, status
-  - [ ] ლოგები + ისტორია (ვინ, როდის, რა შეცვალა; ბანერის rotation history)
-  - [ ] გადახდები (payments ledger, outstanding invoices, paid-until)
-  - [ ] კლიენტის ბანერის ატვირთვა (client-side upload + admin approval flow)
-  - [ ] არსებული ბანერის preview
-  - [ ] WhatsApp ნომერი (per-client contact) field
-  - [ ] აქციები / sales icons (promo badges, discount tags) — icon set + CMS
+- [x] 2026-04-17 — დამოუკიდებელი **"სარეკლამო"** ტაბი admin panel-ში:
+  - [x] 2026-04-21 — MVP უკვე არსებობს [`/admin/banners`](../app/admin/(authed)/banners/page.tsx) + child pages: overview/stats/table/preview/manage, სადაც ჩანს დატვირთულობა, revenue-per-slot proxy, slot table, preview და live Hero Ads edit flow
+  - [x] 2026-04-21 — ლოგები + ისტორია MVP: `/admin/banners` overview-ში ბოლო `tile.upsert` audit ჩანაწერები ჩანს actor/time/slot metadata-ით
+  - [x] 2026-04-21 — გადახდები MVP: migration [`0029_hero_ad_payments.sql`](../supabase/migrations/0029_hero_ad_payments.sql) + CRUD route [`/api/admin/hero-ad-payments`](../app/api/admin/hero-ad-payments/route.ts) + `/admin/banners/stats` ledger/outstanding/overdue cards + `/admin/banners/table`-ში `paid until` coverage
+  - [x] 2026-04-21 — კლიენტის ბანერის ატვირთვა + approval MVP: public [`/ads`](../app/(withSidebar)/ads/page.tsx) request form → [`/api/ads/upload-request`](../app/api/ads/upload-request/route.ts) pending queue table [`0030_hero_ad_upload_requests.sql`](../supabase/migrations/0030_hero_ad_upload_requests.sql) → admin approve/reject queue [`/admin/banners/manage`](../app/admin/(authed)/banners/manage/page.tsx)
+  - [x] 2026-04-21 — WhatsApp ნომერი (per-client contact) field: `hero_ad_slots.contact_phone` + admin form + public `/ads` CTA
+  - [x] 2026-04-21 — აქციები / sales icons MVP: `hero_ad_slots.promo_badge` + admin CMS + treemap/ads-simulator badge render
 
 ---
 

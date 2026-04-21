@@ -5,7 +5,7 @@ import {Container} from '@/components/container';
 
 export const metadata: Metadata = {
   title: 'ყველა ხელსაწყო',
-  description: 'engineers.ge-ის ყველა საინჟინრო კალკულატორი — თბოდანაკარგი, HVAC, ვენტილაცია, სახანძრო სიმულაცია, CAD გეგმის რედაქტორი, BIM/IFC viewer',
+  description: 'engineers.ge-ის ყველა საინჟინრო კალკულატორი — თბოდანაკარგი, HVAC, ვენტილაცია, სახანძრო სიმულაცია, CAD გეგმის რედაქტორი, IFC viewer',
   alternates: {canonical: '/calc'},
   openGraph: {
     type: 'website',

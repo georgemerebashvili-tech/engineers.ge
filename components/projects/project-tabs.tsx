@@ -28,9 +28,13 @@ import {
   exportProjects,
   importProjects,
   clearProjects,
+  getAlwaysShowGateOnEntry,
+  setAlwaysShowGateOnEntry,
+  setLastProjectId,
   formatRelative,
   type Project
 } from '@/lib/projects';
+import {getTemplatesForSlug} from '@/lib/project-templates';
 
 const OPEN_KEY = 'eng_projects_active';
 const PROJECTS_KEY = 'eng_projects_v1';
@@ -80,23 +84,32 @@ type Props = {
 export function ProjectTabs({slug, activeId}: Props) {
   const router = useRouter();
   const pathname = usePathname();
+  const [addMenuOpen, setAddMenuOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [menuQuery, setMenuQuery] = useState('');
+  const [addName, setAddName] = useState('');
+  const [alwaysShowGate, setAlwaysShowGate] = useState(() => getAlwaysShowGateOnEntry(slug));
   const [renaming, setRenaming] = useState(false);
   const [projectsVersion, setProjectsVersion] = useState(0);
   const [openIds, setOpenIds] = useState<string[]>(() => readOpenIds(slug));
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const addMenuRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const settingsRef = useRef<HTMLDivElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
 
   const allProjects = useMemo(() => listProjects(slug), [slug, projectsVersion]);
   const knownIds = useMemo(() => new Set(allProjects.map((project) => project.id)), [allProjects]);
+  const templates = useMemo(() => getTemplatesForSlug(slug), [slug]);
   const active = allProjects.find((project) => project.id === activeId) || getProject(activeId);
   const openProjects = useMemo(
     () => openIds.map((id) => allProjects.find((project) => project.id === id)).filter((x): x is Project => !!x),
     [allProjects, openIds]
+  );
+  const recentCandidates = useMemo(
+    () => allProjects.filter((project) => project.id !== activeId).slice(0, 5),
+    [activeId, allProjects]
   );
   const filteredProjects = useMemo(() => {
     const query = menuQuery.trim().toLowerCase();
@@ -114,8 +127,11 @@ export function ProjectTabs({slug, activeId}: Props) {
 
   useEffect(() => {
     setOpenIds(readOpenIds(slug));
+    setAddMenuOpen(false);
     setMenuOpen(false);
     setSettingsOpen(false);
+    setAddName('');
+    setAlwaysShowGate(getAlwaysShowGateOnEntry(slug));
     setMenuQuery('');
     setRenaming(false);
   }, [slug]);
@@ -126,7 +142,16 @@ export function ProjectTabs({slug, activeId}: Props) {
   }, [activeId, knownIds, openIds, syncOpenIds]);
 
   useEffect(() => {
+    if (!activeId) return;
+    if (!knownIds.has(activeId) && !getProject(activeId)) return;
+    setLastProjectId(slug, activeId);
+  }, [activeId, knownIds, slug]);
+
+  useEffect(() => {
     function onDown(e: MouseEvent) {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
+        setAddMenuOpen(false);
+      }
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
         setMenuQuery('');
@@ -167,7 +192,7 @@ export function ProjectTabs({slug, activeId}: Props) {
         if (next.length) {
           router.push(`${pathname}?project=${next[next.length - 1]}`);
         } else {
-          router.push(pathname);
+          router.push(`${pathname}?gate=1`);
         }
       } else if (k === 'tab' && openProjects.length > 1) {
         e.preventDefault();
@@ -194,22 +219,56 @@ export function ProjectTabs({slug, activeId}: Props) {
       if (next.length) {
         router.push(`${pathname}?project=${next[next.length - 1]}`);
       } else {
-        router.push(pathname);
+        router.push(`${pathname}?gate=1`);
       }
     }
   };
 
-  const addNew = () => {
-    const p = createProject(slug, {}, undefined);
+  const createBlankProject = (name?: string) => {
+    const p = createProject(slug, {}, name || undefined);
     setProjectsVersion((value) => value + 1);
     switchTo(p.id);
+  };
+
+  const addNew = () => {
+    createBlankProject();
+    setAddMenuOpen(false);
+    setAddName('');
     setMenuOpen(false);
     setSettingsOpen(false);
     setMenuQuery('');
   };
 
+  const createNamedProject = () => {
+    createBlankProject(addName.trim() || undefined);
+    setAddMenuOpen(false);
+    setAddName('');
+  };
+
+  const openRecent = (id: string) => {
+    switchTo(id);
+    setAddMenuOpen(false);
+  };
+
+  const openTemplate = (key: string) => {
+    const template = templates.find((entry) => entry.key === key);
+    if (!template) return;
+    const p = createProject(slug, template.state, template.name);
+    setProjectsVersion((value) => value + 1);
+    switchTo(p.id);
+    setAddMenuOpen(false);
+    setAddName('');
+  };
+
+  const openGateFromAdd = () => {
+    setAddMenuOpen(false);
+    setMenuOpen(false);
+    setSettingsOpen(false);
+    router.push(`${pathname}?gate=1`);
+  };
+
   const goBack = () => {
-    router.push(pathname); // removes ?project=
+    router.push(`${pathname}?gate=1`);
   };
 
   const saveRename = () => {
@@ -234,7 +293,7 @@ export function ProjectTabs({slug, activeId}: Props) {
   const closeAllTabs = useCallback(() => {
     syncOpenIds([]);
     setSettingsOpen(false);
-    router.push(pathname);
+    router.push(`${pathname}?gate=1`);
   }, [pathname, router, syncOpenIds]);
 
   const exportAllForSlug = useCallback(() => {
@@ -278,11 +337,17 @@ export function ProjectTabs({slug, activeId}: Props) {
     syncOpenIds([]);
     setProjectsVersion((value) => value + 1);
     setSettingsOpen(false);
-    router.push(pathname);
+    router.push(`${pathname}?gate=1`);
   }, [allProjects.length, pathname, router, slug, syncOpenIds]);
 
+  const toggleAlwaysShowGate = useCallback(() => {
+    const next = !alwaysShowGate;
+    setAlwaysShowGate(next);
+    setAlwaysShowGateOnEntry(slug, next);
+  }, [alwaysShowGate, slug]);
+
   return (
-    <div className="flex items-center gap-0 bg-sur border-b border-bdr px-2 overflow-x-auto" style={{minHeight: 36}}>
+    <div className="flex items-center gap-0 bg-sur border-b border-bdr px-2" style={{minHeight: 36}}>
       <input
         ref={importInputRef}
         type="file"
@@ -363,15 +428,134 @@ export function ProjectTabs({slug, activeId}: Props) {
           </div>
         ))}
 
-        {/* Add button */}
-        <button
-          type="button"
-          onClick={addNew}
-          title="ახალი პროექტი (Ctrl+T)"
-          className="inline-flex items-center justify-center w-7 h-[32px] text-text-2 hover:text-blue hover:bg-sur-2 rounded transition-colors flex-shrink-0"
-        >
-          <Plus size={14} />
-        </button>
+        <div className="relative flex-shrink-0" ref={addMenuRef}>
+          {/* Add button */}
+          <button
+            type="button"
+            onClick={() => {
+              setMenuOpen(false);
+              setSettingsOpen(false);
+              setAddMenuOpen((value) => !value);
+            }}
+            title="ახალი პროექტი (Ctrl+T)"
+            className="inline-flex items-center justify-center w-7 h-[32px] text-text-2 hover:text-blue hover:bg-sur-2 rounded transition-colors"
+          >
+            <Plus size={14} />
+          </button>
+          {addMenuOpen && (
+            <div className="absolute left-0 top-[calc(100%+4px)] z-50 w-[320px] rounded-md border bg-sur p-3 shadow-lg">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-[11px] font-bold text-navy">ახალი tab</div>
+                  <div className="text-[10px] text-text-3">blank, template ან recent project</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAddMenuOpen(false)}
+                  className="inline-flex h-6 w-6 items-center justify-center rounded-full text-text-3 hover:bg-sur-2 hover:text-navy"
+                  aria-label="დახურვა"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+
+              <div className="mb-3 rounded-md border border-bdr bg-sur-2 p-2">
+                <input
+                  type="text"
+                  value={addName}
+                  onChange={(event) => setAddName(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault();
+                      createNamedProject();
+                    }
+                  }}
+                  placeholder="პროექტის სახელი"
+                  maxLength={80}
+                  className="mb-2 w-full rounded-md border border-bdr bg-sur px-2 py-1.5 text-[11px] text-navy outline-none focus:border-blue"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={createNamedProject}
+                    className="flex-1 rounded-md border border-blue bg-blue px-2 py-1.5 text-[11px] font-semibold text-white hover:bg-navy-2"
+                  >
+                    ცარიელი პროექტი
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openGateFromAdd}
+                    className="rounded-md border bg-sur px-2 py-1.5 text-[11px] font-semibold text-text-2 hover:text-blue"
+                  >
+                    ყველა პროექტი
+                  </button>
+                </div>
+              </div>
+
+              {templates.length > 0 && (
+                <div className="mb-3">
+                  <div className="mb-1.5 text-[10px] font-mono uppercase tracking-wide text-text-3">
+                    Templates
+                  </div>
+                  <div className="grid gap-2">
+                    {templates.slice(0, 3).map((template) => (
+                      <button
+                        key={template.key}
+                        type="button"
+                        onClick={() => openTemplate(template.key)}
+                        className="flex items-start gap-2 rounded-md border border-bdr bg-sur-2 px-2 py-2 text-left transition-colors hover:border-blue hover:bg-blue-lt"
+                      >
+                        <span className="text-base" aria-hidden>
+                          {template.icon}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[11px] font-semibold text-navy">
+                            {template.name}
+                          </span>
+                          <span className="block line-clamp-2 text-[10px] text-text-3">
+                            {template.description}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {recentCandidates.length > 0 && (
+                <div>
+                  <div className="mb-1.5 text-[10px] font-mono uppercase tracking-wide text-text-3">
+                    Recent
+                  </div>
+                  <div className="grid gap-1">
+                    {recentCandidates.map((project) => (
+                      <button
+                        key={project.id}
+                        type="button"
+                        onClick={() => openRecent(project.id)}
+                        className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left hover:bg-blue-lt"
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-[11px] font-semibold text-text">
+                            {project.name}
+                          </span>
+                          <span className="block text-[9px] font-mono text-text-3">
+                            {formatRelative(project.updatedAt)}
+                          </span>
+                        </span>
+                        {openIds.includes(project.id) && (
+                          <span className="rounded border border-grn bg-grn-lt px-1 py-0.5 text-[8px] font-mono text-grn">
+                            OPEN
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex-1" />
@@ -381,6 +565,7 @@ export function ProjectTabs({slug, activeId}: Props) {
         <button
           type="button"
           onClick={() => {
+            setAddMenuOpen(false);
             setSettingsOpen(false);
             setMenuOpen((value) => {
               const next = !value;
@@ -467,7 +652,7 @@ export function ProjectTabs({slug, activeId}: Props) {
                       setProjectsVersion((value) => value + 1);
                       if (p.id === activeId) {
                         if (next.length) router.push(`${pathname}?project=${next[next.length - 1]}`);
-                        else router.push(pathname);
+                        else router.push(`${pathname}?gate=1`);
                       }
                     }}
                     className="h-6 w-6 inline-flex items-center justify-center text-text-3 hover:text-red hover:bg-red-lt rounded"
@@ -493,6 +678,7 @@ export function ProjectTabs({slug, activeId}: Props) {
         <button
           type="button"
           onClick={() => {
+            setAddMenuOpen(false);
             setMenuOpen(false);
             setMenuQuery('');
             setSettingsOpen((value) => !value);
@@ -518,6 +704,22 @@ export function ProjectTabs({slug, activeId}: Props) {
               className="w-full px-3 py-2 text-left text-[11px] font-semibold text-text hover:bg-blue-lt inline-flex items-center gap-2"
             >
               <Upload size={12} className="text-blue" /> JSON იმპორტი
+            </button>
+            <button
+              type="button"
+              onClick={toggleAlwaysShowGate}
+              className="w-full px-3 py-2 text-left text-[11px] font-semibold text-text hover:bg-blue-lt inline-flex items-center justify-between gap-3"
+            >
+              <span>ყოველ შესვლაზე gate-ის ჩვენება</span>
+              <span
+                className={`rounded-full border px-2 py-0.5 text-[9px] font-mono ${
+                  alwaysShowGate
+                    ? 'border-blue bg-blue-lt text-blue'
+                    : 'border-bdr bg-sur-2 text-text-3'
+                }`}
+              >
+                {alwaysShowGate ? 'ON' : 'OFF'}
+              </span>
             </button>
             <button
               type="button"

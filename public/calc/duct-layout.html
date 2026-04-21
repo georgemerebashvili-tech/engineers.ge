@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Duct Layout — MakerJS — engineers.ge</title>
+<link rel="stylesheet" href="/calc/_base.css">
+<script src="/calc/_theme-sync.js"></script>
+<script src="/calc/_makerjs.js"></script>
+<script>
+  // browserify leaked `require` to global; expose makerjs as window.makerjs
+  try { window.makerjs = require('makerjs'); } catch (e) { console.error('makerjs boot', e); }
+</script>
+<style>
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body { display: flex; flex-direction: column; font-family: var(--font-sans); background: var(--bg); color: var(--text); }
+  .top {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px;
+    background: var(--sur); border-bottom: 1px solid var(--bdr);
+    flex: 0 0 auto;
+  }
+  .top h1 { margin: 0; font-size: 13px; font-weight: 700; color: var(--navy); display: flex; align-items: center; gap: 6px; }
+  .top .badge { font-size: 10px; font-weight: 600; padding: 2px 7px; background: var(--blue-lt); color: var(--blue); border: 1px solid var(--blue-bd); border-radius: 999px; }
+  .top .spacer { flex: 1; }
+  .top button {
+    background: var(--sur-2); border: 1px solid var(--bdr);
+    border-radius: 6px; padding: 6px 12px;
+    font-size: 11px; font-weight: 600; color: var(--text-2);
+    cursor: pointer; font-family: inherit;
+  }
+  .top button:hover { border-color: var(--blue); color: var(--blue); }
+  .top button.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+  .root { display: grid; grid-template-columns: 280px 1fr; flex: 1 1 0; min-height: 0; }
+  aside {
+    background: var(--sur); border-right: 1px solid var(--bdr);
+    overflow: auto; padding: 12px 14px;
+  }
+  aside h2 { margin: 0 0 10px; font-size: 11px; font-weight: 700; color: var(--text-3); letter-spacing: .08em; text-transform: uppercase; }
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 10px; font-weight: 600; color: var(--text-3); margin-bottom: 3px; text-transform: uppercase; letter-spacing: .05em; }
+  .field input, .field select {
+    width: 100%; padding: 6px 10px;
+    background: var(--sur-2); border: 1px solid var(--bdr);
+    border-radius: 6px; font-size: 12px; font-family: inherit; color: var(--text);
+    outline: none;
+  }
+  .field input:focus, .field select:focus { border-color: var(--blue); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .metrics {
+    margin-top: 12px; padding: 10px;
+    background: var(--sur-2); border: 1px solid var(--bdr);
+    border-radius: 6px;
+    font-size: 11px; line-height: 1.7;
+  }
+  .metrics .row { display: flex; justify-content: space-between; }
+  .metrics .row b { color: var(--navy); font-family: var(--font-mono); }
+
+  #canvas-wrap {
+    position: relative;
+    background: #fff;
+    background-image:
+      linear-gradient(0deg, rgba(0,0,0,.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,.04) 1px, transparent 1px);
+    background-size: 20px 20px;
+    overflow: hidden;
+  }
+  #canvas-wrap svg { display: block; width: 100%; height: 100%; }
+
+  .hint { font-size: 10px; color: var(--text-3); margin-top: 10px; line-height: 1.5; }
+  .btn-row { display: flex; gap: 6px; margin-top: 12px; }
+  .btn-row button { flex: 1; padding: 7px; font-size: 11px; background: var(--sur-2); border: 1px solid var(--bdr); border-radius: 6px; cursor: pointer; color: var(--text-2); font-weight: 600; }
+  .btn-row button:hover { border-color: var(--blue); color: var(--blue); }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>🧩 Duct Layout <span class="badge">MakerJS · parametric</span></h1>
+  <span style="font-size:11px; color:var(--text-3);">Rectangular duct cross-section · რეალური ზომები</span>
+  <div class="spacer"></div>
+  <a href="/calc/docs/tools#makerjs" target="_blank" rel="noopener" style="font-size:11px;color:var(--blue);text-decoration:none;border:1px solid var(--blue-bd);background:var(--blue-lt);padding:5px 9px;border-radius:6px;font-weight:600;">📖 რა არის ეს?</a>
+</div>
+
+<div class="root">
+  <aside>
+    <h2>პარამეტრები</h2>
+    <div class="row2">
+      <div class="field">
+        <label>სიგანე W (მმ)</label>
+        <input type="number" id="w" value="400" min="100" step="10">
+      </div>
+      <div class="field">
+        <label>სიმაღლე H (მმ)</label>
+        <input type="number" id="h" value="250" min="50" step="10">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>სისქე t (მმ)</label>
+        <input type="number" id="t" value="1.0" min="0.4" step="0.1">
+      </div>
+      <div class="field">
+        <label>Flange b (მმ)</label>
+        <input type="number" id="fl" value="25" min="0" step="1">
+      </div>
+    </div>
+    <div class="field">
+      <label>გრძელი L (მმ, ერთი სექცია)</label>
+      <input type="number" id="L" value="1250" min="100" step="10">
+    </div>
+    <div class="field">
+      <label>ფორმა</label>
+      <select id="shape">
+        <option value="rect">მართკუთხა</option>
+        <option value="oval">ოვალი (flat-oval)</option>
+        <option value="round">მრგვალი (D=W)</option>
+      </select>
+    </div>
+
+    <h2 style="margin-top:14px;">შედეგი</h2>
+    <div class="metrics" id="metrics">
+      <div class="row"><span>პერიმეტრი:</span><b id="m-p">—</b></div>
+      <div class="row"><span>კვეთი:</span><b id="m-a">—</b></div>
+      <div class="row"><span>ჰიდრ. დიამ.:</span><b id="m-dh">—</b></div>
+      <div class="row"><span>ლითონი/მ:</span><b id="m-mass">—</b></div>
+      <div class="row"><span>სექციის ფართობი:</span><b id="m-sheet">—</b></div>
+    </div>
+
+    <div class="btn-row">
+      <button id="svg">⬇ SVG</button>
+      <button id="dxf">⬇ DXF</button>
+      <button id="json">⬇ JSON</button>
+    </div>
+
+    <p class="hint">
+      MakerJS აგენერირებს 2D პარამეტრულ გეომეტრიას Node-სა და ბრაუზერში. იდეალურია DXF-ის ექსპორტისთვის — calc-ის output (duct width / height / length) ავტომატურად იქცევა CAD drawing-ად, რომელიც სახელოსნოში მიიტანება.
+    </p>
+  </aside>
+
+  <div id="canvas-wrap"></div>
+</div>
+
+<script>
+(function(){
+  const m = window.makerjs;
+  if (!m) { document.body.innerHTML = '<p style="padding:20px;color:red">MakerJS ვერ ჩაიტვირთა.</p>'; return; }
+
+  const $ = id => document.getElementById(id);
+  const wrap = $('canvas-wrap');
+
+  // Steel density: 7.85 g/cm³ = 7850 kg/m³
+  const STEEL_DENSITY = 7850;
+
+  function build() {
+    const W = +$('w').value, H = +$('h').value, t = +$('t').value;
+    const FL = +$('fl').value, L = +$('L').value;
+    const shape = $('shape').value;
+
+    let model;
+    if (shape === 'rect') {
+      // Outer rect + inner cut + flanges on 4 sides
+      const outer = new m.models.RoundRectangle(W + 2 * FL, H + 2 * FL, 2);
+      m.model.move(outer, [-FL, -FL]);
+      const inner = new m.models.RoundRectangle(W, H, 2);
+      const crossMark = {
+        paths: {
+          cross1: new m.paths.Line([0, 0], [W, H]),
+          cross2: new m.paths.Line([0, H], [W, 0])
+        }
+      };
+      model = {
+        models: {
+          outer: outer,
+          inner: inner,
+          ghost: crossMark
+        }
+      };
+    } else if (shape === 'oval') {
+      // Flat oval: rect body + two semicircles on shorter sides
+      const r = H / 2;
+      const body = new m.models.Rectangle(W, H);
+      const left = new m.models.Ellipse(r, r);
+      m.model.move(left, [0, r]);
+      const right = new m.models.Ellipse(r, r);
+      m.model.move(right, [W, r]);
+      model = { models: { body, left, right } };
+    } else {
+      // Round
+      const d = W;
+      model = new m.models.Ellipse(d / 2, d / 2);
+      m.model.move(model, [d / 2, d / 2]);
+    }
+
+    // --- metrics ---
+    let perim_mm, area_mm2, dh_mm;
+    if (shape === 'rect') {
+      perim_mm = 2 * (W + H);
+      area_mm2 = W * H;
+    } else if (shape === 'oval') {
+      perim_mm = 2 * (W - H) + Math.PI * H; // straight sides + full circle equiv
+      area_mm2 = (W - H) * H + Math.PI * (H/2) * (H/2);
+    } else {
+      const d = W;
+      perim_mm = Math.PI * d;
+      area_mm2 = Math.PI * (d/2) * (d/2);
+    }
+    const dh_m = (4 * area_mm2 / perim_mm);
+    // sheet per linear meter of duct (mm²) = perim_mm * 1000 mm
+    const sheet_per_m_m2 = (perim_mm * 1000) / 1e6; // m²/m
+    const mass_per_m = sheet_per_m_m2 * (t / 1000) * STEEL_DENSITY; // kg/m
+
+    // one section sheet area (m²):
+    const section_sheet_m2 = (perim_mm * L) / 1e6;
+
+    $('m-p').textContent = perim_mm.toFixed(0) + ' მმ';
+    $('m-a').textContent = (area_mm2 / 1e6).toFixed(3) + ' მ²';
+    $('m-dh').textContent = dh_m.toFixed(1) + ' მმ';
+    $('m-mass').textContent = mass_per_m.toFixed(2) + ' კგ/მ';
+    $('m-sheet').textContent = section_sheet_m2.toFixed(3) + ' მ² (L=' + L + 'მმ)';
+
+    // --- render ---
+    const svg = m.exporter.toSVG(model, {
+      strokeWidth: '1.5',
+      stroke: '#1f6fd4',
+      fill: 'none',
+      scale: 1,
+      units: 'mm',
+      viewBox: true
+    });
+    wrap.innerHTML = svg;
+    return model;
+  }
+
+  function download(filename, content, mime) {
+    const blob = new Blob([content], {type: mime});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  let currentModel = build();
+  ['w','h','t','fl','L','shape'].forEach(id => {
+    $(id).addEventListener('input', () => { currentModel = build(); });
+  });
+
+  $('svg').addEventListener('click', () => {
+    const svg = m.exporter.toSVG(currentModel, { units: 'mm', viewBox: true, stroke: '#000', fill: 'none' });
+    download('duct.svg', svg, 'image/svg+xml');
+  });
+  $('dxf').addEventListener('click', () => {
+    const dxf = m.exporter.toDXF(currentModel, { units: 'mm' });
+    download('duct.dxf', dxf, 'application/dxf');
+  });
+  $('json').addEventListener('click', () => {
+    download('duct.json', JSON.stringify(currentModel, null, 2), 'application/json');
+  });
+})();
+</script>
+</body>
+</html>

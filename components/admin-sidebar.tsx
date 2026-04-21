@@ -399,6 +399,13 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
         {key: 'site', label: 'საჯარო საიტი', href: '/', icon: Home},
         {key: 'ads-preview', label: 'რეკლამის preview', href: '/ads', icon: Megaphone, flagKey: 'admin.ads-preview'},
         {
+          key: 'dmt',
+          label: 'DMT ops panel',
+          href: '/dmt',
+          icon: FolderKanban,
+          flagKey: 'admin.dmt'
+        },
+        {
           key: 'logout',
           label: 'გასვლა',
           icon: LogOut,

@@ -18,6 +18,8 @@ const SlotSchema = z.object({
   image_url: z.string().max(2000).default(''),
   link_url: z.string().max(2000).default(''),
   client_name: z.string().max(160).default(''),
+  contact_phone: z.string().max(40).default(''),
+  promo_badge: z.string().max(32).default(''),
   price_gel: z.number().min(0).max(100000).default(0),
   occupied_until: z.string().nullable().optional().default(null),
   is_ad_slot: z.boolean().default(true),
@@ -58,7 +60,17 @@ export async function PUT(req: NextRequest) {
       action: 'tile.upsert',
       target_type: 'hero_ad_slots',
       target_id: body.slots.map((s) => s.slot_key).join(','),
-      metadata: {count: body.slots.length},
+      metadata: {
+        count: body.slots.length,
+        slots: body.slots.map((slot) => ({
+          key: slot.slot_key,
+          client: slot.client_name,
+          phone: slot.contact_phone || null,
+          promo: slot.promo_badge || null,
+          price: slot.price_gel,
+          occupied_until: slot.occupied_until || null
+        }))
+      },
       ip: getIp(req.headers)
     });
     return NextResponse.json({ok: true});

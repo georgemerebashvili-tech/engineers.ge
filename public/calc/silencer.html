@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1a3a6b">
-<title>KAYA — ხმაურდამხშობის კალკულატორი — FINAL</title>
+<title>ხმაურდამხშობის კალკულატორი — engineers.ge</title>
 <script src="/calc/_theme-sync.js"></script>
 <script src="/calc/_i18n.js"></script>
 <script src="/calc/_draft-store.js"></script>
@@ -59,7 +59,7 @@ button{font-family:var(--sans);cursor:pointer}
 .hdr{background:var(--navy);color:var(--sur);border-radius:12px;padding:14px 20px;
   display:flex;align-items:center;gap:14px;margin-bottom:16px}
 .hdr-logo{height:32px;background:var(--sur);border-radius:5px;padding:3px 9px}
-.hdr-sep{width:1px;height:38px;background:rgba(255,255,255,.2)}
+.hdr-sep{display:none}
 .hdr-title{font-size:15px;font-weight:600}
 .hdr-sub{font-size:10px;color:rgba(255,255,255,.6);margin-top:2px}
 .hdr-right{margin-left:auto;display:flex;gap:8px;align-items:center}
@@ -489,7 +489,6 @@ html{scroll-behavior:smooth}
 
 <!-- HEADER -->
 <div class="hdr no-print" id="top-section">
-  <img class="hdr-logo" src="data:image/png;base64,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" alt="KAYA">
   <div class="hdr-sep"></div>
   <div>
     <div class="hdr-title">ხმაურდამხშობის კალკულატორი — FINAL</div>
@@ -769,10 +768,10 @@ html{scroll-behavior:smooth}
     ეს კალკულატორი განკუთვნილია <b>საინჟინრო პირველადი შეფასებისთვის</b> VDI 2081, EN ISO 7235 და ASHRAE HVAC Applications სტანდარტების ემპირიული ფორმულების საფუძველზე.
     გამოთვლები შეიძლება განსხვავდებოდეს ლაბორატორიული გამოცდის შედეგებისგან ±15%-ის ფარგლებში.
     <b>საბოლოო გადაწყვეტილება უნდა მიიღოს სერტიფიცირებულმა ინჟინერმა</b> სრული პროექტის შეფასების შემდეგ.
-    KAYA პასუხისმგებლობას არ იღებს ამ კალკულატორის არასწორი გამოყენებით გამოწვეულ შედეგებზე.
+    საიტი პასუხისმგებლობას არ იღებს ამ კალკულატორის არასწორი გამოყენებით გამოწვეულ შედეგებზე.
   </div>
   <div style="background:var(--navy);color:rgba(255,255,255,.5);padding:8px 16px;border-radius:7px;font-size:10px;text-align:center;margin-top:10px">
-    © KAYA HVAC Engineering · ხმაურდამხშობის სელექცია · ყველა უფლება დაცულია · EN ISO 7235 | VDI 2081 | ASHRAE
+    © engineers.ge · ხმაურდამხშობის სელექცია · ყველა უფლება დაცულია · EN ISO 7235 | VDI 2081 | ASHRAE
   </div>
 </div>
 
@@ -792,13 +791,13 @@ html{scroll-behavior:smooth}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 // ══════════════════════════════════════════════════════════════════
-// KAYA Duct Silencer — Engineering Calculation Engine v3.0
+// Duct Silencer — Engineering Calculation Engine v3.0
 // References: VDI 2081, EN ISO 7235, ASHRAE HVAC App. Ch.48
 // ══════════════════════════════════════════════════════════════════
 
 // ── ACOUSTIC / PHYSICAL CONSTANTS ──────────────────────────────────
 /* =====================================================================
-   KAYA Duct Silencer — Engineering Calculation Engine v4.0
+   Duct Silencer — Engineering Calculation Engine v4.0
    References: VDI 2081 | EN ISO 7235 | ASHRAE HVAC App. Ch.48
    Idelchik: "Handbook of Hydraulic Resistance"
    PRELIMINARY ENGINEERING SELECTION TOOL — not laboratory-certified.
@@ -1956,9 +1955,9 @@ document.addEventListener("DOMContentLoaded",()=>{
 /* ========== i18n (top UI chrome) ========== */
 if (window.engCalcI18n) {
   window.engCalcI18n.apply({
-    ka: {title: 'KAYA — ხმაურდამხშობის კალკულატორი — FINAL'},
+    ka: {title: 'ხმაურდამხშობის კალკულატორი'},
     en: {
-      title: 'KAYA — Silencer Calculator — engineers.ge',
+      title: 'Silencer Calculator — engineers.ge',
       selectors: {
         '.hdr-title': {text: 'Silencer Calculator — FINAL'},
         '.hdr-sub': {text: '50 mm mineral wool 100 kg/m³ · G4 filter · 0.8 mm galvanized steel · standard catalogue models'},
@@ -1970,7 +1969,7 @@ if (window.engCalcI18n) {
       }
     },
     ru: {
-      title: 'KAYA — Калькулятор шумоглушителя — engineers.ge',
+      title: 'Калькулятор шумоглушителя — engineers.ge',
       selectors: {
         '.hdr-title': {text: 'Калькулятор шумоглушителя — FINAL'},
         '.hdr-sub': {text: '50 мм минеральная вата 100 кг/м³ · фильтр G4 · 0.8 мм оцинкованная сталь · стандартные каталожные модели'},
@@ -1982,7 +1981,7 @@ if (window.engCalcI18n) {
       }
     },
     tr: {
-      title: 'KAYA — Susturucu Hesaplayici — engineers.ge',
+      title: 'Susturucu Hesaplayici — engineers.ge',
       selectors: {
         '.hdr-title': {text: 'Susturucu Hesaplayici — FINAL'},
         '.hdr-sub': {text: '50 mm mineral yün 100 kg/m³ · G4 filtre · 0.8 mm galvanizli celik · standart katalog modelleri'},
@@ -1994,7 +1993,7 @@ if (window.engCalcI18n) {
       }
     },
     az: {
-      title: 'KAYA — Səsboğucu Kalkulyatoru — engineers.ge',
+      title: 'Səsboğucu Kalkulyatoru — engineers.ge',
       selectors: {
         '.hdr-title': {text: 'Səsboğucu kalkulyatoru — FINAL'},
         '.hdr-sub': {text: '50 mm mineral yun 100 kg/m³ · G4 filtr · 0.8 mm sinklənmiş polad · standart kataloq modelləri'},
@@ -2006,7 +2005,7 @@ if (window.engCalcI18n) {
       }
     },
     hy: {
-      title: 'KAYA — Ձայնախլացուցիչի Հաշվիչ — engineers.ge',
+      title: 'Ձայնախլացուցիչի Հաշվիչ — engineers.ge',
       selectors: {
         '.hdr-title': {text: 'Ձայնախլացուցիչի հաշվիչ — FINAL'},
         '.hdr-sub': {text: '50 մմ հանքային բուրդ 100 կգ/մ³ · G4 ֆիլտր · 0.8 մմ ցինկապատ պողպատ · ստանդարտ կատալոգային մոդելներ'},

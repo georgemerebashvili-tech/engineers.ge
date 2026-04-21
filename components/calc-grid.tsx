@@ -110,7 +110,7 @@ const SYSTEMS: System[] = [
   {
     slug: 'ifc-viewer',
     icons: [{icon: Building2, color: 'var(--blue)'}],
-    title: 'IFC / BIM Viewer',
+    title: 'IFC Viewer',
     desc: 'IFC მოდელი 3D-ში · walls/spaces/slabs · physics overlay (heat loss, orientation, type)',
     toolsCount: 1,
     href: '/calc/ifc-viewer',

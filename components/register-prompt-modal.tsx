@@ -42,7 +42,6 @@ const INTEREST_SUGGESTIONS: {value: string; label: string}[] = [
   {value: 'fire-safety', label: 'სახანძრო'},
   {value: 'plumbing', label: 'წყალკანალი'},
   {value: 'heat-load', label: 'თბოდანაკარგი'},
-  {value: 'bim', label: 'BIM'},
   {value: 'cad', label: 'CAD'},
   {value: 'bms', label: 'BMS'},
   {value: 'energy', label: 'ენერგოეფექტურობა'}

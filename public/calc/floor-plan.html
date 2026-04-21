@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>გეგმის შედგენა — FloorspaceJS — engineers.ge</title>
+<link rel="stylesheet" href="/calc/_base.css">
+<script src="/calc/_theme-sync.js"></script>
+<style>
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body { display: flex; flex-direction: column; font-family: var(--font-sans); background: var(--bg); color: var(--text); }
+
+  .top {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px;
+    background: var(--sur);
+    border-bottom: 1px solid var(--bdr);
+    flex: 0 0 auto;
+  }
+  .top h1 { margin: 0; font-size: 13px; font-weight: 700; color: var(--navy); display: flex; align-items: center; gap: 6px; }
+  .top .badge {
+    font-size: 10px; font-weight: 600; padding: 2px 7px;
+    background: var(--blue-lt); color: var(--blue);
+    border: 1px solid var(--blue-bd); border-radius: 999px;
+  }
+  .top .sep { width: 1px; height: 18px; background: var(--bdr); }
+  .top .spacer { flex: 1; }
+  .top button {
+    background: var(--sur-2); border: 1px solid var(--bdr);
+    border-radius: 6px; padding: 6px 12px;
+    font-size: 11px; font-weight: 600; color: var(--text-2);
+    cursor: pointer; transition: all .12s; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .top button:hover { border-color: var(--blue); color: var(--blue); }
+  .top button.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .top button.primary:hover { background: var(--navy-2); border-color: var(--navy-2); }
+
+  .root { display: grid; grid-template-columns: 1fr 320px; flex: 1 1 0; min-height: 0; }
+  .root.ai-off { grid-template-columns: 1fr; }
+  #frame-wrap { position: relative; background: #fff; border-right: 1px solid var(--bdr); }
+  #frame-wrap iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+  aside {
+    display: flex; flex-direction: column;
+    background: var(--sur); border-left: 1px solid var(--bdr);
+    min-width: 0;
+  }
+  aside h2 { margin: 0; font-size: 11px; font-weight: 700; color: var(--text-3); letter-spacing: .08em; text-transform: uppercase; padding: 12px 14px 8px; }
+  aside .sect { padding: 8px 14px; border-bottom: 1px solid var(--bdr); }
+  aside .sect:last-child { border-bottom: 0; }
+  aside label.lbl { display: block; font-size: 10px; font-weight: 600; color: var(--text-3); margin: 0 0 4px; text-transform: uppercase; letter-spacing: .06em; }
+  aside textarea {
+    width: 100%; min-height: 92px; resize: vertical;
+    background: var(--sur-2); border: 1px solid var(--bdr);
+    border-radius: 6px; padding: 8px 10px;
+    font-size: 12px; font-family: inherit; color: var(--text);
+    outline: none; transition: border-color .12s;
+  }
+  aside textarea:focus { border-color: var(--blue); }
+  aside .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  aside .chip {
+    font-size: 10px; padding: 3px 8px;
+    background: var(--sur-2); border: 1px solid var(--bdr);
+    border-radius: 999px; cursor: pointer; color: var(--text-2);
+  }
+  aside .chip:hover { border-color: var(--blue); color: var(--blue); }
+  aside .row { display: flex; gap: 8px; margin-top: 8px; }
+  aside button.go {
+    flex: 1; padding: 8px 12px;
+    background: var(--blue); color: #fff;
+    border: 1px solid var(--blue);
+    border-radius: 6px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all .12s;
+  }
+  aside button.go:hover { background: var(--navy-2); border-color: var(--navy-2); }
+  aside button.go:disabled { opacity: .5; cursor: not-allowed; }
+  aside button.ghost {
+    padding: 8px 12px;
+    background: transparent; color: var(--text-2);
+    border: 1px solid var(--bdr); border-radius: 6px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+  }
+  aside button.ghost:hover { border-color: var(--blue); color: var(--blue); }
+
+  .status {
+    font-size: 11px; color: var(--text-2);
+    padding: 8px 10px;
+    background: var(--sur-2); border-radius: 6px;
+    border: 1px solid var(--bdr); margin-top: 8px;
+    white-space: pre-wrap; max-height: 240px; overflow: auto;
+    font-family: var(--font-mono); font-size: 10px; line-height: 1.5;
+  }
+  .status.err { background: var(--red-lt); border-color: #f0b8b4; color: var(--red); }
+  .status.ok { background: var(--grn-lt); border-color: var(--grn-bd); color: var(--grn); }
+
+  .hint {
+    font-size: 11px; color: var(--text-3);
+    line-height: 1.55; margin: 6px 0 0;
+  }
+  .hint b { color: var(--text-2); }
+  .kbd { font-family: var(--font-mono); font-size: 10px; padding: 1px 5px; background: var(--sur-2); border: 1px solid var(--bdr); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>🗺️ გეგმის შედგენა <span class="badge">FloorspaceJS · NREL</span></h1>
+  <div class="sep"></div>
+  <span class="hint" style="font-size:11px; margin:0;">2D→3D floor plan editor · spaces → thermal zones</span>
+  <div class="spacer"></div>
+  <a href="/calc/docs/tools#floorspacejs" target="_blank" rel="noopener" style="font-size:11px;color:var(--blue);text-decoration:none;border:1px solid var(--blue-bd);background:var(--blue-lt);padding:5px 9px;border-radius:6px;font-weight:600;">📖 რა არის ეს?</a>
+  <button id="toggleAi" class="primary">✨ AI პანელი</button>
+</div>
+
+<div class="root" id="root">
+  <div id="frame-wrap">
+    <iframe id="editor" src="/calc/floor-plan/editor.html" allow="fullscreen"></iframe>
+  </div>
+  <aside id="ai-panel">
+    <div class="sect">
+      <h2>✨ AI გეგმის გენერაცია</h2>
+      <label class="lbl">აღწერე გეგმა ქართულად</label>
+      <textarea id="prompt" placeholder="მაგ: 3 საძინებლიანი ბინა 85მ², ჩრდილოეთით მოქცეული ფასადი, საერთო ოთახი 24მ², სამზარეულო+სასადილო 18მ², 1 სველი წერტილი, კორიდორი 4მ²."></textarea>
+      <div class="chips">
+        <span class="chip" data-preset="2 საძინებლიანი ბინა 65მ² — საერთო ოთახი 20მ², საძინებლები 12მ² და 10მ², სამზარეულო 8მ², აბაზანა 4მ², დერეფანი 4მ²">2BR 65მ²</span>
+        <span class="chip" data-preset="3 საძინებლიანი ბინა 100მ² — სტუდიური კუხნია-სასადილო 28მ², საერთო ოთახი 22მ², მშობლების საძინებელი 16მ² ცალკე სანიტარული, 2 საძინებელი 12მ², საერთო აბაზანა 5მ², დერეფანი 5მ²">3BR 100მ²</span>
+        <span class="chip" data-preset="მცირე ოფისი 50მ² — open space 30მ² (6 სამუშაო მაგიდა), საკონფერენციო 10მ², სამზარეულო 5მ², სანიტარული 3მ², კარადა 2მ²">ოფისი 50მ²</span>
+      </div>
+      <div class="row">
+        <button id="go" class="go">გენერაცია</button>
+        <button id="download" class="ghost" title="JSON-ის ჩამოტვირთვა">⬇ JSON</button>
+      </div>
+      <div id="status" class="status" style="display:none;"></div>
+    </div>
+    <div class="sect">
+      <h2>📋 როგორ გამოვიყენო</h2>
+      <p class="hint">
+        <b>1.</b> დაწერე prompt ან აირჩიე template.<br>
+        <b>2.</b> დააჭიე <b>გენერაცია</b> — AI დააბრუნებს FloorspaceJS JSON-ს.<br>
+        <b>3.</b> FloorspaceJS editor-ში: <span class="kbd">File → Import Floorplan</span> → აირჩიე ჩამოტვირთული <code>plan.json</code>.<br>
+        <b>4.</b> შეცვალე, დაამატე spaces-ი, stories-ი → 3D preview მოდით-ზე.
+      </p>
+    </div>
+    <div class="sect">
+      <h2>🔗 Export-ი calc-ებში</h2>
+      <p class="hint">
+        FloorspaceJS აგროვებს <b>space area</b> + <b>thermal zone</b> + <b>story height</b>. ეს metrics შეიძლება გადავიდეს:<br>
+        → <b>heat-loss</b> (EN 12831) — volume, wall area<br>
+        → <b>hvac</b> — occupied area, Q<sub>vent</sub><br>
+        → <b>floor-pressurization</b> — corridor geometry
+      </p>
+    </div>
+  </aside>
+</div>
+
+<script>
+(function(){
+  const promptEl = document.getElementById('prompt');
+  const goBtn = document.getElementById('go');
+  const dlBtn = document.getElementById('download');
+  const statusEl = document.getElementById('status');
+  const toggleBtn = document.getElementById('toggleAi');
+  const root = document.getElementById('root');
+  const panel = document.getElementById('ai-panel');
+  const editor = document.getElementById('editor');
+
+  let lastJson = null;
+
+  document.querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => {
+      promptEl.value = c.dataset.preset || '';
+      promptEl.focus();
+    });
+  });
+
+  toggleBtn.addEventListener('click', () => {
+    const hidden = panel.style.display === 'none';
+    panel.style.display = hidden ? '' : 'none';
+    root.classList.toggle('ai-off', !hidden);
+    toggleBtn.textContent = hidden ? '✨ AI პანელი' : '✨ AI პანელი გახსენი';
+  });
+
+  function setStatus(msg, kind) {
+    statusEl.style.display = 'block';
+    statusEl.className = 'status' + (kind ? ' ' + kind : '');
+    statusEl.textContent = msg;
+  }
+
+  goBtn.addEventListener('click', async () => {
+    const prompt = promptEl.value.trim();
+    if (!prompt) { setStatus('ჯერ ჩაწერე პრომპტი.', 'err'); return; }
+    goBtn.disabled = true;
+    goBtn.textContent = '⏳ ვმუშავდები…';
+    setStatus('AI-ს ვეკითხები Claude-ის API-ს…');
+    try {
+      const res = await fetch('/api/calc/ai-plan', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ prompt })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setStatus('⚠ ' + (data.message || data.error || 'შეცდომა'), 'err');
+        return;
+      }
+      lastJson = data.plan;
+      const info = data.plan && data.plan.stories && data.plan.stories[0]
+        ? `✓ გენერაცია დასრულდა.\n• stories: ${data.plan.stories.length}\n• spaces: ${data.plan.stories[0].spaces?.length ?? 0}\n• tokens: ${data.tokens?.input_tokens ?? '?'} in / ${data.tokens?.output_tokens ?? '?'} out\n\nახლა დააჭიე "⬇ JSON" — შემდეგ FloorspaceJS-ში: File → Import Floorplan.`
+        : '✓ JSON მიღებულია, მაგრამ სტრუქტურა უჩვეულოა. ნახე ⬇ JSON.';
+      setStatus(info, 'ok');
+    } catch (e) {
+      setStatus('⚠ network/parse შეცდომა: ' + (e?.message || e), 'err');
+    } finally {
+      goBtn.disabled = false;
+      goBtn.textContent = 'გენერაცია';
+    }
+  });
+
+  dlBtn.addEventListener('click', () => {
+    if (!lastJson) { setStatus('ჯერ გააკეთე გენერაცია.', 'err'); return; }
+    const blob = new Blob([JSON.stringify(lastJson, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'plan.json'; a.click();
+    URL.revokeObjectURL(url);
+  });
+})();
+</script>
+</body>
+</html>

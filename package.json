@@ -27,6 +27,7 @@
     "jose": "^5.9.6",
     "katex": "^0.16.45",
     "lucide-react": "^0.469.0",
+    "makerjs": "^0.19.2",
     "next": "16.2.3",
     "next-intl": "^4.9.1",
     "nextjs-toploader": "^3.7.15",

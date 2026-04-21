@@ -235,9 +235,13 @@
         aux: d.floorLabel || '1F',
         collapsed: false,
         children: [
-          field('სახელი', textInput({
+          field('გეგმის სახელი', textInput({
             value: d.name || '', placeholder: 'ახალი გეგმა',
             onInput: v => hx.onField('name', v)
+          })),
+          field('სართულის სახელი', textInput({
+            value: d.floorName || d.floorLabel || '', placeholder: '1F',
+            onInput: v => hx.onField('floorName', v)
           })),
           h('div', { class: 'ep-field-grid' },
             field(
@@ -298,15 +302,39 @@
         aux: d.floorCount ? `${d.floorCount} სართ.` : null,
         collapsed: true,
         children: [
+          d.activeFloorIndex != null
+            ? stat('აქტიური სართული', `${d.activeFloorIndex + 1}/${d.floorCount || 1}`)
+            : null,
           h('div', { class: 'ep-btn-row' },
             h('button', { class: 'eng-btn', onclick: () => hx.onAction('floor:new-upper') },
               mkIcon('plus', 12), ' ზედა სართული'),
             h('button', { class: 'eng-btn', onclick: () => hx.onAction('floor:new-lower') },
               mkIcon('plus', 12), ' ქვედა სართული')
           ),
+          h('div', { class: 'ep-btn-row' },
+            h('button', { class: 'eng-btn', onclick: () => hx.onAction('floor:duplicate') },
+              mkIcon('duplicate', 12), ' ასლი'),
+            h('button', {
+              class: 'eng-btn',
+              onclick: () => hx.onAction('floor:move-up'),
+              disabled: !d.canMoveUp
+            }, '↑ ზემოთ'),
+            h('button', {
+              class: 'eng-btn',
+              onclick: () => hx.onAction('floor:move-down'),
+              disabled: !d.canMoveDown
+            }, '↓ ქვემოთ')
+          ),
+          h('div', { class: 'ep-btn-row' },
+            h('button', {
+              class: 'eng-btn',
+              onclick: () => hx.onAction('floor:delete'),
+              disabled: !d.canDeleteFloor
+            }, mkIcon('delete', 12), ' სართულის წაშლა')
+          ),
           h('div', { class: 'ep-hint' },
             'მრავალსართულიანი გეგმა — თითოეულ სართულს თავისი პოლიგონი/კედლები აქვს. გადაამოწმე ჩასახლება/ფერდი სიმაღლეები.')
-        ]
+        ].filter(Boolean)
       })
     );
   };

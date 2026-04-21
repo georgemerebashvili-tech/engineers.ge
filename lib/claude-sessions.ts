@@ -14,7 +14,7 @@ export type ClaudeSessionRow = {
 export type ClaudeSessionEvent = {
   id: number;
   session_id: string;
-  kind: 'start' | 'end' | 'stop';
+  kind: 'start' | 'end' | 'stop' | 'heartbeat';
   event_at: string;
   client_at: string | null;
   project: string | null;
@@ -23,6 +23,54 @@ export type ClaudeSessionEvent = {
   user_agent: string | null;
   source_ip: string | null;
 };
+
+export type HeartbeatStats = {
+  total: number;
+  last24h: number;
+  last7d: number;
+  activeLastHour: number;
+};
+
+export async function getHeartbeatStats(): Promise<HeartbeatStats> {
+  const client = supabaseAdmin();
+  const now = Date.now();
+  const hourAgo = new Date(now - 60 * 60 * 1000).toISOString();
+  const dayAgo = new Date(now - 24 * 60 * 60 * 1000).toISOString();
+  const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
+
+  const [totalQ, dayQ, weekQ, hourQ] = await Promise.all([
+    client
+      .from('claude_session_events')
+      .select('*', {count: 'exact', head: true})
+      .eq('kind', 'heartbeat'),
+    client
+      .from('claude_session_events')
+      .select('*', {count: 'exact', head: true})
+      .eq('kind', 'heartbeat')
+      .gte('event_at', dayAgo),
+    client
+      .from('claude_session_events')
+      .select('*', {count: 'exact', head: true})
+      .eq('kind', 'heartbeat')
+      .gte('event_at', weekAgo),
+    client
+      .from('claude_session_events')
+      .select('session_id', {count: 'exact'})
+      .eq('kind', 'heartbeat')
+      .gte('event_at', hourAgo)
+  ]);
+
+  const activeIds = new Set(
+    (hourQ.data ?? []).map((r: {session_id: string}) => r.session_id)
+  );
+
+  return {
+    total: totalQ.count ?? 0,
+    last24h: dayQ.count ?? 0,
+    last7d: weekQ.count ?? 0,
+    activeLastHour: activeIds.size
+  };
+}
 
 export type SessionStats = {
   totalSeconds: number;

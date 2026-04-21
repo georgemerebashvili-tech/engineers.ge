@@ -83,6 +83,20 @@ export const BACKUPABLE_TABLES: BackupTable[] = [
     description: 'Landing page treemap ads (image, link, client, price).'
   },
   {
+    key: 'hero_ad_payments',
+    table: 'hero_ad_payments',
+    label: 'Hero ad payments',
+    description: 'Ad finance ledger — invoices, due dates, paid-through periods.',
+    optional: true
+  },
+  {
+    key: 'hero_ad_upload_requests',
+    table: 'hero_ad_upload_requests',
+    label: 'Hero ad upload requests',
+    description: 'Public client banner submissions pending admin approval.',
+    optional: true
+  },
+  {
     key: 'page_views',
     table: 'page_views',
     label: 'Page views (analytics)',

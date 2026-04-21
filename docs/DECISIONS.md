@@ -155,3 +155,89 @@ DOMContentLoaded-ზე კითხულობენ `state`-ს URL-დან
 
 მიზეზი: Task 019/020 heuristic + AI classification აღარ უნდა იყოს მიბმული raw DXF
 parser output-ზე; ისინი მუშაობენ სტაბილურ, render-agnostic normalized მოდელზე.
+
+## 2026-04-21 — Legacy calc iframes use runtime locale bridge (`?lang=` + `/public/calc/_i18n.js`)
+Standalone public calculator HTML-ები არ გადავიდა locale-per-file დუბლირებაზე.
+ამის ნაცვლად `/calc/[slug]` route iframe `src`-ში ამატებს `?lang=<locale>`-ს,
+ხოლო `public/calc/_i18n.js` locale-ს კითხულობს query/cookie/parent `<html lang>`-დან
+და selector-based translations-ს ავრცელებს თვითონ HTML გვერდზე.
+
+მიზეზი:
+- 18 legacy HTML-ის 6-ენოვანი ასლები გამოიწვევდა 108 ფაილის დუბლირებას.
+- სრული React rewrite ზედმეტად დიდი ერთჯერადი lift არის.
+- runtime bridge გვაძლევს incremental rollout-ს: ჯერ title/button/tab chrome,
+  მერე deeper UI/toasts/help ტექსტები იმავე pattern-ით.
+
+## 2026-04-21 — Regulation watcher stores source rows + immutable snapshots
+`/admin/regulations`-ისთვის შეიქმნა ორი ცხრილი: `regulation_sources` და
+`regulation_source_snapshots`. წყაროს row ინახავს მიმდინარე სტატუსს
+(`last_hash`, `last_checked_at`, `last_changed_at`, `last_error`, excerpt),
+ხოლო ყოველი ახალი hash immutable snapshot-ად იწერება ცალკე.
+
+MVP შეგნებულად **არ** აკეთებს selector-specific DOM extraction-ს: ჯერ hash ითვლება
+normalized full-page text-ზე. მიზეზი:
+- გვინდოდა cron-safe watcher დამატებითი parsing dependency-ის გარეშე.
+- matsne / standards pages სტრუქტურულად არაერთგვაროვანია და ჯერ source shortlist
+  მაინც ზუსტდება.
+- immutable snapshots მოგვცემს მარტივ diff/approval UI-ს შემდეგ ეტაპზე, მაშინაც კი,
+  როცა extraction strategy მოგვიანებით დაიხვეწება.
+
+## 2026-04-21 — Admin password recovery via ADMIN_RECOVERY_EMAIL
+Admin ერთ-user-იანი hardcoded-env auth-ია (`ADMIN_USER` + `ADMIN_PASS_HASH`),
+რაც self-service password change-ს ართულებდა პაროლის დავიწყების შემთხვევაში.
+დავამატე forgot-password flow-ი მხოლოდ ერთ-ერთ hardcoded recovery მისამართზე:
+
+- ახალი env: `ADMIN_RECOVERY_EMAIL` (მხოლოდ ეს მისამართი იღებს ბმულს).
+- Migration `0026_admin_password_reset.sql` — `admin_password_reset_tokens` ცხრილი
+  (30-წუთიანი TTL, single-use).
+- UI: `/admin/forgot` (email enter) → email link → `/admin/reset?token=…`
+  (ახალი პაროლი).
+- Consume endpoint იყენებს იმავე Vercel API flow-ს როგორც `/api/admin/password`
+  (PATCH `ADMIN_PASS_HASH` production env-ზე + optional redeploy hook).
+
+Reason: თუ password-ი დაიკარგა და admin panel-ზე შესვლა შეუძლებელია,
+მფლობელს სჭირდება recovery path რომელიც არ მოითხოვს Vercel dashboard-ზე
+წვდომას. Recovery email whitelist (one address only) არ ქმნის user-enumeration
+surface-ს (response ყოველთვის 200 regardless of match).
+
+## 2026-04-21 — Hero Ads finance uses separate `hero_ad_payments` ledger
+Hero Ads-ის კომერციული state (`occupied_until`, `price_gel`) უკვე ინახებოდა
+`hero_ad_slots`-ში, მაგრამ ფინანსური კონტროლი არ გვქონდა: outstanding invoices,
+paid-through პერიოდი და overdue სტატუსი მხოლოდ ხელით ჩანაწერებად დარჩებოდა.
+
+ამიტომ შევქმენით ცალკე `hero_ad_payments` ცხრილი და არა დამატებითი ველები
+`hero_ad_slots`-ზე. თითო row წარმოადგენს invoice/payment ledger ჩანაწერს:
+slot, client, amount, period start/end, due date, paid_at, status, note.
+
+მიზეზი:
+- ერთი slot-ს შეიძლება ჰქონდეს მრავალი ინვოისი დროთა განმავლობაში; flat columns
+  ისტორიის შენახვას და audit-ს ვერ ფარავს.
+- `occupied_until` არის booking/commercial deadline, ხოლო `paid until`
+  ფინანსური coverage; ისინი ყოველთვის ერთი და იგივე არაა.
+- ცალკე ledger საშუალებას გვაძლევს `/admin/banners/stats`-ში ვაჩვენოთ
+  outstanding/overdue summary, ხოლო `/admin/banners/table`-ში coverage comparison.
+
+## 2026-04-21 — Public ad uploads go to pending queue before publish
+`/ads` გვერდზე client-facing upload ახლა პირდაპირ live slot-ს აღარ ეხება. ფაილი
+ჯერ ინახება `hero_ad_upload_requests` queue-ში (`status = pending`), ხოლო approve
+მხოლოდ admin-იდან ხდება. Approve action ავტომატურად აქვეყნებს asset-ს შესაბამის
+`hero_ad_slots.image_url`-ზე.
+
+მიზეზი:
+- public upload-ის პირდაპირ live publish-ად გაშვება ძალიან მაღალი abuse risk-ია.
+- pending queue გვაძლევს ადამიანის review-ს creative/content ხარისხზე.
+- იგივე row ინახავს ვინ გამოგზავნა, რომელი slot სთხოვა და რა asset URL შევიდა,
+  ასე რომ კომერციული კომუნიკაცია და audit trail ერთიანდება.
+
+## 2026-04-21 — Regulation watcher separates latest snapshot from published reference
+Regulation watcher fetch-ზე ყოველი ახალი ცვლილება ჯერ `latest snapshot`-ად ინახება,
+მაგრამ ეს ავტომატურად არ ითვლება “გამოქვეყნებულ” რეფერენსად. დავამატეთ
+`published_*` ველები source row-ზე და snapshot-level publish metadata, რათა admin-ს
+ქონდეს explicit `Approve + publish` ნაბიჯი.
+
+მიზეზი:
+- monitored source-ზე ცვლილება ჯერ review-ს საჭიროებს; fetch != approval.
+- admin-ს უნდა ჰქონდეს შესაძლებელი ნახოს სამი მდგომარეობა: latest, previous,
+  currently published.
+- future compliance/rule engines-ს სჭირდება “რომელი snapshot იყო დამტკიცებული”
+  მკაფიო trace, და არა მხოლოდ ბოლო fetch hash.

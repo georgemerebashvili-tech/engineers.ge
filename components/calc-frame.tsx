@@ -34,22 +34,21 @@ export function CalcFrame({slug: _slug, title, icon: _icon, standard: _standard,
           style={{border: 0}}
           sandbox="allow-scripts allow-same-origin allow-forms allow-downloads allow-popups allow-modals"
         />
-        <div className="fixed bottom-4 right-4 flex items-center gap-2">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-text-2 hover:text-blue bg-sur border rounded-full px-3 py-2 shadow-lg transition-colors"
-          >
-            <ArrowLeft size={12} /> დეშბორდზე
-          </Link>
-          <button
-            type="button"
-            onClick={() => setFull(false)}
-            className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white bg-navy hover:bg-navy/90 border border-navy rounded-full px-3 py-2 shadow-lg transition-colors"
-            title="სრული ეკრანის გათიშვა"
-          >
-            <Minimize2 size={12} /> გასვლა
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setFull(false)}
+          className="fixed top-4 right-4 z-[61] inline-flex items-center justify-center h-16 w-16 text-white bg-navy hover:bg-navy/90 border-2 border-navy rounded-xl shadow-md backdrop-blur transition-colors"
+          title="სრული ეკრანის გათიშვა"
+          aria-label="სრული ეკრანის გათიშვა"
+        >
+          <Minimize2 size={28} strokeWidth={2.25} />
+        </button>
+        <Link
+          href="/dashboard"
+          className="fixed bottom-4 right-4 z-[61] inline-flex items-center gap-1.5 text-[11px] font-semibold text-text-2 hover:text-blue bg-sur border rounded-full px-3 py-2 shadow-lg transition-colors"
+        >
+          <ArrowLeft size={12} /> დეშბორდზე
+        </Link>
       </div>
     );
   }
@@ -67,11 +66,11 @@ export function CalcFrame({slug: _slug, title, icon: _icon, standard: _standard,
       <button
         type="button"
         onClick={() => setFull(true)}
-        className="absolute top-3 right-3 z-10 inline-flex items-center justify-center h-8 w-8 text-text-2 hover:text-blue bg-sur/90 hover:bg-sur border rounded-full shadow-sm backdrop-blur transition-colors"
+        className="absolute top-4 right-4 z-10 inline-flex items-center justify-center h-16 w-16 text-text-2 hover:text-blue bg-sur/90 hover:bg-sur border-2 rounded-xl shadow-md backdrop-blur transition-colors"
         title="სრული ეკრანი"
         aria-label="სრული ეკრანი"
       >
-        <Maximize2 size={14} />
+        <Maximize2 size={28} strokeWidth={2.25} />
       </button>
     </div>
   );

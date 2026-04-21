@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>კედლის თბოგამტარობა · ISO 6946</title>
 <script src="/calc/_theme-sync.js"></script>
+<script src="/calc/_i18n.js"></script>
+<script src="/calc/_project-bridge.js"></script>
 <link href="./კედლის თბოგამტარობა · ISO 6946_files/css2" rel="stylesheet">
 <script src="/calc/_draft-store.js"></script>
 <style>
@@ -215,6 +217,53 @@ td.dim{color:var(--t3);font-size:10px;font-style:italic;font-family:var(--sans)}
   #sb{width:100%;min-width:100%;height:auto;position:static}
   #main{overflow:visible;height:auto}
   .sgrid{grid-template-columns:1fr 1fr}
+}
+
+/* ═══ DARK MODE POLISH ═══ */
+.dark #sb,
+.dark .litem,
+.dark .an-hdr,
+.dark .scard,
+.dark .chcard,
+.dark .rescard,
+.dark .modal{
+  background:var(--sur);
+}
+.dark .cin,
+.dark .fin,
+.dark .msrch input{
+  background:var(--sur);
+  color:var(--text);
+}
+.dark .an-title,
+.dark .scard-v,
+.dark .wcard-name,
+.dark .lname,
+.dark .mtitle{
+  color:var(--text);
+}
+.dark .mcat{
+  background:linear-gradient(90deg,#15294a,#1b2638);
+  color:var(--text);
+}
+.dark .mcat:hover{
+  background:linear-gradient(90deg,#1a3358,#22324c);
+}
+.dark .mmat{
+  border-bottom-color:var(--bdr);
+}
+.dark .mmat:hover,
+.dark .litem-h:hover{
+  background:var(--blt);
+}
+.dark .wbox.mold{
+  color:#f5bd86;
+}
+.dark .wbox.cond{
+  color:#f1b0b0;
+}
+.dark .modal{
+  box-shadow:0 24px 72px rgba(0,0,0,.42);
 }
 </style>
 </head>
@@ -805,7 +854,7 @@ const DB={
 // ════════════════════════════════════════════════════
 //  STATE
 // ════════════════════════════════════════════════════
-let walls=[], wc=0, aid=null, modCb=null, condOpen=true;
+let walls=[], wc=0, aid=null, modCb=null, condOpen=true, _bridge=null;
 const Rsi=0.13, Rse=0.04;
 
 // ════════════════════════════════════════════════════
@@ -1115,13 +1164,14 @@ function toggleCond(){
   document.getElementById('cond-body').className='cond-body'+(condOpen?'':' closed');
   document.getElementById('cond-arr').textContent=condOpen?'▾':'▸';
 }
-function renderAll(){renderSidebar();renderAnalysis()}
+function renderAll(){renderSidebar();renderAnalysis();if(_bridge)_bridge.save();}
 function calcAll(){renderAll()}
 
 // ════════════════════════════════════════════════════
 //  EXPORT / IMPORT
 // ════════════════════════════════════════════════════
 function exportJSON(){
+  if(_bridge && _bridge.projectId){ _bridge.exportJSON(); return; }
   const cond=getCond();
   const data={version:1,exported:new Date().toISOString(),
     conditions:{ti:cond[0],rhi:cond[1],to:cond[2],rho:cond[3]},
@@ -1135,6 +1185,10 @@ function exportJSON(){
 }
 function importJSON(inp){
   const f=inp.files[0];if(!f)return;
+  if(_bridge){
+    _bridge.importJSON(f).catch(err=>alert('❌ შეცდომა: '+err.message)).finally(()=>{inp.value='';});
+    return;
+  }
   const r=new FileReader();
   r.onload=e=>{
     try{
@@ -1183,6 +1237,158 @@ function doPrint(){
 // ════════════════════════════════════════════════════
 addWall();
 
+function getProjectState(){
+  const cond=getCond();
+  return {
+    version:1,
+    exported:new Date().toISOString(),
+    conditions:{ti:cond[0],rhi:cond[1],to:cond[2],rho:cond[3]},
+    walls:JSON.parse(JSON.stringify(walls))
+  };
+}
+
+function applyProjectState(data){
+  if(!data || typeof data!=='object') return;
+  if(data.conditions){
+    document.getElementById('ti').value=data.conditions.ti||20;
+    document.getElementById('rhi').value=data.conditions.rhi||60;
+    document.getElementById('to').value=data.conditions.to||10;
+    document.getElementById('rho').value=data.conditions.rho||50;
+  }
+  const srcWalls=Array.isArray(data.walls)?data.walls:[];
+  walls=srcWalls.map(w=>({
+    ...w,
+    open:w.open!==undefined?w.open:true,
+    _lc:w._lc||Math.max(...(w.layers||[]).map(l=>l.id),0),
+    layers:(w.layers||[]).map(l=>({ ...l, open:l.open===true, m:{...l.m} }))
+  }));
+  wc=walls.length?Math.max(...walls.map(w=>w.id),0):0;
+  aid=walls.length?(walls.find(w=>w.id===aid)?.id||walls[0].id):null;
+  renderAll();
+}
+
+function wtInferWallType(name){
+  const s=String(name||'').toLowerCase();
+  if(/იატაკ|floor/.test(s))return{label:'იატაკი',color:'#8b6b3d',icon:'▭'};
+  if(/ჭერ|სახურავ|roof|ceiling/.test(s))return{label:'სახურავი',color:'#5a7ba3',icon:'◣'};
+  if(/ფანჯ|window|კარ|door/.test(s))return{label:'ღიობი',color:'#4a9eb8',icon:'▤'};
+  return{label:'კედელი',color:'#1a3a6b',icon:'🧱'};
+}
+
+function wtLayerColor(layer){
+  const n=String(layer?.m?.n||'').toLowerCase();
+  const lam=Number(layer?.m?.λ)||0;
+  if(/eps|xps|ქაფ|მინერალ|ვატი|wool|foam|pir|pur/.test(n))return'#ffd9a0';
+  if(/ბეტონ|concrete|რკინა-?ბეტონ/.test(n))return'#b9c1c9';
+  if(/აგურ|brick/.test(n))return'#c97d5a';
+  if(/გიფსო|gyps|plaster|შელესვ/.test(n))return'#f0e4c8';
+  if(/ხე|wood|timber|osb/.test(n))return'#a57e4a';
+  if(/შუშ|glass|stone|ქვ/.test(n))return'#cfe3ef';
+  if(lam<0.06)return'#ffd9a0';
+  if(lam<0.3)return'#f0e4c8';
+  if(lam<1.0)return'#c97d5a';
+  return'#b9c1c9';
+}
+
+function buildProjectThumbnail(){
+  const activeWall=walls.find(w=>w.id===aid)||walls[0];
+  const cond=getCond();
+  const res=activeWall?compute(activeWall,cond[0],cond[1],cond[2],cond[3]):null;
+  const uValue=res?res.U.toFixed(3):null;
+  const type=wtInferWallType(activeWall?.name);
+  const layers=activeWall?.layers||[];
+  const totalD=layers.reduce((a,l)=>a+(Number(l.d)||0),0);
+
+  // U-value rating (color + text)
+  let ratingColor='#7a96b8', ratingText='—';
+  if(res){
+    const u=res.U;
+    if(u<0.20){ratingColor='#107040';ratingText='კარგი';}
+    else if(u<0.35){ratingColor='#4ba05a';ratingText='დამაკმაყოფილებელი';}
+    else if(u<0.60){ratingColor='#c08040';ratingText='საშუალო';}
+    else{ratingColor='#c0201a';ratingText='სუსტი';}
+  }
+
+  const W=640, H=400, PAD=28;
+  const parts=[];
+  parts.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">`);
+  parts.push(`<rect width="${W}" height="${H}" fill="#f5f8fc"/>`);
+  parts.push(`<rect x="${PAD}" y="${PAD}" width="${W-PAD*2}" height="${H-PAD*2}" rx="20" fill="#ffffff" stroke="#dde6f2"/>`);
+
+  // Top strip: type badge + name
+  parts.push(`<rect x="${PAD+20}" y="${PAD+20}" width="auto" height="30" rx="15"/>`);
+  parts.push(`<rect x="${PAD+20}" y="${PAD+20}" width="120" height="28" rx="14" fill="${type.color}"/>`);
+  parts.push(`<text x="${PAD+80}" y="${PAD+39}" fill="#ffffff" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" font-weight="700">${type.label}</text>`);
+  const nameText=activeWall?wtEscapeHtml(activeWall.name):'ცარიელი პროექტი';
+  parts.push(`<text x="${PAD+150}" y="${PAD+40}" fill="#1a3a6b" font-family="Arial, sans-serif" font-size="20" font-weight="700">${nameText}</text>`);
+
+  if(!activeWall || layers.length===0){
+    parts.push(`<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#9fb3cc" font-family="Arial, sans-serif" font-size="18">ჯერ შრეები არ დამატებული</text>`);
+    parts.push(`<text x="${W/2}" y="${H/2+28}" text-anchor="middle" fill="#b5c5d8" font-family="Arial, sans-serif" font-size="13">დააჭირე "გახსნა"-ს კედლის ასაწყობად</text>`);
+    parts.push(`</svg>`);
+    return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(parts.join(''));
+  }
+
+  // Cross-section: horizontal stack of layers (proportional widths)
+  const stripX=PAD+24, stripY=PAD+70, stripW=W-PAD*2-48, stripH=150;
+  // Inside-outside gradient labels
+  parts.push(`<text x="${stripX}" y="${stripY-8}" fill="#7a96b8" font-family="Arial, sans-serif" font-size="11" font-weight="600">⟵ ცხელი (შიგნით)</text>`);
+  parts.push(`<text x="${stripX+stripW}" y="${stripY-8}" fill="#7a96b8" text-anchor="end" font-family="Arial, sans-serif" font-size="11" font-weight="600">ცივი (გარეთ) ⟶</text>`);
+
+  let cx=stripX;
+  layers.forEach((l,i)=>{
+    const d=Number(l.d)||0;
+    const w=totalD>0?stripW*(d/totalD):stripW/layers.length;
+    const fill=wtLayerColor(l);
+    parts.push(`<rect x="${cx}" y="${stripY}" width="${w}" height="${stripH}" fill="${fill}" stroke="#4a5a70" stroke-width="1"/>`);
+    // Layer index & thickness if wide enough
+    if(w>26){
+      parts.push(`<text x="${cx+w/2}" y="${stripY+stripH/2-6}" text-anchor="middle" fill="#2a3a55" font-family="Arial, sans-serif" font-size="11" font-weight="700">${i+1}</text>`);
+      parts.push(`<text x="${cx+w/2}" y="${stripY+stripH/2+12}" text-anchor="middle" fill="#3d5470" font-family="Arial, sans-serif" font-size="10">${d}მმ</text>`);
+    }
+    cx+=w;
+  });
+
+  // Thin Tsi/Tso temp overlay line (bonus visual)
+  if(res && res.temps && res.temps.length>1){
+    const tMax=Math.max(...res.temps), tMin=Math.min(...res.temps), tRng=Math.max(0.1,tMax-tMin);
+    let px=stripX, prevY=stripY+(1-(res.temps[0]-tMin)/tRng)*stripH;
+    let pathD=`M ${px.toFixed(1)} ${prevY.toFixed(1)}`;
+    layers.forEach((l,i)=>{
+      const d=Number(l.d)||0; const w=totalD>0?stripW*(d/totalD):stripW/layers.length;
+      const t=res.temps[i+1]; const y=stripY+(1-(t-tMin)/tRng)*stripH;
+      px+=w; pathD+=` L ${px.toFixed(1)} ${y.toFixed(1)}`;
+    });
+    parts.push(`<path d="${pathD}" stroke="#c0201a" stroke-width="2" fill="none" opacity="0.7"/>`);
+    parts.push(`<text x="${stripX+stripW-4}" y="${stripY+stripH+16}" text-anchor="end" fill="#c0201a" font-family="Arial, sans-serif" font-size="10" font-weight="600">— ტემპერატურა</text>`);
+  }
+
+  // Bottom stats: U-value big + rating + layers count + total thickness
+  const statsY=stripY+stripH+40;
+  parts.push(`<rect x="${PAD+20}" y="${statsY}" width="220" height="64" rx="14" fill="#e8f1fd" stroke="#b8d0f0"/>`);
+  parts.push(`<text x="${PAD+36}" y="${statsY+22}" fill="#7a96b8" font-family="Arial, sans-serif" font-size="11" font-weight="600">U-VALUE · W/m²·K</text>`);
+  parts.push(`<text x="${PAD+36}" y="${statsY+54}" fill="#1f6fd4" font-family="Arial, sans-serif" font-size="32" font-weight="800">${uValue||'—'}</text>`);
+  parts.push(`<rect x="${PAD+140}" y="${statsY+32}" width="88" height="22" rx="11" fill="${ratingColor}"/>`);
+  parts.push(`<text x="${PAD+184}" y="${statsY+48}" fill="#ffffff" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="700">${ratingText}</text>`);
+
+  parts.push(`<rect x="${PAD+256}" y="${statsY}" width="150" height="64" rx="14" fill="#fff5ea" stroke="#e8c080"/>`);
+  parts.push(`<text x="${PAD+272}" y="${statsY+22}" fill="#7a96b8" font-family="Arial, sans-serif" font-size="11" font-weight="600">შრეები</text>`);
+  parts.push(`<text x="${PAD+272}" y="${statsY+54}" fill="#c05010" font-family="Arial, sans-serif" font-size="32" font-weight="800">${layers.length}</text>`);
+
+  parts.push(`<rect x="${PAD+422}" y="${statsY}" width="150" height="64" rx="14" fill="#edfaf3" stroke="#8ecfaa"/>`);
+  parts.push(`<text x="${PAD+438}" y="${statsY+22}" fill="#7a96b8" font-family="Arial, sans-serif" font-size="11" font-weight="600">სისქე</text>`);
+  parts.push(`<text x="${PAD+438}" y="${statsY+54}" fill="#107040" font-family="Arial, sans-serif" font-size="32" font-weight="800">${totalD}<tspan font-size="16" font-weight="600"> მმ</tspan></text>`);
+
+  parts.push(`</svg>`);
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(parts.join(''));
+}
+
+function wtEscapeHtml(value){
+  return String(value).replace(/[&<>"]/g,ch=>(
+    ch==='&'?'&amp;':ch==='<'?'&lt;':ch==='>'?'&gt;':'&quot;'
+  ));
+}
+
 // ════════════════════════════════════════════════════
 //  DRAFT AUTOSAVE (localStorage + cookie fallback)
 //  See /calc/_draft-store.js
@@ -1202,6 +1408,84 @@ addWall();
     console.warn('draft-store init failed', e);
   }
 })();
+
+if(window.ProjectBridge){
+  _bridge=window.ProjectBridge.init({
+    slug:'wall-thermal',
+    legacyKey:'wall_thermal_project_v1',
+    debounceMs:1200,
+    getState:getProjectState,
+    applyState:applyProjectState,
+    getThumbnail:buildProjectThumbnail
+  });
+  _bridge.load();
+}
+
+window.engCalcI18n.apply({
+  ka: {
+    title: 'კედლის თბოგამტარობა · ISO 6946'
+  },
+  en: {
+    title: 'Wall Thermal Transmittance · ISO 6946',
+    selectors: {
+      '.sb-top h1': {text: '⚡ Wall Thermal Transmittance'},
+      '.ptgl span:first-child': {text: '🌡 Climate Conditions'},
+      '.wh-title': {text: '📐 Wall Configurations'},
+      '.btn-addw': {text: '＋ New'},
+      '.bpdf': {text: '📄 Report'},
+      '.bexp': {text: '⬇ Export'},
+      '.bimp': {text: '⬆ Import'}
+    }
+  },
+  ru: {
+    title: 'Теплопередача стены · ISO 6946',
+    selectors: {
+      '.sb-top h1': {text: '⚡ Теплопередача стены'},
+      '.ptgl span:first-child': {text: '🌡 Климатические условия'},
+      '.wh-title': {text: '📐 Конфигурации стены'},
+      '.btn-addw': {text: '＋ Новая'},
+      '.bpdf': {text: '📄 Отчёт'},
+      '.bexp': {text: '⬇ Экспорт'},
+      '.bimp': {text: '⬆ Импорт'}
+    }
+  },
+  tr: {
+    title: 'Duvar Isıl Geçirgenliği · ISO 6946',
+    selectors: {
+      '.sb-top h1': {text: '⚡ Duvar Isıl Geçirgenliği'},
+      '.ptgl span:first-child': {text: '🌡 İklim Koşulları'},
+      '.wh-title': {text: '📐 Duvar Yapıları'},
+      '.btn-addw': {text: '＋ Yeni'},
+      '.bpdf': {text: '📄 Rapor'},
+      '.bexp': {text: '⬇ Dışa aktar'},
+      '.bimp': {text: '⬆ İçe aktar'}
+    }
+  },
+  az: {
+    title: 'Divarın İstilik Keçiriciliyi · ISO 6946',
+    selectors: {
+      '.sb-top h1': {text: '⚡ Divarın İstilik Keçiriciliyi'},
+      '.ptgl span:first-child': {text: '🌡 İqlim Şəraiti'},
+      '.wh-title': {text: '📐 Divar Konfiqurasiyaları'},
+      '.btn-addw': {text: '＋ Yeni'},
+      '.bpdf': {text: '📄 Hesabat'},
+      '.bexp': {text: '⬇ Export'},
+      '.bimp': {text: '⬆ İmport'}
+    }
+  },
+  hy: {
+    title: 'Պատի ջերմահաղորդում · ISO 6946',
+    selectors: {
+      '.sb-top h1': {text: '⚡ Պատի ջերմահաղորդում'},
+      '.ptgl span:first-child': {text: '🌡 Կլիմայական պայմաններ'},
+      '.wh-title': {text: '📐 Պատի կազմեր'},
+      '.btn-addw': {text: '＋ Նոր'},
+      '.bpdf': {text: '📄 Հաշվետվություն'},
+      '.bexp': {text: '⬇ Արտահանել'},
+      '.bimp': {text: '⬆ Ներմուծել'}
+    }
+  }
+});
 </script>
 
 

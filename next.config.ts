@@ -44,6 +44,9 @@ const CSP_DIRECTIVES = [
     `connect-src 'self' blob:`,
     'https://fonts.googleapis.com',
     'https://fonts.gstatic.com',
+    // CDN-hosted sample assets for calculators (IFC sample models, WASM workers)
+    'https://cdn.jsdelivr.net',
+    'https://unpkg.com',
     supabaseHost ? `https://${supabaseHost}` : '',
     supabaseHost ? `wss://${supabaseHost}` : ''
   ].filter(Boolean).join(' '),

@@ -1,6 +1,6 @@
 import type {Metadata} from 'next';
 import Link from 'next/link';
-import {BookOpen, ShieldCheck, ArrowUpRight} from 'lucide-react';
+import {BookOpen, ShieldCheck, Package, ArrowUpRight} from 'lucide-react';
 import {Breadcrumbs} from '@/components/breadcrumbs';
 import {Container} from '@/components/container';
 
@@ -32,6 +32,13 @@ const DOCS = [
     title: 'სტანდარტები',
     desc: '10 სტანდარტი 3 კატეგორიად — სახანძრო, HVAC, თერმული. თითოეული კოდი + scope + გამომცემელი + რომელი ხელსაწყო იყენებს.',
     tags: ['EN / NFPA / ASHRAE / ISO / СП', 'ქართული წყაროები']
+  },
+  {
+    href: '/calc/docs/tools',
+    icon: Package,
+    title: 'ხელსაწყოები · წყაროები',
+    desc: 'ღია-წყაროიანი ბიბლიოთეკების კატალოგი — FloorspaceJS, MakerJS, web-ifc, three.js, Claude AI. საიდან მოდის, რატომ, რომელი კალკულატორი იყენებს, რა ლიცენზიით.',
+    tags: ['GitHub · npm', 'MIT / Apache-2.0 / BSD-3 / MPL-2.0']
   }
 ];
 

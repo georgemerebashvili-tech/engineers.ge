@@ -149,7 +149,7 @@ const CATEGORIES: Category[] = [
         year: '2003',
         appliesTo: [
           {label: 'ხმაურდამხშობი სელექშენი', href: '/calc/silencer'},
-          {label: 'KAYA სელექცია', href: '/calc/silencer-kaya'}
+          {label: 'ხმაურდამხშობის კატალოგი', href: '/calc/silencer-kaya'}
         ]
       }
     ]

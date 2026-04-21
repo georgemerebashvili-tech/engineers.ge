@@ -197,6 +197,10 @@ function OutlineCell({frame, slot, isSelected, previewImage, onSelect}: CellProp
   const chipH = 22;
   const chipX = x + w - chipW - 8;
   const chipY = y + 8;
+  const promo = slot.promo_badge?.trim();
+  const promoW = promo ? Math.max(48, promo.length * 6.2 + 18) : 0;
+  const promoX = x + 8;
+  const promoY = y + 8;
 
   const clipId = `ads-clip-${slot.slot_key}`;
   const busy = !!slot.occupied_until;
@@ -260,6 +264,30 @@ function OutlineCell({frame, slot, isSelected, previewImage, onSelect}: CellProp
         strokeWidth={strokeWidth}
         strokeDasharray={isSelected || previewImage ? '0' : '6 5'}
       />
+
+      {promo && (
+        <g pointerEvents="none">
+          <rect
+            x={promoX}
+            y={promoY}
+            width={promoW}
+            height={20}
+            rx={10}
+            ry={10}
+            fill="rgba(251,191,36,0.96)"
+          />
+          <text
+            x={promoX + promoW / 2}
+            y={promoY + 13}
+            textAnchor="middle"
+            fill="#7c2d12"
+            fontSize={10}
+            fontWeight={800}
+          >
+            {promo}
+          </text>
+        </g>
+      )}
 
       {w > 92 && h > 44 && (
         <>

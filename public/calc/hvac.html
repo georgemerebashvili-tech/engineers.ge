@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ჰაერსადენის სქემა — engineers.ge</title>
 <script src="/calc/_theme-sync.js"></script>
+<script src="/calc/_i18n.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+Georgian:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -1579,9 +1580,95 @@ function exportCSV() {
       };
       apply();
       new MutationObserver(apply).observe(parentHtml, { attributes: true, attributeFilter: ['class'] });
-    }
+  }
   } catch (e) {}
 })();
+
+window.engCalcI18n.apply({
+  ka: {
+    title: 'ჰაერსადენის სქემა — engineers.ge'
+  },
+  en: {
+    title: 'Ductwork Schema — engineers.ge',
+    selectors: {
+      '.brand-title': {text: 'Ductwork Schema'},
+      '.brand-subtitle': {text: 'HVAC · SCHEMATIC TOOL'},
+      'button[onclick="loadSample()"]': {text: 'Sample'},
+      'button[onclick="undo()"]': {text: '⟲ Undo'},
+      'button[onclick="autoLayout()"]': {text: '⎌ Auto layout'},
+      'button[onclick="fitView()"]': {text: '⛶ Fit view'},
+      'button[onclick="deleteSelected()"]': {text: '✕ Delete'},
+      'button[onclick="clearAll()"]': {text: 'Clear'},
+      'button[onclick="exportCSV()"]': {text: '⬇ CSV'},
+      'button[onclick="window.print()"]': {text: '🖶 Print'},
+      '.toolbar-meta': {html: 'Nodes <span class="val" id="nodeCount">0</span> · Links <span class="val" id="linkCount">0</span>'}
+    }
+  },
+  ru: {
+    title: 'Схема воздуховодов — engineers.ge',
+    selectors: {
+      '.brand-title': {text: 'Схема воздуховодов'},
+      '.brand-subtitle': {text: 'HVAC · СХЕМА'},
+      'button[onclick="loadSample()"]': {text: 'Пример'},
+      'button[onclick="undo()"]': {text: '⟲ Назад'},
+      'button[onclick="autoLayout()"]': {text: '⎌ Автораскладка'},
+      'button[onclick="fitView()"]': {text: '⛶ Подогнать'},
+      'button[onclick="deleteSelected()"]': {text: '✕ Удалить'},
+      'button[onclick="clearAll()"]': {text: 'Очистить'},
+      'button[onclick="exportCSV()"]': {text: '⬇ CSV'},
+      'button[onclick="window.print()"]': {text: '🖶 Печать'},
+      '.toolbar-meta': {html: 'Узлы <span class="val" id="nodeCount">0</span> · Связи <span class="val" id="linkCount">0</span>'}
+    }
+  },
+  tr: {
+    title: 'Hava Kanalı Şeması — engineers.ge',
+    selectors: {
+      '.brand-title': {text: 'Hava Kanalı Şeması'},
+      '.brand-subtitle': {text: 'HVAC · ŞEMA ARACI'},
+      'button[onclick="loadSample()"]': {text: 'Örnek'},
+      'button[onclick="undo()"]': {text: '⟲ Geri al'},
+      'button[onclick="autoLayout()"]': {text: '⎌ Otomatik yerleşim'},
+      'button[onclick="fitView()"]': {text: '⛶ Görünümü sığdır'},
+      'button[onclick="deleteSelected()"]': {text: '✕ Sil'},
+      'button[onclick="clearAll()"]': {text: 'Temizle'},
+      'button[onclick="exportCSV()"]': {text: '⬇ CSV'},
+      'button[onclick="window.print()"]': {text: '🖶 Yazdır'},
+      '.toolbar-meta': {html: 'Düğümler <span class="val" id="nodeCount">0</span> · Bağlantılar <span class="val" id="linkCount">0</span>'}
+    }
+  },
+  az: {
+    title: 'Hava Kanalı Sxemi — engineers.ge',
+    selectors: {
+      '.brand-title': {text: 'Hava Kanalı Sxemi'},
+      '.brand-subtitle': {text: 'HVAC · SXEM ALƏTİ'},
+      'button[onclick="loadSample()"]': {text: 'Nümunə'},
+      'button[onclick="undo()"]': {text: '⟲ Geri al'},
+      'button[onclick="autoLayout()"]': {text: '⎌ Avto düzüm'},
+      'button[onclick="fitView()"]': {text: '⛶ Sığdır'},
+      'button[onclick="deleteSelected()"]': {text: '✕ Sil'},
+      'button[onclick="clearAll()"]': {text: 'Təmizlə'},
+      'button[onclick="exportCSV()"]': {text: '⬇ CSV'},
+      'button[onclick="window.print()"]': {text: '🖶 Çap'},
+      '.toolbar-meta': {html: 'Qovşaqlar <span class="val" id="nodeCount">0</span> · Əlaqələr <span class="val" id="linkCount">0</span>'}
+    }
+  },
+  hy: {
+    title: 'Օդատարի սխեմա — engineers.ge',
+    selectors: {
+      '.brand-title': {text: 'Օդատարի սխեմա'},
+      '.brand-subtitle': {text: 'HVAC · ՍԽԵՄԱ'},
+      'button[onclick="loadSample()"]': {text: 'Նմուշ'},
+      'button[onclick="undo()"]': {text: '⟲ Հետ'},
+      'button[onclick="autoLayout()"]': {text: '⎌ Ավտո դասավորություն'},
+      'button[onclick="fitView()"]': {text: '⛶ Տեղավորել'},
+      'button[onclick="deleteSelected()"]': {text: '✕ Ջնջել'},
+      'button[onclick="clearAll()"]': {text: 'Մաքրել'},
+      'button[onclick="exportCSV()"]': {text: '⬇ CSV'},
+      'button[onclick="window.print()"]': {text: '🖶 Տպել'},
+      '.toolbar-meta': {html: 'Հանգույցներ <span class="val" id="nodeCount">0</span> · Կապեր <span class="val" id="linkCount">0</span>'}
+    }
+  }
+});
 
 loadSample();
 </script>

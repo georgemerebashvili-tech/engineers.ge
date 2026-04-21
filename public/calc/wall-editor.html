@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/calc/_base.css">
 <link rel="stylesheet" href="/calc/_editor-ui.css">
 <script src="/calc/_theme-sync.js"></script>
+<script src="/calc/_i18n.js"></script>
 <script src="/calc/_editor-panels.js"></script>
 <script src="/calc/_project-bridge.js"></script>
 <script src="/calc/_wall-rooms.js"></script>
@@ -528,12 +529,12 @@
 <header class="we-top">
   <h1>📐 გეგმის რედაქტორი</h1>
   <div class="sep"></div>
-  <label>სახელი <input type="text" id="inp-name" value="ახალი გეგმა"></label>
+  <label><span id="txt-we-name">სახელი</span> <input type="text" id="inp-name" value="ახალი გეგმა"></label>
   <div class="sep"></div>
-  <label>იატაკის სიმაღლე (მ) <input type="number" id="inp-floor-h" min="2.0" max="8" step="0.1" value="3.0"></label>
-  <label>ჭერი (მ) <input type="number" id="inp-ceiling-h" min="2.0" max="8" step="0.1" value="2.8"></label>
+  <label><span id="txt-we-floor-h">იატაკის სიმაღლე (მ)</span> <input type="number" id="inp-floor-h" min="2.0" max="8" step="0.1" value="3.0"></label>
+  <label><span id="txt-we-ceiling-h">ჭერი (მ)</span> <input type="number" id="inp-ceiling-h" min="2.0" max="8" step="0.1" value="2.8"></label>
   <div class="sep"></div>
-  <label>Grid <select id="inp-grid">
+  <label><span id="txt-we-grid">Grid</span> <select id="inp-grid">
     <option value="0.1">10 cm</option>
     <option value="0.25" selected>25 cm</option>
     <option value="0.5">50 cm</option>
@@ -553,7 +554,7 @@
   <button id="btn-import" title="JSON ჩატვირთვა">⬆ JSON</button>
   <button id="btn-export" title="JSON ექსპორტი">⬇ JSON</button>
   <button id="btn-import-dxf" title="DXF (CAD) ფაილის ჩატვირთვა — LINE + LWPOLYLINE კედლებად ჩატვირთვა">⬆ DXF</button>
-  <button id="btn-export-dxf" title="DXF-ად ექსპორტი — AutoCAD/Revit/LibreCAD თავსებადი">⬇ DXF</button>
+  <button id="btn-export-dxf" title="DXF-ად ექსპორტი — AutoCAD/LibreCAD/QCAD თავსებადი">⬇ DXF</button>
   <button id="btn-ai-walls" title="AI: სურათიდან კედლების ავტო-დეტექცია (Claude Vision)">🤖 AI walls</button>
   <button id="btn-cleanup" title="კედლების გასუფთავება (deduplicate, snap, colinear merge, orthogonalize)">🪄 Clean</button>
   <button id="btn-print" title="PDF-ად ბეჭდვა">🖨 PDF</button>
@@ -1233,6 +1234,11 @@ const ui = {
   snapped: null,                    // {x, y, type}
   history: { past: [], future: [] },
   toolDefaults: {},    // per-tool panel defaults ({wall:{wallMode,...}, door:{...}, ...})
+  showGrid: true,
+  showDims: false,
+  showRoomLabels: true,
+  showFixtures: true,
+  planOpacity: 100,
   // Coohom-parity additions
   activeFloor: 0,      // index into state.floors
   viewMode: '2d',      // '2d' | '3d'
@@ -1715,6 +1721,7 @@ function render() {
   renderPreview();
   renderSelection();
   renderSnap();
+  applyPlanVisibility();
   renderCounts();
   // Keep floating ctx menu anchored to selection on pan/zoom
   if (ui.selection.length === 1 && window.EditorPanels) {
@@ -1729,9 +1736,19 @@ function render() {
   if (zv) zv.textContent = Math.round(ui.view.zoom * 2.5) + '%';
 }
 
+function applyPlanVisibility() {
+  const planOpacity = Math.max(0, Math.min(100, Number.isFinite(ui.planOpacity) ? ui.planOpacity : 100)) / 100;
+  for (const id of ['g-rooms', 'g-walls', 'g-openings', 'g-columns', 'g-fixtures', 'g-furniture', 'g-dims']) {
+    const node = $('#' + id);
+    if (!node) continue;
+    node.setAttribute('opacity', String(planOpacity));
+  }
+}
+
 function renderGrid() {
   const g = $('#g-grid');
   g.innerHTML = '';
+  if (ui.showGrid === false) return;
   const svg = $('#svg');
   const vb = svg.viewBox.baseVal;
   let major = state.scale.gridStep * 4;
@@ -2157,6 +2174,7 @@ function renderOpenings() {
 function renderFixtures() {
   const g = $('#g-fixtures');
   g.innerHTML = '';
+  if (ui.showFixtures === false) return;
   for (const f of state.fixtures) {
     const sel = ui.selection.includes(f.id);
     const lib = (LIB.jetfans.concat(LIB.exhausts)).find(x => x.id === f.model);
@@ -3161,8 +3179,11 @@ function buildCtxFromState() {
 
   // Default: floor panel
   const area = state.rooms.reduce((s, r) => s + (r.area || 0), 0);
+  const floors = state.floors || [];
+  const activeFloor = floors[ui.activeFloor] || floors[0] || { name: '1F' };
   return { type: 'empty', data: {
     name: state.meta.name,
+    floorName: activeFloor.name || '1F',
     roomH: state.floor.ceilingHeight,
     slabThk: Math.round((state.floor.slabThickness || 0.2) * 1000),
     area, perim: 0,
@@ -3171,11 +3192,15 @@ function buildCtxFromState() {
     showGrid: ui.showGrid !== false,
     showDims: !!ui.showDims,
     showRoomLabels: ui.showRoomLabels !== false,
-    showFixtures: !!ui.showFixtures,
+    showFixtures: ui.showFixtures !== false,
     gridStep: state.scale.gridStep,
-    planOpacity: 100,
-    floorCount: 1,
-    floorLabel: '1F'
+    planOpacity: Number.isFinite(ui.planOpacity) ? ui.planOpacity : 100,
+    floorCount: Math.max(1, floors.length || 0),
+    floorLabel: activeFloor.name || '1F',
+    activeFloorIndex: Math.max(0, ui.activeFloor || 0),
+    canMoveUp: (ui.activeFloor || 0) > 0,
+    canMoveDown: (ui.activeFloor || 0) < floors.length - 1,
+    canDeleteFloor: floors.length > 1
   }};
 }
 
@@ -3186,6 +3211,14 @@ function onCtxField(key, value) {
 
   if (T === 'empty') {
     if (key === 'name') { state.meta.name = value; $('#inp-name').value = value; }
+    else if (key === 'floorName') {
+      const floor = state.floors?.[ui.activeFloor];
+      if (floor) {
+        floor.name = String(value || '').trim() || `სართული ${ui.activeFloor + 1}`;
+        renderFloorSeg();
+        setPanelHead(computePanelHead(buildCtxFromState()));
+      }
+    }
     else if (key === 'roomH') { state.floor.ceilingHeight = value; $('#inp-ceiling-h').value = value; }
     else if (key === 'slabThk') { state.floor.slabThickness = value / 1000; }
     else if (key === 'gridStep') { state.scale.gridStep = value; $('#inp-grid').value = value; render(); }
@@ -3193,6 +3226,7 @@ function onCtxField(key, value) {
     else if (key === 'showDims') { ui.showDims = value; render(); }
     else if (key === 'showRoomLabels') { ui.showRoomLabels = value; render(); }
     else if (key === 'showFixtures') { ui.showFixtures = value; render(); }
+    else if (key === 'planOpacity') { ui.planOpacity = value; render(); }
     autosave();
     return;
   }
@@ -3325,7 +3359,12 @@ function onCtxAction(name) {
     return alignDistribute(name);
   }
   if (name.startsWith('floor:')) {
-    toast('multi-floor floor ops — Task 030'); return;
+    if (name === 'floor:new-upper') { createFloor('upper'); return; }
+    if (name === 'floor:new-lower') { createFloor('lower'); return; }
+    if (name === 'floor:duplicate') { duplicateActiveFloor(); return; }
+    if (name === 'floor:move-up') { moveActiveFloor(-1); return; }
+    if (name === 'floor:move-down') { moveActiveFloor(1); return; }
+    if (name === 'floor:delete') { deleteActiveFloor(); return; }
   }
 }
 
@@ -6849,15 +6888,21 @@ function editorPlanBounds(pad = 1) {
 function buildPlanSnapshotSvg(opts = {}) {
   const pad = Number.isFinite(opts.pad) ? opts.pad : 1;
   const prev = {
+    showGrid: ui.showGrid,
     showDims: ui.showDims,
     showRoomLabels: ui.showRoomLabels,
+    showFixtures: ui.showFixtures,
+    planOpacity: ui.planOpacity,
     selection: [...ui.selection],
     drafting: ui.drafting,
     dragAction: ui.dragAction
   };
   try {
+    ui.showGrid = prev.showGrid;
     ui.showDims = true;
     ui.showRoomLabels = true;
+    ui.showFixtures = prev.showFixtures;
+    ui.planOpacity = 100;
     ui.selection = [];
     ui.drafting = null;
     ui.dragAction = null;
@@ -6878,8 +6923,11 @@ function buildPlanSnapshotSvg(opts = {}) {
   } catch (err) {
     return '<p style="color:#888">გეგმის snapshot მიუწვდომელია</p>';
   } finally {
+    ui.showGrid = prev.showGrid;
     ui.showDims = prev.showDims;
     ui.showRoomLabels = prev.showRoomLabels;
+    ui.showFixtures = prev.showFixtures;
+    ui.planOpacity = prev.planOpacity;
     ui.selection = prev.selection;
     ui.drafting = prev.drafting;
     ui.dragAction = prev.dragAction;
@@ -7929,7 +7977,10 @@ function buildSnapshot() {
     ...state,
     _floors: state.floors, _activeFloor: ui.activeFloor,
     _viewMode: ui.viewMode, _toolDefaults: ui.toolDefaults,
-    _pipVisible: ui.pipVisible, _pipMode: ui.pipMode, _pipPos: ui.pipPos
+    _pipVisible: ui.pipVisible, _pipMode: ui.pipMode, _pipPos: ui.pipPos,
+    _showGrid: ui.showGrid, _showDims: ui.showDims,
+    _showRoomLabels: ui.showRoomLabels, _showFixtures: ui.showFixtures,
+    _planOpacity: ui.planOpacity
   };
 }
 
@@ -7943,6 +7994,11 @@ function applySnapshot(data) {
   if (typeof data._pipVisible === 'boolean') ui.pipVisible = data._pipVisible;
   if (data._pipMode) ui.pipMode = data._pipMode;
   if (data._pipPos) ui.pipPos = data._pipPos;
+  if (typeof data._showGrid === 'boolean') ui.showGrid = data._showGrid;
+  if (typeof data._showDims === 'boolean') ui.showDims = data._showDims;
+  if (typeof data._showRoomLabels === 'boolean') ui.showRoomLabels = data._showRoomLabels;
+  if (typeof data._showFixtures === 'boolean') ui.showFixtures = data._showFixtures;
+  if (Number.isFinite(data._planOpacity)) ui.planOpacity = Math.max(0, Math.min(100, data._planOpacity));
   normalizeFireScope();
 }
 
@@ -8038,6 +8094,22 @@ function cloneFloorData(d) {
   }));
 }
 
+function remapFireFloors(mapper) {
+  let removed = 0;
+  const nextFires = [];
+  for (const fire of (state.fires || [])) {
+    const nextFloor = mapper(fireFloorIndex(fire));
+    if (!Number.isFinite(nextFloor) || nextFloor < 0) {
+      removed++;
+      continue;
+    }
+    fire.floor = nextFloor | 0;
+    nextFires.push(fire);
+  }
+  state.fires = nextFires;
+  return removed;
+}
+
 function applyFloorData(d) {
   state.walls = d.walls || [];
   state.columns = d.columns || [];
@@ -8074,6 +8146,7 @@ function createFloor(pos /* 'upper' | 'lower' */) {
   const cur = state.floors[ui.activeFloor];
   const idx = pos === 'upper' ? ui.activeFloor + 1 : ui.activeFloor;
   const label = defaultFloorName(pos);
+  remapFireFloors((floorIdx) => floorIdx >= idx ? floorIdx + 1 : floorIdx);
   state.floors.splice(idx, 0, {
     id: uid(), name: label, height: cur.height || state.floor.ceilingHeight,
     data: cloneFloorData({})
@@ -8086,6 +8159,84 @@ function createFloor(pos /* 'upper' | 'lower' */) {
   render(); renderCtxPanel(); renderPIP();
   autosave();
   toast('სართული დამატდა: ' + label);
+}
+
+function floorCopyName(base) {
+  const root = `${base || 'სართული'} ასლი`;
+  const taken = new Set((state.floors || []).map(f => (f.name || '').trim()).filter(Boolean));
+  if (!taken.has(root)) return root;
+  let i = 2;
+  while (taken.has(`${root} ${i}`)) i++;
+  return `${root} ${i}`;
+}
+
+function duplicateActiveFloor() {
+  if (!state.floors?.length) return;
+  syncActiveFloorToArchive();
+  const idx = Math.max(0, ui.activeFloor || 0);
+  const src = state.floors[idx];
+  const insertAt = idx + 1;
+  remapFireFloors((floorIdx) => floorIdx >= insertAt ? floorIdx + 1 : floorIdx);
+  state.floors.splice(insertAt, 0, {
+    id: uid(),
+    name: floorCopyName(src?.name),
+    height: src?.height || state.floor.ceilingHeight,
+    data: cloneFloorData(src?.data || {})
+  });
+  ui.activeFloor = insertAt;
+  applyFloorData(state.floors[insertAt].data);
+  ui.selection = []; ui.drafting = null;
+  renderFloorSeg();
+  updateFireBarVisibility();
+  render(); renderCtxPanel(); renderPIP();
+  autosave();
+  toast('სართული დაკოპირდა: ' + state.floors[insertAt].name);
+}
+
+function moveActiveFloor(delta) {
+  if (!state.floors?.length || !delta) return;
+  const idx = Math.max(0, ui.activeFloor || 0);
+  const nextIdx = idx + delta;
+  if (nextIdx < 0 || nextIdx >= state.floors.length) return;
+  syncActiveFloorToArchive();
+  const tmp = state.floors[idx];
+  state.floors[idx] = state.floors[nextIdx];
+  state.floors[nextIdx] = tmp;
+  remapFireFloors((floorIdx) => {
+    if (floorIdx === idx) return nextIdx;
+    if (floorIdx === nextIdx) return idx;
+    return floorIdx;
+  });
+  ui.activeFloor = nextIdx;
+  applyFloorData(state.floors[nextIdx].data);
+  ui.selection = []; ui.drafting = null;
+  renderFloorSeg();
+  updateFireBarVisibility();
+  render(); renderCtxPanel(); renderPIP();
+  autosave();
+  toast(delta < 0 ? 'სართული აიწია' : 'სართული ჩამოიწია');
+}
+
+function deleteActiveFloor() {
+  if (!state.floors?.length) return;
+  if (state.floors.length === 1) { toast('ბოლო სართული ვერ წაიშლება'); return; }
+  syncActiveFloorToArchive();
+  const idx = Math.max(0, ui.activeFloor || 0);
+  const removedName = state.floors[idx]?.name || `${idx + 1}F`;
+  state.floors.splice(idx, 1);
+  const removedFires = remapFireFloors((floorIdx) => {
+    if (floorIdx === idx) return null;
+    if (floorIdx > idx) return floorIdx - 1;
+    return floorIdx;
+  });
+  ui.activeFloor = Math.min(idx, state.floors.length - 1);
+  applyFloorData(state.floors[ui.activeFloor].data);
+  ui.selection = []; ui.drafting = null;
+  renderFloorSeg();
+  updateFireBarVisibility();
+  render(); renderCtxPanel(); renderPIP();
+  autosave();
+  toast(removedFires ? `სართული წაიშალა: ${removedName} · fires: -${removedFires}` : 'სართული წაიშალა: ' + removedName);
 }
 
 function defaultFloorName(pos) {
@@ -8106,7 +8257,12 @@ function renderFloorSeg() {
     b.addEventListener('click', () => switchFloor(i));
     b.addEventListener('dblclick', () => {
       const nw = prompt('სართულის სახელი', f.name);
-      if (nw && nw.trim()) { f.name = nw.trim(); renderFloorSeg(); autosave(); }
+      if (nw && nw.trim()) {
+        f.name = nw.trim();
+        renderFloorSeg();
+        renderCtxPanel();
+        autosave();
+      }
     });
     seg.appendChild(b);
   });
@@ -8780,6 +8936,222 @@ document.addEventListener('DOMContentLoaded', () => {
   fitView();
   if (ui.viewMode === '3d') setViewMode('3d');
 });
+
+if (window.engCalcI18n) {
+  window.engCalcI18n.apply({
+    ka: {title: 'გეგმის რედაქტორი — engineers.ge'},
+    en: {
+      title: 'Plan Editor — engineers.ge',
+      selectors: {
+        '.we-top h1': {text: '📐 Plan Editor'},
+        '#txt-we-name': {text: 'Name'},
+        '#txt-we-floor-h': {text: 'Floor height (m)'},
+        '#txt-we-ceiling-h': {text: 'Ceiling (m)'},
+        '#txt-we-grid': {text: 'Grid'},
+        '#btn-save-as': {text: '💾 Save'},
+        '#btn-rename': {text: '✎ Rename'},
+        '#btn-zoom-fit': {text: '🎯 Fit'},
+        '#btn-import': {text: '⬆ Import JSON'},
+        '#btn-export': {text: '⬇ Export JSON'},
+        '#btn-import-dxf': {text: '⬆ Import DXF'},
+        '#btn-export-dxf': {text: '⬇ Export DXF'},
+        '#btn-ai-walls': {text: '🤖 AI walls'},
+        '#btn-cleanup': {text: '🪄 Clean'},
+        '#btn-print': {text: '🖨 PDF'},
+        '#btn-share': {text: '🔗 Share'},
+        '#btn-composer': {text: '🏢 Composer'},
+        '#btn-gate': {text: '🗂 Projects'},
+        '#btn-clear': {text: '🗑 Clear'},
+        '.we-tool[data-tool="select"] .we-tool-label': {text: 'Select'},
+        '.we-tool[data-tool="wall"] .we-tool-label': {text: 'Wall'},
+        '.we-tool[data-tool="room"] .we-tool-label': {text: 'Room'},
+        '.we-tool[data-tool="column"] .we-tool-label': {text: 'Column'},
+        '.we-tool[data-tool="door"] .we-tool-label': {text: 'Door'},
+        '.we-tool[data-tool="window"] .we-tool-label': {text: 'Window'},
+        '.we-tool[data-tool="jetfan"] .we-tool-label': {text: 'Jet fan'},
+        '.we-tool[data-tool="exhaust"] .we-tool-label': {text: 'Exhaust'},
+        '.we-tool[data-tool="measure"] .we-tool-label': {text: 'Measure'},
+        '.we-tool[data-tool="furniture"] .we-tool-label': {text: 'Furniture'},
+        '.we-tool[data-tool="fire"] .we-tool-label': {text: 'Fire'},
+        '.we-tool[data-tool="pan"] .we-tool-label': {text: 'Pan'},
+        '#btn-help .we-tool-label': {text: 'Help'},
+        '#btn-new-upper': {text: '+ Upper'},
+        '#btn-new-lower': {text: '+ Lower'},
+        '#btn-pip-toggle': {text: 'PIP'},
+        '#view-seg button[data-view="2d"]': {text: '2D'},
+        '#view-seg button[data-view="3d"]': {text: '3D'}
+      }
+    },
+    ru: {
+      title: 'Редактор плана — engineers.ge',
+      selectors: {
+        '.we-top h1': {text: '📐 Редактор плана'},
+        '#txt-we-name': {text: 'Имя'},
+        '#txt-we-floor-h': {text: 'Высота этажа (м)'},
+        '#txt-we-ceiling-h': {text: 'Потолок (м)'},
+        '#txt-we-grid': {text: 'Сетка'},
+        '#btn-save-as': {text: '💾 Сохранить'},
+        '#btn-rename': {text: '✎ Имя'},
+        '#btn-zoom-fit': {text: '🎯 Вписать'},
+        '#btn-import': {text: '⬆ Импорт JSON'},
+        '#btn-export': {text: '⬇ Экспорт JSON'},
+        '#btn-import-dxf': {text: '⬆ Импорт DXF'},
+        '#btn-export-dxf': {text: '⬇ Экспорт DXF'},
+        '#btn-ai-walls': {text: '🤖 AI стены'},
+        '#btn-cleanup': {text: '🪄 Очистка'},
+        '#btn-print': {text: '🖨 PDF'},
+        '#btn-share': {text: '🔗 Ссылка'},
+        '#btn-composer': {text: '🏢 Composer'},
+        '#btn-gate': {text: '🗂 Проекты'},
+        '#btn-clear': {text: '🗑 Очистить'},
+        '.we-tool[data-tool="select"] .we-tool-label': {text: 'Выбор'},
+        '.we-tool[data-tool="wall"] .we-tool-label': {text: 'Стена'},
+        '.we-tool[data-tool="room"] .we-tool-label': {text: 'Комната'},
+        '.we-tool[data-tool="column"] .we-tool-label': {text: 'Колонна'},
+        '.we-tool[data-tool="door"] .we-tool-label': {text: 'Дверь'},
+        '.we-tool[data-tool="window"] .we-tool-label': {text: 'Окно'},
+        '.we-tool[data-tool="jetfan"] .we-tool-label': {text: 'Jet fan'},
+        '.we-tool[data-tool="exhaust"] .we-tool-label': {text: 'Вытяжка'},
+        '.we-tool[data-tool="measure"] .we-tool-label': {text: 'Размер'},
+        '.we-tool[data-tool="furniture"] .we-tool-label': {text: 'Мебель'},
+        '.we-tool[data-tool="fire"] .we-tool-label': {text: 'Пожар'},
+        '.we-tool[data-tool="pan"] .we-tool-label': {text: 'Рука'},
+        '#btn-help .we-tool-label': {text: 'Помощь'},
+        '#btn-new-upper': {text: '+ Верхний'},
+        '#btn-new-lower': {text: '+ Нижний'},
+        '#btn-pip-toggle': {text: 'PIP'},
+        '#view-seg button[data-view="2d"]': {text: '2D'},
+        '#view-seg button[data-view="3d"]': {text: '3D'}
+      }
+    },
+    tr: {
+      title: 'Plan Editörü — engineers.ge',
+      selectors: {
+        '.we-top h1': {text: '📐 Plan Editörü'},
+        '#txt-we-name': {text: 'Ad'},
+        '#txt-we-floor-h': {text: 'Kat yüksekliği (m)'},
+        '#txt-we-ceiling-h': {text: 'Tavan (m)'},
+        '#txt-we-grid': {text: 'Izgara'},
+        '#btn-save-as': {text: '💾 Kaydet'},
+        '#btn-rename': {text: '✎ Ad'},
+        '#btn-zoom-fit': {text: '🎯 Sigdir'},
+        '#btn-import': {text: '⬆ JSON al'},
+        '#btn-export': {text: '⬇ JSON dışa aktar'},
+        '#btn-import-dxf': {text: '⬆ DXF al'},
+        '#btn-export-dxf': {text: '⬇ DXF dışa aktar'},
+        '#btn-ai-walls': {text: '🤖 AI duvarlar'},
+        '#btn-cleanup': {text: '🪄 Temizle'},
+        '#btn-print': {text: '🖨 PDF'},
+        '#btn-share': {text: '🔗 Paylas'},
+        '#btn-composer': {text: '🏢 Composer'},
+        '#btn-gate': {text: '🗂 Projeler'},
+        '#btn-clear': {text: '🗑 Temizle'},
+        '.we-tool[data-tool="select"] .we-tool-label': {text: 'Sec'},
+        '.we-tool[data-tool="wall"] .we-tool-label': {text: 'Duvar'},
+        '.we-tool[data-tool="room"] .we-tool-label': {text: 'Oda'},
+        '.we-tool[data-tool="column"] .we-tool-label': {text: 'Kolon'},
+        '.we-tool[data-tool="door"] .we-tool-label': {text: 'Kapi'},
+        '.we-tool[data-tool="window"] .we-tool-label': {text: 'Pencere'},
+        '.we-tool[data-tool="jetfan"] .we-tool-label': {text: 'Jet fan'},
+        '.we-tool[data-tool="exhaust"] .we-tool-label': {text: 'Egzoz'},
+        '.we-tool[data-tool="measure"] .we-tool-label': {text: 'Olcu'},
+        '.we-tool[data-tool="furniture"] .we-tool-label': {text: 'Mobilya'},
+        '.we-tool[data-tool="fire"] .we-tool-label': {text: 'Yangin'},
+        '.we-tool[data-tool="pan"] .we-tool-label': {text: 'El'},
+        '#btn-help .we-tool-label': {text: 'Yardim'},
+        '#btn-new-upper': {text: '+ Ust'},
+        '#btn-new-lower': {text: '+ Alt'},
+        '#btn-pip-toggle': {text: 'PIP'},
+        '#view-seg button[data-view="2d"]': {text: '2D'},
+        '#view-seg button[data-view="3d"]': {text: '3D'}
+      }
+    },
+    az: {
+      title: 'Plan Redaktoru — engineers.ge',
+      selectors: {
+        '.we-top h1': {text: '📐 Plan redaktoru'},
+        '#txt-we-name': {text: 'Ad'},
+        '#txt-we-floor-h': {text: 'Mərtəbə hündürlüyü (m)'},
+        '#txt-we-ceiling-h': {text: 'Tavan (m)'},
+        '#txt-we-grid': {text: 'Tor'},
+        '#btn-save-as': {text: '💾 Saxla'},
+        '#btn-rename': {text: '✎ Ad'},
+        '#btn-zoom-fit': {text: '🎯 Yerləsdir'},
+        '#btn-import': {text: '⬆ JSON idxal et'},
+        '#btn-export': {text: '⬇ JSON ixrac et'},
+        '#btn-import-dxf': {text: '⬆ DXF idxal et'},
+        '#btn-export-dxf': {text: '⬇ DXF ixrac et'},
+        '#btn-ai-walls': {text: '🤖 AI divarlar'},
+        '#btn-cleanup': {text: '🪄 Təmizlə'},
+        '#btn-print': {text: '🖨 PDF'},
+        '#btn-share': {text: '🔗 Paylas'},
+        '#btn-composer': {text: '🏢 Composer'},
+        '#btn-gate': {text: '🗂 Layihələr'},
+        '#btn-clear': {text: '🗑 Təmizlə'},
+        '.we-tool[data-tool="select"] .we-tool-label': {text: 'Secim'},
+        '.we-tool[data-tool="wall"] .we-tool-label': {text: 'Divar'},
+        '.we-tool[data-tool="room"] .we-tool-label': {text: 'Otaq'},
+        '.we-tool[data-tool="column"] .we-tool-label': {text: 'Sütun'},
+        '.we-tool[data-tool="door"] .we-tool-label': {text: 'Qapi'},
+        '.we-tool[data-tool="window"] .we-tool-label': {text: 'Pəncərə'},
+        '.we-tool[data-tool="jetfan"] .we-tool-label': {text: 'Jet fan'},
+        '.we-tool[data-tool="exhaust"] .we-tool-label': {text: 'Egzoz'},
+        '.we-tool[data-tool="measure"] .we-tool-label': {text: 'Olcu'},
+        '.we-tool[data-tool="furniture"] .we-tool-label': {text: 'Mebel'},
+        '.we-tool[data-tool="fire"] .we-tool-label': {text: 'Yanğın'},
+        '.we-tool[data-tool="pan"] .we-tool-label': {text: 'Əl'},
+        '#btn-help .we-tool-label': {text: 'Kömək'},
+        '#btn-new-upper': {text: '+ Yuxari'},
+        '#btn-new-lower': {text: '+ Asagi'},
+        '#btn-pip-toggle': {text: 'PIP'},
+        '#view-seg button[data-view="2d"]': {text: '2D'},
+        '#view-seg button[data-view="3d"]': {text: '3D'}
+      }
+    },
+    hy: {
+      title: 'Պլանի Խմբագիր — engineers.ge',
+      selectors: {
+        '.we-top h1': {text: '📐 Պլանի խմբագիր'},
+        '#txt-we-name': {text: 'Անուն'},
+        '#txt-we-floor-h': {text: 'Հարկի բարձրություն (մ)'},
+        '#txt-we-ceiling-h': {text: 'Առաստաղ (մ)'},
+        '#txt-we-grid': {text: 'Ցանց'},
+        '#btn-save-as': {text: '💾 Պահել'},
+        '#btn-rename': {text: '✎ Անուն'},
+        '#btn-zoom-fit': {text: '🎯 Տեղավորել'},
+        '#btn-import': {text: '⬆ Ներմուծել JSON'},
+        '#btn-export': {text: '⬇ Արտահանել JSON'},
+        '#btn-import-dxf': {text: '⬆ Ներմուծել DXF'},
+        '#btn-export-dxf': {text: '⬇ Արտահանել DXF'},
+        '#btn-ai-walls': {text: '🤖 AI պատեր'},
+        '#btn-cleanup': {text: '🪄 Մաքրել'},
+        '#btn-print': {text: '🖨 PDF'},
+        '#btn-share': {text: '🔗 Կիսվել'},
+        '#btn-composer': {text: '🏢 Composer'},
+        '#btn-gate': {text: '🗂 Նախագծեր'},
+        '#btn-clear': {text: '🗑 Մաքրել'},
+        '.we-tool[data-tool="select"] .we-tool-label': {text: 'Ընտրել'},
+        '.we-tool[data-tool="wall"] .we-tool-label': {text: 'Պատ'},
+        '.we-tool[data-tool="room"] .we-tool-label': {text: 'Սենյակ'},
+        '.we-tool[data-tool="column"] .we-tool-label': {text: 'Սյուն'},
+        '.we-tool[data-tool="door"] .we-tool-label': {text: 'Դուռ'},
+        '.we-tool[data-tool="window"] .we-tool-label': {text: 'Պատուհան'},
+        '.we-tool[data-tool="jetfan"] .we-tool-label': {text: 'Jet fan'},
+        '.we-tool[data-tool="exhaust"] .we-tool-label': {text: 'Արտածում'},
+        '.we-tool[data-tool="measure"] .we-tool-label': {text: 'Չափ'},
+        '.we-tool[data-tool="furniture"] .we-tool-label': {text: 'Կահույք'},
+        '.we-tool[data-tool="fire"] .we-tool-label': {text: 'Հրդեհ'},
+        '.we-tool[data-tool="pan"] .we-tool-label': {text: 'Ձեռք'},
+        '#btn-help .we-tool-label': {text: 'Օգնություն'},
+        '#btn-new-upper': {text: '+ Վերին'},
+        '#btn-new-lower': {text: '+ Ստորին'},
+        '#btn-pip-toggle': {text: 'PIP'},
+        '#view-seg button[data-view="2d"]': {text: '2D'},
+        '#view-seg button[data-view="3d"]': {text: '3D'}
+      }
+    }
+  });
+}
 </script>
 </body>
 </html>

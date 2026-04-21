@@ -15,11 +15,15 @@ import {
 } from 'lucide-react';
 import {
   listProjects,
+  getProject,
   createProject,
   deleteProject,
   duplicateProject,
   exportProject,
   importProject,
+  getLastProjectId,
+  setLastProjectId,
+  getAlwaysShowGateOnEntry,
   formatRelative
 } from '@/lib/projects';
 import {Breadcrumbs} from '@/components/breadcrumbs';
@@ -35,18 +39,38 @@ const PREVIEW_LIMIT = 7;
 
 export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
   const router = useRouter();
-  const [, setRefreshIndex] = useState(0);
+  const [refreshIndex, setRefreshIndex] = useState(0);
   const [query, setQuery] = useState('');
   const [showAll, setShowAll] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
+  const [bootReady, setBootReady] = useState(false);
+  const [lastProjectId, setLastProjectIdState] = useState<string | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
-  const projects = listProjects(slug);
+  const projects = useMemo(() => listProjects(slug), [refreshIndex, slug]);
 
   useEffect(() => {
     if (creating) nameInputRef.current?.focus();
   }, [creating]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const manualGate = params.get('gate') === '1';
+    const lastId = getLastProjectId(slug);
+    const lastProject = lastId ? getProject(lastId) : null;
+    if (lastProject?.slug === slug) {
+      setLastProjectIdState(lastProject.id);
+    } else {
+      if (lastId) setLastProjectId(slug, null);
+      setLastProjectIdState(null);
+    }
+    if (manualGate || getAlwaysShowGateOnEntry(slug) || !lastProject || lastProject.slug !== slug) {
+      setBootReady(true);
+      return;
+    }
+    router.replace(`/calc/${slug}?project=${lastProject.id}`);
+  }, [refreshIndex, router, slug]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -60,6 +84,7 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
   const commitNew = () => {
     const name = newName.trim();
     const p = createProject(slug, {}, name || undefined);
+    setLastProjectId(slug, p.id);
     router.push(`/calc/${slug}?project=${p.id}`);
   };
 
@@ -67,6 +92,7 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
     const tmpl = getTemplatesForSlug(slug).find((t) => t.key === key);
     if (!tmpl) return;
     const p = createProject(slug, tmpl.state, tmpl.name);
+    setLastProjectId(slug, p.id);
     router.push(`/calc/${slug}?project=${p.id}`);
   };
 
@@ -78,6 +104,7 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
   };
 
   const handleOpen = (id: string) => {
+    setLastProjectId(slug, id);
     router.push(`/calc/${slug}?project=${id}`);
   };
 
@@ -113,7 +140,11 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
       if (!file) return;
       try {
         const text = await file.text();
-        importProject(text);
+        const imported = importProject(text);
+        if (imported.slug === slug) {
+          setLastProjectId(slug, imported.id);
+          setLastProjectIdState(imported.id);
+        }
         setRefreshIndex((value) => value + 1);
       } catch (e) {
         alert('JSON წაკითხვა ვერ მოხერხდა: ' + (e as Error).message);
@@ -121,6 +152,15 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
     };
     input.click();
   };
+
+  const lastProject = useMemo(
+    () => projects.find((project) => project.id === lastProjectId) || null,
+    [lastProjectId, projects]
+  );
+
+  if (!bootReady) {
+    return <div className="w-full bg-bg min-h-[calc(100vh-56px)]" />;
+  }
 
   return (
     <div className="w-full bg-bg min-h-[calc(100vh-56px)]">
@@ -180,6 +220,15 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
               className="inline-flex items-center gap-1.5 rounded-full border bg-sur px-3 py-2 text-xs font-semibold text-text-2 transition-colors hover:text-blue hover:border-blue"
             >
               {showAll ? 'დაკეცვა' : `ყველა · ${projects.length}`}
+            </button>
+          )}
+          {lastProject && (
+            <button
+              type="button"
+              onClick={() => handleOpen(lastProject.id)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-blue-bd bg-blue-lt px-3 py-2 text-xs font-semibold text-blue transition-colors hover:border-blue hover:bg-blue hover:text-white"
+            >
+              <ArrowUpRight size={13} /> ბოლო პროექტი
             </button>
           )}
           <button
@@ -347,10 +396,18 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
                 </div>
 
                 <div className="p-3">
-                  <h3 className="text-sm font-bold text-navy truncate">{p.name}</h3>
-                  <p className="text-[10px] text-text-3 font-mono mt-0.5">
-                    {formatRelative(p.updatedAt)}
-                  </p>
+                  <h3 className="text-[15px] font-bold text-navy leading-tight truncate">{p.name}</h3>
+                  <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] font-mono text-text-3">
+                    <span className="inline-flex items-center gap-1" title={`შექმნილია ${new Date(p.createdAt).toLocaleString('ka-GE')}`}>
+                      <span className="text-text-3/70">შექმნილი</span>
+                      <span className="text-text-2">{new Date(p.createdAt).toLocaleDateString('ka-GE', {year: '2-digit', month: '2-digit', day: '2-digit'})}</span>
+                    </span>
+                    <span className="text-text-3/40">·</span>
+                    <span className="inline-flex items-center gap-1" title={`განახლდა ${new Date(p.updatedAt).toLocaleString('ka-GE')}`}>
+                      <span className="text-text-3/70">შეცვლილი</span>
+                      <span className="text-text-2">{formatRelative(p.updatedAt)}</span>
+                    </span>
+                  </div>
                 </div>
               </button>
 

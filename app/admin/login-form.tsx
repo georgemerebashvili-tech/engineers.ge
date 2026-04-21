@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {useEffect, useState, useTransition} from 'react';
 import {useRouter} from 'next/navigation';
 
@@ -97,6 +98,14 @@ export function LoginForm() {
       >
         {pending ? '…' : 'შესვლა'}
       </button>
+      <div className="text-center">
+        <Link
+          href="/admin/forgot"
+          className="text-xs text-fg-muted hover:text-accent hover:underline"
+        >
+          დაგავიწყდა პაროლი?
+        </Link>
+      </div>
     </form>
   );
 }

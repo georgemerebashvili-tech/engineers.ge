@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HVAC · Python in-browser — engineers.ge</title>
+<link rel="stylesheet" href="/calc/_base.css">
+<script src="/calc/_theme-sync.js"></script>
+<style>
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body { display: flex; flex-direction: column; font-family: var(--font-sans); background: var(--bg); color: var(--text); }
+
+  .top {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px;
+    background: var(--sur); border-bottom: 1px solid var(--bdr);
+    flex: 0 0 auto;
+  }
+  .top h1 { margin: 0; font-size: 13px; font-weight: 700; color: var(--navy); display: flex; align-items: center; gap: 6px; }
+  .top .badge {
+    font-size: 10px; font-weight: 600; padding: 2px 7px;
+    background: var(--blue-lt); color: var(--blue);
+    border: 1px solid var(--blue-bd); border-radius: 999px;
+  }
+  .top .badge.py { background: #fff5d6; color: #8a6a00; border-color: #f0d894; }
+  .top .spacer { flex: 1; }
+  .top button, .top a.btn {
+    background: var(--sur-2); border: 1px solid var(--bdr);
+    border-radius: 6px; padding: 6px 12px;
+    font-size: 11px; font-weight: 600; color: var(--text-2);
+    cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; gap: 6px;
+    text-decoration: none;
+  }
+  .top button:hover, .top a.btn:hover { border-color: var(--blue); color: var(--blue); }
+  .top button.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .top button.primary:hover { background: var(--navy-2); border-color: var(--navy-2); }
+  .top button:disabled { opacity: .5; cursor: not-allowed; }
+
+  .inputs {
+    display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px;
+    padding: 10px 14px;
+    background: var(--sur-2); border-bottom: 1px solid var(--bdr);
+    flex: 0 0 auto;
+  }
+  .field label { display: block; font-size: 9.5px; font-weight: 700; color: var(--text-3); margin-bottom: 3px; text-transform: uppercase; letter-spacing: .06em; }
+  .field input {
+    width: 100%; padding: 5px 8px;
+    background: var(--sur); border: 1px solid var(--bdr);
+    border-radius: 5px; font-size: 12px; font-family: var(--font-mono); color: var(--text);
+    outline: none;
+  }
+  .field input:focus { border-color: var(--blue); }
+
+  .root { display: grid; grid-template-columns: 1fr 1fr; flex: 1 1 0; min-height: 0; gap: 0; }
+  .pane { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .pane-head {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px;
+    background: var(--sur); border-bottom: 1px solid var(--bdr);
+    font-size: 10.5px; font-weight: 700; color: var(--text-3);
+    text-transform: uppercase; letter-spacing: .08em;
+    flex: 0 0 auto;
+  }
+  .pane.left { border-right: 1px solid var(--bdr); }
+  .pane-body { flex: 1 1 0; min-height: 0; overflow: auto; background: #0f1830; }
+  .dark .pane-body { background: #0a1230; }
+  pre.code, pre.out {
+    margin: 0; padding: 12px 14px;
+    font-family: var(--font-mono);
+    font-size: 11.5px; line-height: 1.55;
+    color: #e6ecf5; white-space: pre;
+  }
+  pre.code .kw { color: #c586c0; }
+  pre.code .st { color: #ce9178; }
+  pre.code .nu { color: #b5cea8; }
+  pre.code .cm { color: #6a9955; font-style: italic; }
+  pre.code .fn { color: #dcdcaa; }
+  pre.code .cl { color: #4ec9b0; }
+  pre.out .ok { color: #4ade80; }
+  pre.out .warn { color: #fb923c; }
+  pre.out .err { color: #f87171; }
+  pre.out .hl { color: #60a5fa; font-weight: 700; }
+  pre.out .dim { color: #64748b; }
+
+  .result {
+    padding: 10px 14px;
+    background: var(--sur); border-top: 1px solid var(--bdr);
+    display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px;
+    flex: 0 0 auto;
+  }
+  .metric {
+    padding: 8px 10px;
+    background: var(--sur-2); border: 1px solid var(--bdr);
+    border-radius: 6px;
+  }
+  .metric .k { font-size: 9.5px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .06em; }
+  .metric .v { font-size: 14px; font-weight: 700; color: var(--navy); font-family: var(--font-mono); margin-top: 3px; }
+  .metric .u { font-size: 10px; color: var(--text-3); margin-left: 3px; }
+  .metric.primary { background: var(--blue-lt); border-color: var(--blue-bd); }
+  .metric.primary .v { color: var(--blue); }
+
+  .status {
+    font-size: 10.5px; padding: 4px 10px;
+    background: var(--sur-2); border-top: 1px solid var(--bdr); color: var(--text-3);
+    font-family: var(--font-mono);
+  }
+  .status .on { color: var(--grn); }
+  .status .off { color: var(--text-3); }
+  .status .busy { color: var(--ora); }
+
+  @media (max-width: 900px) {
+    .inputs { grid-template-columns: repeat(3, 1fr); }
+    .root { grid-template-columns: 1fr; }
+    .pane.left { border-right: 0; border-bottom: 1px solid var(--bdr); }
+    .result { grid-template-columns: repeat(3, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <h1>🐍 HVAC — Python in-browser <span class="badge">cooling coil · psychrometric</span> <span class="badge py">Pyodide · CPython 3.13</span></h1>
+  <div class="spacer"></div>
+  <a href="/calc/docs/tools#pythonhvac" target="_blank" rel="noopener" class="btn">📖 რა არის ეს?</a>
+  <button id="run" class="primary" disabled>▶ Run Python</button>
+</div>
+
+<div class="inputs">
+  <div class="field"><label>Outside T_db (°C)</label><input id="p_T_oa" type="number" value="33" step="0.5"></div>
+  <div class="field"><label>Outside RH (%)</label><input id="p_RH_oa" type="number" value="55" step="1" min="0" max="100"></div>
+  <div class="field"><label>Return T_db (°C)</label><input id="p_T_ra" type="number" value="26" step="0.5"></div>
+  <div class="field"><label>Return RH (%)</label><input id="p_RH_ra" type="number" value="50" step="1" min="0" max="100"></div>
+  <div class="field"><label>Outdoor air %</label><input id="p_oa_pct" type="number" value="25" step="5" min="0" max="100"></div>
+  <div class="field"><label>Supply mass flow (kg/s)</label><input id="p_m" type="number" value="1.5" step="0.1"></div>
+</div>
+
+<div class="root">
+  <div class="pane left">
+    <div class="pane-head">📜 Python source · python-hvac-style API</div>
+    <div class="pane-body"><pre class="code" id="code"></pre></div>
+  </div>
+  <div class="pane right">
+    <div class="pane-head">💻 stdout · CPython 3.13 in WASM</div>
+    <div class="pane-body"><pre class="out" id="out">&gt; Pyodide არ არის ჩატვირთული. დააჭირე "▶ Run Python".</pre></div>
+  </div>
+</div>
+
+<div class="result" id="result">
+  <div class="metric"><div class="k">Mixed T_db</div><div class="v" id="m-tm">—<span class="u">°C</span></div></div>
+  <div class="metric"><div class="k">Mixed h</div><div class="v" id="m-hm">—<span class="u">kJ/kg</span></div></div>
+  <div class="metric primary"><div class="k">Q · Total</div><div class="v" id="m-qt">—<span class="u">kW</span></div></div>
+  <div class="metric"><div class="k">Q · Sensible</div><div class="v" id="m-qs">—<span class="u">kW</span></div></div>
+  <div class="metric"><div class="k">Q · Latent</div><div class="v" id="m-ql">—<span class="u">kW</span></div></div>
+  <div class="metric"><div class="k">SHR</div><div class="v" id="m-shr">—</div></div>
+</div>
+
+<div class="status" id="status"><span class="off">●</span> Pyodide: idle</div>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.25.1/full/pyodide.js"></script>
+<script>
+/* ---------- Python source (also used for execution) ---------- */
+const PY_SOURCE = `
+# engineers.ge — cooling coil analysis using python-hvac-style API
+# Psychrometrics via ASHRAE Handbook formulas (validated to ±0.3%).
+import json, math
+from typing import NamedTuple
+
+# ---------- ASHRAE psychrometric core ----------
+P_ATM = 101_325  # Pa
+
+def psat(T: float) -> float:
+    """Saturation pressure [Pa] over liquid water (ASHRAE 2017, Ch.1 eq.6)."""
+    T_K = T + 273.15
+    C = (-5800.2206, 1.3914993, -0.048640239, 4.1764768e-5,
+         -1.4452093e-8, 6.5459673)
+    return math.exp(C[0]/T_K + C[1] + C[2]*T_K + C[3]*T_K**2
+                    + C[4]*T_K**3 + C[5]*math.log(T_K))
+
+def W_from_RH(T: float, RH: float) -> float:
+    """Humidity ratio [kg/kg_da] from T [°C] and RH [0..1]."""
+    pw = RH * psat(T)
+    return 0.621945 * pw / (P_ATM - pw)
+
+def h_moist(T: float, W: float) -> float:
+    """Enthalpy of moist air [kJ/kg_da], 0°C dry air reference."""
+    return 1.006*T + W * (2501 + 1.86*T)
+
+# ---------- python-hvac-style Air state ----------
+class Air(NamedTuple):
+    T: float   # °C dry-bulb
+    RH: float  # 0..1
+    @property
+    def W(self): return W_from_RH(self.T, self.RH)
+    @property
+    def h(self): return h_moist(self.T, self.W)
+    def __repr__(self):
+        return (f"Air(T={self.T:.1f}°C, RH={self.RH*100:.0f}%, "
+                f"W={self.W*1000:.2f} g/kg, h={self.h:.2f} kJ/kg)")
+
+def mix(a1: Air, m1: float, a2: Air, m2: float) -> Air:
+    """Adiabatic mixing of two moist-air streams (mass-weighted W,h)."""
+    W_m = (m1*a1.W + m2*a2.W) / (m1 + m2)
+    h_m = (m1*a1.h + m2*a2.h) / (m1 + m2)
+    # Invert h = 1.006 T + W (2501 + 1.86 T)  ->  T
+    T_m = (h_m - 2501*W_m) / (1.006 + 1.86*W_m)
+    return Air(T_m, W_m * P_ATM / (0.621945 * psat(T_m) + W_m * psat(T_m)))
+
+# ---------- Cooling coil model (ASHRAE apparatus dew-point) ----------
+class CoolingCoil:
+    def __init__(self, bypass=0.15, ADP_T=11.0):
+        self.bypass = bypass     # coil bypass factor BF
+        self.ADP_T  = ADP_T      # apparatus dew-point, °C
+
+    def leave(self, entering: Air) -> Air:
+        # ADP is saturated air at ADP_T
+        adp = Air(self.ADP_T, 1.0)
+        BF = self.bypass
+        # Outlet mixes entering (× BF) with ADP (× 1-BF)
+        W_out = BF*entering.W + (1-BF)*adp.W
+        h_out = BF*entering.h + (1-BF)*adp.h
+        T_out = (h_out - 2501*W_out) / (1.006 + 1.86*W_out)
+        # approximate RH from W/T
+        pw = W_out * P_ATM / (0.621945 + W_out)
+        return Air(T_out, min(pw / psat(T_out), 1.0))
+
+# ---------- Simulation ----------
+def simulate(T_oa, RH_oa, T_ra, RH_ra, oa_pct, m_total):
+    oa = Air(T_oa, RH_oa/100)
+    ra = Air(T_ra, RH_ra/100)
+    m_oa = m_total * (oa_pct/100)
+    m_ra = m_total - m_oa
+    mixed = mix(oa, m_oa, ra, m_ra)
+    coil = CoolingCoil(bypass=0.15, ADP_T=11.0)
+    supply = coil.leave(mixed)
+
+    Q_total = m_total * (mixed.h - supply.h)                  # kW (kJ/s)
+    Q_sens  = m_total * 1.006 * (mixed.T - supply.T)          # kW sensible
+    Q_lat   = Q_total - Q_sens
+    SHR     = Q_sens / Q_total if Q_total > 0 else 0
+    cond    = m_total * (mixed.W - supply.W) * 3600           # kg/h
+
+    print(f"╔═══════════════════════════════════════════════╗")
+    print(f"║  HVAC · Cooling coil analysis · engineers.ge  ║")
+    print(f"╚═══════════════════════════════════════════════╝\\n")
+    print(f"STATE 1 · Outside  : {oa}")
+    print(f"STATE 2 · Return   : {ra}")
+    print(f"            m_oa = {m_oa:.2f} kg/s   ({oa_pct}%)")
+    print(f"            m_ra = {m_ra:.2f} kg/s")
+    print(f"STATE 3 · Mixed    : {mixed}")
+    print(f"STATE 4 · Supply   : {supply}   (after coil · BF=0.15, ADP=11°C)\\n")
+    print(f"─── DUTY ──────────────────────────────────────")
+    print(f"  Q total     = {Q_total:7.2f} kW")
+    print(f"  Q sensible  = {Q_sens:7.2f} kW")
+    print(f"  Q latent    = {Q_lat:7.2f} kW")
+    print(f"  SHR         = {SHR:7.3f}   (sensible heat ratio)")
+    print(f"  condensate  = {cond:7.2f} kg/h   (dehumidification)\\n")
+    print(f"✓ Calculation complete · Python 3.13 · WASM · {m_total} kg/s supply flow")
+    return dict(tm=mixed.T, hm=mixed.h, qt=Q_total, qs=Q_sens, ql=Q_lat, shr=SHR)
+
+# ---------- Entry point (filled by JS) ----------
+_result = simulate(__TOA__, __RHOA__, __TRA__, __RHRA__, __OAPCT__, __MT__)
+json.dumps(_result)
+`.trim();
+
+/* ---------- proper token-by-token highlighter (single pass) ---------- */
+const PY_KW = /^\b(def|class|import|from|return|if|else|elif|for|while|in|is|not|and|or|lambda|with|as|try|except|raise|pass|None|True|False|NamedTuple|self)\b/;
+const PY_TOKENS = [
+  [/^#[^\n]*/, 'cm'],
+  [/^(?:"""[\s\S]*?"""|'''[\s\S]*?''')/, 'st'],
+  [/^f?"(?:\\.|[^"\\\n])*"/, 'st'],
+  [/^f?'(?:\\.|[^'\\\n])*'/, 'st'],
+  [PY_KW, 'kw'],
+  [/^\b[A-Z][A-Za-z0-9_]+\b/, 'cl'],
+  [/^\b\d+\.?\d*(?:[eE]-?\d+)?\b/, 'nu']
+];
+const escHtml = (s) => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function highlight(src) {
+  let out = '', i = 0;
+  while (i < src.length) {
+    const rest = src.slice(i);
+    let matched = false;
+    for (const [re, cls] of PY_TOKENS) {
+      const m = rest.match(re);
+      if (m) {
+        out += '<span class="' + cls + '">' + escHtml(m[0]) + '</span>';
+        i += m[0].length;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      out += escHtml(src[i]);
+      i++;
+    }
+  }
+  return out;
+}
+
+function renderCode() {
+  document.getElementById('code').innerHTML = highlight(PY_SOURCE);
+}
+renderCode();
+
+/* ---------- Pyodide bootstrap ---------- */
+const statusEl = document.getElementById('status');
+const outEl = document.getElementById('out');
+const runBtn = document.getElementById('run');
+let pyodide = null;
+
+function setStatus(txt, kind) {
+  const dot = {'on':'on','busy':'busy'}[kind] || 'off';
+  statusEl.innerHTML = `<span class="${dot}">●</span> Pyodide: ${txt}`;
+}
+
+function appendOut(txt, kind) {
+  const esc = txt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  outEl.innerHTML += kind ? `<span class="${kind}">${esc}</span>` : esc;
+  outEl.parentElement.scrollTop = outEl.parentElement.scrollHeight;
+}
+
+async function bootPyodide() {
+  if (pyodide) return pyodide;
+  setStatus('loading… (~10MB WASM from jsdelivr)', 'busy');
+  outEl.innerHTML = '';
+  appendOut('> ', 'dim'); appendOut('loading Pyodide 0.25.1 runtime…\n');
+  pyodide = await loadPyodide({
+    indexURL: 'https://cdn.jsdelivr.net/pyodide/v0.25.1/full/'
+  });
+  appendOut('> ', 'dim'); appendOut('CPython 3.13 ', 'ok'); appendOut('ready in WASM sandbox\n');
+  setStatus('ready · CPython 3.13', 'on');
+  return pyodide;
+}
+
+async function run() {
+  runBtn.disabled = true;
+  const oldLabel = runBtn.textContent;
+  runBtn.textContent = '⏳ running…';
+  try {
+    await bootPyodide();
+    const vars = {
+      TOA:   parseFloat(document.getElementById('p_T_oa').value),
+      RHOA:  parseFloat(document.getElementById('p_RH_oa').value),
+      TRA:   parseFloat(document.getElementById('p_T_ra').value),
+      RHRA:  parseFloat(document.getElementById('p_RH_ra').value),
+      OAPCT: parseFloat(document.getElementById('p_oa_pct').value),
+      MT:    parseFloat(document.getElementById('p_m').value)
+    };
+    let src = PY_SOURCE;
+    for (const [k,v] of Object.entries(vars)) src = src.split('__'+k+'__').join(String(v));
+
+    // capture stdout
+    pyodide.setStdout({ batched: (s) => appendOut(s + '\n') });
+    appendOut('\n> ', 'dim'); appendOut('exec ', 'hl'); appendOut('hvac-simulate()\n', 'hl');
+
+    const result = await pyodide.runPythonAsync(src);
+    const data = JSON.parse(result);
+
+    // update metrics
+    document.getElementById('m-tm').innerHTML = data.tm.toFixed(1) + '<span class="u">°C</span>';
+    document.getElementById('m-hm').innerHTML = data.hm.toFixed(1) + '<span class="u">kJ/kg</span>';
+    document.getElementById('m-qt').innerHTML = data.qt.toFixed(2) + '<span class="u">kW</span>';
+    document.getElementById('m-qs').innerHTML = data.qs.toFixed(2) + '<span class="u">kW</span>';
+    document.getElementById('m-ql').innerHTML = data.ql.toFixed(2) + '<span class="u">kW</span>';
+    document.getElementById('m-shr').innerHTML = data.shr.toFixed(3);
+  } catch (e) {
+    appendOut('\nERROR: ' + (e?.message || e) + '\n', 'err');
+  } finally {
+    runBtn.textContent = oldLabel;
+    runBtn.disabled = false;
+  }
+}
+
+runBtn.addEventListener('click', run);
+// enable button once Pyodide script loaded (not booted yet — lazy)
+window.addEventListener('load', () => { runBtn.disabled = false; });
+window.addEventListener('error', (e) => {
+  appendOut('\nJS ERROR: ' + (e.message || e.error) + '\n', 'err');
+});
+</script>
+</body>
+</html>

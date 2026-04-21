@@ -1,10 +1,16 @@
 'use client';
 
 import {useMemo} from 'react';
-import {formatGel, formatOccupiedUntil, type HeroAdSlot} from '@/lib/hero-ads';
+import {formatGel, formatOccupiedUntil, type HeroAdSlot, type HeroSlotKey} from '@/lib/hero-ads';
 import {BannersShell} from './shell';
 
-export function BannersTable({slots}: {slots: HeroAdSlot[]}) {
+export function BannersTable({
+  slots,
+  paidUntilBySlot = {}
+}: {
+  slots: HeroAdSlot[];
+  paidUntilBySlot?: Partial<Record<HeroSlotKey, string | null>>;
+}) {
   const adSlots = useMemo(() => slots.filter((s) => s.is_ad_slot), [slots]);
 
   return (
@@ -25,14 +31,23 @@ export function BannersTable({slots}: {slots: HeroAdSlot[]}) {
                 <Th>ზომა</Th>
                 <Th>ტიპი</Th>
                 <Th>კლიენტი</Th>
+                <Th>კონტაქტი</Th>
+                <Th>Promo</Th>
                 <Th align="right">ფასი / თვე</Th>
                 <Th>ვადა</Th>
+                <Th>Paid until</Th>
                 <Th>სტატუსი</Th>
               </tr>
             </thead>
             <tbody>
               {slots.map((slot) => {
                 const busy = slot.is_ad_slot && !!slot.occupied_until;
+                const paidUntil = paidUntilBySlot[slot.slot_key] ?? null;
+                const covered =
+                  slot.is_ad_slot &&
+                  !!slot.occupied_until &&
+                  !!paidUntil &&
+                  paidUntil >= slot.occupied_until;
                 return (
                   <tr
                     key={slot.slot_key}
@@ -54,11 +69,36 @@ export function BannersTable({slots}: {slots: HeroAdSlot[]}) {
                       />
                     </Td>
                     <Td>{slot.client_name || '—'}</Td>
+                    <Td className="font-mono text-[11px]">{slot.contact_phone || '—'}</Td>
+                    <Td>
+                      {slot.promo_badge ? (
+                        <Chip tone="amber" label={slot.promo_badge} />
+                      ) : (
+                        <Chip tone="neutral" label="—" />
+                      )}
+                    </Td>
                     <Td align="right" className="font-mono">
                       {slot.price_gel > 0 ? `${formatGel(slot.price_gel)} ₾` : '—'}
                     </Td>
                     <Td className="font-mono text-[11px]">
                       {formatOccupiedUntil(slot.occupied_until)}
+                    </Td>
+                    <Td className="font-mono text-[11px]">
+                      {slot.is_ad_slot ? (
+                        paidUntil ? (
+                          <div className="space-y-1">
+                            <div>{formatOccupiedUntil(paidUntil)}</div>
+                            <Chip
+                              tone={covered ? 'green' : 'amber'}
+                              label={covered ? 'ფარავს' : 'აკლია'}
+                            />
+                          </div>
+                        ) : (
+                          <Chip tone="neutral" label="—" />
+                        )
+                      ) : (
+                        <Chip tone="neutral" label="—" />
+                      )}
                     </Td>
                     <Td>
                       {slot.is_ad_slot ? (

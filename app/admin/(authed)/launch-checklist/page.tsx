@@ -119,6 +119,26 @@ export default async function LaunchChecklistPage() {
           howTo: 'ADMIN_PASS_HASH-ის გენერაცია: `node -e "require(\'bcryptjs\').hash(\'YOUR_PASS\',10).then(console.log)"`. Vercel env-ში შეინახე.'
         },
         {
+          label: 'ADMIN_RECOVERY_EMAIL',
+          status: envStatus('ADMIN_RECOVERY_EMAIL'),
+          detail:
+            'ერთადერთი მისამართი რომელიც `/admin/forgot`-ის ბმულებს იღებს. საჭიროებს RESEND_API_KEY-ს და VERCEL_TOKEN/VERCEL_PROJECT_ID-ს.',
+          howTo:
+            'Vercel → Env Variables → Production: `ADMIN_RECOVERY_EMAIL=your@email.com`.'
+        },
+        {
+          label: 'VERCEL_TOKEN + VERCEL_PROJECT_ID (+optional TEAM_ID, DEPLOY_HOOK_URL)',
+          status:
+            envStatus('VERCEL_TOKEN') === 'done' &&
+            envStatus('VERCEL_PROJECT_ID') === 'done'
+              ? 'done'
+              : 'pending',
+          detail:
+            'საჭიროა admin პაროლის შეცვლისთვის (`/admin/password`) და აღდგენისთვის (`/admin/reset`) — rotate-ს Vercel env API-ზე.',
+          howTo:
+            'Token: https://vercel.com/account/tokens (scope: Full Account). Project ID: Vercel → Settings → General. Optional DEPLOY_HOOK_URL triggers auto-redeploy after rotation.'
+        },
+        {
           label: 'NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY',
           status:
             envStatus('NEXT_PUBLIC_SUPABASE_URL') === 'done' &&

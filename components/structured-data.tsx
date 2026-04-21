@@ -67,7 +67,7 @@ export function homeStructuredData(): JsonLd[] {
         'Parking CO + smoke extract',
         'CAD გეგმის რედაქტორი',
         'Building composer 3D',
-        'IFC/BIM viewer'
+        'IFC viewer'
       ],
       inLanguage: 'ka-GE'
     }

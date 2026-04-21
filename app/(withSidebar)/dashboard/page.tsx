@@ -17,6 +17,7 @@ import {
   Tag
 } from 'lucide-react';
 import {Container} from '@/components/container';
+import {DashboardProjectsPanel} from '@/components/dashboard-projects-panel';
 import {CALCULATORS, getCalc} from '@/lib/calculators';
 
 export const metadata: Metadata = {
@@ -151,6 +152,8 @@ export default function DashboardPage() {
           })}
         </div>
       </section>
+
+      <DashboardProjectsPanel />
 
       <section className="mb-8">
         <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wider text-text-3 font-mono">

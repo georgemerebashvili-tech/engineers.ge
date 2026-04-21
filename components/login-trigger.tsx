@@ -353,11 +353,11 @@ function LoginModal({onClose}: {onClose: () => void}) {
           )}
         </div>
 
-        <div className="border-t border-bdr px-5 py-3">
+        <div className="flex justify-center border-t border-bdr px-5 py-3">
           <button
             type="submit"
             disabled={pending || !email.trim() || !password}
-            className="flex h-10 w-full items-center justify-center gap-1.5 rounded-md bg-blue text-[13px] font-semibold text-white transition-colors hover:bg-navy-2 disabled:opacity-50"
+            className="inline-flex h-10 items-center justify-center gap-1.5 rounded-md bg-blue px-6 text-[13px] font-semibold text-white transition-colors hover:bg-navy-2 disabled:opacity-50"
           >
             <LogIn size={14} />
             {pending ? 'მიმდინარეობს…' : 'შესვლა'}

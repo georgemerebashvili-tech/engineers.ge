@@ -170,9 +170,9 @@
 <header class="bc-top">
   <h1>🏢 შენობის აღმშენებლობა</h1>
   <div class="sep"></div>
-  <label>პროექტი <input type="text" id="inp-name" value="ახალი შენობა" style="width:160px"></label>
+  <label><span id="txt-bc-name">პროექტი</span> <input type="text" id="inp-name" value="ახალი შენობა" style="width:160px"></label>
   <div class="sep"></div>
-  <label>სტანდ. სიმაღლე <input type="number" id="inp-floor-h" min="2.5" max="6" step="0.1" value="3.2" style="width:56px"> მ</label>
+  <label><span id="txt-bc-floor-h">სტანდ. სიმაღლე</span> <input type="number" id="inp-floor-h" min="2.5" max="6" step="0.1" value="3.2" style="width:56px"> მ</label>
   <div class="sep"></div>
   <span style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--text-3);font-family:var(--font-mono)">
     <span style="color:var(--text-2)">📁</span>
@@ -1615,6 +1615,137 @@ function updatePIP() { if (_pip) _pip.update(); }
   $('#inp-name').value = state.name;
   $('#inp-floor-h').value = state.floorH;
 })();
+
+if (window.engCalcI18n) {
+  window.engCalcI18n.apply({
+    ka: {title: 'შენობის აღმშენებლობა — engineers.ge'},
+    en: {
+      title: 'Building Composer — engineers.ge',
+      selectors: {
+        '.bc-top h1': {text: '🏢 Building Composer'},
+        '#txt-bc-name': {text: 'Project'},
+        '#txt-bc-floor-h': {text: 'Std. height'},
+        '#btn-save-as': {text: '💾 Save'},
+        '#btn-rename': {text: '✎ Rename'},
+        '#btn-refresh': {text: '↻ Reload', title: 'Reload wall-editor data'},
+        '#btn-wall-editor': {text: '📐 Plan'},
+        '#btn-import': {text: '⬆ Import JSON'},
+        '#btn-export': {text: '⬇ Export JSON'},
+        '#btn-print': {text: '🖨 PDF'},
+        '#btn-gate': {text: '🗂 Projects'},
+        '#btn-import-wall': {text: '+ from wall-editor'},
+        '#btn-blank': {text: '+ Blank'},
+        '#btn-copy': {text: 'Duplicate'},
+        '#btn-add-stair': {text: '+ 🪜 Stair'},
+        '#btn-add-elevator': {text: '+ 🛗 Elevator'},
+        '#btn-add-opening': {text: '+ 🕳 Opening'},
+        '#btn-detect-shafts': {text: '⚡ Auto'},
+        '.bc-empty b': {text: 'Empty'},
+        '.bc-empty span': {text: 'Add a floor from the left or import from wall-editor'}
+      }
+    },
+    ru: {
+      title: 'Сборка здания — engineers.ge',
+      selectors: {
+        '.bc-top h1': {text: '🏢 Сборка здания'},
+        '#txt-bc-name': {text: 'Проект'},
+        '#txt-bc-floor-h': {text: 'Станд. высота'},
+        '#btn-save-as': {text: '💾 Сохранить'},
+        '#btn-rename': {text: '✎ Имя'},
+        '#btn-refresh': {text: '↻ Обновить'},
+        '#btn-wall-editor': {text: '📐 План'},
+        '#btn-import': {text: '⬆ Импорт JSON'},
+        '#btn-export': {text: '⬇ Экспорт JSON'},
+        '#btn-print': {text: '🖨 PDF'},
+        '#btn-gate': {text: '🗂 Проекты'},
+        '#btn-import-wall': {text: '+ из wall-editor'},
+        '#btn-blank': {text: '+ Пустой'},
+        '#btn-copy': {text: 'Дубль'},
+        '#btn-add-stair': {text: '+ 🪜 Лестница'},
+        '#btn-add-elevator': {text: '+ 🛗 Лифт'},
+        '#btn-add-opening': {text: '+ 🕳 Проем'},
+        '#btn-detect-shafts': {text: '⚡ Авто'},
+        '.bc-empty b': {text: 'Пусто'},
+        '.bc-empty span': {text: 'Добавь этаж слева или импортируй из wall-editor'}
+      }
+    },
+    tr: {
+      title: 'Bina Birlestirici — engineers.ge',
+      selectors: {
+        '.bc-top h1': {text: '🏢 Bina Birlestirici'},
+        '#txt-bc-name': {text: 'Proje'},
+        '#txt-bc-floor-h': {text: 'Std. yukseklik'},
+        '#btn-save-as': {text: '💾 Kaydet'},
+        '#btn-rename': {text: '✎ Ad'},
+        '#btn-refresh': {text: '↻ Yenile'},
+        '#btn-wall-editor': {text: '📐 Plan'},
+        '#btn-import': {text: '⬆ JSON al'},
+        '#btn-export': {text: '⬇ JSON dışa aktar'},
+        '#btn-print': {text: '🖨 PDF'},
+        '#btn-gate': {text: '🗂 Projeler'},
+        '#btn-import-wall': {text: '+ wall-editor\'den'},
+        '#btn-blank': {text: '+ Bos'},
+        '#btn-copy': {text: 'Kopya'},
+        '#btn-add-stair': {text: '+ 🪜 Merdiven'},
+        '#btn-add-elevator': {text: '+ 🛗 Asansor'},
+        '#btn-add-opening': {text: '+ 🕳 Bosluk'},
+        '#btn-detect-shafts': {text: '⚡ Otomatik'},
+        '.bc-empty b': {text: 'Bos'},
+        '.bc-empty span': {text: 'Soldan kat ekle veya wall-editor\'den al'}
+      }
+    },
+    az: {
+      title: 'Bina Composer — engineers.ge',
+      selectors: {
+        '.bc-top h1': {text: '🏢 Bina Composer'},
+        '#txt-bc-name': {text: 'Layihə'},
+        '#txt-bc-floor-h': {text: 'Standart hündürlük'},
+        '#btn-save-as': {text: '💾 Saxla'},
+        '#btn-rename': {text: '✎ Ad'},
+        '#btn-refresh': {text: '↻ Yenilə'},
+        '#btn-wall-editor': {text: '📐 Plan'},
+        '#btn-import': {text: '⬆ JSON idxal et'},
+        '#btn-export': {text: '⬇ JSON ixrac et'},
+        '#btn-print': {text: '🖨 PDF'},
+        '#btn-gate': {text: '🗂 Layihələr'},
+        '#btn-import-wall': {text: '+ wall-editor-dan'},
+        '#btn-blank': {text: '+ Bos'},
+        '#btn-copy': {text: 'Dublikat'},
+        '#btn-add-stair': {text: '+ 🪜 Pilləkən'},
+        '#btn-add-elevator': {text: '+ 🛗 Lift'},
+        '#btn-add-opening': {text: '+ 🕳 Aciqlıq'},
+        '#btn-detect-shafts': {text: '⚡ Avto'},
+        '.bc-empty b': {text: 'Bosdur'},
+        '.bc-empty span': {text: 'Soldan mərtəbə əlavə et və ya wall-editor-dan gətir'}
+      }
+    },
+    hy: {
+      title: 'Շենքի Կոմպոզեր — engineers.ge',
+      selectors: {
+        '.bc-top h1': {text: '🏢 Շենքի կոմպոզեր'},
+        '#txt-bc-name': {text: 'Նախագիծ'},
+        '#txt-bc-floor-h': {text: 'Ստանդ. բարձրություն'},
+        '#btn-save-as': {text: '💾 Պահել'},
+        '#btn-rename': {text: '✎ Անուն'},
+        '#btn-refresh': {text: '↻ Թարմացնել'},
+        '#btn-wall-editor': {text: '📐 Պլան'},
+        '#btn-import': {text: '⬆ Ներմուծել JSON'},
+        '#btn-export': {text: '⬇ Արտահանել JSON'},
+        '#btn-print': {text: '🖨 PDF'},
+        '#btn-gate': {text: '🗂 Նախագծեր'},
+        '#btn-import-wall': {text: '+ wall-editor-ից'},
+        '#btn-blank': {text: '+ Դատարկ'},
+        '#btn-copy': {text: 'Կրկնօրինակ'},
+        '#btn-add-stair': {text: '+ 🪜 Սանդուղք'},
+        '#btn-add-elevator': {text: '+ 🛗 Վերելակ'},
+        '#btn-add-opening': {text: '+ 🕳 Բացվածք'},
+        '#btn-detect-shafts': {text: '⚡ Ավտո'},
+        '.bc-empty b': {text: 'Դատարկ է'},
+        '.bc-empty span': {text: 'Ավելացրու հարկ ձախից կամ ներմուծիր wall-editor-ից'}
+      }
+    }
+  });
+}
 </script>
 </body>
 </html>

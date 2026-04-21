@@ -2,13 +2,15 @@ import {AdminPageHeader, AdminSection} from '@/components/admin-page-header';
 import {
   getSessions,
   getRecentEvents,
+  getHeartbeatStats,
   computeStats,
   formatDuration,
   formatHours,
   type ClaudeSessionRow,
-  type ClaudeSessionEvent
+  type ClaudeSessionEvent,
+  type HeartbeatStats
 } from '@/lib/claude-sessions';
-import {Bot, Clock, Activity, Zap, CalendarDays, Hash} from 'lucide-react';
+import {Bot, Clock, Activity, Zap, CalendarDays, Hash, Heart} from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -17,9 +19,14 @@ export const metadata = {title: 'Claude Sessions · Admin · engineers.ge'};
 export default async function ClaudeSessionsPage() {
   let sessions: ClaudeSessionRow[] = [];
   let events: ClaudeSessionEvent[] = [];
+  let heartbeats: HeartbeatStats = {total: 0, last24h: 0, last7d: 0, activeLastHour: 0};
   let error: string | null = null;
   try {
-    [sessions, events] = await Promise.all([getSessions(500), getRecentEvents(50)]);
+    [sessions, events, heartbeats] = await Promise.all([
+      getSessions(500),
+      getRecentEvents(50),
+      getHeartbeatStats().catch(() => ({total: 0, last24h: 0, last7d: 0, activeLastHour: 0}))
+    ]);
   } catch (e) {
     error = e instanceof Error ? e.message : 'query failed';
   }
@@ -89,6 +96,33 @@ export default async function ClaudeSessionsPage() {
             label="აქტიური ახლა"
             value={String(stats.activeSessions)}
             hint="start მიღებულია, end არა"
+          />
+        </div>
+
+        <div className="mt-3 grid gap-3 md:grid-cols-4">
+          <StatTile
+            icon={<Heart size={14} />}
+            label="Heartbeat სულ"
+            value={heartbeats.total.toLocaleString()}
+            hint="ყოველ 60წმ-ში → launchd agent"
+          />
+          <StatTile
+            icon={<Heart size={14} />}
+            label="24სთ heartbeats"
+            value={heartbeats.last24h.toLocaleString()}
+            hint={`≈ ${Math.round((heartbeats.last24h * 60) / 3600)}სთ active`}
+          />
+          <StatTile
+            icon={<Heart size={14} />}
+            label="7 დღე heartbeats"
+            value={heartbeats.last7d.toLocaleString()}
+            hint={`≈ ${Math.round((heartbeats.last7d * 60) / 3600)}სთ active`}
+          />
+          <StatTile
+            icon={<Zap size={14} />}
+            label="ახლა active"
+            value={String(heartbeats.activeLastHour)}
+            hint="unique session-ები ბოლო 1სთ-ში"
           />
         </div>
 
@@ -282,17 +316,18 @@ function StatTile({
   );
 }
 
-function KindBadge({kind}: {kind: 'start' | 'end' | 'stop'}) {
+function KindBadge({kind}: {kind: 'start' | 'end' | 'stop' | 'heartbeat'}) {
   const map = {
     start: 'border-grn-bd bg-grn-lt text-grn',
     end: 'border-bdr bg-sur-2 text-text-2',
-    stop: 'border-bdr bg-sur-2 text-text-2'
+    stop: 'border-bdr bg-sur-2 text-text-2',
+    heartbeat: 'border-blue-bd bg-blue-lt text-blue'
   } as const;
   return (
     <span
       className={`rounded-full border px-2 py-0.5 font-mono text-[9px] font-semibold ${map[kind]}`}
     >
-      {kind}
+      {kind === 'heartbeat' ? '♥ beat' : kind}
     </span>
   );
 }

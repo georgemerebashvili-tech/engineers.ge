@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HVAC კალკულატორი · EN 12831</title>
 <script src="/calc/_theme-sync.js"></script>
+<script src="/calc/_i18n.js"></script>
+<script src="/calc/_project-bridge.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -42,9 +44,14 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 .tab-nav{display:flex;align-items:stretch;border-bottom:1px solid var(--bdr)}
 .tab-btn{padding:0 20px;height:42px;border:none;background:none;cursor:pointer;
   font-family:var(--sans);font-size:12px;font-weight:600;color:var(--text3);
-  border-bottom:2px solid transparent;transition:all .15s;display:flex;align-items:center;gap:6px}
+  border-bottom:2px solid transparent;transition:all .15s;display:flex;align-items:center;gap:8px}
 .tab-btn:hover{color:var(--blue)}
 .tab-btn.active{color:var(--blue);border-bottom-color:var(--blue);background:var(--blue-lt)}
+.tab-btn svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.tab-btn .tab-dot{display:inline-flex;gap:3px;align-items:center}
+.tab-btn .tab-dot i{width:7px;height:7px;border-radius:50%;display:block}
+.tab-btn .tab-dot .d-hot{background:#e04a3d}
+.tab-btn .tab-dot .d-cold{background:#2f7fd8}
 .tab-sep{flex:1}
 
 /* totals inside topbar — shown only for tab1 */
@@ -1046,6 +1053,167 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
 .tw-win-del:hover{border-color:#d05050;color:#d05050;background:#fff5f5}
 .tw-win-del[disabled]{opacity:.2;cursor:not-allowed;pointer-events:none}
 .tw-win-used{font-size:8px;font-weight:700;padding:1px 5px;border-radius:8px;background:var(--blue-lt);color:var(--blue);border:1px solid var(--bdr);flex-shrink:0}
+
+/* ══ DARK MODE POLISH ══ */
+.dark .topbar,
+.dark .eq-topbar,
+.dark .vs-topbar,
+.dark .modal,
+.dark .asw-card,
+.dark .cl-box,
+.dark .an-hdr,
+.dark .scard,
+.dark .chcard,
+.dark .rescard,
+.dark .an-hdr-card,
+.dark #hl-nav-panel,
+.dark #bld-nav-panel{
+  background:var(--sur);
+}
+.dark .pi,
+.dark .uv,
+.dark .sv2,
+.dark .asw-input,
+.dark .asw-file,
+.dark .cin,
+.dark .fin,
+.dark .cg-inp,
+.dark .rate-inp,
+.dark .bal-pa-inp,
+.dark .tw-win-u,
+.dark table.mt input[type=number],
+.dark table.mt input[type=text],
+.dark table.mt select,
+.dark table.eq-tbl input[type=number],
+.dark table.eq-tbl input[type=text],
+.dark table.eq-tbl select,
+.dark table.fcu-db input,
+.dark table.fcu-db select,
+.dark table.vt input[type=number],
+.dark table.vt input[type=text],
+.dark table.vt select,
+.dark table.wpt input[type=number],
+.dark table.wpt input[type=text],
+.dark table.wpt select,
+.dark .ctp-modal input,
+.dark .ctp-modal select,
+.dark #hl-nav-search,
+.dark #bld-nav-search{
+  background:var(--sur);
+  color:var(--text);
+}
+.dark .rc-h,
+.dark .asw-head,
+.dark .cl-summary,
+.dark .cg-cond-row,
+.dark .formula-box,
+.dark .panel-section.full,
+.dark .hl-empty-grp{
+  background:var(--sur2);
+}
+.dark .rc-h,
+.dark .fc-head,
+.dark .hl-floor-hdr,
+.dark .mcat{
+  background:linear-gradient(90deg,#15294a,#1b2638);
+}
+.dark .rc-h:hover,
+.dark .fc-head:hover,
+.dark .hl-floor-hdr:hover,
+.dark .mcat:hover,
+.dark .cg-head:hover{
+  background:linear-gradient(90deg,#1a3358,#22324c);
+}
+.dark .rc-name,
+.dark .asw-head strong,
+.dark .modal-head h2,
+.dark .an-title,
+.dark .scard-v,
+.dark .vs-title,
+.dark .fc-name-inp,
+.dark .hl-name,
+.dark .tw-win-name,
+.dark .cg-name{
+  color:var(--text);
+}
+.dark table.mt thead tr.gr th.gh,
+.dark table.vt thead tr.vgr th.vgh{
+  background:var(--ora-lt);
+}
+.dark table.mt thead tr.gr th.gc,
+.dark table.vt thead tr.vgr th.vgc{
+  background:var(--blue-lt);
+}
+.dark table.mt tbody tr.tr-sum td,
+.dark table.eq-tbl tr.floor-hdr td,
+.dark table.vt tbody tr.vt-sum td{
+  background:var(--sur2);
+}
+.dark .btn-add-r,
+.dark .btn-add-fl,
+.dark .empty-state,
+.dark .litem{
+  background:var(--sur);
+}
+.dark .litem-h:hover,
+.dark .mmat:hover,
+.dark .tw-win-item:hover{
+  background:var(--blue-lt);
+}
+.dark .panel-inner{
+  background:#1a2331;
+}
+.dark .panel-section{
+  border-right-color:var(--bdr);
+}
+.dark .formula-box{
+  border-color:var(--bdr2);
+  color:var(--text2);
+}
+.dark .q-result{
+  background:linear-gradient(90deg,var(--blue-lt),#1c3558);
+}
+.dark .q-result.exhaust{
+  background:linear-gradient(90deg,var(--ora-lt),#2d2016);
+}
+.dark .wbox.mold{
+  color:#f5bd86;
+}
+.dark .wbox.cond{
+  color:#f1b0b0;
+}
+.dark #hl-nav-head,
+.dark #hl-nav-stats,
+.dark #bld-nav-head,
+.dark #bld-nav-stats,
+.dark .hlt-rooms,
+.dark .bnt-rooms{
+  background:var(--sur2);
+  border-color:var(--bdr);
+}
+.dark .hlt-floor:hover,
+.dark .bnt-floor:hover,
+.dark .bnt-room:hover{
+  background:var(--blue-lt);
+}
+.dark .hlt-name,
+.dark .bnt-floor-name,
+.dark .bnt-room-name,
+.dark .hl-manual-hdr{
+  color:var(--text);
+}
+.dark .hlt-mark,
+.dark .hlt-cnt,
+.dark .bnt-floor-mark,
+.dark .bnt-floor-cnt{
+  background:var(--blue-lt);
+  color:var(--blue);
+}
+.dark .modal,
+.dark .asw-card,
+.dark .cl-box{
+  box-shadow:0 24px 72px rgba(0,0,0,.42);
+}
 </style>
 </head>
 <body>
@@ -1054,10 +1222,10 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
 <div class="topbar">
   <!-- tab nav -->
   <div class="tab-nav">
-    <button class="tab-btn active" id="tbn0" onclick="switchTab(0)">🏢 შენობის შექმნა</button>
-    <button class="tab-btn" id="tbn1" onclick="switchTab(1)">🔴🔵 თბოდანაკარგი</button>
-    <button class="tab-btn" id="tbn2" onclick="switchTab(2)">⚙ მოწყობილობები</button>
-    <button class="tab-btn" id="tbn3" onclick="switchTab(3)">📐 თბოგადაცემის ანგარიში</button>
+    <button class="tab-btn active" id="tbn0" onclick="switchTab(0)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V6a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v15"/><path d="M15 10h4a1 1 0 0 1 1 1v10"/><path d="M3 21h18"/><path d="M7 9h1M7 13h1M7 17h1M11 9h1M11 13h1M11 17h1M17 14h1M17 18h1"/></svg>შენობის შექმნა</button>
+    <button class="tab-btn" id="tbn1" onclick="switchTab(1)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 14.76V4a2 2 0 1 0-4 0v10.76a4 4 0 1 0 4 0z"/><path d="M12 7v8"/></svg>თბოდანაკარგები</button>
+    <button class="tab-btn" id="tbn2" onclick="switchTab(2)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.55V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.04-1.55V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9"/></svg>მოწყობილობები</button>
+    <button class="tab-btn" id="tbn3" onclick="switchTab(3)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 10h4M4 14h4M4 18h3M10 4v16M14 4v4M14 12v2M14 18v2M18 4v4"/></svg>თბოგადაცემის ანგარიში</button>
     <div class="tab-sep"></div>
     <!-- ══ SAVE / LOAD ══ -->
     <div style="display:flex;align-items:center;gap:6px;padding:0 14px;border-left:1px solid var(--bdr)">
@@ -1766,6 +1934,71 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
 </div>
 
 <script>
+window.engCalcI18n.apply({
+  ka: {
+    title: 'HVAC კალკულატორი · EN 12831'
+  },
+  en: {
+    title: 'HVAC Calculator · EN 12831',
+    selectors: {
+      '#tbn0': {text: '🏢 Building setup'},
+      '#tbn1': {text: '🔴🔵 Heat loss'},
+      '#tbn2': {text: '⚙ Equipment'},
+      '#tbn3': {text: '📐 Thermal report'},
+      'button[onclick="saveProject()"]': {text: '💾 Save', title: 'Save project as JSON'},
+      'button[onclick="document.getElementById(\'loadFileInput\').click()"]': {text: '📂 Open', title: 'Load project from JSON'},
+      'button[onclick="generateEPC()"]': {text: '📄 EPC', title: 'EPC indicator — GEECB style'}
+    }
+  },
+  ru: {
+    title: 'HVAC калькулятор · EN 12831',
+    selectors: {
+      '#tbn0': {text: '🏢 Конфигурация здания'},
+      '#tbn1': {text: '🔴🔵 Теплопотери'},
+      '#tbn2': {text: '⚙ Оборудование'},
+      '#tbn3': {text: '📐 Теплотехнический отчёт'},
+      'button[onclick="saveProject()"]': {text: '💾 Сохранить', title: 'Сохранить проект в JSON'},
+      'button[onclick="document.getElementById(\'loadFileInput\').click()"]': {text: '📂 Открыть', title: 'Загрузить проект из JSON'},
+      'button[onclick="generateEPC()"]': {text: '📄 EPC', title: 'Показатель EPC — стиль GEECB'}
+    }
+  },
+  tr: {
+    title: 'HVAC Hesaplayıcı · EN 12831',
+    selectors: {
+      '#tbn0': {text: '🏢 Bina kurulumu'},
+      '#tbn1': {text: '🔴🔵 Isı kaybı'},
+      '#tbn2': {text: '⚙ Ekipman'},
+      '#tbn3': {text: '📐 Isıl rapor'},
+      'button[onclick="saveProject()"]': {text: '💾 Kaydet', title: 'Projeyi JSON olarak kaydet'},
+      'button[onclick="document.getElementById(\'loadFileInput\').click()"]': {text: '📂 Aç', title: 'Projeyi JSON dosyasından yükle'},
+      'button[onclick="generateEPC()"]': {text: '📄 EPC', title: 'EPC göstergesi — GEECB stili'}
+    }
+  },
+  az: {
+    title: 'HVAC Kalkulyatoru · EN 12831',
+    selectors: {
+      '#tbn0': {text: '🏢 Bina quruluşu'},
+      '#tbn1': {text: '🔴🔵 İstilik itkisi'},
+      '#tbn2': {text: '⚙ Avadanlıq'},
+      '#tbn3': {text: '📐 Termik hesabat'},
+      'button[onclick="saveProject()"]': {text: '💾 Yadda saxla', title: 'Layihəni JSON kimi saxla'},
+      'button[onclick="document.getElementById(\'loadFileInput\').click()"]': {text: '📂 Aç', title: 'Layihəni JSON faylından yüklə'},
+      'button[onclick="generateEPC()"]': {text: '📄 EPC', title: 'EPC göstəricisi — GEECB stili'}
+    }
+  },
+  hy: {
+    title: 'HVAC հաշվիչ · EN 12831',
+    selectors: {
+      '#tbn0': {text: '🏢 Շենքի կարգավորում'},
+      '#tbn1': {text: '🔴🔵 Ջերմային կորուստ'},
+      '#tbn2': {text: '⚙ Սարքավորում'},
+      '#tbn3': {text: '📐 Ջերմային հաշվետվություն'},
+      'button[onclick="saveProject()"]': {text: '💾 Պահպանել', title: 'Պահպանել նախագիծը որպես JSON'},
+      'button[onclick="document.getElementById(\'loadFileInput\').click()"]': {text: '📂 Բացել', title: 'Բեռնել նախագիծը JSON ֆայլից'},
+      'button[onclick="generateEPC()"]': {text: '📄 EPC', title: 'EPC ցուցանիշ — GEECB ոճ'}
+    }
+  }
+});
 // ══════════════════════════════════════════════════
 // FCU DATABASE (Midea 4-pipe from Excel)
 // ══════════════════════════════════════════════════
@@ -2496,6 +2729,7 @@ function _migrate(d) {
 
 // საჯარო alias — task-ის პირობის მიხედვით (loadProject-ში გამოიყენება)
 const migrateProject = _migrate;
+let _bridge = null;
 
 // ══════════════════════════════════════════════════
 // UNSAVED CHANGES INDICATOR
@@ -2531,6 +2765,7 @@ let _lsDebTimer = null;
 function _lsSaveDebounced() {
   clearTimeout(_lsDebTimer);
   _lsDebTimer = setTimeout(_lsSave, 3000);
+  if (_bridge) _bridge.save();
 }
 
 function _lsSave() {
@@ -2771,6 +3006,12 @@ function _applyFullLoad(d) {
 }
 
 function saveProject(){
+  if (_bridge && _bridge.projectId) {
+    _bridge.exportJSON();
+    markClean();
+    _showSaveMsg('✔ ექსპორტი','var(--grn)');
+    return;
+  }
   try{
     const projectName=document.title||'HVAC';
     const payload={
@@ -2810,6 +3051,22 @@ function saveProject(){
 
 function loadProject(input){
   const file=input.files[0]; if(!file) return;
+  if (_bridge) {
+    _bridge.importJSON(file)
+      .then(() => {
+        markClean();
+        _showSaveMsg('✔ ჩაიტვირთა','var(--grn)');
+      })
+      .catch(err => {
+        console.error('loadProject error:', err);
+        _showSaveMsg('✘ ფაილი არასწორია','var(--red)');
+        alert('ჩატვირთვის შეცდომა: ' + err.message);
+      })
+      .finally(() => {
+        input.value='';
+      });
+    return;
+  }
   const reader=new FileReader();
   reader.onload=function(e){
     try{
@@ -5252,6 +5509,80 @@ function initAll(){
   }, 350);
 }
 initAll();
+
+function _projectSnapshot() {
+  return {
+    _schemaVersion: SCHEMA_VERSION,
+    _version: 2,
+    _app: 'HVAC-Calculator',
+    _savedAt: new Date().toISOString(),
+    projectName: AS.projectName,
+    ..._getSnapshot()
+  };
+}
+
+function _applyProjectSnapshot(raw) {
+  const d = migrateProject(raw || {});
+  _applyFullLoad(d);
+  if (d.projectName) {
+    AS.projectName = _asNormalizeProjectName(d.projectName);
+    updateAutoSavePreview();
+    const btn = document.getElementById('asSetupBtn');
+    if (btn && AS.active) btn.title = `პროექტი: ${AS.projectName}`;
+  }
+  markClean();
+  _lsRemove();
+  document.getElementById('draftBanner')?.classList.remove('on');
+  _historyInit();
+}
+
+function _buildProjectThumbnail() {
+  const roomCount = Array.isArray(rooms) ? rooms.length : 0;
+  const wallCount = Array.isArray(walls) ? walls.length : 0;
+  const totalHeat = roomCount
+    ? rooms.reduce((sum, room) => sum + (+room.qh || 0), 0)
+    : 0;
+  const title = String(AS.projectName || document.title || 'HVAC პროექტი').slice(0, 48);
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="400" viewBox="0 0 640 400">` +
+    `<rect width="640" height="400" fill="#f5f8fc"/>` +
+    `<rect x="24" y="24" width="592" height="352" rx="24" fill="#ffffff" stroke="#dde6f2"/>` +
+    `<text x="48" y="72" fill="#1a3a6b" font-family="Arial, sans-serif" font-size="28" font-weight="700">🔥 HVAC პროექტი</text>` +
+    `<text x="48" y="108" fill="#3d5470" font-family="Arial, sans-serif" font-size="18">${escapeHtml(title)}</text>` +
+    `<rect x="48" y="150" width="168" height="72" rx="16" fill="#e8f1fd" stroke="#b8d0f0"/>` +
+    `<text x="66" y="180" fill="#7a96b8" font-family="Arial, sans-serif" font-size="14">სივრცეები</text>` +
+    `<text x="66" y="212" fill="#1f6fd4" font-family="Arial, sans-serif" font-size="30" font-weight="700">${roomCount}</text>` +
+    `<rect x="236" y="150" width="168" height="72" rx="16" fill="#fff5ea" stroke="#e8c080"/>` +
+    `<text x="254" y="180" fill="#7a96b8" font-family="Arial, sans-serif" font-size="14">კედლები</text>` +
+    `<text x="254" y="212" fill="#c05010" font-family="Arial, sans-serif" font-size="30" font-weight="700">${wallCount}</text>` +
+    `<rect x="424" y="150" width="168" height="72" rx="16" fill="#edfbf3" stroke="#9ddcba"/>` +
+    `<text x="442" y="180" fill="#7a96b8" font-family="Arial, sans-serif" font-size="14">ΣQh</text>` +
+    `<text x="442" y="212" fill="#0f6e3a" font-family="Arial, sans-serif" font-size="30" font-weight="700">${Math.round(totalHeat)}</text>` +
+    `<text x="48" y="286" fill="#7a96b8" font-family="Arial, sans-serif" font-size="14">EN 12831 · ASHRAE</text>` +
+    `<text x="48" y="326" fill="#3d5470" font-family="Arial, sans-serif" font-size="16">projects gate preview</text>` +
+    `</svg>`;
+  return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"]/g, ch => (
+    ch === '&' ? '&amp;' :
+    ch === '<' ? '&lt;' :
+    ch === '>' ? '&gt;' : '&quot;'
+  ));
+}
+
+if (window.ProjectBridge) {
+  _bridge = window.ProjectBridge.init({
+    slug: 'heat-loss',
+    legacyKey: LS_KEY,
+    debounceMs: 1200,
+    getState: _projectSnapshot,
+    applyState: _applyProjectSnapshot,
+    getThumbnail: _buildProjectThumbnail
+  });
+  _bridge.load();
+}
 
 </script>
 
