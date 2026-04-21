@@ -28,7 +28,8 @@ const ACTION_META: Record<string, {label: string; color: string; bg: string; bor
   'user.delete':           {label: 'user · delete', color: 'var(--red)',  bg: 'var(--red-lt)',  border: '#f0b8b4'},
   'user.delete.denied':    {label: 'delete · denied', color: 'var(--red)', bg: '#fff7ed',       border: '#f0b8b4'},
   'password.reset.request':{label: 'pwd · request', color: 'var(--ora)',  bg: 'var(--ora-lt)',  border: 'var(--ora-bd)'},
-  'password.reset.complete':{label: 'pwd · complete', color: 'var(--grn)', bg: 'var(--grn-lt)', border: 'var(--grn-bd)'}
+  'password.reset.complete':{label: 'pwd · complete', color: 'var(--grn)', bg: 'var(--grn-lt)', border: 'var(--grn-bd)'},
+  'page.view':             {label: 'page · view',   color: 'var(--blue)', bg: 'var(--blue-lt)', border: 'var(--blue-bd)'}
 };
 
 function actionStyle(a: string) {
@@ -41,6 +42,7 @@ function actionStyle(a: string) {
 }
 
 const ACTION_FILTERS = [
+  'page.view',
   'login.success',
   'login.fail',
   'logout',
@@ -223,7 +225,9 @@ export default function DmtAuditPage() {
                         {r.entity_type}
                         {r.entity_id && (
                           <span className="ml-1 text-text-3">
-                            · {r.entity_id.slice(0, 8)}
+                            · {r.entity_type === 'page'
+                              ? r.entity_id
+                              : r.entity_id.slice(0, 8)}
                           </span>
                         )}
                       </td>

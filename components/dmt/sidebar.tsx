@@ -24,6 +24,7 @@ import {
   Handshake,
   Building2,
   Boxes,
+  Key,
   type LucideIcon
 } from 'lucide-react';
 
@@ -74,6 +75,7 @@ const SECTIONS: NavSection[] = [
         children: [
           {key: 'leads-overview', label: 'Pipeline · მიმოხილვა', href: '/dmt/leads', icon: TrendingUp},
           {key: 'leads-fb', label: 'Facebook ლიდები', href: '/dmt/leads/facebook', icon: Facebook, badge: '18'},
+          {key: 'leads-fb-setup', label: 'FB webhook setup', href: '/dmt/leads/facebook/setup', icon: Key},
           {key: 'leads-manual', label: 'ყველა ლიდი · grid', href: '/dmt/leads/manual', icon: Table2},
           {key: 'leads-negotiations', label: 'მოლაპარაკებები', href: '/dmt/leads?stage=negotiating', icon: Handshake}
         ]

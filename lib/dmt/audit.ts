@@ -12,9 +12,10 @@ export type DmtAuditAction =
   | 'user.delete'
   | 'user.delete.denied'
   | 'password.reset.request'
-  | 'password.reset.complete';
+  | 'password.reset.complete'
+  | 'page.view';
 
-export type DmtAuditEntity = 'dmt_user' | 'session' | 'system';
+export type DmtAuditEntity = 'dmt_user' | 'session' | 'system' | 'page';
 
 export type DmtAuditInput = {
   action: DmtAuditAction;

@@ -3,6 +3,7 @@ import {headers} from 'next/headers';
 import {redirect} from 'next/navigation';
 import {DmtSidebar} from '@/components/dmt/sidebar';
 import {getCurrentDmtUser} from '@/lib/dmt/auth';
+import {logDmtAudit} from '@/lib/dmt/audit';
 
 export const metadata: Metadata = {
   title: {
@@ -45,6 +46,29 @@ export default async function DmtLayout({children}: {children: React.ReactNode})
   // Gated path but no user (race with proxy.ts redirect) — render bare.
   if (!user) {
     return <div className="min-h-screen bg-bg text-text">{children}</div>;
+  }
+
+  // Page-visit audit log. Skip prefetches (Next fires layout for link prefetch
+  // too — would pollute the trail). Fire-and-forget: logDmtAudit swallows errors.
+  const isPrefetch =
+    h.get('next-router-prefetch') === '1' ||
+    h.get('purpose') === 'prefetch' ||
+    h.get('x-purpose') === 'prefetch';
+  if (pathname && !isPrefetch) {
+    const fwd = h.get('x-forwarded-for');
+    const ip = (fwd ? fwd.split(',')[0].trim() : h.get('x-real-ip')) || null;
+    const user_agent = h.get('user-agent') || null;
+    void logDmtAudit({
+      action: 'page.view',
+      entity_type: 'page',
+      entity_id: pathname.slice(0, 255),
+      payload: {pathname},
+      actor_id: user.id,
+      actor_email: user.email,
+      actor_role: user.role,
+      ip,
+      user_agent
+    });
   }
 
   return (
