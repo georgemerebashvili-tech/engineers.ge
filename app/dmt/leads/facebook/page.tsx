@@ -47,6 +47,7 @@ export default function FacebookLeadsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState('');
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   async function load() {
     setLoading(true);
@@ -56,6 +57,7 @@ export default function FacebookLeadsPage() {
       const json = await res.json();
       if (json.error) setError(String(json.error));
       setLeads(Array.isArray(json.leads) ? json.leads : []);
+      setLastUpdated(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'network');
     } finally {
@@ -118,6 +120,15 @@ export default function FacebookLeadsPage() {
             <div>
               <b>შეცდომა:</b> {error}
             </div>
+          </div>
+        )}
+
+        {lastUpdated && (
+          <div
+            className="mb-3 font-semibold"
+            style={{color: 'var(--red)', fontSize: 20}}
+          >
+            ბოლო განახლება: {fmtDate(lastUpdated.toISOString())}
           </div>
         )}
 

@@ -23,9 +23,18 @@ import {
   X,
   Palette,
   Columns3,
-  Download
+  Download,
+  GripVertical
 } from 'lucide-react';
-import {COLOR_STYLES, loadSets, type VarSet} from '@/lib/dmt/variables';
+import {
+  COLOR_STYLES,
+  COLORS,
+  loadSets,
+  randomId,
+  type VarColor,
+  type VarOption,
+  type VarSet
+} from '@/lib/dmt/variables';
 
 type Status = 'ახალი' | 'მოლაპარაკების პროცესი' | 'შეთავაზება გაცემული' | 'დახურული-მოგება' | 'დახურული-დაკარგვა';
 type Role = 'End user' | 'Consultant' | 'Contractor' | 'Designer' | 'Supplier';
@@ -65,6 +74,7 @@ const STORE_KEY = 'dmt_manual_leads_v2';
 const EXTRA_COLS_KEY = 'dmt_manual_extra_cols_v1';
 const EXTRA_VALS_KEY = 'dmt_manual_extra_vals_v1';
 const COL_WIDTHS_KEY = 'dmt_manual_col_widths_v1';
+const COL_ORDER_KEY = 'dmt_manual_col_order_v1';
 
 // ~10 characters at the grid font — minimum width when user dbl-clicks resize handle
 const MIN_COL_WIDTH = 90;
@@ -82,14 +92,16 @@ type ExtraCol = {
 
 type ExtraVals = Record<string, Record<string, string>>;
 
-const COLS: Array<{
+type BaseColDef = {
   key: keyof Row;
   label: string;
   icon: React.ComponentType<{size?: number; className?: string; strokeWidth?: number}>;
   width: number;
   align?: 'right';
   kind?: 'text' | 'number' | 'status' | 'role' | 'date' | 'author';
-}> = [
+};
+
+const COLS: BaseColDef[] = [
   {key: 'company',  label: 'კომპ. დასახ.', icon: Building2, width: 180},
   {key: 'contact',  label: 'საკონტაქტო',   icon: User,      width: 150},
   {key: 'phone',    label: 'ტელეფონი',     icon: Phone,     width: 150},
@@ -103,6 +115,26 @@ const COLS: Array<{
   {key: 'createdBy',label: 'ჩანაწ. ავტ.',  icon: UserRound, width: 140, kind: 'author'}
 ];
 
+type OrderedCol =
+  | {src: 'base'; key: string; base: BaseColDef}
+  | {src: 'extra'; key: string; extra: ExtraCol};
+
+function buildOrderedCols(extra: ExtraCol[], order: string[]): OrderedCol[] {
+  const byKey = new Map<string, OrderedCol>();
+  for (const c of COLS) byKey.set(c.key as string, {src: 'base', key: c.key as string, base: c});
+  for (const c of extra) byKey.set(c.key, {src: 'extra', key: c.key, extra: c});
+  const out: OrderedCol[] = [];
+  for (const k of order) {
+    const c = byKey.get(k);
+    if (c) {
+      out.push(c);
+      byKey.delete(k);
+    }
+  }
+  for (const c of byKey.values()) out.push(c);
+  return out;
+}
+
 export default function ManualLeadsPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [hydrated, setHydrated] = useState(false);
@@ -114,6 +146,9 @@ export default function ManualLeadsPage() {
   const [showAddCol, setShowAddCol] = useState(false);
   const [colWidths, setColWidths] = useState<Record<string, number>>({});
   const [resizingKey, setResizingKey] = useState<string | null>(null);
+  const [colOrder, setColOrder] = useState<string[]>([]);
+  const [dragKey, setDragKey] = useState<string | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -125,6 +160,8 @@ export default function ManualLeadsPage() {
       if (ev) setExtraVals(JSON.parse(ev));
       const cw = localStorage.getItem(COL_WIDTHS_KEY);
       if (cw) setColWidths(JSON.parse(cw));
+      const co = localStorage.getItem(COL_ORDER_KEY);
+      if (co) setColOrder(JSON.parse(co));
       setVarSets(loadSets());
     } catch {}
     setHydrated(true);
@@ -137,8 +174,9 @@ export default function ManualLeadsPage() {
       localStorage.setItem(EXTRA_COLS_KEY, JSON.stringify(extraCols));
       localStorage.setItem(EXTRA_VALS_KEY, JSON.stringify(extraVals));
       localStorage.setItem(COL_WIDTHS_KEY, JSON.stringify(colWidths));
+      localStorage.setItem(COL_ORDER_KEY, JSON.stringify(colOrder));
     } catch {}
-  }, [rows, extraCols, extraVals, colWidths, hydrated]);
+  }, [rows, extraCols, extraVals, colWidths, colOrder, hydrated]);
 
   const widthOf = (key: string, fallback: number) => colWidths[key] ?? fallback;
 
@@ -190,10 +228,24 @@ export default function ManualLeadsPage() {
     }));
   };
 
-  const resolvedColWidth = (c: (typeof COLS)[number]) => widthOf(c.key as string, c.width);
-  const resolvedExtraWidth = (c: ExtraCol) => widthOf(c.key, c.width);
-  const extraWidth = extraCols.reduce((s, c) => s + resolvedExtraWidth(c), 0);
-  const gridTemplate = `40px ${COLS.map((c) => resolvedColWidth(c) + 'px').join(' ')} ${extraCols.map((c) => resolvedExtraWidth(c) + 'px').join(' ')} 44px 40px`;
+  const orderedCols = useMemo(() => buildOrderedCols(extraCols, colOrder), [extraCols, colOrder]);
+  const widthOfCol = (c: OrderedCol) =>
+    widthOf(c.key, c.src === 'base' ? c.base.width : c.extra.width);
+  const totalColsWidth = orderedCols.reduce((s, c) => s + widthOfCol(c), 0);
+  const gridTemplate = `40px ${orderedCols.map((c) => widthOfCol(c) + 'px').join(' ')} 44px 40px`;
+
+  const moveCol = (fromKey: string, toKey: string, position: 'before' | 'after') => {
+    if (fromKey === toKey) return;
+    const current = orderedCols.map((c) => c.key);
+    const fromIdx = current.indexOf(fromKey);
+    if (fromIdx < 0) return;
+    current.splice(fromIdx, 1);
+    const toIdx = current.indexOf(toKey);
+    if (toIdx < 0) return;
+    const insertAt = position === 'before' ? toIdx : toIdx + 1;
+    current.splice(insertAt, 0, fromKey);
+    setColOrder(current);
+  };
 
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -253,22 +305,22 @@ export default function ManualLeadsPage() {
   };
 
   const exportCsv = () => {
-    const headers = ['#', ...COLS.map((c) => c.label), ...extraCols.map((c) => c.label)];
+    const headers = ['#', ...orderedCols.map((c) => (c.src === 'base' ? c.base.label : c.extra.label))];
     const lines: string[] = [headers.map(csvCell).join(',')];
     filtered.forEach((r, i) => {
-      const base = COLS.map((c) => {
-        const v = r[c.key];
-        return v === null || v === undefined ? '' : String(v);
-      });
-      const extra = extraCols.map((ec) => {
-        const raw = extraVals[r.id]?.[ec.key] ?? '';
-        if (ec.kind === 'select' && ec.varSetId) {
-          const set = varSets.find((s) => s.id === ec.varSetId);
+      const cells = orderedCols.map((c) => {
+        if (c.src === 'base') {
+          const v = r[c.base.key];
+          return v === null || v === undefined ? '' : String(v);
+        }
+        const raw = extraVals[r.id]?.[c.extra.key] ?? '';
+        if (c.extra.kind === 'select' && c.extra.varSetId) {
+          const set = varSets.find((s) => s.id === c.extra.varSetId);
           return set?.options.find((o) => o.id === raw)?.label ?? '';
         }
         return raw;
       });
-      lines.push([String(i + 1), ...base, ...extra].map(csvCell).join(','));
+      lines.push([String(i + 1), ...cells].map(csvCell).join(','));
     });
     const blob = new Blob(['\uFEFF' + lines.join('\n')], {type: 'text/csv;charset=utf-8;'});
     const url = URL.createObjectURL(blob);
@@ -291,7 +343,7 @@ export default function ManualLeadsPage() {
   };
 
   const totalContract = filtered.reduce((s, r) => s + (r.contract || 0), 0);
-  const fullWidth = COLS.reduce((s, c) => s + resolvedColWidth(c), 0) + extraWidth + 40 + 44 + 40;
+  const fullWidth = totalColsWidth + 40 + 44 + 40;
 
   return (
     <DmtPageShell
@@ -334,46 +386,72 @@ export default function ManualLeadsPage() {
               style={{gridTemplateColumns: gridTemplate}}
             >
               <div className="px-2 py-2 font-mono text-[10px] text-text-3">#</div>
-              {COLS.map((c) => {
-                const Icon = c.icon;
-                const w = resolvedColWidth(c);
-                const isResizing = resizingKey === (c.key as string);
-                return (
-                  <div
-                    key={c.key}
-                    className={`relative px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-text-3 ${
-                      c.align === 'right' ? 'text-right' : ''
-                    } ${isResizing ? 'bg-blue-lt/40' : ''}`}
-                  >
-                    <span className="inline-flex items-center gap-1.5 truncate">
-                      <Icon size={11} strokeWidth={1.8} />
-                      <span className="truncate">{c.label}</span>
-                    </span>
-                    <ColResizeHandle
-                      onMouseDown={startResize(c.key as string, w)}
-                      onDoubleClick={shrinkCol(c.key as string)}
-                      active={isResizing}
-                    />
-                  </div>
-                );
-              })}
-              {extraCols.map((c) => {
-                const setName = c.varSetId
-                  ? varSets.find((v) => v.id === c.varSetId)?.name
-                  : null;
-                const Icon = c.kind === 'text' ? Type : c.kind === 'number' ? Hash : List;
-                const w = resolvedExtraWidth(c);
+              {orderedCols.map((c) => {
+                const w = widthOfCol(c);
                 const isResizing = resizingKey === c.key;
+                const isDragOver = dragOverKey === c.key && dragKey && dragKey !== c.key;
+                const isDragging = dragKey === c.key;
+                const label = c.src === 'base' ? c.base.label : c.extra.label;
+                const Icon =
+                  c.src === 'base'
+                    ? c.base.icon
+                    : c.extra.kind === 'text'
+                    ? Type
+                    : c.extra.kind === 'number'
+                    ? Hash
+                    : List;
+                const align = c.src === 'base' && c.base.align === 'right' ? 'text-right' : '';
+                const setName =
+                  c.src === 'extra' && c.extra.varSetId
+                    ? varSets.find((v) => v.id === c.extra.varSetId)?.name
+                    : null;
                 return (
                   <div
                     key={c.key}
-                    className={`group relative flex items-center justify-between gap-1 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-text-3 ${
+                    draggable
+                    onDragStart={(e) => {
+                      setDragKey(c.key);
+                      e.dataTransfer.effectAllowed = 'move';
+                      try {
+                        e.dataTransfer.setData('text/plain', c.key);
+                      } catch {}
+                    }}
+                    onDragOver={(e) => {
+                      if (!dragKey || dragKey === c.key) return;
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = 'move';
+                      setDragOverKey(c.key);
+                    }}
+                    onDragLeave={() => {
+                      setDragOverKey((prev) => (prev === c.key ? null : prev));
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      if (!dragKey || dragKey === c.key) return;
+                      const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                      const position = e.clientX < rect.left + rect.width / 2 ? 'before' : 'after';
+                      moveCol(dragKey, c.key, position);
+                      setDragKey(null);
+                      setDragOverKey(null);
+                    }}
+                    onDragEnd={() => {
+                      setDragKey(null);
+                      setDragOverKey(null);
+                    }}
+                    className={`group relative flex items-center justify-between gap-1 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-text-3 ${align} ${
                       isResizing ? 'bg-blue-lt/40' : ''
+                    } ${isDragging ? 'opacity-40' : ''} ${
+                      isDragOver ? 'bg-blue-lt shadow-[inset_2px_0_0_0_var(--blue)]' : ''
                     }`}
+                    title="დააგდე სხვა column-ზე — გადაადგილდება"
                   >
-                    <span className="inline-flex items-center gap-1.5 truncate">
+                    <span className="inline-flex items-center gap-1 truncate cursor-grab active:cursor-grabbing">
+                      <GripVertical
+                        size={11}
+                        className="shrink-0 text-text-3 opacity-40 group-hover:opacity-100"
+                      />
                       <Icon size={11} strokeWidth={1.8} />
-                      <span className="truncate">{c.label}</span>
+                      <span className="truncate">{label}</span>
                       {setName && (
                         <span
                           className="ml-1 rounded-full bg-blue-lt px-1.5 py-0.5 font-mono text-[8.5px] text-blue"
@@ -383,13 +461,15 @@ export default function ManualLeadsPage() {
                         </span>
                       )}
                     </span>
-                    <button
-                      onClick={() => removeExtraCol(c.key)}
-                      className="shrink-0 rounded p-0.5 text-text-3 opacity-0 transition-opacity hover:bg-red-lt hover:text-red group-hover:opacity-100"
-                      title="column წაშლა"
-                    >
-                      <X size={11} />
-                    </button>
+                    {c.src === 'extra' && (
+                      <button
+                        onClick={() => removeExtraCol(c.key)}
+                        className="shrink-0 rounded p-0.5 text-text-3 opacity-0 transition-opacity hover:bg-red-lt hover:text-red group-hover:opacity-100"
+                        title="column წაშლა"
+                      >
+                        <X size={11} />
+                      </button>
+                    )}
                     <ColResizeHandle
                       onMouseDown={startResize(c.key, w)}
                       onDoubleClick={shrinkCol(c.key)}
@@ -471,14 +551,15 @@ export default function ManualLeadsPage() {
                         <div className="flex items-center justify-center font-mono text-[10px] text-text-3">
                           {idx + 1}
                         </div>
-                        {COLS.map((c) => renderCell(c, r, update))}
-                        {extraCols.map((ec) =>
-                          renderExtraCell(
-                            ec,
-                            extraVals[r.id]?.[ec.key] ?? '',
-                            varSets,
-                            (v) => setExtraVal(r.id, ec.key, v)
-                          )
+                        {orderedCols.map((c) =>
+                          c.src === 'base'
+                            ? renderCell(c.base, r, update)
+                            : renderExtraCell(
+                                c.extra,
+                                extraVals[r.id]?.[c.extra.key] ?? '',
+                                varSets,
+                                (v) => setExtraVal(r.id, c.extra.key, v)
+                              )
                         )}
                         <div />
                         <div className="flex items-center justify-center">
@@ -502,28 +583,27 @@ export default function ManualLeadsPage() {
               style={{gridTemplateColumns: gridTemplate}}
             >
               <div />
-              {COLS.map((c) => (
-                <div
-                  key={c.key}
-                  className={`px-3 py-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-text-3 ${
-                    c.align === 'right' ? 'text-right' : ''
-                  }`}
-                >
-                  {c.kind === 'number' ? (
-                    <span className="text-navy">SUM ₾ {fmt(totalContract)}</span>
-                  ) : (
-                    <span>COUNT {filtered.length}</span>
-                  )}
-                </div>
-              ))}
-              {extraCols.map((ec) => (
-                <div
-                  key={ec.key}
-                  className="px-3 py-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-text-3"
-                >
-                  COUNT {filtered.length}
-                </div>
-              ))}
+              {orderedCols.map((c) => {
+                const isNumeric =
+                  (c.src === 'base' && c.base.kind === 'number') ||
+                  (c.src === 'extra' && c.extra.kind === 'number');
+                const isContract = c.src === 'base' && c.base.key === 'contract';
+                const align = c.src === 'base' && c.base.align === 'right' ? 'text-right' : '';
+                return (
+                  <div
+                    key={c.key}
+                    className={`px-3 py-2.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-text-3 ${align}`}
+                  >
+                    {isContract ? (
+                      <span className="text-navy">SUM ₾ {fmt(totalContract)}</span>
+                    ) : isNumeric ? (
+                      <span>COUNT {filtered.length}</span>
+                    ) : (
+                      <span>COUNT {filtered.length}</span>
+                    )}
+                  </div>
+                );
+              })}
               <div />
               <div />
             </div>
@@ -531,7 +611,7 @@ export default function ManualLeadsPage() {
         </div>
 
         <div className="mt-4 rounded-[10px] border border-bdr bg-sur-2 p-3 text-[11.5px] leading-relaxed text-text-2">
-          <b>💡 ცოცხალი grid:</b> უჯრედი სადაც text-ია — click-ი + რედაქტირება. Status / როლი — dropdown. <b>სვეტის ზომა:</b> header-ის მარჯვენა კიდეზე drag · ორმაგი click → მინიმუმი (~10 სიმბ.). ცვლილებები ავტომატურად ინახება localStorage-ში.
+          <b>💡 ცოცხალი grid:</b> უჯრედი სადაც text-ია — click-ი + რედაქტირება. Status / როლი — dropdown. <b>სვეტის ზომა:</b> header-ის მარჯვენა კიდეზე drag · ორმაგი click → მინიმუმი (~10 სიმბ.). <b>თანმიმდევრობა:</b> header-ი აიღე და გადაათრიე სხვა column-ზე → გადაადგილდება. ცვლილებები ავტომატურად ინახება localStorage-ში.
         </div>
       </div>
     </DmtPageShell>
