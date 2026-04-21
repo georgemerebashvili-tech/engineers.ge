@@ -1,4 +1,5 @@
 import {AdminPageHeader, AdminSection} from '@/components/admin-page-header';
+import {IssueTabs} from '@/components/admin/issues/tabs-nav';
 import {getNotFoundStats} from '@/lib/not-found-events';
 import Link from 'next/link';
 import {ExternalLink, FileQuestion, TrendingDown, Globe2, ArrowRight} from 'lucide-react';
@@ -28,6 +29,7 @@ export default async function AdminNotFoundsPage() {
         description="ყველა broken URL ბოლო 30 დღის განმავლობაში. ხედავ რომელი ბმული გატყდა და საიდან მოდის ხალხი — გადახედე fix-ი / redirect-ი."
       />
       <AdminSection>
+        <IssueTabs />
         {stats.total === 0 ? (
           <div className="rounded-card border border-bdr bg-sur p-8 text-center text-sm text-text-2">
             ბოლო 30 დღეში ერთი 404-იც არ დაფიქსირდა.

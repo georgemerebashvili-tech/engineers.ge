@@ -6,7 +6,7 @@ export const metadata = {title: 'პაროლის აღდგენა —
 
 export default async function AdminForgotPage() {
   const session = await getSession();
-  if (session) redirect('/admin/tiles');
+  if (session) redirect('/admin/stats');
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6">

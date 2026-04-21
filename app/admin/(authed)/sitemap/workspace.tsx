@@ -103,6 +103,67 @@ export function SitemapWorkspace({
   };
 
   return (
+    <div className="flex flex-col gap-4">
+    <div className="rounded-[var(--radius-card)] border-2 border-blue bg-gradient-to-r from-blue-lt to-sur p-4 shadow-sm">
+      <div className="flex flex-wrap items-center gap-3">
+        <Rocket size={22} className="text-blue" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="text-[15px] font-bold text-navy">Deploy production</h3>
+            <span className="rounded-full border border-ora-bd bg-ora-lt px-2 py-0.5 font-mono text-[9px] font-semibold text-ora">
+              env: {deployEnv}
+            </span>
+            {deployUrl && (
+              <a
+                href={deployUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] text-blue hover:underline"
+              >
+                current <ExternalLink size={10} />
+              </a>
+            )}
+          </div>
+          <p className="mt-0.5 text-[11px] text-text-2">
+            Vercel Deploy Hook-ი — ახალი production build გავუშვათ ერთი კლიკით (~1-3 წთ).
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={triggerDeploy}
+          disabled={deploying || !deployHookConfigured}
+          title={
+            deployHookConfigured
+              ? 'Vercel Deploy Hook-ი გააქტიურდება'
+              : 'VERCEL_DEPLOY_HOOK_URL env-ი არაა დაყენებული'
+          }
+          className="inline-flex h-10 items-center gap-2 rounded-full bg-blue px-5 text-[13px] font-bold text-white shadow-md transition-colors hover:bg-navy-2 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Rocket size={14} />
+          {deploying ? 'იდება…' : 'Deploy'}
+        </button>
+      </div>
+      {!deployHookConfigured && (
+        <p className="mt-2 text-[11px] text-text-3">
+          დასაყენებლად: Vercel Dashboard → Project → Settings → Git → Deploy Hooks →
+          &ldquo;Create Hook&rdquo; (production). URL-ი ჩაწერე{' '}
+          <code className="rounded bg-sur-2 px-1">VERCEL_DEPLOY_HOOK_URL</code> env-ში.
+        </p>
+      )}
+      {deployMsg && (
+        <p
+          className={`mt-2 text-[12px] ${
+            deployMsg.kind === 'ok'
+              ? 'text-grn'
+              : deployMsg.kind === 'err'
+              ? 'text-danger'
+              : 'text-text-2'
+          }`}
+        >
+          {deployMsg.text}
+        </p>
+      )}
+    </div>
     <div
       className={`grid gap-4 ${
         collapsed
@@ -160,58 +221,6 @@ export function SitemapWorkspace({
           >
             <PanelLeftClose size={12} />
           </button>
-        </div>
-
-        <div className="rounded-[var(--radius-card)] border bg-sur p-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Rocket size={14} className="text-blue" />
-            <span className="text-sm font-semibold text-navy">Deploy</span>
-            {deployUrl && (
-              <a
-                href={deployUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[11px] text-blue hover:underline"
-              >
-                current <ExternalLink size={10} />
-              </a>
-            )}
-            <button
-              type="button"
-              onClick={triggerDeploy}
-              disabled={deploying || !deployHookConfigured}
-              title={
-                deployHookConfigured
-                  ? 'Vercel Deploy Hook-ი გააქტიურდება'
-                  : 'VERCEL_DEPLOY_HOOK_URL env-ი არაა დაყენებული'
-              }
-              className="ml-auto inline-flex h-8 items-center gap-1.5 rounded-full bg-blue px-3 text-[12px] font-semibold text-white transition-colors hover:bg-navy-2 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Rocket size={12} />
-              {deploying ? '…' : 'Deploy production'}
-            </button>
-          </div>
-          {!deployHookConfigured && (
-            <p className="mt-2 text-[11px] text-text-3">
-              დასაყენებლად: Vercel Dashboard → Project → Settings → Git → Deploy
-              Hooks → &ldquo;Create Hook&rdquo; (production). URL-ი ჩაწერე{' '}
-              <code className="rounded bg-sur-2 px-1">VERCEL_DEPLOY_HOOK_URL</code>{' '}
-              env-ში (Preview + Production).
-            </p>
-          )}
-          {deployMsg && (
-            <p
-              className={`mt-2 text-[12px] ${
-                deployMsg.kind === 'ok'
-                  ? 'text-grn'
-                  : deployMsg.kind === 'err'
-                  ? 'text-danger'
-                  : 'text-text-2'
-              }`}
-            >
-              {deployMsg.text}
-            </p>
-          )}
         </div>
 
         <div className="rounded-[var(--radius-card)] border bg-sur">
@@ -327,6 +336,7 @@ export function SitemapWorkspace({
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

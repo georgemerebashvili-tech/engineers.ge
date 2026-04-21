@@ -1,5 +1,6 @@
 import {getHeroAdSlots} from '@/lib/hero-ads-store';
 import {BannersPreview} from '@/components/admin/banners/preview';
+import {BannerTabs} from '@/components/admin/banners/tabs-nav';
 import {AdminPageHeader, AdminSection} from '@/components/admin-page-header';
 
 export const dynamic = 'force-dynamic';
@@ -15,6 +16,7 @@ export default async function BannersPreviewPage() {
         description="ცოცხალი preview — როგორც ვიზიტორს უჩანდება."
       />
       <AdminSection>
+        <BannerTabs />
         <BannersPreview slots={slots} />
       </AdminSection>
     </>

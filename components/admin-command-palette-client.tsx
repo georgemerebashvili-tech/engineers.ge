@@ -20,7 +20,6 @@ import {
   Lock,
   Mail,
   Megaphone,
-  Network,
   Rocket,
   ScrollText,
   Share2,
@@ -42,14 +41,13 @@ const COMMANDS: CommandItem[] = [
   {id: 'stats', label: 'მიმოხილვა', section: 'მთავარი', href: '/admin/stats', icon: LayoutDashboard},
   {id: 'activity', label: 'Activity feed', description: 'ყოველი incident — bugs, errors, 404s, users', section: 'მთავარი', href: '/admin/activity', icon: Zap, keywords: ['live', 'feed', 'recent', 'incidents']},
   {id: 'launch-checklist', label: 'Launch checklist', description: 'Env / DB / deploy progress', section: 'მთავარი', href: '/admin/launch-checklist', icon: Rocket, keywords: ['ready', 'prelaunch']},
-  {id: 'sitemap', label: 'Sitemap & deploy', section: 'მთავარი', href: '/admin/sitemap', icon: Network},
+  {id: 'deploy', label: '🚀 Deploy production', description: 'Sitemap & Vercel deploy hook', section: 'მთავარი', href: '/admin/sitemap', icon: Rocket, keywords: ['sitemap', 'vercel', 'ship', 'prod']},
   {id: 'todos', label: 'TODO pipeline', section: 'მთავარი', href: '/admin/todos', icon: ListTodo},
 
   // — Content
-  {id: 'tiles', label: 'Hero Ads', description: 'Landing page treemap ads', section: 'კონტენტი', href: '/admin/tiles', icon: Images, keywords: ['treemap', 'landing']},
+  {id: 'banners', label: 'ბანერები · Hero Ads', description: 'Landing page treemap ads', section: 'კონტენტი', href: '/admin/banners', icon: Images, keywords: ['treemap', 'landing', 'tiles']},
   {id: 'redirects', label: 'URL redirects', description: 'Admin-editable redirect map', section: 'კონტენტი', href: '/admin/redirects', icon: ArrowRightLeft, keywords: ['301', '404']},
   {id: 'regulations', label: 'სტანდარტები & წყაროები', description: 'Matsne / EN / NFPA / ASHRAE monitor', section: 'კონტენტი', href: '/admin/regulations', icon: ScrollText, keywords: ['sources', 'monitor', 'matsne', 'standards']},
-  {id: 'banners', label: 'ბანერები', section: 'კონტენტი', href: '/admin/banners', icon: Images},
 
   // — Users
   {id: 'users', label: 'რეგისტრაციები', section: 'მომხმარებლები', href: '/admin/users', icon: Users, keywords: ['registrations', 'accounts']},

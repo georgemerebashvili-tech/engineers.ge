@@ -53,12 +53,11 @@ export const FEATURE_REGISTRY: FeatureDef[] = [
   {key: 'calc.physics-docs', label: 'ფიზიკის ფორმულები', section: 'დოკუმენტაცია', routes: ['/calc/docs/physics']},
 
   // --- Admin sidebar items (non-core only — login/password/features themselves cannot be hidden) ---
-  {key: 'admin.sitemap', label: 'Sitemap & deploy', section: 'Admin სიდბარი', routes: ['/admin/sitemap']},
+  {key: 'admin.sitemap', label: '🚀 Deploy production', section: 'Admin სიდბარი', routes: ['/admin/sitemap']},
   {key: 'admin.activity', label: 'Activity feed', section: 'Admin სიდბარი', routes: ['/admin/activity']},
   {key: 'admin.todos', label: 'TODO pipeline', section: 'Admin სიდბარი', routes: ['/admin/todos']},
-  {key: 'admin.hero-ads', label: 'Hero Ads', section: 'Admin სიდბარი', routes: ['/admin/tiles']},
   {key: 'admin.regulations', label: 'სტანდარტები & წყაროები', section: 'Admin სიდბარი', routes: ['/admin/regulations']},
-  {key: 'admin.banners', label: 'ბანერები', section: 'Admin სიდბარი', routes: ['/admin/banners']},
+  {key: 'admin.banners', label: 'ბანერები · Hero Ads', section: 'Admin სიდბარი', routes: ['/admin/banners', '/admin/tiles']},
   {key: 'admin.redirects', label: 'URL redirects', section: 'Admin სიდბარი', routes: ['/admin/redirects']},
   {key: 'admin.users', label: 'რეგისტრაციები', section: 'Admin სიდბარი', routes: ['/admin/users']},
   {key: 'admin.referrals', label: 'Referrals', section: 'Admin სიდბარი', routes: ['/admin/referrals']},

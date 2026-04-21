@@ -13,7 +13,7 @@ export default async function AdminResetPage({
   searchParams: Promise<{token?: string}>;
 }) {
   const session = await getSession();
-  if (session) redirect('/admin/tiles');
+  if (session) redirect('/admin/stats');
 
   const {token} = await searchParams;
   const invalid = !token;

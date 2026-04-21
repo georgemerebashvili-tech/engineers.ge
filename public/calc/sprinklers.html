@@ -938,66 +938,7 @@ function buildRoom() {
   const { positions, nX, nZ, wallOffX, wallOffZ } = computeSprinklerPositions();
   state.sprinklers = positions;
 
-  // Shared geometries / materials for all heads (perf)
-  const pipeGeom = new THREE.CylinderGeometry(0.025, 0.025, 0.18, 10);
-  const pipeMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.7, roughness: 0.3 });
-  const headGeom = new THREE.CylinderGeometry(0.055, 0.035, 0.04, 10);
-  const headMat = new THREE.MeshStandardMaterial({ color: 0xea580c, metalness: 0.5, roughness: 0.4 });
-  const deflGeom = new THREE.CylinderGeometry(0.07, 0.07, 0.008, 14);
-  const deflMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.8, roughness: 0.2 });
-
-  sprinklerGroup = new THREE.Group();
-  sprinklerMarkers = new THREE.Group();
-  sprinklerHitMeshes.length = 0;
-  state.selectedIdx = -1;
-  const selInfo = document.getElementById('selInfo');
-  if (selInfo) selInfo.style.display = 'none';
-
-  // Floor marker ring geom/mat (shared)
-  const ringGeom = new THREE.RingGeometry(0.12, 0.16, 24);
-  const ringMat = new THREE.MeshBasicMaterial({ color: 0xea580c, side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
-  const dotGeom = new THREE.CircleGeometry(0.06, 16);
-  const dotMat = new THREE.MeshBasicMaterial({ color: 0xdc2626 });
-
-  // Enlarged invisible pick helper per sprinkler (easier to click)
-  const pickGeom = new THREE.CylinderGeometry(0.18, 0.18, 0.30, 10);
-  const pickMat = new THREE.MeshBasicMaterial({ visible: false });
-
-  positions.forEach((p, idx) => {
-    const unit = new THREE.Group();
-    const pipe = new THREE.Mesh(pipeGeom, pipeMat);
-    pipe.position.y = state.h - 0.09;
-    unit.add(pipe);
-    const head = new THREE.Mesh(headGeom, headMat);
-    head.position.y = state.h - 0.20;
-    unit.add(head);
-    const defl = new THREE.Mesh(deflGeom, deflMat);
-    defl.position.y = state.h - 0.235;
-    unit.add(defl);
-    const pick = new THREE.Mesh(pickGeom, pickMat);
-    pick.position.y = state.h - 0.15;
-    pick.userData.sprinklerIdx = idx;
-    unit.add(pick);
-
-    unit.position.set(p.x, 0, p.z);
-    sprinklerGroup.add(unit);
-    sprinklerHitMeshes.push(pick);
-
-    // Floor marker: ring + center dot
-    const ring = new THREE.Mesh(ringGeom, ringMat);
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.set(p.x, 0.012, p.z);
-    ring.userData.sprinklerIdx = idx;
-    ring.userData.isRing = true;
-    sprinklerMarkers.add(ring);
-    const dot = new THREE.Mesh(dotGeom, dotMat);
-    dot.rotation.x = -Math.PI / 2;
-    dot.position.set(p.x, 0.013, p.z);
-    sprinklerMarkers.add(dot);
-  });
-
-  scene.add(sprinklerGroup);
-  scene.add(sprinklerMarkers);
+  buildSprinklerMeshes(positions);
 
   // Update mesh info panel
   const meshCountEl = document.getElementById('meshCount');
@@ -1012,6 +953,121 @@ function buildRoom() {
   }
 
   if (controls) controls.target.set(0, Math.min(1.5, state.h/2), 0);
+}
+
+function buildSprinklerMeshes(positions) {
+  if (sprinklerGroup) scene.remove(sprinklerGroup);
+  if (sprinklerMarkers) scene.remove(sprinklerMarkers);
+
+  const type = state.type;
+  const isUpright  = type === 'upright';
+  const isSidewall = type === 'sidewall';
+  const isEsfr     = type === 'esfr';
+
+  // Size tweaks per type
+  const headRTop = isEsfr ? 0.075 : 0.055;
+  const headRBot = isEsfr ? 0.050 : 0.035;
+  const headH    = isEsfr ? 0.055 : 0.04;
+  const deflR    = isEsfr ? 0.095 : 0.07;
+
+  const pipeGeom = new THREE.CylinderGeometry(0.025, 0.025, 0.18, 10);
+  const pipeMat  = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.7, roughness: 0.3 });
+  const headGeom = new THREE.CylinderGeometry(headRTop, headRBot, headH, 12);
+  const headMat  = new THREE.MeshStandardMaterial({
+    color: isUpright ? 0xf59e0b : isSidewall ? 0xdc2626 : isEsfr ? 0x2563eb : 0xea580c,
+    metalness: 0.5, roughness: 0.4,
+  });
+  const deflGeom = new THREE.CylinderGeometry(deflR, deflR, 0.008, 16);
+  const deflMat  = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.8, roughness: 0.2 });
+
+  sprinklerGroup = new THREE.Group();
+  sprinklerMarkers = new THREE.Group();
+  sprinklerHitMeshes.length = 0;
+  state.selectedIdx = -1;
+  const selInfo = document.getElementById('selInfo');
+  if (selInfo) selInfo.style.display = 'none';
+
+  const ringGeom = new THREE.RingGeometry(0.12, 0.16, 24);
+  const ringColor = isUpright ? 0xf59e0b : isSidewall ? 0xdc2626 : isEsfr ? 0x2563eb : 0xea580c;
+  const ringMat = new THREE.MeshBasicMaterial({ color: ringColor, side: THREE.DoubleSide, transparent: true, opacity: 0.7 });
+  const dotGeom = new THREE.CircleGeometry(0.06, 16);
+  const dotMat = new THREE.MeshBasicMaterial({ color: 0xdc2626 });
+
+  const pickGeom = new THREE.CylinderGeometry(0.18, 0.18, 0.30, 10);
+  const pickMat = new THREE.MeshBasicMaterial({ visible: false });
+
+  positions.forEach((p, idx) => {
+    const unit = new THREE.Group();
+
+    if (isUpright) {
+      // Pipe rises from below-ceiling to the head level; deflector sits ON TOP of head
+      const pipe = new THREE.Mesh(pipeGeom, pipeMat);
+      pipe.position.y = state.h - 0.36;
+      unit.add(pipe);
+      const head = new THREE.Mesh(headGeom, headMat);
+      head.position.y = state.h - 0.24;
+      unit.add(head);
+      const defl = new THREE.Mesh(deflGeom, deflMat);
+      defl.position.y = state.h - 0.20; // deflector above head
+      unit.add(defl);
+    } else if (isSidewall) {
+      // Horizontal head pointing toward room centre (+X if on -X side, etc.)
+      const half = Math.max(0.001, Math.max(Math.abs(p.x), Math.abs(p.z)));
+      const nearWallX = Math.abs(p.x) >= Math.abs(p.z);
+      // direction vector pointing from wall to centre
+      const dirX = nearWallX ? (p.x > 0 ? -1 : 1) : 0;
+      const dirZ = nearWallX ? 0 : (p.z > 0 ? -1 : 1);
+      const yaw = Math.atan2(dirX, dirZ); // rotate around Y
+      unit.rotation.y = yaw;
+
+      const pipe = new THREE.Mesh(pipeGeom, pipeMat);
+      pipe.rotation.z = Math.PI / 2; // horizontal
+      pipe.position.set(0, state.h - 0.50, 0.09);
+      unit.add(pipe);
+      const head = new THREE.Mesh(headGeom, headMat);
+      head.rotation.x = Math.PI / 2;
+      head.position.set(0, state.h - 0.50, 0.22);
+      unit.add(head);
+      const defl = new THREE.Mesh(deflGeom, deflMat);
+      defl.rotation.x = Math.PI / 2;
+      defl.position.set(0, state.h - 0.50, 0.26);
+      unit.add(defl);
+    } else {
+      // Pendant / ESFR — hangs from ceiling, deflector below head
+      const pipe = new THREE.Mesh(pipeGeom, pipeMat);
+      pipe.position.y = state.h - 0.09;
+      unit.add(pipe);
+      const head = new THREE.Mesh(headGeom, headMat);
+      head.position.y = state.h - 0.20;
+      unit.add(head);
+      const defl = new THREE.Mesh(deflGeom, deflMat);
+      defl.position.y = state.h - 0.235;
+      unit.add(defl);
+    }
+
+    const pick = new THREE.Mesh(pickGeom, pickMat);
+    pick.position.y = isSidewall ? state.h - 0.50 : state.h - 0.15;
+    pick.userData.sprinklerIdx = idx;
+    unit.add(pick);
+
+    unit.position.set(p.x, 0, p.z);
+    sprinklerGroup.add(unit);
+    sprinklerHitMeshes.push(pick);
+
+    const ring = new THREE.Mesh(ringGeom, ringMat);
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(p.x, 0.012, p.z);
+    ring.userData.sprinklerIdx = idx;
+    ring.userData.isRing = true;
+    sprinklerMarkers.add(ring);
+    const dot = new THREE.Mesh(dotGeom, dotMat);
+    dot.rotation.x = -Math.PI / 2;
+    dot.position.set(p.x, 0.013, p.z);
+    sprinklerMarkers.add(dot);
+  });
+
+  scene.add(sprinklerGroup);
+  scene.add(sprinklerMarkers);
 }
 
 function onResize() {
@@ -1312,6 +1368,8 @@ function bindUI() {
   document.getElementById('type').addEventListener('change', e => {
     state.type = e.target.value;
     document.getElementById('typeVal').textContent = TYPE_PROFILES[state.type].label;
+    buildSprinklerMeshes(state.sprinklers);
+    clearHeatmap();
     onParamsChange();
   });
 

@@ -6,7 +6,7 @@ export const metadata = {title: 'Admin — engineers.ge'};
 
 export default async function AdminLoginPage() {
   const session = await getSession();
-  if (session) redirect('/admin/tiles');
+  if (session) redirect('/admin/stats');
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">

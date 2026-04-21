@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>კვამლის ვენტილაცია · МР 2013 · СП 7.13130</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f2f5fa;--sur:#fff;--sur2:#f7f9fd;
+  --bdr:#dde6f2;--bdr2:#c4d4e8;
+  --navy:#1a3a6b;--blue:#1f6fd4;--blt:#e8f1fd;--bbd:#b8d0f0;
+  --ora:#c05010;--olt:#fff5ea;--obd:#e8c080;
+  --grn:#0f6e3a;--glt:#edfbf3;--gbd:#9ddcba;
+  --red:#c0201a;--rlt:#fff0ef;
+  --text:#1a2840;--t2:#3d5470;--t3:#7a96b8;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 14px rgba(0,0,0,.05);
+  --r:10px;--mono:'IBM Plex Mono',monospace;--sans:'Plus Jakarta Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:13px}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh}
+
+.topbar{position:sticky;top:0;z-index:300;background:#fff;border-bottom:1px solid var(--bdr);box-shadow:0 1px 6px rgba(0,0,0,.09)}
+.brand-row{display:flex;align-items:center;padding:0 20px;border-bottom:1px solid var(--bdr)}
+.brand{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--navy);padding:10px 0;flex:1}
+.brand span{color:var(--blue)}
+.std-badges{display:flex;gap:6px;align-items:center}
+.std-b{font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--blt);color:var(--blue);border:1px solid var(--bbd)}
+
+.tab-nav{display:flex;align-items:stretch}
+.tab-btn{height:44px;padding:0 22px;border:none;background:none;cursor:pointer;font-family:var(--sans);font-size:12px;font-weight:600;color:var(--t3);border-bottom:2px solid transparent;transition:all .15s;display:flex;align-items:center;gap:7px;white-space:nowrap}
+.tab-btn:hover{color:var(--blue)}
+.tab-btn.active{color:var(--blue);border-bottom-color:var(--blue);background:var(--blt)}
+.tab-btn .tb-num{font-family:var(--mono);font-size:9px;background:var(--blt);color:var(--blue);border:1px solid var(--bbd);border-radius:10px;padding:1px 6px;transition:all .15s}
+.tab-btn.active .tb-num{background:var(--blue);color:#fff;border-color:var(--blue)}
+.tab-sep{flex:1}
+
+.tab-panel{display:none}
+.tab-panel.active{display:block}
+
+.main{padding:18px 22px 60px;max-width:1150px;margin:0 auto}
+
+.doc-hdr{background:#fff;border:1px solid var(--bdr);border-radius:var(--r);padding:15px 22px;margin-bottom:12px;box-shadow:var(--shadow);text-align:center}
+.doc-title{font-family:var(--sans);font-size:15px;font-weight:700;color:var(--navy);margin-bottom:3px}
+.doc-sub{font-size:10px;color:var(--t3);letter-spacing:.3px}
+.warn-bar{background:var(--olt);border:1px solid var(--obd);border-radius:7px;padding:7px 14px;font-size:10px;color:var(--ora);font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+
+.calc-table{width:100%;border-collapse:collapse;background:#fff;border-radius:var(--r);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--bdr)}
+.calc-table thead th{background:var(--navy);color:#fff;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border:1px solid #2a4a7a;text-align:left;white-space:nowrap;font-family:var(--sans)}
+.calc-table thead th.c{text-align:center}
+.calc-table tbody tr{transition:background .1s}
+.calc-table tbody tr:nth-child(even){background:var(--sur2)}
+.calc-table tbody tr:hover{background:var(--blt)}
+.calc-table tbody td{padding:7px 10px;border:1px solid var(--bdr);vertical-align:middle}
+td.num{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--navy);text-align:center;background:#f0f4fb;width:32px;border-right:2px solid var(--bdr2)}
+td.param{font-family:var(--sans);font-size:11.5px;color:var(--text);min-width:200px;max-width:280px;line-height:1.4}
+td.sym{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--blue);text-align:center;width:72px;font-style:italic}
+td.formula{font-family:var(--mono);font-size:10.5px;color:var(--t2);width:140px;line-height:1.5}
+td.val{width:115px}
+td.unit{font-family:var(--mono);font-size:10px;color:var(--t3);text-align:center;width:68px}
+td.note{font-family:var(--sans);font-size:10px;color:var(--t3);min-width:150px;line-height:1.4}
+td.info{font-family:var(--sans);font-size:10px;min-width:150px;line-height:1.4}
+
+.sec-row td{background:linear-gradient(90deg,#eef3fd,#f7f9fd)!important;font-family:var(--sans);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);padding:5px 10px;border-top:2px solid var(--bdr2)}
+
+.vi{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--text);background:#fff;border:1.5px solid var(--bdr);border-radius:5px;padding:4px 8px;width:95px;text-align:right;outline:none}
+.vi:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(31,111,212,.12)}
+.va{font-family:var(--mono);font-size:12px;font-weight:500;background:var(--sur2);border:1px solid var(--bdr);border-radius:5px;padding:4px 8px;width:95px;text-align:right;color:var(--t2);display:inline-block}
+.vr{font-family:var(--mono);font-size:13px;font-weight:700;background:var(--blt);border:1.5px solid var(--bbd);border-radius:5px;padding:4px 10px;width:95px;text-align:right;color:var(--blue);display:inline-block}
+.vr.g{background:var(--glt);border-color:var(--gbd);color:var(--grn)}
+.vr.o{background:var(--olt);border-color:var(--obd);color:var(--ora)}
+.vr.lg{font-size:15px}
+
+.fr{display:inline-flex;flex-direction:column;align-items:center;font-size:9.5px;line-height:1.2;vertical-align:middle;margin:0 1px}
+.fr-n{border-bottom:1px solid var(--t2);padding-bottom:1px;white-space:nowrap}
+.fr-d{padding-top:1px;white-space:nowrap}
+
+.badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block}
+.badge.b{background:var(--blt);color:var(--blue);border:1px solid var(--bbd)}
+.badge.g{background:var(--glt);color:var(--grn);border:1px solid var(--gbd)}
+.badge.o{background:var(--olt);color:var(--ora);border:1px solid var(--obd)}
+.badge.r{background:var(--rlt);color:var(--red);border:1px solid #f8a0a0}
+
+.vsel{font-family:var(--mono);font-size:11px;background:#fff;border:1.5px solid var(--bdr);border-radius:5px;padding:4px 6px;color:var(--text);outline:none;width:100%}
+.vsel:focus{border-color:var(--blue)}
+
+.rl{color:var(--blue);font-size:10px;font-weight:600;text-decoration:none;border-bottom:1px solid var(--bbd)}
+.rl:hover{color:var(--navy)}
+
+.res-card{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
+.rc-item{background:#fff;border:1px solid var(--bdr);border-radius:8px;padding:10px 13px;box-shadow:var(--shadow)}
+.rc-item.hi{background:var(--blt);border-color:var(--bbd)}
+.rc-item.ok{background:var(--glt);border-color:var(--gbd)}
+.rc-item.wa{background:var(--olt);border-color:var(--obd)}
+.rc-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--t3);margin-bottom:3px}
+.rc-item.hi .rc-lbl{color:var(--blue)}.rc-item.ok .rc-lbl{color:var(--grn)}.rc-item.wa .rc-lbl{color:var(--ora)}
+.rc-val{font-family:var(--mono);font-size:18px;font-weight:700;color:var(--navy)}
+.rc-item.hi .rc-val{color:var(--blue)}.rc-item.ok .rc-val{color:var(--grn)}.rc-item.wa .rc-val{color:var(--ora)}
+.rc-unit{font-size:9px;color:var(--t3);font-family:var(--mono)}
+
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  .topbar{position:static!important}.tab-panel{display:block!important}
+  @page{margin:12mm}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand-row">
+    <div class="brand">სახანძრო <span>კვამლი</span> · კალკულატორი</div>
+    <div class="std-badges">
+      <span class="std-b">МР 2013</span>
+      <span class="std-b">СП 7.13130.2022</span>
+      <span class="std-b">СИТИС-СПН-1</span>
+    </div>
+  </div>
+  <div class="tab-nav">
+    <button class="tab-btn active" id="tbn0" onclick="sw(0)">
+      💨 კვამლის გაწოვა <span class="tb-num">3.2.1</span>
+    </button>
+    <button class="tab-btn" id="tbn1" onclick="sw(1)">
+      🔲 ლიფტის დაწნეხვა <span class="tb-num">п.7.14</span>
+    </button>
+    <button class="tab-btn" id="tbn2" onclick="sw(2)">
+      🚶 კორიდ. დაწნეხვა <span class="tb-num">п.7.15</span>
+    </button>
+    <div class="tab-sep"></div>
+    <button style="margin:auto 14px;background:var(--sur2);border:1px solid var(--bdr2);color:var(--t2);padding:5px 13px;border-radius:6px;cursor:pointer;font-size:11px;font-family:var(--sans);font-weight:600" onclick="window.print()">🖨 PDF</button>
+  </div>
+</div>
+
+<!-- TAB 0 · Smoke extraction · 3.2.1 МР 2013 -->
+<div class="tab-panel active" id="tab0">
+<div class="main">
+  <div class="doc-hdr">
+    <div class="doc-title">კვამლის გაწოვა — momijnje სივრცეებიდან</div>
+    <div class="doc-sub">Удаление продуктов горения из смежных с горящим помещений · 3.2.1 МР 2013</div>
+  </div>
+  <div class="warn-bar">⚠ ძირითადი ანგარიშამდე შეავსეთ გახსნების ცხრილი (ქვემოთ)</div>
+
+  <table class="calc-table">
+    <thead><tr>
+      <th class="c">№</th><th>Характеристика · პარამ.</th>
+      <th class="c">Обозн.</th><th>Формула</th>
+      <th class="c">Значение</th><th class="c">Разм.</th>
+      <th>Примечание</th><th>Доп. информация</th>
+    </tr></thead>
+    <tbody>
+      <tr class="sec-row"><td colspan="8">🏠 გეომეტრია · Геометрия помещения</td></tr>
+      <tr>
+        <td class="num">1</td><td class="param">Площадь пола помещения</td>
+        <td class="sym">F<sub>f</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s0_Ff" type="number" value="20" oninput="rc0()"></td>
+        <td class="unit">м²</td><td class="note">Площадь пола горящего помещения</td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">2</td><td class="param">Высота помещения</td>
+        <td class="sym">h<sub>f</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s0_Hf" type="number" value="3" oninput="rc0()"></td>
+        <td class="unit">м</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">3</td><td class="param">Объём помещения</td>
+        <td class="sym">V</td><td class="formula">F<sub>f</sub> × h<sub>f</sub></td>
+        <td class="val"><span class="va" id="s0_V">60.0</span></td>
+        <td class="unit">м³</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">4</td><td class="param">Суммарная площадь внутренней поверхности ограждающих конструкций</td>
+        <td class="sym">F<sub>w</sub></td><td class="formula">6 × V<sup>2/3</sup></td>
+        <td class="val"><span class="va" id="s0_Fw">92.0</span></td>
+        <td class="unit">м²</td>
+        <td class="note"><span class="badge b">Прил. 1 МР 2013</span></td>
+        <td class="info"><a class="rl" href="#">МР 2013</a></td>
+      </tr>
+      <tr>
+        <td class="num">5</td><td class="param">Суммарная площадь проёмов помещения</td>
+        <td class="sym">A<sub>0</sub></td><td class="formula">Σ A<sub>i</sub></td>
+        <td class="val"><input class="vi" id="s0_A0" type="number" value="2.0" oninput="rc0()"></td>
+        <td class="unit">м²</td>
+        <td class="note" style="font-size:9px">Прил. 1 МР 2013. из таблицы проёмности ↓</td>
+        <td class="info"></td>
+      </tr>
+      <tr class="sec-row"><td colspan="8">🔥 სახ. ნატვ. · Пожарная нагрузка</td></tr>
+      <tr>
+        <td class="num">6</td><td class="param">Низшая теплота сгорания древесины</td>
+        <td class="sym">Q<sup>р</sup><sub>нд</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s0_Qnd" type="number" value="13.8" oninput="rc0()"></td>
+        <td class="unit">МДж/кг</td>
+        <td class="note" style="font-size:9px">Молчадский И.С. (Табл. 2.4)</td>
+        <td class="info"><a class="rl" href="#">Молчадский И.С.</a></td>
+      </tr>
+      <tr>
+        <td class="num">7</td><td class="param">Плотность пожарной нагрузки помещения</td>
+        <td class="sym">q<sub>п</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s0_qp" type="number" value="600" oninput="rc0()"></td>
+        <td class="unit">МДж/м²</td>
+        <td class="note" style="font-size:9px">СИТИС-СПН-1 (Табл. 1) — расч. знач.</td>
+        <td class="info"><a class="rl" href="#">СИТИС-СПН-1</a></td>
+      </tr>
+      <tr>
+        <td class="num">8</td><td class="param">Удельная приведённая пожарная нагрузка (к пов-сти ограждений)</td>
+        <td class="sym">g<sub>k</sub></td>
+        <td class="formula"><span class="fr"><span class="fr-n">F<sub>f</sub>·q<sub>п</sub></span><span class="fr-d">(F<sub>w</sub>−A<sub>0</sub>)·Q<sup>р</sup><sub>нд</sub></span></span></td>
+        <td class="val"><span class="vr" id="s0_gk">9.70</span></td>
+        <td class="unit">кг/м²</td><td class="note"><span class="badge b">Прил. 1 МР 2013</span></td>
+        <td class="info" style="font-size:9px;color:var(--t3)">см. п.1 Примечаний</td>
+      </tr>
+      <tr>
+        <td class="num">9</td><td class="param">Средняя теплота сгорания пожарной нагрузки</td>
+        <td class="sym">Q<sup>р</sup><sub>нср</sub></td><td class="formula">Σ m<sub>i</sub>·Q<sup>р</sup><sub>нi</sub></td>
+        <td class="val"><input class="vi" id="s0_Qsr" type="number" value="14.0" oninput="rc0()"></td>
+        <td class="unit">МДж/кг</td>
+        <td class="note" style="font-size:9px">СИТИС-СПН-1 (Табл. 2)</td>
+        <td class="info"><a class="rl" href="#">СИТИС-СПН-1</a></td>
+      </tr>
+      <tr>
+        <td class="num">10</td><td class="param">Проемность помещения</td>
+        <td class="sym">Ω</td><td class="formula">Σ A<sub>i</sub>√h<sub>i</sub></td>
+        <td class="val"><input class="vi" id="s0_Om" type="number" value="2.97" oninput="rc0()"></td>
+        <td class="unit">м<sup>5/2</sup></td>
+        <td class="note" style="font-size:9px">из таблицы проёмности ↓</td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">11</td><td class="param">Критическое удельное кол-во пожарной нагрузки</td>
+        <td class="sym">g<sub>k,cr</sub></td>
+        <td class="formula"><span class="fr"><span class="fr-n">0.0177·Ω</span><span class="fr-d">√F<sub>w</sub></span></span></td>
+        <td class="val"><span class="va" id="s0_gkcr">0.55</span></td>
+        <td class="unit">кг/м²</td><td class="note"></td>
+        <td class="info"><span class="badge g" id="s0_prn">ПРН</span></td>
+      </tr>
+      <tr class="sec-row"><td colspan="8">🌡 ტემპ. · Температурный режим</td></tr>
+      <tr>
+        <td class="num">12</td><td class="param">Начальная температура воздуха</td>
+        <td class="sym">T<sub>0</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s0_T0" type="number" value="20" oninput="rc0()"></td>
+        <td class="unit">°C</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">13</td><td class="param">Максимальная среднеобъёмная температура в помещении</td>
+        <td class="sym">T<sub>0max</sub></td>
+        <td class="formula" style="font-size:9.5px">ПРН: T₀+224·gk^0.528<br>ПРВ: T₀+940·e^(0.0047g₀−0.141)</td>
+        <td class="val"><span class="vr o" id="s0_T0max">—</span></td>
+        <td class="unit">°C</td>
+        <td class="note"><span class="badge b">ф.(13,14) МР 2013</span></td><td class="info"></td>
+      </tr>
+      <tr class="sec-row"><td colspan="8">💨 კვამლ. · Удаление дыма (ф.15–17)</td></tr>
+      <tr>
+        <td class="num">14</td><td class="param">Высота коридора / смежного помещения</td>
+        <td class="sym">h<sub>cor</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s0_Hcor" type="number" value="3.0" oninput="rc0()"></td>
+        <td class="unit">м</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">15</td><td class="param">Ширина коридора</td>
+        <td class="sym">b<sub>cor</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s0_bcor" type="number" value="2.0" oninput="rc0()"></td>
+        <td class="unit">м</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">16</td><td class="param">Предельная толщина дымового слоя</td>
+        <td class="sym">h<sub>д</sub></td><td class="formula">0.55 × h<sub>cor</sub></td>
+        <td class="val"><span class="va" id="s0_hd">1.65</span></td>
+        <td class="unit">м</td>
+        <td class="note" style="font-size:9px">0.5÷0.6 × h<sub>cor</sub> · МР 2013</td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">17</td><td class="param">Температура газов в коридоре</td>
+        <td class="sym">T<sub>g</sub></td>
+        <td class="formula" style="font-size:9.5px">T₀ + 0.7·(T₀max−T₀)</td>
+        <td class="val"><span class="vr o" id="s0_Tg">—</span></td>
+        <td class="unit">°C</td>
+        <td class="note"><span class="badge b">ф.(15) МР 2013</span></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">18</td><td class="param">Поправочный коэффициент на тип здания</td>
+        <td class="sym">k<sub>e</sub></td><td class="formula">—</td>
+        <td class="val">
+          <select class="vsel" id="s0_ke" onchange="rc0()">
+            <option value="1.0">1.0 — жилые</option>
+            <option value="1.2">1.2 — общест.</option>
+          </select>
+        </td>
+        <td class="unit">—</td>
+        <td class="note" style="font-size:9px">МР 2013 ф.(17)</td><td class="info"></td>
+      </tr>
+      <tr style="background:var(--glt)">
+        <td class="num" style="background:#c8f0de">20</td>
+        <td class="param" style="font-weight:700;color:var(--navy)">Массовый расход продуктов горения</td>
+        <td class="sym" style="color:var(--grn)">G<sub>у</sub></td>
+        <td class="formula" style="font-size:9px">1.3·ke·b·hд·ρ₀·(T₀/Tg)·√(2g·hд·ΔT/T₀)</td>
+        <td class="val"><span class="vr g" id="s0_Gu">—</span></td>
+        <td class="unit" style="color:var(--grn);font-weight:700">кг/с</td>
+        <td class="note"><span class="badge b">ф.(17) МР 2013</span></td><td class="info"></td>
+      </tr>
+      <tr style="background:var(--blt)">
+        <td class="num" style="background:#c0d8f8">21</td>
+        <td class="param" style="font-weight:700;color:var(--navy)">Объёмный расход удаляемых продуктов горения</td>
+        <td class="sym">L<sub>у</sub></td>
+        <td class="formula" style="font-size:9px">G<sub>у</sub> / ρ<sub>g</sub> × 3600</td>
+        <td class="val"><span class="vr lg" id="s0_Lu">—</span></td>
+        <td class="unit" style="color:var(--blue);font-weight:700;font-size:11px">м³/ч</td>
+        <td class="note"><span class="badge b">аналог ф.(88)</span></td>
+        <td class="info" style="font-size:9px;color:var(--t3)" id="s0_rhoG">ρg = — кг/м³</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="res-card" id="s0_cards">
+    <div class="rc-item wa"><div class="rc-lbl">T₀max</div><div class="rc-val" id="rc0_tmax">—</div><div class="rc-unit">°C</div></div>
+    <div class="rc-item wa"><div class="rc-lbl">Tg კორ.</div><div class="rc-val" id="rc0_tg">—</div><div class="rc-unit">°C</div></div>
+    <div class="rc-item ok"><div class="rc-lbl">Gу</div><div class="rc-val" id="rc0_gu">—</div><div class="rc-unit">кг/с</div></div>
+    <div class="rc-item hi"><div class="rc-lbl">Lу მოც.ხარ.</div><div class="rc-val" id="rc0_lu">—</div><div class="rc-unit">м³/ч</div></div>
+  </div>
+</div>
+</div>
+
+<!-- TAB 1 · Elevator pressurization · п.7.14 СП 7 -->
+<div class="tab-panel" id="tab1">
+<div class="main">
+  <div class="doc-hdr">
+    <div class="doc-title">ლიფტის ჰოლის დაწნეხვა (подпор)</div>
+    <div class="doc-sub">Подпор воздуха в лифтовых холлах · п.7.14 СП 7.13130.2022 · МР к СП 7</div>
+  </div>
+  <div class="warn-bar">⚠ ანგარიში ითვლება ცეცხლის სართულზე 1 კარი ღია, დანარჩენი — დახურული</div>
+
+  <table class="calc-table">
+    <thead><tr>
+      <th class="c">№</th><th>Характеристика · პარამ.</th>
+      <th class="c">Обозн.</th><th>Формула</th>
+      <th class="c">Значение</th><th class="c">Разм.</th>
+      <th>Примечание</th><th>Доп. информация</th>
+    </tr></thead>
+    <tbody>
+      <tr class="sec-row"><td colspan="8">🏢 შენობა · Параметры здания</td></tr>
+      <tr>
+        <td class="num">1</td><td class="param">Число этажей, обслуживаемых лифтом</td>
+        <td class="sym">n</td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s1_n" type="number" value="10" min="2" oninput="rc1()"></td>
+        <td class="unit">эт.</td><td class="note">კლავდება პოჟ. სართ. ჩათვლ.</td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">2</td><td class="param">Высота одного этажа</td>
+        <td class="sym">h<sub>эт</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s1_Het" type="number" value="3.0" oninput="rc1()"></td>
+        <td class="unit">м</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">3</td><td class="param">Высота шахты лифта</td>
+        <td class="sym">H<sub>ш</sub></td><td class="formula">n × h<sub>эт</sub></td>
+        <td class="val"><span class="va" id="s1_Hsh">30.0</span></td>
+        <td class="unit">м</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr class="sec-row"><td colspan="8">🚪 კარი · Параметры дверей лифтового холла</td></tr>
+      <tr>
+        <td class="num">4</td><td class="param">Ширина двери лифтового холла</td>
+        <td class="sym">a<sub>д</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s1_ad" type="number" value="1.2" oninput="rc1()"></td>
+        <td class="unit">м</td><td class="note" style="font-size:9px">ширина в свету</td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">5</td><td class="param">Высота двери лифтового холла</td>
+        <td class="sym">h<sub>д</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s1_hd" type="number" value="2.1" oninput="rc1()"></td>
+        <td class="unit">м</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">6</td><td class="param">Площадь открытой двери (пожарный этаж)</td>
+        <td class="sym">A<sub>откр</sub></td><td class="formula">a<sub>д</sub> × h<sub>д</sub></td>
+        <td class="val"><span class="va" id="s1_Aop">2.52</span></td>
+        <td class="unit">м²</td><td class="note" style="font-size:9px">1 дверь открыта на пож. этаже</td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">7</td><td class="param">Периметр закрытой двери</td>
+        <td class="sym">P<sub>д</sub></td><td class="formula">2·(a<sub>д</sub>+h<sub>д</sub>)</td>
+        <td class="val"><span class="va" id="s1_Pd">6.60</span></td>
+        <td class="unit">м</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">8</td><td class="param">Ширина зазора закрытой двери</td>
+        <td class="sym">δ</td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s1_delta" type="number" value="0.003" step="0.001" oninput="rc1()"></td>
+        <td class="unit">м</td><td class="note" style="font-size:9px">типовое 0.003 м (3 мм)</td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">9</td><td class="param">Площадь зазоров одной закрытой двери</td>
+        <td class="sym">A<sub>щ</sub></td><td class="formula">δ × P<sub>д</sub></td>
+        <td class="val"><span class="va" id="s1_Ash">0.020</span></td>
+        <td class="unit">м²</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr class="sec-row"><td colspan="8">⚙ კოეფ. · Расчётные параметры</td></tr>
+      <tr>
+        <td class="num">10</td><td class="param">Коэффициент расхода через отверстие</td>
+        <td class="sym">μ</td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s1_mu" type="number" value="0.64" oninput="rc1()"></td>
+        <td class="unit">—</td><td class="note" style="font-size:9px">типовое μ = 0.64 (ГОСТ)</td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">11</td><td class="param">Расчётный перепад давления (не менее)</td>
+        <td class="sym">ΔP</td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s1_dP" type="number" value="20" oninput="rc1()"></td>
+        <td class="unit">Па</td>
+        <td class="note" style="font-size:9px">ΔP ≥ 20 Па · СП 7 п.7.14</td>
+        <td class="info"><span class="badge b">СП 7 п.7.14</span></td>
+      </tr>
+      <tr>
+        <td class="num">12</td><td class="param">Плотность воздуха при T₀</td>
+        <td class="sym">ρ<sub>0</sub></td><td class="formula">—</td>
+        <td class="val"><span class="va">1.20</span></td>
+        <td class="unit">кг/м³</td><td class="note" style="font-size:9px">при T₀ = 20°C</td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">13</td><td class="param">Площадь сечения шахты лифта</td>
+        <td class="sym">A<sub>ш</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s1_Ash2" type="number" value="4.0" oninput="rc1()"></td>
+        <td class="unit">м²</td><td class="note" style="font-size:9px">по паспорту лифта</td><td class="info"></td>
+      </tr>
+      <tr class="sec-row"><td colspan="8">🌬 გაანგარ. · Расчёт расходов воздуха</td></tr>
+      <tr>
+        <td class="num">14</td><td class="param">Скорость воздуха через открытую дверь</td>
+        <td class="sym">v<sub>откр</sub></td><td class="formula">μ·√(2·ΔP/ρ₀)</td>
+        <td class="val"><span class="va" id="s1_Vop">—</span></td>
+        <td class="unit">м/с</td>
+        <td class="note" style="font-size:9px">v ≥ 1.0 м/с · СП 7 п.7.14</td>
+        <td class="info"><span class="badge" id="s1_vbadge" style="background:#edfbf3;color:#0f6e3a;border:1px solid #9ddcba">—</span></td>
+      </tr>
+      <tr>
+        <td class="num">15</td><td class="param">Расход через открытую дверь (пожарный этаж)</td>
+        <td class="sym">L<sub>откр</sub></td><td class="formula">3600·μ·A<sub>откр</sub>·√(2ΔP/ρ₀)</td>
+        <td class="val"><span class="vr" id="s1_Lop">—</span></td>
+        <td class="unit">м³/ч</td>
+        <td class="note" style="font-size:9px">1 дверь открыта</td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">16</td><td class="param">Расход через закрытые двери (n−1 этажей)</td>
+        <td class="sym">L<sub>закр</sub></td>
+        <td class="formula" style="font-size:9.5px">(n−1)·3600·μ·A<sub>щ</sub>·√(2ΔP/ρ₀)</td>
+        <td class="val"><span class="vr" id="s1_Lcl">—</span></td>
+        <td class="unit">м³/ч</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">17</td><td class="param">Расход через неплотности шахты лифта</td>
+        <td class="sym">L<sub>ш</sub></td>
+        <td class="formula" style="font-size:9.5px">3600·0.12·A<sub>ш</sub>·√(2ΔP/ρ₀)</td>
+        <td class="val"><span class="vr" id="s1_Lsh">—</span></td>
+        <td class="unit">м³/ч</td>
+        <td class="note" style="font-size:9px">коэф. 0.12 — неплотн. шахты</td><td class="info"></td>
+      </tr>
+      <tr style="background:var(--blt)">
+        <td class="num" style="background:#c0d8f8">18</td>
+        <td class="param" style="font-weight:700;color:var(--navy)">ИТОГО: расход воздуха на подпор лифтового холла</td>
+        <td class="sym">L<sub>п.лх</sub></td>
+        <td class="formula" style="font-size:9px">L<sub>откр</sub> + L<sub>закр</sub> + L<sub>ш</sub></td>
+        <td class="val"><span class="vr lg" id="s1_Lp">—</span></td>
+        <td class="unit" style="color:var(--blue);font-weight:700;font-size:11px">м³/ч</td>
+        <td class="note"><span class="badge b">п.7.14 СП 7</span></td>
+        <td class="info"><span class="badge b" id="s1_check">✓</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="res-card">
+    <div class="rc-item"><div class="rc-lbl">v откр. კარი</div><div class="rc-val" id="rc1_v">—</div><div class="rc-unit">м/с</div></div>
+    <div class="rc-item hi"><div class="rc-lbl">L откრ</div><div class="rc-val" id="rc1_lop">—</div><div class="rc-unit">м³/ч</div></div>
+    <div class="rc-item hi"><div class="rc-lbl">L დახ. კარები</div><div class="rc-val" id="rc1_lcl">—</div><div class="rc-unit">м³/ч</div></div>
+    <div class="rc-item hi" style="background:#e8f1fd;border-color:#5090e0"><div class="rc-lbl">L<sub>п.лх</sub> სულ</div><div class="rc-val" id="rc1_lp" style="font-size:22px">—</div><div class="rc-unit">м³/ч</div></div>
+  </div>
+</div>
+</div>
+
+<!-- TAB 2 · Corridor pressurization · п.7.15 СП 7 -->
+<div class="tab-panel" id="tab2">
+<div class="main">
+  <div class="doc-hdr">
+    <div class="doc-title">კორიდორის დაწნეხვა (подпор)</div>
+    <div class="doc-sub">Подпор воздуха в незадымляемых лестничных клетках и коридорах · п.7.15 СП 7.13130.2022</div>
+  </div>
+  <div class="warn-bar">⚠ ანგარიში — უსაფრთხო კიბ. უჯ. / კვამლისაგან დაცული კორიდ. (НЛК типа Н2, Н3)</div>
+
+  <table class="calc-table">
+    <thead><tr>
+      <th class="c">№</th><th>Характеристика · პარამ.</th>
+      <th class="c">Обозн.</th><th>Формула</th>
+      <th class="c">Значение</th><th class="c">Разм.</th>
+      <th>Примечание</th><th>Доп. информация</th>
+    </tr></thead>
+    <tbody>
+      <tr class="sec-row"><td colspan="8">🏢 შენობა · Параметры здания и коридора</td></tr>
+      <tr>
+        <td class="num">1</td><td class="param">Число этажей здания</td>
+        <td class="sym">n</td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s2_n" type="number" value="10" min="2" oninput="rc2()"></td>
+        <td class="unit">эт.</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">2</td><td class="param">Длина коридора</td>
+        <td class="sym">L<sub>cor</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s2_L" type="number" value="30" oninput="rc2()"></td>
+        <td class="unit">м</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">3</td><td class="param">Ширина коридора</td>
+        <td class="sym">b<sub>cor</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s2_b" type="number" value="2.0" oninput="rc2()"></td>
+        <td class="unit">м</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">4</td><td class="param">Высота коридора</td>
+        <td class="sym">h<sub>cor</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s2_h" type="number" value="3.0" oninput="rc2()"></td>
+        <td class="unit">м</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">5</td><td class="param">Площадь сечения коридора</td>
+        <td class="sym">A<sub>cor</sub></td><td class="formula">b × h<sub>cor</sub></td>
+        <td class="val"><span class="va" id="s2_Acor">6.0</span></td>
+        <td class="unit">м²</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr class="sec-row"><td colspan="8">🚪 კარები · Параметры дверей коридора</td></tr>
+      <tr>
+        <td class="num">6</td><td class="param">Ширина двери коридора</td>
+        <td class="sym">a<sub>д</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s2_ad" type="number" value="0.9" oninput="rc2()"></td>
+        <td class="unit">м</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">7</td><td class="param">Высота двери коридора</td>
+        <td class="sym">h<sub>д</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s2_hd" type="number" value="2.1" oninput="rc2()"></td>
+        <td class="unit">м</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">8</td><td class="param">Количество дверей на один этаж (коридор)</td>
+        <td class="sym">n<sub>д</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s2_nd" type="number" value="4" min="1" oninput="rc2()"></td>
+        <td class="unit">шт.</td><td class="note" style="font-size:9px">кол-во кв./пом. на этаже</td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">9</td><td class="param">Периметр одной закрытой двери</td>
+        <td class="sym">P<sub>д</sub></td><td class="formula">2·(a<sub>д</sub>+h<sub>д</sub>)</td>
+        <td class="val"><span class="va" id="s2_Pd">6.0</span></td>
+        <td class="unit">м</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">10</td><td class="param">Ширина зазора двери</td>
+        <td class="sym">δ</td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s2_delta" type="number" value="0.003" step="0.001" oninput="rc2()"></td>
+        <td class="unit">м</td><td class="note" style="font-size:9px">типовое 0.003 м</td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">11</td><td class="param">Суммарная площадь зазоров всех закрытых дверей (1 этаж)</td>
+        <td class="sym">A<sub>щ,эт</sub></td><td class="formula">n<sub>д</sub>·δ·P<sub>д</sub></td>
+        <td class="val"><span class="va" id="s2_Ashet">—</span></td>
+        <td class="unit">м²</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr class="sec-row"><td colspan="8">⚙ კოეფ. · Расчётные параметры</td></tr>
+      <tr>
+        <td class="num">12</td><td class="param">Коэффициент расхода через отверстие</td>
+        <td class="sym">μ</td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s2_mu" type="number" value="0.64" oninput="rc2()"></td>
+        <td class="unit">—</td><td class="note" style="font-size:9px">μ = 0.64</td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">13</td><td class="param">Расчётный перепад давления</td>
+        <td class="sym">ΔP</td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s2_dP" type="number" value="20" oninput="rc2()"></td>
+        <td class="unit">Па</td>
+        <td class="note" style="font-size:9px">ΔP ≥ 20 Па · СП 7 п.7.15</td>
+        <td class="info"><span class="badge b">СП 7 п.7.15</span></td>
+      </tr>
+      <tr>
+        <td class="num">14</td><td class="param">Количество открытых дверей (одновременно)</td>
+        <td class="sym">n<sub>e</sub></td><td class="formula">—</td>
+        <td class="val"><input class="vi" id="s2_ne" type="number" value="1" min="1" oninput="rc2()"></td>
+        <td class="unit">шт.</td><td class="note" style="font-size:9px">как правило 1 (пожарный этаж)</td><td class="info"></td>
+      </tr>
+      <tr class="sec-row"><td colspan="8">🌬 გაანგარ. · Расчёт расходов воздуха</td></tr>
+      <tr>
+        <td class="num">15</td><td class="param">Скорость воздуха через открытую дверь</td>
+        <td class="sym">v<sub>откр</sub></td><td class="formula">μ·√(2·ΔP/ρ₀)</td>
+        <td class="val"><span class="va" id="s2_v">—</span></td>
+        <td class="unit">м/с</td>
+        <td class="note" style="font-size:9px">v ≥ 1.0 м/с</td>
+        <td class="info"><span class="badge" id="s2_vbadge" style="background:#edfbf3;color:#0f6e3a;border:1px solid #9ddcba">—</span></td>
+      </tr>
+      <tr>
+        <td class="num">16</td><td class="param">Расход через открытые двери (пожарный этаж)</td>
+        <td class="sym">L<sub>откр</sub></td>
+        <td class="formula" style="font-size:9.5px">3600·n<sub>e</sub>·μ·(a<sub>д</sub>·h<sub>д</sub>)·√(2ΔP/ρ₀)</td>
+        <td class="val"><span class="vr" id="s2_Lop">—</span></td>
+        <td class="unit">м³/ч</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr>
+        <td class="num">17</td><td class="param">Расход через зазоры закрытых дверей (все этажи)</td>
+        <td class="sym">L<sub>закр</sub></td>
+        <td class="formula" style="font-size:9.5px">n·3600·μ·A<sub>щ,эт</sub>·√(2ΔP/ρ₀)</td>
+        <td class="val"><span class="vr" id="s2_Lcl">—</span></td>
+        <td class="unit">м³/ч</td><td class="note"></td><td class="info"></td>
+      </tr>
+      <tr style="background:var(--blt)">
+        <td class="num" style="background:#c0d8f8">18</td>
+        <td class="param" style="font-weight:700;color:var(--navy)">ИТОГО: расход воздуха на подпор коридора</td>
+        <td class="sym">L<sub>п.кор</sub></td>
+        <td class="formula" style="font-size:9px">L<sub>откр</sub> + L<sub>закр</sub></td>
+        <td class="val"><span class="vr lg" id="s2_Lp">—</span></td>
+        <td class="unit" style="color:var(--blue);font-weight:700;font-size:11px">м³/ч</td>
+        <td class="note"><span class="badge b">п.7.15 СП 7</span></td><td class="info"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="res-card">
+    <div class="rc-item"><div class="rc-lbl">v სიჩქ. კარი</div><div class="rc-val" id="rc2_v">—</div><div class="rc-unit">м/с</div></div>
+    <div class="rc-item hi"><div class="rc-lbl">L ღია კარ.</div><div class="rc-val" id="rc2_lop">—</div><div class="rc-unit">м³/ч</div></div>
+    <div class="rc-item hi"><div class="rc-lbl">L დახ. ბზ.</div><div class="rc-val" id="rc2_lcl">—</div><div class="rc-unit">м³/ч</div></div>
+    <div class="rc-item hi" style="background:#e8f1fd;border-color:#5090e0"><div class="rc-lbl">L<sub>п.кор</sub> სულ</div><div class="rc-val" id="rc2_lp" style="font-size:22px">—</div><div class="rc-unit">м³/ч</div></div>
+  </div>
+</div>
+</div>
+
+<script>
+const g=id=>document.getElementById(id);
+const sv=(id,v)=>{const el=g(id);if(el) el.textContent=v;};
+
+function rc0(){
+  const Ff=+g('s0_Ff').value||1, Hf=+g('s0_Hf').value||3;
+  const A0=+g('s0_A0').value||0, Qnd=+g('s0_Qnd').value||13.8;
+  const qp=+g('s0_qp').value||0;
+  const Om=+g('s0_Om').value||0, T0c=+g('s0_T0').value||20;
+  const Hcor=+g('s0_Hcor').value||3, bcor=+g('s0_bcor').value||2;
+  const ke=+g('s0_ke').value||1;
+  const T0K=T0c+273.15, rho0=1.2, gv=9.81;
+
+  const V=Ff*Hf; sv('s0_V',V.toFixed(1));
+  const Fw=6*Math.pow(V,2/3); sv('s0_Fw',Fw.toFixed(1));
+  const dFw=Math.max(0.01,(Fw-A0)*Qnd);
+  const gk=(Ff*qp)/dFw; sv('s0_gk',gk.toFixed(2));
+  const gkcr=Fw>0?0.0177*Om/Math.sqrt(Fw):25; sv('s0_gkcr',gkcr.toFixed(2));
+  const isPRN=gk<=gkcr;
+  const prn=g('s0_prn');
+  if(prn){prn.textContent=isPRN?'ПРН':'ПРВ';prn.className='badge '+(isPRN?'g':'o');}
+  const g0=qp/13.8;
+  let T0maxK;
+  if(isPRN) T0maxK=T0K+224*Math.pow(Math.max(gk,0.001),0.528);
+  else T0maxK=T0K+940*Math.exp(0.0047*g0-0.141);
+  sv('s0_T0max',Math.round(T0maxK-273));
+  const hd=0.55*Hcor; sv('s0_hd',hd.toFixed(2));
+  const TgK=T0K+(T0maxK-T0K)*0.7; sv('s0_Tg',Math.round(TgK-273));
+  const inner=2*gv*hd*(TgK-T0K)/T0K;
+  let Gu=0;
+  if(inner>0&&hd>0&&bcor>0) Gu=1.3*ke*bcor*hd*rho0*(T0K/TgK)*Math.sqrt(inner);
+  sv('s0_Gu',Gu.toFixed(3));
+  const rhoG=rho0*T0K/TgK;
+  const Lu=Gu>0?Gu/rhoG*3600:0;
+  sv('s0_Lu',Lu>0?Math.round(Lu).toLocaleString():'—');
+  sv('s0_rhoG','ρg = '+rhoG.toFixed(3)+' кг/м³');
+  sv('rc0_tmax',Math.round(T0maxK-273));
+  sv('rc0_tg',Math.round(TgK-273));
+  sv('rc0_gu',Gu.toFixed(3));
+  sv('rc0_lu',Lu>0?Math.round(Lu).toLocaleString():'—');
+}
+
+function rc1(){
+  const n=+g('s1_n').value||1, Het=+g('s1_Het').value||3;
+  const ad=+g('s1_ad').value||1, hd=+g('s1_hd').value||2.1;
+  const delta=+g('s1_delta').value||0.003;
+  const mu=+g('s1_mu').value||0.64, dP=+g('s1_dP').value||20;
+  const Ash2=+g('s1_Ash2').value||4;
+  const rho0=1.2;
+
+  sv('s1_Hsh',(n*Het).toFixed(1));
+  const Aop=ad*hd; sv('s1_Aop',Aop.toFixed(3));
+  const Pd=2*(ad+hd); sv('s1_Pd',Pd.toFixed(2));
+  const Ash=delta*Pd; sv('s1_Ash',Ash.toFixed(4));
+
+  const vsq=Math.sqrt(2*dP/rho0);
+  const Vop=mu*vsq; sv('s1_Vop',Vop.toFixed(2));
+
+  const vb=g('s1_vbadge');
+  if(vb){
+    if(Vop>=1.0){vb.textContent='✓ v ≥ 1.0 м/с';vb.style.cssText='font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:#edfbf3;color:#0f6e3a;border:1px solid #9ddcba';}
+    else{vb.textContent='✗ v < 1.0 м/с';vb.style.cssText='font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:#fff0ef;color:#c0201a;border:1px solid #f8a0a0';}
+  }
+
+  const Lop=3600*mu*Aop*vsq;
+  const Lcl=3600*(n-1)*mu*Ash*vsq;
+  const Lsh=3600*0.12*Ash2*vsq;
+  const Lp=Lop+Lcl+Lsh;
+
+  sv('s1_Lop',Math.round(Lop).toLocaleString());
+  sv('s1_Lcl',Math.round(Lcl).toLocaleString());
+  sv('s1_Lsh',Math.round(Lsh).toLocaleString());
+  sv('s1_Lp',Math.round(Lp).toLocaleString());
+
+  sv('rc1_v',Vop.toFixed(2));
+  sv('rc1_lop',Math.round(Lop).toLocaleString());
+  sv('rc1_lcl',Math.round(Lcl).toLocaleString());
+  sv('rc1_lp',Math.round(Lp).toLocaleString());
+}
+
+function rc2(){
+  const n=+g('s2_n').value||1;
+  const b=+g('s2_b').value||2, h=+g('s2_h').value||3;
+  const ad=+g('s2_ad').value||0.9, hd=+g('s2_hd').value||2.1;
+  const nd=+g('s2_nd').value||4, delta=+g('s2_delta').value||0.003;
+  const mu=+g('s2_mu').value||0.64, dP=+g('s2_dP').value||20;
+  const ne=+g('s2_ne').value||1;
+  const rho0=1.2;
+
+  sv('s2_Acor',(b*h).toFixed(2));
+  const Pd=2*(ad+hd); sv('s2_Pd',Pd.toFixed(2));
+  const Ashet=nd*delta*Pd; sv('s2_Ashet',Ashet.toFixed(4));
+
+  const vsq=Math.sqrt(2*dP/rho0);
+  const v=mu*vsq; sv('s2_v',v.toFixed(2));
+
+  const vb=g('s2_vbadge');
+  if(vb){
+    if(v>=1.0){vb.textContent='✓ v ≥ 1.0 м/с';vb.style.cssText='font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:#edfbf3;color:#0f6e3a;border:1px solid #9ddcba';}
+    else{vb.textContent='✗ v < 1.0 м/с';vb.style.cssText='font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;background:#fff0ef;color:#c0201a;border:1px solid #f8a0a0';}
+  }
+
+  const Lop=3600*ne*mu*(ad*hd)*vsq;
+  const Lcl=n*3600*mu*Ashet*vsq;
+  const Lp=Lop+Lcl;
+
+  sv('s2_Lop',Math.round(Lop).toLocaleString());
+  sv('s2_Lcl',Math.round(Lcl).toLocaleString());
+  sv('s2_Lp',Math.round(Lp).toLocaleString());
+
+  sv('rc2_v',v.toFixed(2));
+  sv('rc2_lop',Math.round(Lop).toLocaleString());
+  sv('rc2_lcl',Math.round(Lcl).toLocaleString());
+  sv('rc2_lp',Math.round(Lp).toLocaleString());
+}
+
+function sw(idx){
+  document.querySelectorAll('.tab-panel').forEach((p,i)=>p.classList.toggle('active',i===idx));
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));
+}
+
+rc0(); rc1(); rc2();
+</script>
+</body>
+</html>

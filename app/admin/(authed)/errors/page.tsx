@@ -1,4 +1,5 @@
 import {AdminPageHeader, AdminSection} from '@/components/admin-page-header';
+import {IssueTabs} from '@/components/admin/issues/tabs-nav';
 import {countErrorsByDigest, listErrorEvents} from '@/lib/error-events';
 import {ErrorsTable} from './table';
 
@@ -29,6 +30,7 @@ export default async function AdminErrorsPage({
         description="Frontend runtime errors (React boundaries → sendBeacon). Duplicates აიჯგუფება digest-ით. გადახედე ახალი ხარვეზი რომელიც ყველაზე ხშირად ხდება."
       />
       <AdminSection>
+        <IssueTabs />
         {entries.length === 0 ? (
           <div className="rounded-card border border-bdr bg-sur p-8 text-center text-sm text-text-2">
             ამ ფილტრში ჩანაწერი არ არის.{' '}

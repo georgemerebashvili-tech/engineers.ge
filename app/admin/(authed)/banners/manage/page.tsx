@@ -1,5 +1,6 @@
 import {getHeroAdSlots, listHeroAdUploadRequests} from '@/lib/hero-ads-store';
 import {BannersManage} from '@/components/admin/banners/manage';
+import {BannerTabs} from '@/components/admin/banners/tabs-nav';
 import {AdminPageHeader, AdminSection} from '@/components/admin-page-header';
 
 export const dynamic = 'force-dynamic';
@@ -18,6 +19,7 @@ export default async function BannersManagePage() {
         description="აირჩიე slot → შეცვალე ფასი, ვადა, სურათი → შენახვა."
       />
       <AdminSection>
+        <BannerTabs />
         <BannersManage
           slots={slots}
           requests={requestSnapshot.requests}

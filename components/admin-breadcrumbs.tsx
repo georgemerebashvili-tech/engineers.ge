@@ -17,13 +17,12 @@ const ADMIN_ROUTE_MAP: Record<string, {label: string; section?: string}> = {
   '/admin/banners/table': {label: 'ცხრილი', section: 'კონტენტი'},
   '/admin/banners/stats': {label: 'სტატისტიკა', section: 'კონტენტი'},
   '/admin/banners/preview': {label: 'Preview', section: 'კონტენტი'},
-  '/admin/tiles': {label: 'Hero Tiles', section: 'კონტენტი'},
   '/admin/users': {label: 'რეგისტრაციები', section: 'მომხმარებლები'},
   '/admin/referrals': {label: 'Referrals', section: 'მომხმარებლები'},
   '/admin/ai': {label: 'AI (Claude)', section: 'პარამეტრები'},
-  '/admin/health': {label: 'System health', section: 'პარამეტრები'},
+  '/admin/health': {label: 'System health', section: 'მონიტორინგი'},
   '/admin/password': {label: 'პაროლი', section: 'პარამეტრები'},
-  '/admin/sitemap': {label: 'Sitemap', section: 'მთავარი'},
+  '/admin/sitemap': {label: '🚀 Deploy production', section: 'მთავარი'},
   '/admin/todos': {label: 'TODO', section: 'მთავარი'}
 };
 

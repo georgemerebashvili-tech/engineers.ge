@@ -21,7 +21,6 @@ import {
   Sparkles,
   Cookie,
   Share2,
-  Network,
   Activity,
   Gauge,
   Shield,
@@ -29,8 +28,6 @@ import {
   ListTodo,
   Bot,
   Bug,
-  AlertTriangle,
-  FileQuestion,
   Rocket,
   ArrowRightLeft,
   ScrollText,
@@ -147,17 +144,17 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
       title: 'მთავარი',
       items: [
         {
+          key: 'deploy',
+          label: '🚀 Deploy production',
+          href: '/admin/sitemap',
+          icon: Rocket,
+          flagKey: 'admin.sitemap'
+        },
+        {
           key: 'overview',
           label: 'მიმოხილვა',
           href: '/admin/stats',
           icon: LayoutDashboard
-        },
-        {
-          key: 'launch-checklist',
-          label: 'Launch checklist',
-          href: '/admin/launch-checklist',
-          icon: Rocket,
-          flagKey: 'admin.launch-checklist'
         },
         {
           key: 'activity',
@@ -165,13 +162,6 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
           href: '/admin/activity',
           icon: Zap,
           flagKey: 'admin.activity'
-        },
-        {
-          key: 'sitemap',
-          label: 'Sitemap & deploy',
-          href: '/admin/sitemap',
-          icon: Network,
-          flagKey: 'admin.sitemap'
         },
         {
           key: 'todos',
@@ -186,11 +176,11 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
       title: 'კონტენტი',
       items: [
         {
-          key: 'hero-ads',
-          label: 'Hero Ads',
-          href: '/admin/tiles',
+          key: 'banners',
+          label: 'ბანერები · Hero Ads',
+          href: '/admin/banners',
           icon: Images,
-          flagKey: 'admin.hero-ads'
+          flagKey: 'admin.banners'
         },
         {
           key: 'redirects',
@@ -205,19 +195,6 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
           href: '/admin/regulations',
           icon: ScrollText,
           flagKey: 'admin.regulations'
-        },
-        {
-          key: 'banners',
-          label: 'ბანერები',
-          icon: Images,
-          flagKey: 'admin.banners',
-          children: [
-            {label: 'მიმოხილვა', href: '/admin/banners'},
-            {label: 'Hero Ads მართვა', href: '/admin/banners/manage'},
-            {label: 'ცხრილი', href: '/admin/banners/table'},
-            {label: 'სტატისტიკა', href: '/admin/banners/stats'},
-            {label: 'Preview', href: '/admin/banners/preview'}
-          ]
         }
       ]
     },
@@ -253,40 +230,35 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
         {
           key: 'analytics',
           label: 'სტატისტიკა',
+          href: '/admin/stats',
           icon: BarChart3,
-          flagKey: 'admin.stats',
-          children: [
-            {label: 'ზოგადი', href: '/admin/stats'},
-            {label: 'კალკულატორები', href: '/admin/stats#calcs'}
-          ]
+          flagKey: 'admin.stats'
         },
         {
           key: 'claude-sessions',
-          label: 'Claude სესიები',
+          label: 'Claude გამოყენება',
           href: '/admin/claude-sessions',
           icon: Bot,
           flagKey: 'admin.claude-sessions'
         },
         {
           key: 'bug-reports',
-          label: 'ხარვეზები',
+          label: 'ხარვეზები · Issues',
           href: '/admin/bug-reports',
           icon: Bug,
           flagKey: 'admin.bug-reports'
-        },
+        }
+      ]
+    },
+    {
+      title: 'მონიტორინგი',
+      items: [
         {
-          key: 'errors',
-          label: 'Errors (frontend)',
-          href: '/admin/errors',
-          icon: AlertTriangle,
-          flagKey: 'admin.errors'
-        },
-        {
-          key: '404s',
-          label: '404 tracking',
-          href: '/admin/404s',
-          icon: FileQuestion,
-          flagKey: 'admin.404s'
+          key: 'health',
+          label: 'System health · Launch',
+          href: '/admin/health',
+          icon: Activity,
+          flagKey: 'admin.health'
         },
         {
           key: 'web-vitals',
@@ -294,45 +266,6 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
           href: '/admin/web-vitals',
           icon: Gauge,
           flagKey: 'admin.web-vitals'
-        }
-      ]
-    },
-    {
-      title: 'პარამეტრები',
-      items: [
-        {
-          key: 'features',
-          label: 'ფიჩერ-მართვა',
-          href: '/admin/features',
-          icon: ToggleRight
-        },
-        {
-          key: 'audit-log',
-          label: 'Audit log',
-          href: '/admin/audit-log',
-          icon: ScrollText,
-          flagKey: 'admin.audit-log'
-        },
-        {
-          key: 'ai',
-          label: 'AI (Claude)',
-          href: '/admin/ai',
-          icon: Sparkles,
-          flagKey: 'admin.ai'
-        },
-        {
-          key: 'emails',
-          label: 'Email preview',
-          href: '/admin/emails',
-          icon: Mail,
-          flagKey: 'admin.emails'
-        },
-        {
-          key: 'health',
-          label: 'System health',
-          href: '/admin/health',
-          icon: Activity,
-          flagKey: 'admin.health'
         },
         {
           key: 'rate-limits',
@@ -347,6 +280,38 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
           href: '/admin/csp-violations',
           icon: Shield,
           flagKey: 'admin.csp-violations'
+        },
+        {
+          key: 'audit-log',
+          label: 'Audit log',
+          href: '/admin/audit-log',
+          icon: ScrollText,
+          flagKey: 'admin.audit-log'
+        }
+      ]
+    },
+    {
+      title: 'პარამეტრები',
+      items: [
+        {
+          key: 'features',
+          label: 'ფიჩერ-მართვა',
+          href: '/admin/features',
+          icon: ToggleRight
+        },
+        {
+          key: 'ai',
+          label: 'AI (Claude)',
+          href: '/admin/ai',
+          icon: Sparkles,
+          flagKey: 'admin.ai'
+        },
+        {
+          key: 'emails',
+          label: 'Email preview',
+          href: '/admin/emails',
+          icon: Mail,
+          flagKey: 'admin.emails'
         },
         {
           key: 'backup',

@@ -734,6 +734,7 @@
       <button class="fp-tab" type="button" data-view="section">ჭრილი</button>
       <button class="fp-tab" type="button" data-view="d3">3D სცენა</button>
       <button class="fp-tab" type="button" data-view="formulas">ფორმულები</button>
+      <button class="fp-tab" type="button" data-view="smoke">💨 კვამლის ვენტილაცია</button>
     </div>
 
     <div class="fp-stage">
@@ -754,6 +755,15 @@
         </div>
         <div class="fp-view" data-view="formulas">
           <div class="fp-formulas" id="formulas-panel"></div>
+        </div>
+        <div class="fp-view" data-view="smoke" style="padding:0;overflow:hidden">
+          <iframe
+            id="smoke-vent-frame"
+            data-src="./smoke-ventilation.html"
+            src="about:blank"
+            title="კვამლის ვენტილაცია"
+            style="width:100%;height:100%;border:0;display:block;background:var(--bg,#f2f5fa)"
+          ></iframe>
         </div>
       </div>
 
@@ -2288,6 +2298,12 @@ function wireUI() {
       tab.classList.add('active');
       renderLegend(tab.dataset.view);
       if (tab.dataset.view === 'd3') setTimeout(onResize3D, 20);
+      if (tab.dataset.view === 'smoke') {
+        const fr = document.getElementById('smoke-vent-frame');
+        if (fr && fr.getAttribute('src') === 'about:blank') {
+          fr.setAttribute('src', fr.getAttribute('data-src'));
+        }
+      }
     });
   });
 }
@@ -2933,7 +2949,8 @@ if (window.engCalcI18n) {
         '.fp-tab[data-view="plan"]': {text: 'Plan'},
         '.fp-tab[data-view="section"]': {text: 'Section'},
         '.fp-tab[data-view="d3"]': {text: '3D Scene'},
-        '.fp-tab[data-view="formulas"]': {text: 'Formulas'}
+        '.fp-tab[data-view="formulas"]': {text: 'Formulas'},
+        '.fp-tab[data-view="smoke"]': {text: '💨 Smoke Ventilation'}
       }
     },
     ru: {
@@ -2952,7 +2969,8 @@ if (window.engCalcI18n) {
         '.fp-tab[data-view="plan"]': {text: 'План'},
         '.fp-tab[data-view="section"]': {text: 'Разрез'},
         '.fp-tab[data-view="d3"]': {text: '3D'},
-        '.fp-tab[data-view="formulas"]': {text: 'Формулы'}
+        '.fp-tab[data-view="formulas"]': {text: 'Формулы'},
+        '.fp-tab[data-view="smoke"]': {text: '💨 Дымоудаление'}
       }
     },
     tr: {
@@ -2971,7 +2989,8 @@ if (window.engCalcI18n) {
         '.fp-tab[data-view="plan"]': {text: 'Plan'},
         '.fp-tab[data-view="section"]': {text: 'Kesit'},
         '.fp-tab[data-view="d3"]': {text: '3D'},
-        '.fp-tab[data-view="formulas"]': {text: 'Formuller'}
+        '.fp-tab[data-view="formulas"]': {text: 'Formuller'},
+        '.fp-tab[data-view="smoke"]': {text: '💨 Duman Tahliyesi'}
       }
     },
     az: {
@@ -2990,7 +3009,8 @@ if (window.engCalcI18n) {
         '.fp-tab[data-view="plan"]': {text: 'Plan'},
         '.fp-tab[data-view="section"]': {text: 'Kəsik'},
         '.fp-tab[data-view="d3"]': {text: '3D'},
-        '.fp-tab[data-view="formulas"]': {text: 'Formullar'}
+        '.fp-tab[data-view="formulas"]': {text: 'Formullar'},
+        '.fp-tab[data-view="smoke"]': {text: '💨 Tüstü ventilyasiyası'}
       }
     },
     hy: {
@@ -3009,7 +3029,8 @@ if (window.engCalcI18n) {
         '.fp-tab[data-view="plan"]': {text: 'Պլան'},
         '.fp-tab[data-view="section"]': {text: 'Հատված'},
         '.fp-tab[data-view="d3"]': {text: '3D'},
-        '.fp-tab[data-view="formulas"]': {text: 'Բանաձեւեր'}
+        '.fp-tab[data-view="formulas"]': {text: 'Բանաձեւեր'},
+        '.fp-tab[data-view="smoke"]': {text: '💨 Ծխի օդափոխում'}
       }
     }
   });

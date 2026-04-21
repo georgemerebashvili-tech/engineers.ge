@@ -88,11 +88,22 @@ export default async function HealthPage() {
   return (
     <>
       <AdminPageHeader
-        crumbs={[{label: 'მთავარი'}, {label: 'System health'}]}
+        crumbs={[{label: 'მონიტორინგი'}, {label: 'System health'}]}
         title="სისტემის ჯანმრთელობა"
         description="Env variables, Supabase connectivity, migration სტატუსი და Storage ბუკეტის ხელმისაწვდომობა."
       />
       <AdminSection>
+        <div className="mb-4 flex flex-wrap items-center gap-2 text-[12px]">
+          <a
+            href="/admin/launch-checklist"
+            className="inline-flex items-center gap-1.5 rounded-full border border-blue-bd bg-blue-lt px-3 py-1.5 font-semibold text-blue transition-colors hover:bg-blue hover:text-white"
+          >
+            🚀 Launch checklist — deep dive →
+          </a>
+          <span className="text-text-3">
+            ან Deploy ღილაკი: <a className="text-blue underline" href="/admin/sitemap">/admin/sitemap</a>
+          </span>
+        </div>
         {/* Launch readiness scorecard */}
         <section
           className={`mb-6 rounded-card border-2 p-5 ${

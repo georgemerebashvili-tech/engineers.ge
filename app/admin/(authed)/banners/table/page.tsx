@@ -1,6 +1,7 @@
 import {getHeroAdSlots, listHeroAdPayments} from '@/lib/hero-ads-store';
 import {summarizeHeroAdPayments} from '@/lib/hero-ads';
 import {BannersTable} from '@/components/admin/banners/table';
+import {BannerTabs} from '@/components/admin/banners/tabs-nav';
 import {AdminPageHeader, AdminSection} from '@/components/admin-page-header';
 
 export const dynamic = 'force-dynamic';
@@ -20,6 +21,7 @@ export default async function BannersTablePage() {
         description="ყველა სლოტი ერთ ცხრილში."
       />
       <AdminSection>
+        <BannerTabs />
         <BannersTable slots={slots} paidUntilBySlot={paymentSummary.paidUntilBySlot} />
       </AdminSection>
     </>

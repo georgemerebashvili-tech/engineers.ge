@@ -1,6 +1,7 @@
 import {getHeroAdSlots} from '@/lib/hero-ads-store';
 import {listAuditEntries} from '@/lib/admin-audit';
 import {BannersOverview} from '@/components/admin/banners/overview';
+import {BannerTabs} from '@/components/admin/banners/tabs-nav';
 import {AdminPageHeader, AdminSection} from '@/components/admin-page-header';
 
 export const dynamic = 'force-dynamic';
@@ -15,10 +16,11 @@ export default async function BannersOverviewPage() {
     <>
       <AdminPageHeader
         crumbs={[{label: 'ბანერები'}, {label: 'მიმოხილვა'}]}
-        title="ბანერები · მიმოხილვა"
+        title="ბანერები · Hero Ads"
         description="Hero ads, დატვირთულობა, შემოსავალი და live treemap."
       />
       <AdminSection>
+        <BannerTabs />
         <BannersOverview
           slots={slots}
           history={history.map((entry) => ({

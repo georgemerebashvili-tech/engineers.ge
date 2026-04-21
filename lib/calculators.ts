@@ -103,6 +103,14 @@ export const CALCULATORS: CalcMeta[] = [
     useProjects: true
   },
   {
+    slug: 'smoke-ventilation',
+    icon: '💨',
+    title: 'კვამლის ვენტილაცია',
+    desc: 'МР 2013 · СП 7.13130 — smoke extract + lift / corridor pressurization (Gу, Lу, Lп.лх, Lп.кор)',
+    tag: 'სახანძრო',
+    standard: 'МР 2013 · СП 7.13130.2022'
+  },
+  {
     slug: 'wall-editor',
     icon: '📐',
     title: 'გეგმის რედაქტორი',

@@ -32,9 +32,9 @@ export default function SitemapPage() {
   return (
     <>
       <AdminPageHeader
-        crumbs={[{label: 'სტრუქტურა'}]}
-        title="Sitemap & deploy"
-        description="ხე ყველა გვერდის, API route-ის და static კალკის. დააკლიკე node-ზე preview-სთვის. Deploy ღილაკი Vercel-ზე production-ის გამოქვეყნებისთვის."
+        crumbs={[{label: '🚀 Deploy production'}]}
+        title="🚀 Deploy production"
+        description="Vercel Deploy Hook — ახალი production build-ის გაშვება. ქვემოთ ასევე ხე ყველა გვერდის, API route-ის და static კალკის."
       />
       <AdminSection>
         <SitemapWorkspace
