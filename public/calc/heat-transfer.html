@@ -864,6 +864,9 @@ table.wpt input:focus,table.wpt select:focus{border-color:var(--blue)}
 #vs-app.nav-pinned #view-sp60,
 #vs-app.nav-pinned #view-mytypes{margin-left:258px;transition:margin-left .2s}
 .heat-nav-pinned .main{margin-left:258px;transition:margin-left .2s}
+/* #topTotals is in .topbar (outside #vs-app / #tab1), so pinning shifts via html class */
+html.bld-pinned #topTotals,
+html.hl-pinned  #topTotals{margin-left:258px;transition:margin-left .2s}
 
 #bld-nav-panel{
   position:fixed;left:0;top:52px;width:258px;height:calc(100vh - 52px);
@@ -6860,6 +6863,7 @@ function bldInit(){
       panel.classList.toggle('open', _navPinned || panel.classList.contains('open'));
     }
     if(vsApp) vsApp.classList.toggle('nav-pinned', _navPinned);
+    document.documentElement.classList.toggle('bld-pinned', _navPinned);
   }
   window.bldNavTogglePin = bldNavTogglePin;
 
@@ -7346,6 +7350,7 @@ function bldInit(){
     if(btn) btn.classList.toggle('active',_hlPinned);
     const t=tab1();
     if(t) t.classList.toggle('heat-nav-pinned',_hlPinned);
+    document.documentElement.classList.toggle('hl-pinned', _hlPinned);
     if(_hlPinned) window.hlNavOpen();
   };
   window.hlNavFilter=function(){ hlNavUpdate(); };
