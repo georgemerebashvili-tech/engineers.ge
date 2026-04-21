@@ -86,7 +86,7 @@ function BarChart({days}: {days: {label: string; count: number}[]}) {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-bdr" />
         {days.map((d, i) => {
           const active = d.count > 0;
-          const h = active ? Math.max(8, Math.round((d.count / max) * 100)) : 6;
+          const h = active ? Math.max(10, Math.round((d.count / max) * 100)) : 12;
           return (
             <div key={i} className="flex flex-1 flex-col items-center gap-1">
               <div className="relative flex w-full flex-1 items-end">
@@ -99,7 +99,9 @@ function BarChart({days}: {days: {label: string; count: number}[]}) {
                 </span>
                 <div
                   className={`w-full rounded-[4px] transition-all ${
-                    active ? 'bg-blue opacity-90' : 'bg-sur-2 border border-bdr'
+                    active
+                      ? 'bg-blue opacity-90'
+                      : 'bg-slate-200 border border-slate-300'
                   }`}
                   style={{height: `${h}%`}}
                   title={`${d.label}: ${d.count}`}
