@@ -3,7 +3,6 @@
 import {useEffect, useState} from 'react';
 import Link from 'next/link';
 import {
-  Facebook,
   Copy,
   Check,
   CheckCircle2,
@@ -13,15 +12,21 @@ import {
   Key,
   Link as LinkIcon,
   Shield,
-  Database
+  Database,
+  Eye,
+  EyeOff,
+  Lock
 } from 'lucide-react';
 import {DmtPageShell} from '@/components/dmt/page-shell';
 
 type Config = {
   callbackUrl: string;
-  verifyToken: string | null;
-  appSecret: string | null;
-  pageToken: string | null;
+  verifyTokenMask: string | null;
+  verifyTokenSet: boolean;
+  appSecretMask: string | null;
+  appSecretSet: boolean;
+  pageTokenMask: string | null;
+  pageTokenSet: boolean;
   ready: boolean;
   leadCount: number;
   latestLeadAt: string | null;
@@ -29,10 +34,18 @@ type Config = {
   error?: string;
 };
 
+type Revealed = {
+  verifyToken: string | null;
+  appSecret: string | null;
+  pageToken: string | null;
+};
+
 export default function FacebookSetupPage() {
   const [cfg, setCfg] = useState<Config | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState<string | null>(null);
+  const [revealed, setRevealed] = useState<Revealed | null>(null);
+  const [revealOpen, setRevealOpen] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -52,16 +65,21 @@ export default function FacebookSetupPage() {
   }, []);
 
   function copy(label: string, text: string) {
+    if (!text) return;
     navigator.clipboard.writeText(text);
     setCopied(label);
     setTimeout(() => setCopied(null), 1500);
+  }
+
+  function hide() {
+    setRevealed(null);
   }
 
   return (
     <DmtPageShell
       kicker="FACEBOOK LEAD ADS · INTEGRATION"
       title="Webhook Setup"
-      subtitle="Meta Lead Ads → engineers.ge პირდაპირი სადენი. დააკოპირე URL + Verify Token → ჩასვი Meta for Developers-ში."
+      subtitle="Meta Lead Ads → engineers.ge პირდაპირი სადენი. მნიშვნელობები დაცულია — გაიხსნება მხოლოდ ადმინის პაროლით."
       searchPlaceholder=""
       onQueryChange={() => {}}
     >
@@ -78,6 +96,11 @@ export default function FacebookSetupPage() {
         {cfg?.error === 'forbidden' && (
           <div className="rounded-md border border-red bg-red-lt px-3 py-2 text-[12px] text-red">
             ეს გვერდი მხოლოდ owner/admin-ისთვის.
+          </div>
+        )}
+        {cfg?.error === 'unauthorized' && (
+          <div className="rounded-md border border-red bg-red-lt px-3 py-2 text-[12px] text-red">
+            სესია დასრულდა — <Link href="/dmt/login" className="underline">გადი ავტორიზაციაზე</Link>.
           </div>
         )}
 
@@ -111,6 +134,50 @@ export default function FacebookSetupPage() {
               </div>
             </div>
 
+            {/* Reveal bar */}
+            <div
+              className={`flex items-center justify-between gap-3 rounded-[10px] border px-4 py-2.5 ${
+                revealed
+                  ? 'border-grn-bd bg-grn-lt'
+                  : 'border-bdr bg-sur'
+              }`}
+            >
+              <div className="flex items-center gap-2 text-[12px]">
+                {revealed ? (
+                  <>
+                    <Eye size={14} className="text-grn" />
+                    <span className="font-mono text-[10.5px] font-bold uppercase tracking-[0.08em] text-grn">
+                      Secrets unlocked
+                    </span>
+                    <span className="text-text-3">· კოპირება შესაძლებელია</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock size={14} className="text-text-3" />
+                    <span className="font-mono text-[10.5px] font-bold uppercase tracking-[0.08em] text-text-2">
+                      Secrets hidden
+                    </span>
+                    <span className="text-text-3">· გახსენი ადმინის პაროლით</span>
+                  </>
+                )}
+              </div>
+              {revealed ? (
+                <button
+                  onClick={hide}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-bdr bg-sur-2 px-3 font-mono text-[11px] font-semibold text-text-2 hover:border-red hover:text-red"
+                >
+                  <EyeOff size={12} /> hide
+                </button>
+              ) : (
+                <button
+                  onClick={() => setRevealOpen(true)}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md border border-blue bg-blue px-3 font-mono text-[11px] font-semibold text-white hover:bg-blue/90"
+                >
+                  <Key size={12} /> reveal
+                </button>
+              )}
+            </div>
+
             {/* Fields to paste */}
             <section className="rounded-[10px] border border-bdr bg-sur">
               <header className="border-b border-bdr px-4 py-3">
@@ -133,13 +200,17 @@ export default function FacebookSetupPage() {
                 <Copyable
                   icon={Key}
                   label="Verify Token"
-                  value={cfg.verifyToken ?? ''}
+                  value={
+                    revealed?.verifyToken ??
+                    (cfg.verifyTokenMask ?? '')
+                  }
                   copied={copied === 'vt'}
                   onCopy={() =>
-                    cfg.verifyToken && copy('vt', cfg.verifyToken)
+                    revealed?.verifyToken && copy('vt', revealed.verifyToken)
                   }
-                  missing={!cfg.verifyToken}
-                  hint="Verify Token-ის ველში. ეს ერთხელ ხელცასაწე string-ია — მერე Meta ყოველ delivery-ში პირდაპირ signed requests-ს გააგზავნის."
+                  missing={!cfg.verifyTokenSet}
+                  locked={!revealed?.verifyToken}
+                  hint="Verify Token-ის ველში. ეს ერთხელ ხელსასაწე string-ია — მერე Meta ყოველ delivery-ს signed requests-ად გაგიგზავნის."
                 />
               </div>
             </section>
@@ -157,17 +228,22 @@ export default function FacebookSetupPage() {
               <div className="divide-y divide-bdr">
                 <EnvRow
                   name="FB_VERIFY_TOKEN"
-                  value={cfg.verifyToken}
-                  desc="Meta handshake token (ზემოთ ნაჩვენები)"
+                  displayValue={
+                    revealed?.verifyToken ?? cfg.verifyTokenMask
+                  }
+                  present={cfg.verifyTokenSet}
+                  desc="Meta handshake token"
                 />
                 <EnvRow
                   name="FB_APP_SECRET"
-                  value={cfg.appSecret}
+                  displayValue={revealed?.appSecret ?? cfg.appSecretMask}
+                  present={cfg.appSecretSet}
                   desc="HMAC signature verification · Meta → App → Settings → Basic → App Secret"
                 />
                 <EnvRow
                   name="FB_PAGE_ACCESS_TOKEN"
-                  value={cfg.pageToken}
+                  displayValue={revealed?.pageToken ?? cfg.pageTokenMask}
+                  present={cfg.pageTokenSet}
                   desc="Graph API lead fetch · Meta → Access Tokens → Page access token (long-lived)"
                   optional
                 />
@@ -177,7 +253,7 @@ export default function FacebookSetupPage() {
             {/* Setup steps */}
             <section className="rounded-[10px] border border-bdr bg-sur-2 p-5">
               <h2 className="mb-3 text-[14px] font-bold text-navy">
-                📋 Meta Dashboard-ის steps
+                Meta Dashboard-ის steps
               </h2>
               <ol className="space-y-2 text-[12.5px] leading-relaxed text-text-2">
                 <Step n={1}>
@@ -190,7 +266,7 @@ export default function FacebookSetupPage() {
                   <b>Page</b> → <b>Subscribe to this object</b>:
                   <ul className="mt-1 list-disc space-y-0.5 pl-5 font-mono text-[11.5px] text-text-3">
                     <li>Callback URL → ზემოდან Callback URL (copy)</li>
-                    <li>Verify Token → ზემოდან Verify Token (copy)</li>
+                    <li>Verify Token → ზემოდან Verify Token (reveal → copy)</li>
                     <li>Verify and Save</li>
                   </ul>
                 </Step>
@@ -208,7 +284,7 @@ export default function FacebookSetupPage() {
                   <b>Extend → Long-Lived</b> → Vercel env <code>FB_PAGE_ACCESS_TOKEN</code>.
                 </Step>
                 <Step n={7}>
-                  <Ext href="https://business.facebook.com/settings">business.facebook.com/settings</Ext> → Pages → შენი Page → Apps → დაამატე ეს App. შემდეგ Page-ი Subscribe გაუკეთე (`/subscribed_apps` graph call ან UI-ით).
+                  <Ext href="https://business.facebook.com/settings">business.facebook.com/settings</Ext> → Pages → შენი Page → Apps → დაამატე ეს App. შემდეგ Page-ი Subscribe გაუკეთე.
                 </Step>
                 <Step n={8}>
                   გაუშვი ტესტი: Meta for Developers → Webhooks → Page → <b>Test your server</b>{' '}
@@ -222,7 +298,7 @@ export default function FacebookSetupPage() {
               <div className="mb-1 flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-blue">
                 <Shield size={12} /> Security
               </div>
-              ყოველი POST-ი ვამოწმებ <code>X-Hub-Signature-256</code>-ით (HMAC-SHA256 <code>FB_APP_SECRET</code>-ით). Invalid signature → 401. Raw body-ს ვკითხულობ bytes-ად — parse-ის გარეშე — რომ verification სწორად მოხდეს. Leadgen_id-ის mismatch → skip. Graph API enrich fail-open (ძირითადი რაც webhook გამოგვიგზავნა მაინც ჩაიწერება).
+              ყოველი POST-ი ვამოწმებ <code>X-Hub-Signature-256</code>-ით (HMAC-SHA256 <code>FB_APP_SECRET</code>-ით). Invalid signature → 401. Raw body-ს ვკითხულობ bytes-ად — parse-ის გარეშე — რომ verification სწორად მოხდეს. Leadgen_id-ის mismatch → skip. Graph API enrich fail-open (ძირითადი რაც webhook გამოგვიგზავნა მაინც ჩაიწერება). Secrets-ის გახსნა ამ გვერდზე audit-log-ში ფიქსირდება.
             </section>
 
             {/* Quick test */}
@@ -231,7 +307,7 @@ export default function FacebookSetupPage() {
                 <Database size={12} /> Verify manually
               </div>
               <code className="block break-all rounded bg-sur p-2 font-mono text-[10.5px] text-navy">
-                curl &quot;{cfg.callbackUrl}?hub.mode=subscribe&amp;hub.challenge=abc&amp;hub.verify_token={cfg.verifyToken ?? 'TOKEN'}&quot;
+                curl &quot;{cfg.callbackUrl}?hub.mode=subscribe&amp;hub.challenge=abc&amp;hub.verify_token={revealed?.verifyToken ?? '<TOKEN>'}&quot;
               </code>
               <p className="mt-1.5 text-[11px] text-text-3">
                 უნდა დააბრუნოს: <code className="rounded bg-sur px-1">abc</code>.
@@ -241,7 +317,118 @@ export default function FacebookSetupPage() {
           </div>
         )}
       </div>
+
+      {revealOpen && (
+        <RevealModal
+          onClose={() => setRevealOpen(false)}
+          onReveal={(data) => {
+            setRevealed(data);
+            setRevealOpen(false);
+          }}
+        />
+      )}
     </DmtPageShell>
+  );
+}
+
+function RevealModal({
+  onClose,
+  onReveal
+}: {
+  onClose: () => void;
+  onReveal: (data: Revealed) => void;
+}) {
+  const [password, setPassword] = useState('');
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    if (!password) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const res = await fetch('/api/dmt/fb-webhook/config/reveal', {
+        method: 'POST',
+        headers: {'content-type': 'application/json'},
+        body: JSON.stringify({password})
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setErr(
+          data.error === 'wrong_password'
+            ? 'პაროლი არასწორია'
+            : data.error === 'locked'
+              ? 'ბევრი ცდა — სცადე 15 წუთში'
+              : data.message || data.error || 'შეცდომა'
+        );
+        return;
+      }
+      onReveal(data as Revealed);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'network');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-[400px] rounded-[12px] border border-bdr bg-sur shadow-lg"
+      >
+        <header className="flex items-start gap-2 border-b border-bdr px-5 py-4">
+          <Lock size={16} className="mt-0.5 text-blue" />
+          <div>
+            <div className="text-[14px] font-bold text-navy">Secrets-ის გახსნა</div>
+            <div className="mt-0.5 text-[11.5px] text-text-3">
+              შეიყვანე შენი ადმინის პაროლი — ტოკენები გამოჩნდება მხოლოდ ამ session-ში.
+            </div>
+          </div>
+        </header>
+        <div className="space-y-3 p-5">
+          <div>
+            <label className="mb-1 block font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-text-3">
+              Admin Password
+            </label>
+            <input
+              type="password"
+              autoFocus
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') submit();
+                if (e.key === 'Escape') onClose();
+              }}
+              className="w-full rounded-md border border-bdr bg-sur-2 px-3 py-2 text-[13px] text-navy focus:border-blue focus:outline-none"
+              placeholder="••••••••"
+            />
+            {err && (
+              <p className="mt-1.5 text-[11.5px] text-red">{err}</p>
+            )}
+          </div>
+        </div>
+        <footer className="flex items-center justify-end gap-2 border-t border-bdr px-5 py-3">
+          <button
+            onClick={onClose}
+            disabled={busy}
+            className="h-9 rounded-md border border-bdr bg-sur-2 px-3 font-mono text-[11px] font-semibold text-text-2 hover:border-text-3 disabled:opacity-50"
+          >
+            cancel
+          </button>
+          <button
+            onClick={submit}
+            disabled={busy || !password}
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-blue bg-blue px-4 font-mono text-[11px] font-semibold text-white hover:bg-blue/90 disabled:opacity-50"
+          >
+            {busy ? 'მოწმდება…' : 'unlock'}
+          </button>
+        </footer>
+      </div>
+    </div>
   );
 }
 
@@ -252,7 +439,8 @@ function Copyable({
   copied,
   onCopy,
   hint,
-  missing
+  missing,
+  locked
 }: {
   icon: React.ComponentType<{size?: number; className?: string; strokeWidth?: number}>;
   label: string;
@@ -261,25 +449,37 @@ function Copyable({
   onCopy: () => void;
   hint?: string;
   missing?: boolean;
+  locked?: boolean;
 }) {
+  const disabled = missing || locked;
+  const displayValue = missing
+    ? '(env var ჯერ არ არის)'
+    : value;
   return (
     <div>
       <label className="mb-1 flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-text-3">
         <Icon size={11} /> {label}
+        {locked && !missing && (
+          <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-sur-2 px-1.5 py-0.5 font-mono text-[9px] text-text-3">
+            <Lock size={9} /> locked
+          </span>
+        )}
       </label>
       <div className="flex items-center gap-2">
         <input
           readOnly
-          value={missing ? '(FB_VERIFY_TOKEN env var ჯერ არ არის)' : value}
+          value={displayValue}
           className={`flex-1 rounded-md border bg-sur-2 px-3 py-2 font-mono text-[12px] focus:outline-none ${
             missing
               ? 'border-ora-bd text-ora'
-              : 'border-bdr text-navy focus:border-blue'
+              : locked
+                ? 'border-bdr text-text-3'
+                : 'border-bdr text-navy focus:border-blue'
           }`}
-          onClick={(e) => !missing && (e.target as HTMLInputElement).select()}
+          onClick={(e) => !disabled && (e.target as HTMLInputElement).select()}
         />
         <button
-          disabled={missing}
+          disabled={disabled}
           onClick={onCopy}
           className={`inline-flex h-9 items-center gap-1.5 rounded-md border px-3 font-mono text-[11px] font-semibold transition-colors ${
             copied
@@ -298,16 +498,17 @@ function Copyable({
 
 function EnvRow({
   name,
-  value,
+  displayValue,
+  present,
   desc,
   optional
 }: {
   name: string;
-  value: string | null;
+  displayValue: string | null;
+  present: boolean;
   desc: string;
   optional?: boolean;
 }) {
-  const present = !!value;
   return (
     <div className="flex items-start gap-3 px-4 py-3">
       <div className="mt-0.5 shrink-0">
@@ -328,11 +529,11 @@ function EnvRow({
             </span>
           )}
           <span
-            className={`font-mono text-[10.5px] ${
+            className={`truncate font-mono text-[10.5px] ${
               present ? 'text-grn' : optional ? 'text-text-3' : 'text-ora'
             }`}
           >
-            {present ? value : 'not set'}
+            {present ? displayValue : 'not set'}
           </span>
         </div>
         <p className="mt-0.5 text-[11px] text-text-3">{desc}</p>

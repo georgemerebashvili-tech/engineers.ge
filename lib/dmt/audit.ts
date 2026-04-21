@@ -13,9 +13,11 @@ export type DmtAuditAction =
   | 'user.delete.denied'
   | 'password.reset.request'
   | 'password.reset.complete'
-  | 'page.view';
+  | 'page.view'
+  | 'fb_webhook.reveal'
+  | 'fb_webhook.reveal_failed';
 
-export type DmtAuditEntity = 'dmt_user' | 'session' | 'system' | 'page';
+export type DmtAuditEntity = 'dmt_user' | 'session' | 'system' | 'page' | 'secret';
 
 export type DmtAuditInput = {
   action: DmtAuditAction;

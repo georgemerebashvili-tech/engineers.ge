@@ -5,13 +5,12 @@ import {supabaseAdmin} from '@/lib/supabase/admin';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Returns webhook configuration status for owners/admins.
-// Verify token is shown in full (needed to paste in Meta Dashboard);
-// page token + app secret are shown as ***…last4 so you can confirm they're set.
+// Masked webhook status. Real values are only served by
+// /api/dmt/fb-webhook/config/reveal after re-entering the admin password.
 function mask(v?: string | null) {
   if (!v) return null;
-  if (v.length <= 8) return '***';
-  return '***' + v.slice(-4);
+  if (v.length <= 8) return '••••';
+  return '••••••••' + v.slice(-4);
 }
 
 export async function GET(req: Request) {
@@ -44,9 +43,12 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     callbackUrl,
-    verifyToken,
-    appSecret: mask(appSecret),
-    pageToken: mask(pageToken),
+    verifyTokenMask: mask(verifyToken),
+    verifyTokenSet: !!verifyToken,
+    appSecretMask: mask(appSecret),
+    appSecretSet: !!appSecret,
+    pageTokenMask: mask(pageToken),
+    pageTokenSet: !!pageToken,
     ready: !!(verifyToken && appSecret),
     leadCount,
     latestLeadAt,
