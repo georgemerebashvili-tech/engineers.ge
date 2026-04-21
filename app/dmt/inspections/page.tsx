@@ -18,6 +18,7 @@ import {
   Trash2
 } from 'lucide-react';
 import {DmtPageShell} from '@/components/dmt/page-shell';
+import {ResizableTable} from '@/components/dmt/resizable-table';
 
 type InspectionStatus = 'scheduled' | 'onsite' | 'report' | 'done' | 'canceled';
 type InspectionType = 'heat-loss' | 'ventilation' | 'fire-safety' | 'full' | 'acoustic';
@@ -307,7 +308,7 @@ export default function InspectionsPage() {
         <div className="grid gap-4 md:grid-cols-[1fr_360px]">
           {/* Table */}
           <div className="overflow-hidden rounded-[10px] border border-bdr bg-sur">
-            <div className="overflow-x-auto">
+            <ResizableTable storageKey="inspections" className="overflow-x-auto">
               <table className="w-full text-[12.5px]">
                 <thead>
                   <tr className="border-b border-bdr bg-sur-2 text-left font-mono text-[10px] uppercase tracking-[0.06em] text-text-3">
@@ -393,7 +394,7 @@ export default function InspectionsPage() {
                   )}
                 </tbody>
               </table>
-            </div>
+            </ResizableTable>
           </div>
 
           {/* Detail panel — sticky so it stays visible while the list scrolls */}

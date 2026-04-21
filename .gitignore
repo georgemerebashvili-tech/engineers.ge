@@ -47,3 +47,6 @@ next-env.d.ts
 # claude code local runtime state
 .claude/scheduled_tasks.lock
 .claude/*.tmp
+
+# local scraping artifacts (source xlsx — JSON served from public/dmt/)
+trm-products-*.xlsx

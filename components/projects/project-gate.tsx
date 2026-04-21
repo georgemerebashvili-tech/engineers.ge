@@ -14,6 +14,7 @@ import {
   X
 } from 'lucide-react';
 import {
+  buildDeleteProjectPrompt,
   listProjects,
   getProject,
   createProject,
@@ -123,8 +124,11 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
     router.push(`/calc/${slug}?project=${id}`);
   };
 
-  const handleDelete = (id: string, name: string) => {
-    if (!confirm(`წაშალო "${name}"? ქმედება შეუქცევადია.`)) return;
+  const handleDelete = (id: string) => {
+    const project = getProject(id);
+    if (!project) return;
+    const building = project.buildingId ? getBuilding(project.buildingId) : null;
+    if (!confirm(buildDeleteProjectPrompt(project, building?.name))) return;
     deleteProject(id);
     setRefreshIndex((value) => value + 1);
   };
@@ -400,7 +404,7 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDelete(p.id, p.name)}
+                  onClick={() => handleDelete(p.id)}
                   title="წაშლა"
                   className="w-7 h-7 inline-flex items-center justify-center bg-sur border rounded-md text-text-2 hover:text-red hover:border-red"
                 >

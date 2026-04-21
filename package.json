@@ -13,6 +13,7 @@
     "launch-check": "node scripts/launch-check.mjs",
     "db:migrate": "node scripts/db-migrate.mjs",
     "db:status": "node scripts/db-status.mjs",
+    "dmt:scrape-trm": "node scripts/scrape-trm.mjs && node scripts/build-trm-json.mjs",
     "prepare": "node scripts/install-git-hooks.mjs"
   },
   "dependencies": {
@@ -55,6 +56,7 @@
     "eslint-config-next": "16.2.3",
     "pg": "^8.20.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "xlsx": "^0.18.5"
   }
 }

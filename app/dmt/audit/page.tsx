@@ -3,6 +3,7 @@
 import {Fragment, useCallback, useEffect, useMemo, useState} from 'react';
 import {ChevronDown, ChevronRight, Filter, RefreshCw, ShieldCheck} from 'lucide-react';
 import {DmtPageShell} from '@/components/dmt/page-shell';
+import {ResizableTable} from '@/components/dmt/resizable-table';
 
 type Row = {
   id: string;
@@ -165,6 +166,7 @@ export default function DmtAuditPage() {
         )}
 
         <div className="overflow-hidden rounded-[10px] border border-bdr bg-sur">
+          <ResizableTable storageKey="audit" className="overflow-x-auto">
           <table className="w-full text-[12px]">
             <thead>
               <tr className="border-b border-bdr bg-sur-2 text-left font-mono text-[10px] uppercase tracking-[0.06em] text-text-3">
@@ -262,6 +264,7 @@ export default function DmtAuditPage() {
               )}
             </tbody>
           </table>
+          </ResizableTable>
         </div>
 
         <div className="mt-4 rounded-[10px] border border-bdr bg-sur-2 p-3 text-[11.5px] leading-relaxed text-text-2">

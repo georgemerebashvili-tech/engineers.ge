@@ -4,6 +4,7 @@ import {useEffect, useState} from 'react';
 import Link from 'next/link';
 import {UserPlus, Trash2, ShieldCheck, UserCheck, UserX} from 'lucide-react';
 import {DmtPageShell} from '@/components/dmt/page-shell';
+import {ResizableTable} from '@/components/dmt/resizable-table';
 
 type Role = 'owner' | 'admin' | 'member' | 'viewer';
 type Status = 'active' | 'invited' | 'suspended';
@@ -218,6 +219,7 @@ export default function DmtUsersPage() {
         )}
 
         <div className="overflow-hidden rounded-[10px] border border-bdr bg-sur">
+          <ResizableTable storageKey="users" className="overflow-x-auto">
           <table className="w-full text-[12.5px]">
             <thead>
               <tr className="border-b border-bdr bg-sur-2 text-left font-mono text-[10px] uppercase tracking-[0.06em] text-text-3">
@@ -315,6 +317,7 @@ export default function DmtUsersPage() {
               )}
             </tbody>
           </table>
+          </ResizableTable>
         </div>
 
         <div className="mt-4 flex flex-wrap gap-3 text-[11px] text-text-3">

@@ -19,6 +19,7 @@ import {
   FolderX
 } from 'lucide-react';
 import {
+  buildDeleteProjectPrompt,
   listProjects,
   getProject,
   createProject,
@@ -34,6 +35,7 @@ import {
   formatRelative,
   type Project
 } from '@/lib/projects';
+import {getBuilding} from '@/lib/buildings';
 import {getTemplatesForSlug} from '@/lib/project-templates';
 
 const OPEN_KEY = 'eng_projects_active';
@@ -645,7 +647,8 @@ export function ProjectTabs({slug, activeId}: Props) {
                     title="წაშლა"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (!confirm(`წაშალო "${p.name}"?`)) return;
+                      const building = p.buildingId ? getBuilding(p.buildingId) : null;
+                      if (!confirm(buildDeleteProjectPrompt(p, building?.name))) return;
                       deleteProject(p.id);
                       const next = openIds.filter((id) => id !== p.id);
                       syncOpenIds(next);

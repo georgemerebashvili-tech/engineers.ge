@@ -11,13 +11,17 @@ import {
   Link2,
   Pencil,
   Plus,
+  Printer,
+  Share2,
   Unlink,
   Trash2
 } from 'lucide-react';
+import {ShareProjectDialog} from '@/components/share-project-dialog';
 import {Container} from '@/components/container';
 import {CALCULATORS, getCalc} from '@/lib/calculators';
 import {getBuilding, updateBuilding, deleteBuilding, type Building} from '@/lib/buildings';
 import {
+  buildDeleteProjectPrompt,
   deleteProject,
   formatRelative,
   listProjectsByBuilding,
@@ -36,6 +40,7 @@ export function BuildingDetail({buildingId}: {buildingId: string}) {
   const [unassigned, setUnassigned] = useState<Project[]>([]);
   const [picker, setPicker] = useState(false);
   const [addMenu, setAddMenu] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   useEffect(() => {
     const b = getBuilding(buildingId);
@@ -115,7 +120,7 @@ export function BuildingDetail({buildingId}: {buildingId: string}) {
   };
 
   const deleteLinked = (p: Project) => {
-    if (!confirm(`წაიშალოს კალკულაცია "${p.name}"? ქმედება შეუქცევადია.`)) return;
+    if (!confirm(buildDeleteProjectPrompt(p, building.name))) return;
     deleteProject(p.id);
     bump();
   };
@@ -145,7 +150,22 @@ export function BuildingDetail({buildingId}: {buildingId: string}) {
             {linked.length} კალკულაცია
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setShareOpen(true)}
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-bdr bg-sur px-3 text-[12px] font-semibold text-text-2 transition-colors hover:border-blue hover:text-blue"
+          >
+            <Share2 size={13} /> გაზიარება
+          </button>
+          <a
+            href={`/print/project/${building.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-9 items-center gap-1.5 rounded-md border border-bdr bg-sur px-3 text-[12px] font-semibold text-text-2 transition-colors hover:border-blue hover:text-blue"
+          >
+            <Printer size={13} /> ბეჭდვა
+          </a>
           <button
             type="button"
             onClick={rename}
@@ -162,6 +182,14 @@ export function BuildingDetail({buildingId}: {buildingId: string}) {
           </button>
         </div>
       </header>
+      {shareOpen && (
+        <ShareProjectDialog
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          building={building}
+          projects={linked}
+        />
+      )}
 
       <section className="mb-5 flex flex-wrap items-center gap-2">
         <div className="relative" onClick={(e) => e.stopPropagation()}>

@@ -2,6 +2,7 @@
 
 import {useMemo, useState} from 'react';
 import {DmtPageShell} from '@/components/dmt/page-shell';
+import {ResizableTable} from '@/components/dmt/resizable-table';
 import {Facebook, ExternalLink} from 'lucide-react';
 
 type FbLead = {
@@ -89,7 +90,7 @@ export default function FacebookLeadsPage() {
         </div>
 
         <div className="overflow-hidden rounded-[10px] border border-bdr bg-sur">
-          <div className="overflow-x-auto">
+          <ResizableTable storageKey="leads-facebook" className="overflow-x-auto">
             <table className="w-full text-[12px]">
               <thead>
                 <tr className="border-b border-bdr bg-sur-2 text-left font-mono text-[10px] uppercase tracking-[0.06em] text-text-3">
@@ -154,7 +155,7 @@ export default function FacebookLeadsPage() {
                 )}
               </tbody>
             </table>
-          </div>
+          </ResizableTable>
         </div>
 
         <div className="mt-4 rounded-[10px] border border-blue-bd bg-blue-lt p-3 text-[12px] leading-relaxed text-text-2">

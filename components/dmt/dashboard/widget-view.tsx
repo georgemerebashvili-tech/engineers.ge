@@ -16,6 +16,7 @@ import {
   CartesianGrid
 } from 'recharts';
 import {TrendingUp, StickyNote, Filter as FilterIcon} from 'lucide-react';
+import {ResizableTable} from '@/components/dmt/resizable-table';
 import type {Widget} from '@/lib/dmt/dashboards';
 import {
   computeAgg,
@@ -155,7 +156,10 @@ export function WidgetView({widget, globalStatus}: {widget: Widget; globalStatus
         <div className="mb-1 px-1 font-mono text-[9.5px] font-bold uppercase tracking-[0.08em] text-text-3">
           {config.title}
         </div>
-        <div className="min-h-0 flex-1 overflow-auto rounded-md border border-bdr">
+        <ResizableTable
+          storageKey={`widget-${widget.id}`}
+          className="min-h-0 flex-1 overflow-auto rounded-md border border-bdr"
+        >
           <table className="w-full text-[11.5px]">
             <thead className="bg-sur-2">
               <tr>
@@ -185,7 +189,7 @@ export function WidgetView({widget, globalStatus}: {widget: Widget; globalStatus
               )}
             </tbody>
           </table>
-        </div>
+        </ResizableTable>
       </div>
     );
   }

@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>storyabout.me — ვიზუალი</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Noto+Sans+Georgian:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f2f5fa;
+    --sur: #ffffff;
+    --sur-2: #f7f9fd;
+    --bdr: #dde6f2;
+    --bdr-2: #c4d4e8;
+    --navy: #1a3a6b;
+    --navy-2: #0f2550;
+    --blue: #1f6fd4;
+    --blue-lt: #e8f1fd;
+    --blue-bd: #b8d0f0;
+    --red: #c0201a;
+    --ora: #c05010;
+    --grn: #0f6e3a;
+    --text: #1a2840;
+    --text-2: #3d5470;
+    --text-3: #7a96b8;
+    --radius: 12px;
+    --spine: 3px;
+  }
+  * { box-sizing: border-box; }
+  html { font-size: 13px; }
+  body {
+    margin: 0;
+    font-family: 'Plus Jakarta Sans', 'Noto Sans Georgian', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .mono { font-family: 'IBM Plex Mono', monospace; font-feature-settings: 'tnum'; }
+
+  /* ============ PAGE HEADER (preview only) ============ */
+  .preview-header {
+    max-width: 960px;
+    margin: 24px auto 16px;
+    padding: 0 20px;
+  }
+  .preview-header h1 {
+    font-size: 20px;
+    margin: 0 0 4px;
+    color: var(--navy);
+    font-weight: 700;
+  }
+  .preview-header p {
+    font-size: 12px;
+    color: var(--text-2);
+    margin: 0;
+  }
+
+  /* ============ BIO CARD MOCK (upper part) ============ */
+  .bio-card {
+    max-width: 540px;
+    margin: 0 auto;
+    background: var(--sur);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(15, 37, 80, 0.12);
+  }
+  .bio-img {
+    width: 100%;
+    height: 240px;
+    background: linear-gradient(135deg, #e7f0fb, #cddef3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(26, 58, 107, 0.4);
+    font-size: 14px;
+    letter-spacing: 0.1em;
+  }
+  .bio-body { padding: 22px 24px 18px; }
+  .bio-name { font-size: 20px; font-weight: 700; color: var(--navy); margin: 0 0 4px; }
+  .bio-title { font-size: 13px; color: var(--text-2); font-weight: 500; margin: 0 0 12px; }
+  .bio-text { font-size: 13px; color: var(--text); line-height: 1.65; margin: 0; }
+
+  /* Crown button at bottom */
+  .crown-row {
+    display: flex;
+    justify-content: center;
+    padding: 18px 20px 22px;
+    border-top: 1px solid var(--bdr);
+    background: var(--sur-2);
+  }
+  .crown-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border-radius: 10px;
+    transition: background 0.15s;
+    font-family: inherit;
+  }
+  .crown-btn:hover { background: var(--blue-lt); }
+  .crown-svg {
+    width: 32px;
+    height: 26px;
+    color: #e8c564;
+    transition: transform 0.2s, color 0.2s;
+  }
+  .crown-btn:hover .crown-svg { transform: translateY(-2px); color: #d4a437; }
+  .crown-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--navy);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ============ storyabout.me button on hero tile ============ */
+  .hero-tile-demo {
+    max-width: 540px;
+    margin: 28px auto 0;
+    height: 120px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #d9e7fa, #bfd4ee);
+    position: relative;
+    overflow: hidden;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    color: var(--navy);
+    border: 1px solid #c4d4e8;
+  }
+  .hero-tile-demo .btn-story {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255,255,255,0.85);
+    color: var(--navy);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 11px;
+    border: 1px solid rgba(26, 58, 107, 0.15);
+    letter-spacing: 0.02em;
+    font-family: 'IBM Plex Mono', monospace;
+    backdrop-filter: blur(4px);
+  }
+  .hero-tile-demo h3 { margin: 0; font-size: 16px; font-weight: 700; }
+  .hero-tile-demo .sub { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+
+  /* ============ TIMELINE MODAL ============ */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 18, 35, 0.72);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px 16px;
+    overflow-y: auto;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    width: 100%;
+    max-width: 820px;
+    background: var(--sur);
+    border-radius: 12px;
+    box-shadow: 0 30px 80px rgba(40, 28, 8, 0.3);
+    border: 1px solid var(--bdr-2);
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 40px;
+  }
+
+  .modal-header {
+    padding: 22px 28px 18px;
+    background: var(--sur);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--bdr);
+  }
+  .modal-header .title-group { display: flex; align-items: center; gap: 12px; }
+  .modal-header .crown-inline { width: 28px; height: 22px; color: var(--navy); }
+  .modal-header h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--navy);
+  }
+  .modal-header p {
+    margin: 3px 0 0;
+    font-size: 11px;
+    color: var(--text-3);
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.05em;
+  }
+  .modal-header .close-x {
+    background: #fff;
+    border: 1px solid var(--bdr);
+    color: var(--text-2);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-header .close-x:hover { background: var(--blue-lt); color: var(--blue); border-color: var(--blue); }
+
+  .modal-toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 12px 24px;
+    background: var(--sur-2);
+    border-bottom: 1px solid var(--bdr);
+    font-size: 12px;
+  }
+  .modal-toolbar .legend {
+    color: var(--text-3);
+    margin-right: auto;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+  .btn-add, .btn-save {
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--bdr-2);
+    background: var(--sur);
+    color: var(--navy);
+    cursor: pointer;
+  }
+  .btn-add:hover { background: var(--blue-lt); border-color: var(--blue); color: var(--blue); }
+  .btn-save {
+    background: var(--navy);
+    color: #fff;
+    border-color: var(--navy);
+  }
+  .btn-save:hover { background: var(--navy-2); }
+
+  /* Timeline body */
+  .timeline {
+    padding: 28px 24px 32px;
+    position: relative;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: var(--spine);
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, var(--bdr-2) 0%, var(--blue-bd) 50%, var(--bdr-2) 100%);
+    border-radius: 2px;
+  }
+
+  /* Year badge on spine */
+  .spine-node {
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--sur);
+    border: 3px solid #c4d4e8;
+    box-shadow: 0 0 0 4px var(--sur);
+    z-index: 2;
+  }
+  .spine-node::after {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: #c4d4e8;
+  }
+  .current-marker {
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: 6px 14px;
+    background: var(--navy);
+    color: #fff;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    border-radius: 999px;
+    z-index: 3;
+    box-shadow: 0 4px 14px rgba(26, 58, 107, 0.3);
+  }
+
+  .event {
+    display: grid;
+    grid-template-columns: 1fr 108px 1fr;
+    gap: 0;
+    margin-bottom: 44px;
+    align-items: center;
+    position: relative;
+  }
+
+  /* Circle sitting on the spine, with image upload */
+  .event-spine-circle {
+    grid-column: 2;
+    justify-self: center;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 4px solid var(--accent, var(--blue));
+    background: var(--sur);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    box-shadow: 0 0 0 6px var(--sur),
+                0 4px 14px rgba(26, 58, 107, 0.12);
+    transition: transform 0.2s, box-shadow 0.2s;
+    z-index: 3;
+  }
+  .event-spine-circle:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 6px var(--sur),
+                0 8px 22px rgba(26, 58, 107, 0.2);
+  }
+  .event-spine-circle img { width: 100%; height: 100%; object-fit: cover; }
+  .event-spine-circle .icon {
+    width: 32px; height: 32px;
+    color: var(--accent, var(--blue));
+    opacity: 0.9;
+  }
+  .event-spine-circle .upload-hint {
+    position: absolute; inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff; font-size: 9px; font-weight: 700;
+    display: none;
+    align-items: center; justify-content: center;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .event-spine-circle:hover .upload-hint { display: flex; }
+
+  /* Card — text centered at top */
+  .event-card {
+    padding: 18px 20px 16px;
+    border-radius: var(--radius);
+    background: var(--sur);
+    border: 1px solid var(--bdr);
+    box-shadow: 0 1px 2px rgba(26, 58, 107, 0.04),
+                0 6px 20px rgba(26, 58, 107, 0.06);
+    transition: all 0.2s;
+    position: relative;
+    text-align: center;
+  }
+  .event-card:hover {
+    border-color: var(--accent, var(--bdr-2));
+    box-shadow: 0 2px 4px rgba(26, 58, 107, 0.06),
+                0 10px 28px rgba(26, 58, 107, 0.1);
+    transform: translateY(-1px);
+  }
+
+  /* Year label pill — connects card to the spine circle */
+  .year-label {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 5px 12px;
+    color: #fff;
+    background: var(--accent, var(--navy));
+    border-radius: 4px;
+    z-index: 3;
+    box-shadow: 0 2px 6px rgba(26, 58, 107, 0.18);
+  }
+  .connector {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 2px;
+    background: var(--accent, var(--bdr-2));
+    z-index: 1;
+    opacity: 0.7;
+  }
+
+  /* Right events: card in right column, connector + label on card's LEFT side */
+  .event.right .event-card { grid-column: 3; margin-left: 18px; }
+  .event.right .year-label { left: -8px; transform: translate(-100%, -50%); }
+  .event.right .connector { right: 100%; width: 18px; }
+
+  /* Left events: card in left column, connector + label on card's RIGHT side */
+  .event.left .event-card { grid-column: 1; margin-right: 18px; }
+  .event.left .year-label { right: -8px; transform: translate(100%, -50%); }
+  .event.left .connector { left: 100%; width: 18px; }
+
+  /* Circle with image or icon, colored ring */
+  .circle {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    border: 4px solid var(--accent, var(--blue));
+    background: var(--sur);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .circle:hover { transform: scale(1.04); box-shadow: 0 6px 16px rgba(0,0,0,0.12); }
+  .circle img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .circle .icon {
+    width: 34px;
+    height: 34px;
+    color: var(--accent, var(--blue));
+    opacity: 0.85;
+  }
+  .circle .upload-hint {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 600;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .circle:hover .upload-hint { display: flex; }
+
+
+  .event-title {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent, var(--navy));
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .event-desc {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-2);
+    line-height: 1.55;
+  }
+  .event-edit {
+    display: inline-block;
+    margin-top: 10px;
+    font-size: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--text-3);
+    cursor: pointer;
+    letter-spacing: 0.04em;
+  }
+  .event-edit:hover { color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+
+  .event-card { position: relative; }
+
+  /* Birth marker (1987) */
+  .birth-marker {
+    text-align: center;
+    padding: 18px 0 4px;
+    position: relative;
+  }
+  .birth-marker .birth-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 18px;
+    background: var(--navy);
+    color: #fff;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    border-radius: 999px;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 6px 18px rgba(26, 58, 107, 0.3);
+  }
+  .birth-marker .birth-badge .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--blue);
+  }
+
+  /* Edit form inline */
+  .edit-form {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    background: var(--blue-lt);
+    border: 1px solid #b8d0f0;
+    border-radius: 10px;
+    margin-top: 10px;
+  }
+  .edit-form.open { display: flex; }
+  .edit-form input, .edit-form textarea {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--bdr-2);
+    border-radius: 6px;
+    background: var(--sur);
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--text);
+  }
+  .edit-form textarea { min-height: 60px; resize: vertical; }
+  .edit-form .row { display: flex; gap: 8px; }
+  .edit-form .row > * { flex: 1; }
+  .edit-form .actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .edit-form .actions button {
+    padding: 5px 10px;
+    font-size: 11px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+  }
+  .edit-form .actions .apply { background: var(--blue); color: #fff; border: 1px solid var(--blue); }
+  .edit-form .actions .cancel { background: var(--sur); color: var(--text-2); border: 1px solid var(--bdr-2); }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .timeline { padding: 24px 12px 28px; }
+    .timeline::before { left: 20px; }
+    .event { grid-template-columns: 1fr; }
+    .event.left .event-wrap, .event.right .event-wrap {
+      grid-column: 1;
+      padding: 0 0 0 40px;
+      align-items: stretch;
+    }
+    .event.left .event-card { text-align: left; flex-direction: row; }
+    .event.left .label-row, .event.right .label-row { flex-direction: row-reverse; }
+    .event.left .connector::after, .event.right .connector::after { right: -4px; left: auto; }
+    .card-circle { width: 50px; height: 50px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="preview-header">
+  <h1>storyabout.me — timeline ვიზუალი</h1>
+  <p>mockup — hero tile-ზე ღილაკი, bio modal-ში გვირგვინი, გვირგვინზე დაჭერით ეს timeline popup</p>
+</div>
+
+<!-- Hero tile demo (showing new "storyabout.me" badge) -->
+<div class="hero-tile-demo">
+  <span class="btn-story">storyabout.me</span>
+  <h3>გიორგი მერებაშვილი</h3>
+  <div class="sub">HVAC ინჟინერი · ენტერპრენერი</div>
+</div>
+
+<!-- Bio card mock with crown at the bottom -->
+<div class="bio-card" style="margin-top: 22px;">
+  <div class="bio-img">[ owner image ]</div>
+  <div class="bio-body">
+    <h2 class="bio-name">გიორგი მერებაშვილი</h2>
+    <p class="bio-title">HVAC ინჟინერი · ენტერპრენერი</p>
+    <p class="bio-text">გამარჯობა! მე ვარ გიორგი მერებაშვილი — HVAC ინჟინერი და engineers.ge-ის დამფუძნებელი. 10+ წელი ვმუშაობ საინჟინრო პროექტებზე…</p>
+  </div>
+  <div class="crown-row">
+    <button type="button" class="crown-btn" onclick="openTimeline()" aria-label="ჩემი ცხოვრების გზა">
+      <svg class="crown-svg" viewBox="0 0 24 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 6L5 14H19L22 6L17 9.5L12 3L7 9.5L2 6Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+        <circle cx="2" cy="6" r="1.6" fill="#f0c040" stroke="currentColor" stroke-width="1"/>
+        <circle cx="22" cy="6" r="1.6" fill="#f0c040" stroke="currentColor" stroke-width="1"/>
+        <circle cx="12" cy="3" r="1.6" fill="#f0c040" stroke="currentColor" stroke-width="1"/>
+        <rect x="4" y="14" width="16" height="2.4" fill="currentColor" rx="0.5"/>
+      </svg>
+      <span class="crown-label">ჩემი გზა</span>
+    </button>
+  </div>
+</div>
+
+<!-- ============ TIMELINE MODAL ============ -->
+<div class="modal-overlay" id="timelineModal" onclick="if(event.target===this) closeTimeline()">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="title-group">
+        <svg class="crown-inline" viewBox="0 0 24 18" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 6L5 14H19L22 6L17 9.5L12 3L7 9.5L2 6Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          <circle cx="2" cy="6" r="1.6" fill="#fff"/>
+          <circle cx="22" cy="6" r="1.6" fill="#fff"/>
+          <circle cx="12" cy="3" r="1.6" fill="#fff"/>
+          <rect x="4" y="14" width="16" height="2.4" fill="currentColor" rx="0.5"/>
+        </svg>
+        <div>
+          <h2>გიორგი მერებაშვილი · storyabout.me</h2>
+          <p>1987 → 2026 · ცხოვრების ქრონოლოგია</p>
+        </div>
+      </div>
+      <button class="close-x" onclick="closeTimeline()" aria-label="დახურვა">✕</button>
+    </div>
+
+    <div class="modal-toolbar">
+      <span class="legend">↑ 2026 (dzes) · 1987 ↓ (daibade)</span>
+      <button class="btn-add" onclick="alert('ახალი წელი (edit mode prototype)')">+ დაამატე წელი</button>
+      <button class="btn-save" onclick="alert('შენახულია (demo)')">შენახვა</button>
+    </div>
+
+    <div class="timeline" id="timeline">
+      <!-- Current year marker at very top -->
+      <div style="text-align:center; padding-bottom: 12px; position: relative; z-index: 3;">
+        <span class="current-marker" style="position: relative; left: auto; transform: none; display: inline-flex;">● 2026 · ახლა</span>
+      </div>
+
+      <!-- Event 2024 — right -->
+      <div class="event right" style="--accent: #1f6fd4;">
+        <div class="event-card">
+          <span class="connector"></span>
+          <span class="year-label">2024</span>
+          <h3 class="event-title">engineers.ge დაფუძნება</h3>
+          <p class="event-desc">ქართული საინჟინრო პლატფორმის დაწყება. პირველი კალკულატორები, Hero reklamebi, Admin.</p>
+          <span class="event-edit">რედაქტირება ↗</span>
+        </div>
+        <div class="event-spine-circle" onclick="alert('სურათის ატვირთვა')">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9l9-6 9 6v10a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2V9z"/></svg>
+          <div class="upload-hint">ატვირთე</div>
+        </div>
+      </div>
+
+      <!-- Event 2021 — left -->
+      <div class="event left" style="--accent: #1a3a6b;">
+        <div class="event-card">
+          <span class="connector"></span>
+          <span class="year-label">2021</span>
+          <h3 class="event-title">Senior HVAC Engineer</h3>
+          <p class="event-desc">დიდი სამრეწველო პროექტი — ვენტილაცია + მოქნილი გათბობა, EN 12831 აუდიტი.</p>
+          <span class="event-edit">რედაქტირება ↗</span>
+        </div>
+        <div class="event-spine-circle">
+          <img src="https://images.unsplash.com/photo-1581092334702-0883c9e4aecb?w=300&q=70" alt="" />
+          <div class="upload-hint">შეცვალე</div>
+        </div>
+      </div>
+
+      <!-- Event 2018 — right -->
+      <div class="event right" style="--accent: #1f6fd4;">
+        <div class="event-card">
+          <span class="connector"></span>
+          <span class="year-label">2018</span>
+          <h3 class="event-title">პირველი საკუთარი პროექტი</h3>
+          <p class="event-desc">Commercial building HVAC დიზაინი — თბილისი, 6000 m².</p>
+          <span class="event-edit">რედაქტირება ↗</span>
+        </div>
+        <div class="event-spine-circle">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+          <div class="upload-hint">ატვირთე</div>
+        </div>
+      </div>
+
+      <!-- Event 2014 — left -->
+      <div class="event left" style="--accent: #1a3a6b;">
+        <div class="event-card">
+          <span class="connector"></span>
+          <span class="year-label">2014</span>
+          <h3 class="event-title">საუნივერსიტეტო დიპლომი</h3>
+          <p class="event-desc">საქ. ტექნიკური უნივერსიტეტი — თბო-ენერგეტიკის ფაკულტეტი, წითელი დიპლომი.</p>
+          <span class="event-edit">რედაქტირება ↗</span>
+        </div>
+        <div class="event-spine-circle">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+          <div class="upload-hint">ატვირთე</div>
+        </div>
+      </div>
+
+      <!-- Event 2005 — right -->
+      <div class="event right" style="--accent: #1f6fd4;">
+        <div class="event-card">
+          <span class="connector"></span>
+          <span class="year-label">2005</span>
+          <h3 class="event-title">სკოლის დამთავრება</h3>
+          <p class="event-desc">92-ე საჯარო სკოლა, თბილისი.</p>
+          <span class="event-edit">რედაქტირება ↗</span>
+        </div>
+        <div class="event-spine-circle">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14v7"/><path d="M5 11v4c0 1 3 3 7 3s7-2 7-3v-4"/></svg>
+          <div class="upload-hint">ატვირთე</div>
+        </div>
+      </div>
+
+      <!-- Birth -->
+      <div class="birth-marker">
+        <span class="birth-badge">
+          <span class="dot"></span>
+          1987 · დაიბადე
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openTimeline() { document.getElementById('timelineModal').classList.add('open'); document.body.style.overflow = 'hidden'; }
+  function closeTimeline() { document.getElementById('timelineModal').classList.remove('open'); document.body.style.overflow = ''; }
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeTimeline(); });
+  // Auto-open on load for preview
+  window.addEventListener('load', () => setTimeout(openTimeline, 300));
+</script>
+</body>
+</html>

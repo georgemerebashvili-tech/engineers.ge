@@ -25,6 +25,7 @@ import {
   Building2,
   Boxes,
   Key,
+  Factory,
   type LucideIcon
 } from 'lucide-react';
 
@@ -92,6 +93,12 @@ const SECTIONS: NavSection[] = [
           {key: 'inv-stock', label: 'მარაგი · SKU', href: '/dmt/inventory?tab=stock', icon: Boxes}
         ]
       }
+    ]
+  },
+  {
+    title: 'წარმოება',
+    items: [
+      {key: 'products', label: 'პროდუქციების კატალოგი', href: '/dmt/products', icon: Factory}
     ]
   },
   {

@@ -6,6 +6,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {ArrowUpRight, Copy, FolderOpen, Pencil, Trash2} from 'lucide-react';
 import {CALCULATORS, getCalc} from '@/lib/calculators';
 import {
+  buildDeleteProjectPrompt,
   deleteProject,
   duplicateProject,
   formatRelative,
@@ -13,6 +14,7 @@ import {
   type Project,
   updateProject
 } from '@/lib/projects';
+import {getBuilding} from '@/lib/buildings';
 
 const PROJECTS_KEY = 'eng_projects_v1';
 const USE_PROJECTS_SLUGS = new Set(
@@ -56,7 +58,8 @@ export function DashboardProjectsPanel() {
   };
 
   const removeProject = (project: Project) => {
-    if (!confirm(`წაიშალოს "${project.name}"? ქმედება შეუქცევადია.`)) return;
+    const building = project.buildingId ? getBuilding(project.buildingId) : null;
+    if (!confirm(buildDeleteProjectPrompt(project, building?.name))) return;
     deleteProject(project.id);
     setVersion((value) => value + 1);
   };

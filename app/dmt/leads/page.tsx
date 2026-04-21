@@ -2,6 +2,7 @@
 
 import {useMemo, useState} from 'react';
 import {DmtPageShell} from '@/components/dmt/page-shell';
+import {ResizableTable} from '@/components/dmt/resizable-table';
 import {Phone, Mail} from 'lucide-react';
 import {LEADS, STAGE_META} from '@/lib/dmt/leads-data';
 
@@ -44,6 +45,7 @@ export default function LeadsPage() {
         </div>
 
         <div className="overflow-hidden rounded-[10px] border border-bdr bg-sur">
+          <ResizableTable storageKey="leads" className="overflow-x-auto">
           <table className="w-full text-[12.5px]">
             <thead>
               <tr className="border-b border-bdr bg-sur-2 text-left font-mono text-[10px] uppercase tracking-[0.06em] text-text-3">
@@ -103,6 +105,7 @@ export default function LeadsPage() {
               )}
             </tbody>
           </table>
+          </ResizableTable>
         </div>
       </div>
     </DmtPageShell>

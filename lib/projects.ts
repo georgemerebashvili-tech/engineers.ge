@@ -158,6 +158,14 @@ export function deleteProject(id: string): void {
   }
 }
 
+export function buildDeleteProjectPrompt(project: Project, buildingName?: string | null): string {
+  const base = `წაიშალოს კალკულაცია "${project.name}"?`;
+  if (buildingName) {
+    return `${base}\n\n⚠ ის მიბმულია პროექტზე "${buildingName}" — იქიდანაც წაიშლება. ქმედება შეუქცევადია.`;
+  }
+  return `${base} ქმედება შეუქცევადია.`;
+}
+
 export function saveThumbnail(id: string, dataURL: string): void {
   updateProject(id, { thumbnail: dataURL });
 }

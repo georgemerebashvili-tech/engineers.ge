@@ -163,3 +163,52 @@ html, body {
   transition: background-color 160ms ease;
 }
 
+/* DMT resizable table — vertical dividers + drag-to-resize handles */
+table.dmt-rt {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+table.dmt-rt > thead > tr > th,
+table.dmt-rt > tbody > tr > td {
+  border-right: 1px solid var(--bdr);
+}
+table.dmt-rt > thead > tr > th:last-child,
+table.dmt-rt > tbody > tr > td:last-child {
+  border-right: 0;
+}
+table.dmt-rt > thead > tr > th {
+  position: relative;
+  user-select: none;
+  overflow: hidden;
+}
+table.dmt-rt .dmt-rt-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 7px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 5;
+  background: transparent;
+  transition: background-color 120ms;
+}
+table.dmt-rt .dmt-rt-handle::before {
+  content: '';
+  position: absolute;
+  top: 20%;
+  bottom: 20%;
+  left: 50%;
+  width: 1px;
+  background: transparent;
+  transition: background-color 120ms;
+}
+table.dmt-rt .dmt-rt-handle:hover::before,
+table.dmt-rt .dmt-rt-handle:focus-visible::before,
+table.dmt-rt .dmt-rt-handle.active::before {
+  background: var(--blue);
+}
+table.dmt-rt .dmt-rt-handle:hover,
+table.dmt-rt .dmt-rt-handle.active {
+  background: color-mix(in srgb, var(--blue) 12%, transparent);
+}
+
