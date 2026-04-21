@@ -22,7 +22,8 @@ import {
   List,
   X,
   Palette,
-  Columns3
+  Columns3,
+  Download
 } from 'lucide-react';
 import {COLOR_STYLES, loadSets, type VarSet} from '@/lib/dmt/variables';
 
@@ -60,20 +61,7 @@ const STATUS_META: Record<Status, {color: string; bg: string; border: string}> =
   'დახურული-დაკარგვა':      {color: 'var(--red)',    bg: 'var(--red-lt)',  border: '#f0b8b4'}
 };
 
-const SEED: Row[] = [
-  {id: 'r1',  company: 'ლუკა ჩაგანავა ლესე', contact: '',                 phone: '',                   contract: 235, status: 'მოლაპარაკების პროცესი', role: 'End user', owner: 'გიორგი',  period: 'Q2 2026', editedBy: 'Giorgi merebash', editedAt: '04/05/2026 21:10', createdBy: 'Giorgi merebash'},
-  {id: 'r2',  company: 'ცელსიუსი',            contact: '',                 phone: '',                   contract: null, status: 'მოლაპარაკების პროცესი', role: '',         owner: '',         period: '',       editedBy: 'Giorgi merebash', editedAt: '15/02/2026 15:04', createdBy: 'Giorgi merebash'},
-  {id: 'r3',  company: 'ტუმბო',               contact: '',                 phone: '',                   contract: null, status: 'მოლაპარაკების პროცესი', role: '',         owner: '',         period: '',       editedBy: 'Giorgi merebash', editedAt: '15/02/2026 15:03', createdBy: 'Giorgi merebash'},
-  {id: 'r4',  company: 'შპს ალფა-ინჟ.',       contact: 'გიორგი ბუაძე',      phone: '+995 551 11 22 33',  contract: 8400, status: 'ახალი',                 role: 'Consultant', owner: 'ლანა',    period: 'Q3 2026', editedBy: 'Giorgi merebash', editedAt: '21/04/2026 10:20', createdBy: 'ლანა'},
-  {id: 'r5',  company: 'ი/მ გიორგი მერებაშვ.', contact: 'გიორგი',           phone: '+995 599 00 11 22',  contract: 1250, status: 'ახალი',                 role: 'End user', owner: 'გიორგი',  period: 'Q2 2026', editedBy: 'Giorgi merebash', editedAt: '20/04/2026 14:02', createdBy: 'Giorgi merebash'},
-  {id: 'r6',  company: 'HVAC Pro Georgia',        contact: 'თამარ ბერიძე',      phone: '+995 577 33 22 11',  contract: 22000, status: 'შეთავაზება გაცემული',  role: 'Supplier', owner: 'გიორგი', period: 'Q2 2026', editedBy: 'Giorgi merebash', editedAt: '18/04/2026 09:44', createdBy: 'Giorgi merebash'},
-  {id: 'r7',  company: 'Sazeo International', contact: 'მარიამ ჯავახიშვ.',  phone: '+995 555 44 55 66',  contract: 18400, status: 'შეთავაზება გაცემული',  role: 'Contractor', owner: 'ლანა', period: 'Q3 2026', editedBy: 'Giorgi merebash', editedAt: '15/04/2026 12:30', createdBy: 'ლანა'},
-  {id: 'r8',  company: 'BGEO Group',          contact: 'დავით გოგოლაძე',   phone: '+995 551 66 77 88',  contract: 6300, status: 'დახურული-მოგება',      role: 'End user', owner: 'გიორგი',  period: 'Q1 2026', editedBy: 'Giorgi merebash', editedAt: '10/04/2026 16:15', createdBy: 'Giorgi merebash'},
-  {id: 'r9',  company: 'Caucasus Roads',      contact: 'ზურაბ ლომიძე',     phone: '+995 597 22 11 00',  contract: 48000, status: 'დახურული-მოგება',      role: 'Contractor', owner: 'გიორგი', period: 'Q1 2026', editedBy: 'Giorgi merebash', editedAt: '08/04/2026 11:22', createdBy: 'Giorgi merebash'},
-  {id: 'r10', company: 'Smart Building GE',   contact: 'ანა ქიმერიძე',     phone: '+995 555 77 88 99',  contract: 1800, status: 'დახურული-დაკარგვა',    role: 'Consultant', owner: 'ლანა', period: 'Q4 2025', editedBy: 'ლანა',            editedAt: '28/03/2026 18:00', createdBy: 'ლანა'}
-];
-
-const STORE_KEY = 'dmt_manual_leads_v1';
+const STORE_KEY = 'dmt_manual_leads_v2';
 const EXTRA_COLS_KEY = 'dmt_manual_extra_cols_v1';
 const EXTRA_VALS_KEY = 'dmt_manual_extra_vals_v1';
 const COL_WIDTHS_KEY = 'dmt_manual_col_widths_v1';
@@ -116,7 +104,7 @@ const COLS: Array<{
 ];
 
 export default function ManualLeadsPage() {
-  const [rows, setRows] = useState<Row[]>(SEED);
+  const [rows, setRows] = useState<Row[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [q, setQ] = useState('');
   const [collapsed, setCollapsed] = useState<Record<Status, boolean>>({} as Record<Status, boolean>);
@@ -261,6 +249,36 @@ export default function ManualLeadsPage() {
         createdBy: 'Giorgi merebash'
       }
     ]);
+    setCollapsed((prev) => ({...prev, [status]: false}));
+  };
+
+  const exportCsv = () => {
+    const headers = ['#', ...COLS.map((c) => c.label), ...extraCols.map((c) => c.label)];
+    const lines: string[] = [headers.map(csvCell).join(',')];
+    filtered.forEach((r, i) => {
+      const base = COLS.map((c) => {
+        const v = r[c.key];
+        return v === null || v === undefined ? '' : String(v);
+      });
+      const extra = extraCols.map((ec) => {
+        const raw = extraVals[r.id]?.[ec.key] ?? '';
+        if (ec.kind === 'select' && ec.varSetId) {
+          const set = varSets.find((s) => s.id === ec.varSetId);
+          return set?.options.find((o) => o.id === raw)?.label ?? '';
+        }
+        return raw;
+      });
+      lines.push([String(i + 1), ...base, ...extra].map(csvCell).join(','));
+    });
+    const blob = new Blob(['\uFEFF' + lines.join('\n')], {type: 'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const deleteRow = (id: string) => {
@@ -282,6 +300,23 @@ export default function ManualLeadsPage() {
       subtitle="Airtable-სტილის grid · ჯგუფდება სტატუსის მიხედვით · უჯრების პირდაპირ რედაქტირება"
       searchPlaceholder="ძიება ნებისმიერ ველში…"
       onQueryChange={setQ}
+      actions={
+        <>
+          <button
+            onClick={exportCsv}
+            disabled={filtered.length === 0}
+            className="inline-flex items-center gap-1.5 rounded-md border border-bdr bg-sur-2 px-3 py-1.5 text-[12px] font-semibold text-text-2 hover:border-blue hover:text-blue disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download size={14} /> Export
+          </button>
+          <button
+            onClick={() => addRow('ახალი')}
+            className="inline-flex items-center gap-1.5 rounded-md border border-blue bg-blue px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-navy-2"
+          >
+            <Plus size={14} /> ახალი
+          </button>
+        </>
+      }
     >
       <div className="px-6 py-5 md:px-8">
         <div className="mb-4 grid gap-3 md:grid-cols-4">
@@ -600,6 +635,12 @@ function renderCell(
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(n);
+}
+
+function csvCell(v: string) {
+  if (v === '' || v == null) return '';
+  if (/[",\n\r]/.test(v)) return `"${v.replace(/"/g, '""')}"`;
+  return v;
 }
 
 function ColResizeHandle({
