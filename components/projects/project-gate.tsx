@@ -24,8 +24,10 @@ import {
   getLastProjectId,
   setLastProjectId,
   getAlwaysShowGateOnEntry,
+  setProjectBuilding,
   formatRelative
 } from '@/lib/projects';
+import {getBuilding} from '@/lib/buildings';
 import {Breadcrumbs} from '@/components/breadcrumbs';
 import {getTemplatesForSlug} from '@/lib/project-templates';
 
@@ -46,6 +48,8 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
   const [newName, setNewName] = useState('');
   const [bootReady, setBootReady] = useState(false);
   const [lastProjectId, setLastProjectIdState] = useState<string | null>(null);
+  const [buildingId, setBuildingId] = useState<string | null>(null);
+  const [buildingName, setBuildingName] = useState<string | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
   const projects = useMemo(() => listProjects(slug), [refreshIndex, slug]);
@@ -57,6 +61,14 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const manualGate = params.get('gate') === '1';
+    const buildingParam = params.get('building');
+    if (buildingParam) {
+      const b = getBuilding(buildingParam);
+      if (b) {
+        setBuildingId(b.id);
+        setBuildingName(b.name);
+      }
+    }
     const lastId = getLastProjectId(slug);
     const lastProject = lastId ? getProject(lastId) : null;
     if (lastProject?.slug === slug) {
@@ -65,7 +77,8 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
       if (lastId) setLastProjectId(slug, null);
       setLastProjectIdState(null);
     }
-    if (manualGate || getAlwaysShowGateOnEntry(slug) || !lastProject || lastProject.slug !== slug) {
+    // When arriving from a building, always show the gate (user is picking/creating for that project)
+    if (buildingParam || manualGate || getAlwaysShowGateOnEntry(slug) || !lastProject || lastProject.slug !== slug) {
       setBootReady(true);
       return;
     }
@@ -84,6 +97,7 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
   const commitNew = () => {
     const name = newName.trim();
     const p = createProject(slug, {}, name || undefined);
+    if (buildingId) setProjectBuilding(p.id, buildingId);
     setLastProjectId(slug, p.id);
     router.push(`/calc/${slug}?project=${p.id}`);
   };
@@ -92,6 +106,7 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
     const tmpl = getTemplatesForSlug(slug).find((t) => t.key === key);
     if (!tmpl) return;
     const p = createProject(slug, tmpl.state, tmpl.name);
+    if (buildingId) setProjectBuilding(p.id, buildingId);
     setLastProjectId(slug, p.id);
     router.push(`/calc/${slug}?project=${p.id}`);
   };
@@ -167,8 +182,23 @@ export function ProjectGate({slug, calcTitle, calcIcon}: Props) {
       <div className="max-w-[1280px] mx-auto px-4 md:px-6 pt-10 md:pt-12 pb-10">
         {/* Breadcrumb */}
         <div className="mb-3">
-          <Breadcrumbs items={[{label: calcTitle}]} />
+          <Breadcrumbs
+            items={
+              buildingId && buildingName
+                ? [
+                    {label: 'ჩემი პროექტები', href: '/dashboard/projects'},
+                    {label: buildingName, href: `/dashboard/projects/${buildingId}`},
+                    {label: calcTitle}
+                  ]
+                : [{label: calcTitle}]
+            }
+          />
         </div>
+        {buildingId && buildingName && (
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-bd bg-blue-lt px-3 py-1 text-[11px] font-semibold text-blue">
+            🔗 ახალი კალკულაცია დაერთება პროექტს „{buildingName}“
+          </div>
+        )}
         {/* Header */}
         <div className="mb-4 flex items-end gap-3">
           {calcIcon && (

@@ -31,7 +31,7 @@ export type FeatureMap = Record<string, FeatureStatus>;
  */
 export const FEATURE_REGISTRY: FeatureDef[] = [
   // --- Dashboard sidebar items ---
-  {key: 'dash.projects', label: 'ჩემი პროექტები', section: 'Dashboard სიდბარი', description: 'მარცხენა მენიუ — logged-in user-ის პროექტები'},
+  {key: 'dash.projects', label: 'ჩემი პროექტები', section: 'Dashboard სიდბარი', description: 'მარცხენა მენიუ — unified hub, სადაც ერთი project (სპორტდარბაზი/სუპერმარკეტი) აერთიანებს ყველა კალკულაციას', routes: ['/dashboard/projects']},
   {key: 'dash.favorites', label: 'რჩეული ხელსაწყოები', section: 'Dashboard სიდბარი'},
   {key: 'dash.referrals', label: 'მოიწვიე · იშოვე 3000₾', section: 'Dashboard სიდბარი', routes: ['/dashboard/referrals']},
   {key: 'dash.promotions', label: 'აქციები', section: 'Dashboard სიდბარი', routes: ['/promotions']},

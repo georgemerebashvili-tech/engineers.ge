@@ -8,6 +8,18 @@
 
 ---
 
+## 🟡 Unified "ჩემი პროექტები" hub — Phase 1 shipped
+
+One Building (სპორტდარბაზი / სუპერმარკეტი / ოფისი) groups N calculator projects (wall-thermal, heat-loss, HVAC …). Replaces per-calc silos.
+
+- [x] 2026-04-21 — **Phase 1 — localStorage MVP** 🟡 — `lib/buildings.ts` (CRUD), `Project.buildingId` + helpers (`listProjectsByBuilding`, `setProjectBuilding`, `listUnassignedProjects`), `/dashboard/projects` hub, `/dashboard/projects/[id]` detail (grouped by calc slug, link existing / create new / unlink / delete), ProjectGate reads `?building=XXX` → auto-links new projects + shows breadcrumb banner, sidebar "ჩემი პროექტები" enabled → `/dashboard/projects`. *(Claude ✅ 2026-04-21)*
+- [ ] 2026-04-21 — **Phase 2 — Supabase sync** 🟡 — migration: `building_projects` table (user_id, name, created_at) + `project_id` column on per-calc project rows. RLS per user. Keep localStorage as write-through cache for offline.
+- [ ] 2026-04-21 — **Phase 3 — Admin view** 🟢 — `/admin/projects` read-only list of buildings per user (join `buildings` + project counts); sidebar entry under "მომხმარებლები". Requires Phase 2 first (no server data until then).
+- [ ] 2026-04-21 — **Phase 4 — Cross-calc insights** 🟢 — building detail page aggregates: total heated area (from heat-loss), total U·A (from wall-thermal), ventilation rate (from HVAC). One-click "building report" PDF.
+- [ ] 2026-04-21 — **Phase 5 — Optional project metadata** 🟢 — type (residential / commercial / industrial), address, floor count, area. Optional fields; MVP is name-only per user spec.
+
+---
+
 ## 🟡 DMT internal ops app (`/dmt/*`)
 
 Standalone multi-user portal for ინვოისები, ლიდები, ინვენტარიზაცია. Separate user pool — შიდა გუნდი.

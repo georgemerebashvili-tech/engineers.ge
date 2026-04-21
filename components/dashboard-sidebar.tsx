@@ -64,9 +64,8 @@ const SECTIONS: NavSection[] = [
       {
         key: 'projects',
         label: 'ჩემი პროექტები',
-        href: '/#projects',
+        href: '/dashboard/projects',
         icon: FolderKanban,
-        disabled: true,
         flagKey: 'dash.projects'
       },
       {

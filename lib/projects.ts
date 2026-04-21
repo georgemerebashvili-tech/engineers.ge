@@ -10,6 +10,7 @@ export interface Project {
   updatedAt: string;
   thumbnail?: string;
   state: unknown;
+  buildingId?: string;
   meta?: { author?: string; tags?: string[]; description?: string };
 }
 
@@ -191,6 +192,34 @@ export function clearProjects(slug?: string): number {
   writeAll(next);
   if (slug) setLastProjectId(slug, null);
   return removed;
+}
+
+export function listProjectsByBuilding(buildingId: string): Project[] {
+  return readAll()
+    .filter((p) => p.buildingId === buildingId)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+export function listUnassignedProjects(): Project[] {
+  return readAll()
+    .filter((p) => !p.buildingId)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+export function setProjectBuilding(projectId: string, buildingId: string | null): Project | null {
+  const all = readAll();
+  const idx = all.findIndex((p) => p.id === projectId);
+  if (idx < 0) return null;
+  const next: Project = {...all[idx], updatedAt: new Date().toISOString()};
+  if (buildingId) next.buildingId = buildingId;
+  else delete next.buildingId;
+  all[idx] = next;
+  writeAll(all);
+  return next;
+}
+
+export function countProjectsByBuilding(buildingId: string): number {
+  return readAll().filter((p) => p.buildingId === buildingId).length;
 }
 
 export function getLastProjectId(slug: string): string | null {
