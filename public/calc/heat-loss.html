@@ -1292,17 +1292,22 @@ html.hl-pinned  #topTotals{margin-left:258px;transition:margin-left .2s}
       <div class="tt" style="flex:0;padding-right:16px"><button class="tt-tog" id="togBtn" onclick="togglePP()">⚙ პარამ. ▾</button></div>
     </div>
     <div class="pp" id="pp">
-      <div class="pg">
+      <div class="pg" style="min-width:170px">
         <div class="pg-t" style="color:var(--ora)">🔴 ზამთარი</div>
+        <div class="pr" title="ქალაქი — СНиП 23-01-99 + Georgian supplement · auto-fills Te/Tg/Te_s"><span class="pl">🌆 ქალაქი</span>
+          <select class="pi" id="city_preset" style="min-width:110px" onchange="_onCityChange()">
+            <option value="custom">ხელით</option>
+          </select>
+        </div>
         <div class="pr"><span class="pl">Ti შიდა</span><input class="pi" id="ti_w" type="number" value="22" step=".5" oninput="recalc()"><span class="pu">°C</span></div>
-        <div class="pr"><span class="pl">Te გარე</span><input class="pi" id="te_w" type="number" value="-15" step=".5" oninput="recalc()"><span class="pu">°C</span></div>
-        <div class="pr"><span class="pl">Tg მიწა</span><input class="pi" id="tg" type="number" value="-5" step=".5" oninput="recalc()"><span class="pu">°C</span></div>
+        <div class="pr"><span class="pl">Te გარე</span><input class="pi" id="te_w" type="number" value="-15" step=".5" oninput="_onClimateEdit();recalc()"><span class="pu">°C</span></div>
+        <div class="pr"><span class="pl">Tg მიწა</span><input class="pi" id="tg" type="number" value="-5" step=".5" oninput="_onClimateEdit();recalc()"><span class="pu">°C</span></div>
       </div>
       <div class="vd"></div>
       <div class="pg">
         <div class="pg-t" style="color:var(--blue)">🔵 ზაფხული</div>
         <div class="pr"><span class="pl">Ti შიდა</span><input class="pi" id="ti_s" type="number" value="20" step=".5" oninput="recalc()"><span class="pu">°C</span></div>
-        <div class="pr"><span class="pl">Te გარე</span><input class="pi" id="te_s" type="number" value="40" step=".5" oninput="recalc()"><span class="pu">°C</span></div>
+        <div class="pr"><span class="pl">Te გარე</span><input class="pi" id="te_s" type="number" value="40" step=".5" oninput="_onClimateEdit();recalc()"><span class="pu">°C</span></div>
       </div>
       <div class="vd"></div>
       <div class="pg">
@@ -2199,12 +2204,20 @@ function roomHTML(r,ri){
       <td class="del"><button class="btn-dr" onclick="delRow(${r.id},${ei})">×</button></td>
     </tr>`;
   }).join('');
+  const roomPresetOpts=(window.ROOM_PRESETS||[]).map(p=>
+    `<option value="${p.id}"${p.id===(r.preset||'custom')?' selected':''}>${p.icon} ${p.name} (${p.ti!=null?p.ti+'°':'—'})</option>`
+  ).join('');
   return `
   <div class="rc" id="rm_${r.id}">
     <div class="rc-h" onclick="toggleRoom(${r.id},event)">
       <span class="rc-chev open" id="chev_${r.id}">▶</span>
       <span class="rc-n">${String(ri+1).padStart(2,'0')}</span>
       <input class="rc-name" value="${r.name}" placeholder="სივრცის სახელი" oninput="svN(${r.id},this.value)" onclick="event.stopPropagation()">
+      <select title="ოთახის ტიპი — auto-fills Ti" onclick="event.stopPropagation()" onchange="_onRoomPreset(${r.id},this.value)"
+        style="font-family:var(--sans);font-size:10px;font-weight:600;padding:3px 6px;border:1.5px solid var(--bdr2);border-radius:5px;background:#fff;color:var(--navy);outline:none;cursor:pointer;max-width:170px">
+        ${roomPresetOpts}
+      </select>
+      ${(typeof r.ti_w==='number'&&r.ti_w!==null)?`<span style="font-family:var(--mono);font-size:10px;font-weight:700;color:var(--ora);background:var(--ora-lt,#fff5ea);padding:2px 6px;border-radius:4px;border:1px solid var(--ora-bd,#f0cfa6);white-space:nowrap" title="ოთახის Ti override">Ti=${r.ti_w}°</span>`:''}
       <span class="rb h" id="rbH_${r.id}">— kW</span>
       <span class="rb c" id="rbC_${r.id}">— kW</span>
       <button title="გათვლის ჟურნალი" onclick="event.stopPropagation();openCalcLog(${r.id})" style="background:none;border:1px solid var(--bdr2);color:var(--text3);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .12s;flex-shrink:0" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--bdr2)';this.style.color='var(--text3)'">📊</button>
@@ -2285,13 +2298,15 @@ function recalc(){
   let GH=0,GC=0,GA=0,G_RH=0;
   rooms.forEach(r=>{
     let RH=0,RC_=0,sQhk=0,sQcs=0,sQsol=0,sQint=0,sQlit=0,RA_floor=0;
+    // Room setpoint override — if room has preset with Ti, use it; else use global.
+    const rTi_w = (typeof r.ti_w==='number' && r.ti_w!=null) ? r.ti_w : Ti_w;
     r.rows.forEach((e,ei)=>{
       const ct=recalcGetCtype(e.ti);
       const A=e.l*e.h*e.q;
       const isSolRow=ct.sol||!!(window.tw_windows||[]).find(w=>w.id===e.ti);
       const isFloorRow=_isFloorCt(e.ti);
       const Tref_w=ct.gnd?Tg:Te_w;
-      const dT_w=Ti_w-Tref_w;
+      const dT_w=rTi_w-Tref_w;
       // D · Per-ctype thermal-bridge supplement ΔUtb. If set → add to U and skip blanket f_tb.
       const dUtb=+(ct.dUtb||0);
       const U_eff=ct.u+dUtb;
@@ -2307,7 +2322,7 @@ function recalc(){
       const Qint=(e.intN||1)*e.intW*e.intK2;
       const Qlit=isFloorRow?(e.litWm*A*e.litK):0;
       const rowC=Qcs+Qsol+Qint+Qlit;
-      if($(`Ti_${r.id}_${ei}`)) $(`Ti_${r.id}_${ei}`).textContent=Ti_w;
+      if($(`Ti_${r.id}_${ei}`)) $(`Ti_${r.id}_${ei}`).textContent=rTi_w;
       if($(`Tg_${r.id}_${ei}`)) $(`Tg_${r.id}_${ei}`).textContent=Tref_w;
       if($(`Dt_${r.id}_${ei}`)) $(`Dt_${r.id}_${ei}`).textContent=dT_w.toFixed(0);
       if($(`A_${r.id}_${ei}`))  $(`A_${r.id}_${ei}`).textContent=_fmtArea(A);
@@ -2755,6 +2770,78 @@ function _onRhModeChange(){
   if(m!=='custom' && fi){ fi.value=+m||0; }
   recalc();
 }
+
+// ══════════════════════════════════════════════════
+// Climate data per city (СНиП 23-01-99 + Georgian supplement)
+// Te_w = coldest 5-day mean (design outdoor, 0.92 or 0.99 freq.)
+// Tg   = mean shallow-ground winter temp
+// Te_s = summer design dry-bulb (cooling)
+// ══════════════════════════════════════════════════
+window.CITIES_LIB = [
+  {id:'tbilisi',    name:'თბილისი',        Te_w:-7,  Tg:-3, Te_s:36},
+  {id:'kutaisi',    name:'ქუთაისი',        Te_w:-4,  Tg:-1, Te_s:36},
+  {id:'batumi',     name:'ბათუმი',         Te_w: 0,  Tg: 2, Te_s:32},
+  {id:'rustavi',    name:'რუსთავი',        Te_w:-7,  Tg:-3, Te_s:37},
+  {id:'zugdidi',    name:'ზუგდიდი',        Te_w:-2,  Tg: 0, Te_s:35},
+  {id:'poti',       name:'ფოთი',           Te_w: 0,  Tg: 2, Te_s:32},
+  {id:'telavi',     name:'თელავი',         Te_w:-9,  Tg:-4, Te_s:34},
+  {id:'gori',       name:'გორი',           Te_w:-8,  Tg:-4, Te_s:35},
+  {id:'akhaltsikhe',name:'ახალციხე',       Te_w:-16, Tg:-8, Te_s:33},
+  {id:'stepantsm',  name:'სტეფანწმინდა',   Te_w:-20, Tg:-10,Te_s:24},
+  {id:'mestia',     name:'მესტია',         Te_w:-20, Tg:-10,Te_s:25},
+  {id:'bakuriani',  name:'ბაკურიანი',      Te_w:-22, Tg:-11,Te_s:25},
+];
+function _buildCityOptions(){
+  const sel=document.getElementById('city_preset'); if(!sel) return;
+  const cur=sel.value||'custom';
+  sel.innerHTML='<option value="custom">— ხელით —</option>'+
+    window.CITIES_LIB.map(c=>`<option value="${c.id}">${c.name} (Te=${c.Te_w}°)</option>`).join('');
+  sel.value=cur;
+}
+function _onCityChange(){
+  const id=document.getElementById('city_preset').value;
+  if(id==='custom') return;
+  const c=window.CITIES_LIB.find(x=>x.id===id); if(!c) return;
+  document.getElementById('te_w').value=c.Te_w;
+  document.getElementById('tg').value=c.Tg;
+  document.getElementById('te_s').value=c.Te_s;
+  recalc();
+}
+// Manual Te/Tg edit → flip city preset to 'custom'
+function _onClimateEdit(){
+  const sel=document.getElementById('city_preset'); if(!sel) return;
+  if(sel.value==='custom') return;
+  const c=window.CITIES_LIB.find(x=>x.id===sel.value); if(!c) return;
+  const Te=+document.getElementById('te_w').value;
+  const Tg=+document.getElementById('tg').value;
+  const Tes=+document.getElementById('te_s').value;
+  if(Te!==c.Te_w||Tg!==c.Tg||Tes!==c.Te_s) sel.value='custom';
+}
+
+// ══════════════════════════════════════════════════
+// Room setpoint library (EN 12831 Annex B + СанПиН 2.1.2)
+// Each preset sets room Ti override. 'custom' = use global ti_w.
+// ══════════════════════════════════════════════════
+window.ROOM_PRESETS = [
+  {id:'custom',    name:'ნაგულ. (global)', icon:'—',   ti:null},
+  {id:'bedroom',   name:'საძინებელი',       icon:'🛏',  ti:20},
+  {id:'living',    name:'სასტუმრო',         icon:'🛋',  ti:22},
+  {id:'office',    name:'ოფისი / კაბინეტი', icon:'💻',  ti:20},
+  {id:'kitchen',   name:'სამზარეულო',       icon:'🍳',  ti:20},
+  {id:'bath',      name:'აბაზანა',          icon:'🛁',  ti:24},
+  {id:'hallway',   name:'დერეფანი',         icon:'🚪',  ti:18},
+  {id:'stairwell', name:'კიბის უჯრედი',    icon:'🪜',  ti:15},
+  {id:'garage',    name:'ფარდული / გარაჟი', icon:'🚗',  ti:10},
+  {id:'unheated',  name:'გაუთბობელი',       icon:'❄',  ti:5 },
+];
+function _buildRoomPresetOptions(){ /* no-op; preset list rendered inline in roomHTML */ }
+function _onRoomPreset(rid,presetId){
+  const r=rooms.find(x=>x.id===rid); if(!r) return;
+  const p=(window.ROOM_PRESETS||[]).find(x=>x.id===presetId);
+  r.preset=presetId;
+  r.ti_w=(p&&p.ti!=null)?p.ti:null;
+  render(); recalc();
+}
 // User types f_rh → switch mode to 'custom' if mismatch
 function _onRhInput(){
   const m=document.getElementById('rh_mode');
@@ -2894,7 +2981,7 @@ function openCalcLog(roomId) {
   const r = rooms.find(x => x.id === roomId);
   if (!r) return;
 
-  const Ti_w  = +document.getElementById('ti_w').value  || 22;
+  const Ti_wGlobal = +document.getElementById('ti_w').value  || 22;
   const Te_w  = +document.getElementById('te_w').value  || -15;
   const Tg    = +document.getElementById('tg').value    || -5;
   const Ti_s  = +document.getElementById('ti_s').value  || 20;
@@ -2903,6 +2990,8 @@ function openCalcLog(roomId) {
   const f_g   = +((document.getElementById('f_g')||{value:1}).value) || 1;
   const f_rh  = +((document.getElementById('f_rh')||{value:0}).value) || 0;
   const solDiv = +(document.getElementById('sol_div_f')||{value:0.7}).value || 0.7;
+  // Room setpoint override (room preset)
+  const Ti_w = (typeof r.ti_w==='number' && r.ti_w!=null) ? r.ti_w : Ti_wGlobal;
 
   const fmt2 = v => (+v).toFixed(2);
   const fmtW = v => Math.round(v).toLocaleString('ka-GE');
@@ -3044,7 +3133,7 @@ function openCalcLog(roomId) {
       </table>
     </div>
     <div class="cl-summary">
-      <span>📐 Ti_w=${Ti_w}°C &nbsp; Te_w=${Te_w}°C &nbsp; Tg=${Tg}°C</span>
+      <span>📐 Ti_w=${Ti_w}°C${Ti_w!==Ti_wGlobal?` <span style="color:var(--ora);font-weight:700">· room override (global ${Ti_wGlobal}°)</span>`:''} &nbsp; Te_w=${Te_w}°C &nbsp; Tg=${Tg}°C</span>
       <span>Ti_s=${Ti_s}°C &nbsp; Te_s=${Te_s}°C &nbsp; f_tb=${f_tb}${f_g!==1?` &nbsp; f_g=${f_g}`:''}${f_rh>0?` &nbsp; f_RH=${f_rh}W/m²`:''}</span>
       ${qs>0?`<span style="color:#1a5080">💨 ${qs} m³/h</span>`:''}
       <span style="color:var(--ora);font-weight:700">∑🔴 env: ${(totalH/1000).toFixed(3)} kW ${qs>0?`+ vent: ${(Qvent_h/1000).toFixed(3)} kW`:''}</span>
@@ -5666,6 +5755,8 @@ function initAll(){
   tw_init();
   buildUGrid();
   buildWinGrid();
+  if(typeof _buildCityOptions==='function') _buildCityOptions();
+  if(typeof _buildRoomPresetOptions==='function') _buildRoomPresetOptions();
   setTimeout(()=>{
     _historyInit();
     _checkDraftOnLoad();
