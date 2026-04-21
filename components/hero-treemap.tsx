@@ -567,8 +567,14 @@ function Cell(props: CellProps) {
 export function HeroTreemap({
   slots = DEFAULT_SLOTS,
   owner = HERO_OWNER_DEFAULTS,
-  storyEvents = DEFAULT_STORY_EVENTS
-}: {slots?: HeroAdSlot[]; owner?: HeroOwner; storyEvents?: StoryEvent[]}) {
+  storyEvents = DEFAULT_STORY_EVENTS,
+  isAdmin = false
+}: {
+  slots?: HeroAdSlot[];
+  owner?: HeroOwner;
+  storyEvents?: StoryEvent[];
+  isAdmin?: boolean;
+}) {
   const [lightbox, setLightbox] = useState<LightboxState>(null);
   const [bio, setBio] = useState<BioState>(null);
   const [storyOpen, setStoryOpen] = useState(false);
@@ -709,6 +715,7 @@ export function HeroTreemap({
         open={storyOpen}
         ownerName={owner.name}
         events={storyEvents}
+        isAdmin={isAdmin}
         onClose={() => setStoryOpen(false)}
       />
     </>

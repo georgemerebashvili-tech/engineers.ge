@@ -8,14 +8,25 @@
 
 ---
 
-## 🟡 storyabout.me — Phase 2 (persistence + admin editor)
+## 🟡 storyabout.me — Phase 3 (real data + polish)
 
-Phase 1 shipped 2026-04-21: hero headline tile "ბიო" ღილაკი → "storyabout.me"; bio modal-ის ბოლოში გვირგვინი; timeline modal (navy + blue standard tokens, layered shadows, staggered animations, spine shimmer, hover lifts); hardcoded 5 event defaults in [lib/story-timeline.ts](../lib/story-timeline.ts). Preview: [public/experiments/storyabout-preview.html](../public/experiments/storyabout-preview.html).
+Phase 1 shipped 2026-04-21: hero headline tile "ბიო" ღილაკი → "storyabout.me"; bio modal-ის ბოლოში გვირგვინი; timeline modal (navy + blue tokens, layered shadows, staggered animations, spine shimmer, hover lifts); hardcoded 5 event defaults. Preview: [public/experiments/storyabout-preview.html](../public/experiments/storyabout-preview.html).
 
-- [ ] 2026-04-21 — **Supabase migration** `0036_hero_owner_story.sql` — `hero_owner_story_events` table (id uuid, year int, title text, description text, image_url text, accent text, sort_order int, created_at, updated_at). RLS: public read; admin write.
-- [ ] 2026-04-21 — **Admin page** `/admin/(authed)/story` — CRUD events, re-order, image upload via Supabase storage bucket `hero-story`. Sidebar entry under "კონტენტი" with Crown icon.
-- [ ] 2026-04-21 — **Real event data** — user-ი შეავსებს რეალურ წლებს/ტექსტებს; placeholder 5 event-ი გადაიწეროს.
-- [ ] 2026-04-21 — **Prop-drill storyEvents** from server component `app/page.tsx` or `components/hero.tsx` fetching via supabase server client.
+Phase 2 shipped 2026-04-21: Supabase persistence + admin CRUD + image upload. Home renders live events from DB (falls back to 5 placeholder defaults if table empty).
+- [x] 2026-04-21 — **Supabase migration** `0036_hero_owner_story.sql` — `hero_owner_story_events` table applied to prod, RLS public-read, 5 placeholder rows seeded. (done 2026-04-21)
+- [x] 2026-04-21 — **Server store** [lib/story-timeline-store.ts](../lib/story-timeline-store.ts) — `getStoryEvents`, `upsertStoryEvent`, `deleteStoryEvent`, `reorderStoryEvents`. (done 2026-04-21)
+- [x] 2026-04-21 — **API route** [/api/admin/story-events](../app/api/admin/story-events/route.ts) — GET/POST/DELETE/PATCH (auth + zod + audit). (done 2026-04-21)
+- [x] 2026-04-21 — **Admin page** [/admin/story](../app/admin/(authed)/story/workspace.tsx) — CRUD card list, accent picker, up/down reorder, inline preview modal, image upload to `public-assets/story-timeline/`. (done 2026-04-21)
+- [x] 2026-04-21 — **Sidebar entry** — Crown icon, "კონტენტი" section, between Hero Ads and redirects. (done 2026-04-21)
+- [x] 2026-04-21 — **Prop-drill** — [components/hero.tsx](../components/hero.tsx) fetches + passes through `storyEvents` prop. (done 2026-04-21)
+
+Phase 3 shipped 2026-04-21: event detail modal on circle/card click (hero image + extended description, stacked z-120 over timeline) + @dnd-kit drag-and-drop reordering in admin (with GripVertical handle + drag shadow + auto sort_order renumbering) + admin-only "✎ რედაქტირება" shortcut in timeline modal header.
+- [x] 2026-04-21 — **Event detail modal** — click circle or card → larger modal with full image (340–420px hero or accent gradient fallback) + year pill + accent title + full description. Escape handles nested close. [components/story-timeline.tsx](../components/story-timeline.tsx) `StoryEventDetail`. (done 2026-04-21)
+- [x] 2026-04-21 — **Drag-and-drop reordering** — `@dnd-kit/core`+`sortable`+`utilities` installed; GripVertical drag handle per card; pointer+keyboard sensors; `SortableDraftRow`; drop auto-renumbers sort_order by 10s. (done 2026-04-21)
+- [x] 2026-04-21 — **Admin shortcut on timeline modal** — `getSession()` wired through `Hero → HeroTreemap → StoryTimelineModal` as `isAdmin` prop; if admin session → show ✎ რედაქტირება link in modal header (md+ only) pointing to `/admin/story`. (done 2026-04-21)
+
+Remaining:
+- [ ] 2026-04-21 — **Real event data** — user-ი შეავსებს რეალურ წლებს/ტექსტებს `/admin/story`-ზე; placeholder 5 event-ი გადაიწეროს.
 
 ---
 
@@ -135,7 +146,7 @@ Formula audit (2026-04-21): core EN 12831 formulas (`Qh = U·A·ΔT·f·f_tb`, `
 
 ## 🔴 Blockers (online go-live)
 
-- [ ] 2026-04-21 — **Apply migration `0032_hero_owner.sql`** (Supabase prod + local) — Owner tile (გიორგი-ს headline) admin მართვა მოითხოვს `hero_owner` table-ს. `npm run db:migrate` ან Supabase SQL Editor. მანამდე fallback HERO_OWNER_DEFAULTS-ზე (UI-ზე გავლენა არ აქვს, მაგრამ admin "Save" ვერ იმუშავებს). 🔴
+- [x] 2026-04-21 — **Apply migration `0032_hero_owner.sql`** — verified applied in prod (1 row), `hero_owner_story_events` (migration `0036`) also present with 5 rows. Stale checkbox cleared 2026-04-21.
 - [ ] 2026-04-18 — **Supabase project provision** — user-ის action. დაარეგისტრიროს Supabase project (ან Vercel Marketplace-ის Neon Postgres-ს) და .env.local-ში ჩააწეროს:
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`

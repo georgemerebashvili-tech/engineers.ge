@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {
   STORY_BIRTH_YEAR,
   currentStoryYear,
@@ -12,14 +12,23 @@ type Props = {
   open: boolean;
   ownerName: string;
   events: StoryEvent[];
+  isAdmin?: boolean;
   onClose: () => void;
 };
 
-export function StoryTimelineModal({open, ownerName, events, onClose}: Props) {
+export function StoryTimelineModal({open, ownerName, events, isAdmin = false, onClose}: Props) {
+  const [detail, setDetail] = useState<StoryEvent | null>(null);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        if (detail) {
+          setDetail(null);
+        } else {
+          onClose();
+        }
+      }
     };
     document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', onKey);
@@ -27,7 +36,11 @@ export function StoryTimelineModal({open, ownerName, events, onClose}: Props) {
       document.body.style.overflow = '';
       window.removeEventListener('keydown', onKey);
     };
-  }, [open, onClose]);
+  }, [open, onClose, detail]);
+
+  useEffect(() => {
+    if (!open) setDetail(null);
+  }, [open]);
 
   if (!open) return null;
 
@@ -58,17 +71,28 @@ export function StoryTimelineModal({open, ownerName, events, onClose}: Props) {
               </p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="დახურვა"
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-bdr bg-sur text-text-2 transition-colors hover:border-blue hover:bg-[var(--blue-lt)] hover:text-blue"
-          >
-            <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 6L6 18" />
-              <path d="M6 6l12 12" />
-            </svg>
-          </button>
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <a
+                href="/admin/story"
+                className="hidden items-center gap-1 rounded-md border border-bdr-2 bg-sur px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.06em] text-navy transition-colors hover:border-blue hover:bg-[var(--blue-lt)] hover:text-blue md:inline-flex"
+                title="ადმინ რედაქტორი"
+              >
+                ✎ რედაქტირება
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="დახურვა"
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-bdr bg-sur text-text-2 transition-colors hover:border-blue hover:bg-[var(--blue-lt)] hover:text-blue"
+            >
+              <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6L6 18" />
+                <path d="M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <div className="story-timeline relative px-6 pb-8 pt-7 md:px-6">
@@ -83,7 +107,7 @@ export function StoryTimelineModal({open, ownerName, events, onClose}: Props) {
           </div>
 
           {sorted.map((ev, i) => (
-            <StoryEventRow key={ev.id} event={ev} index={i} />
+            <StoryEventRow key={ev.id} event={ev} index={i} onOpenDetail={setDetail} />
           ))}
 
           <div className="relative z-[2] pb-1 pt-5 text-center">
@@ -94,11 +118,23 @@ export function StoryTimelineModal({open, ownerName, events, onClose}: Props) {
           </div>
         </div>
       </div>
+
+      {detail && (
+        <StoryEventDetail event={detail} onClose={() => setDetail(null)} />
+      )}
     </div>
   );
 }
 
-function StoryEventRow({event, index}: {event: StoryEvent; index: number}) {
+function StoryEventRow({
+  event,
+  index,
+  onOpenDetail
+}: {
+  event: StoryEvent;
+  index: number;
+  onOpenDetail: (ev: StoryEvent) => void;
+}) {
   const side: 'left' | 'right' = index % 2 === 0 ? 'right' : 'left';
   const accent = event.accent || '#1f6fd4';
   const delay = 0.35 + index * 0.15;
@@ -111,18 +147,23 @@ function StoryEventRow({event, index}: {event: StoryEvent; index: number}) {
         animationDelay: `${delay}s`
       }}
     >
-      <EventCircle event={event} />
-      <EventContent event={event} side={side} />
+      <EventCircle event={event} onClick={() => onOpenDetail(event)} />
+      <EventContent event={event} side={side} onOpenDetail={() => onOpenDetail(event)} />
     </div>
   );
 }
 
-function EventCircle({event}: {event: StoryEvent}) {
+function EventCircle({event, onClick}: {event: StoryEvent; onClick: () => void}) {
   const accent = event.accent || '#1f6fd4';
   return (
-    <div
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
       className="story-circle"
-      title={`${event.year} — ${event.title}`}
+      aria-label={`${event.year} — ${event.title}`}
     >
       {event.image_url ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -140,17 +181,28 @@ function EventCircle({event}: {event: StoryEvent}) {
           <path d="M12 7v5l3 2" />
         </svg>
       )}
-    </div>
+    </button>
   );
 }
 
-function EventContent({event, side}: {event: StoryEvent; side: 'left' | 'right'}) {
+function EventContent({
+  event,
+  side,
+  onOpenDetail
+}: {
+  event: StoryEvent;
+  side: 'left' | 'right';
+  onOpenDetail: () => void;
+}) {
   const accent = event.accent || '#1f6fd4';
 
   const card = (
-    <div
-      className="story-card flex-1 rounded-[var(--radius)] border border-bdr bg-sur px-[22px] py-[18px] text-center"
+    <button
+      type="button"
+      onClick={onOpenDetail}
+      className="story-card flex-1 rounded-[var(--radius)] border border-bdr bg-sur px-[22px] py-[18px] text-center cursor-pointer"
       style={{['--accent' as string]: accent}}
+      aria-label={`${event.year} — ${event.title} · გახსენი დეტალები`}
     >
       <h3
         className="story-card-title mb-[6px] text-[13px] font-bold uppercase tracking-[0.08em]"
@@ -159,7 +211,7 @@ function EventContent({event, side}: {event: StoryEvent; side: 'left' | 'right'}
         {event.title}
       </h3>
       <p className="m-0 text-[12px] leading-[1.55] text-text-2">{event.description}</p>
-    </div>
+    </button>
   );
 
   const yearPill = (
@@ -188,6 +240,90 @@ function EventContent({event, side}: {event: StoryEvent; side: 'left' | 'right'}
       {card}
       {connector}
       {yearPill}
+    </div>
+  );
+}
+
+function StoryEventDetail({event, onClose}: {event: StoryEvent; onClose: () => void}) {
+  const accent = event.accent || '#1f6fd4';
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${event.year} · ${event.title}`}
+      onClick={onClose}
+      className="story-detail-overlay fixed inset-0 z-[120] flex items-center justify-center overflow-y-auto bg-black/75 p-4 backdrop-blur-[8px] md:p-8"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="story-detail-card relative w-full max-w-[680px] overflow-hidden rounded-[16px] bg-sur"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="დახურვა"
+          className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-colors hover:bg-black/65"
+        >
+          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M18 6L6 18" />
+            <path d="M6 6l12 12" />
+          </svg>
+        </button>
+
+        {event.image_url ? (
+          <div className="relative">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={event.image_url}
+              alt={event.title}
+              loading="lazy"
+              decoding="async"
+              className="h-[340px] w-full object-cover md:h-[420px]"
+            />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/55 to-transparent" />
+          </div>
+        ) : (
+          <div
+            className="flex h-[220px] w-full items-center justify-center md:h-[260px]"
+            style={{background: `linear-gradient(135deg, ${accent}1a, ${accent}0d)`}}
+          >
+            <div
+              className="flex h-20 w-20 items-center justify-center rounded-full border-4 bg-sur shadow-lg"
+              style={{borderColor: accent}}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-10 w-10" style={{color: accent}}>
+                <circle cx="12" cy="12" r="9" />
+                <path d="M12 7v5l3 2" />
+              </svg>
+            </div>
+          </div>
+        )}
+
+        <div className="p-6 md:p-8">
+          <div className="flex flex-wrap items-center gap-3">
+            <span
+              className="story-detail-year rounded-[5px] px-3 py-[6px] font-mono text-[13px] font-bold tracking-[0.08em] text-white"
+              style={{background: accent}}
+            >
+              {event.year}
+            </span>
+            <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-text-3">
+              storyabout.me
+            </span>
+          </div>
+          <h3
+            className="mt-4 text-xl font-bold leading-tight tracking-tight md:text-2xl"
+            style={{color: accent}}
+          >
+            {event.title}
+          </h3>
+          {event.description && (
+            <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-text md:text-base">
+              {event.description}
+            </p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
