@@ -1747,6 +1747,10 @@ table.devices-sheet td:last-child { border-right: none; }
   </div>
   <div class="slide-body">
     <div class="slide-map" id="slideMap"></div>
+    <div style="display:flex; gap:6px; padding:8px 14px; border-bottom:1px solid var(--slate-200);">
+      <button class="btn sm" id="slideDirectionsBtn" style="flex:1; justify-content:center;">🧭 მარშრუტი</button>
+      <button class="btn sm" id="slideOpenMapsBtn" style="flex:1; justify-content:center;">Google Maps →</button>
+    </div>
     <div class="slide-content" id="slideContent"></div>
   </div>
   <div class="slide-action-bar">
@@ -1907,7 +1911,10 @@ table.devices-sheet td:last-child { border-right: none; }
       <div class="card">
         <div class="card-header">
           <div class="card-title">მდებარეობა</div>
-          <button class="btn sm" id="openInMapsBtn">Google Maps →</button>
+          <div style="display:flex; gap:6px;">
+            <button class="btn sm" id="getDirectionsBtn" title="მარშრუტი Google Maps-ში">🧭 მარშრუტი</button>
+            <button class="btn sm" id="openInMapsBtn">Google Maps →</button>
+          </div>
         </div>
         <div id="detailMap" style="height: 260px; background: var(--slate-100);"></div>
         <div style="padding:12px 16px;font-size:12px;color:var(--slate-600);" id="detailAddress"></div>
@@ -2866,22 +2873,49 @@ function closeSlidePanel() {
 }
 
 function renderSlideMap(b) {
-  if (typeof L === 'undefined') {
-    document.getElementById('slideMap').innerHTML = '<div class="empty-state" style="padding:40px 20px;">რუქა ვერ ჩაიტვირთა</div>';
-    return;
-  }
+  const container = document.getElementById('slideMap');
   const coords = getBranchCoords(b);
+  // Clean any prior Leaflet instance
+  if (state.slideMap) { try { state.slideMap.remove(); } catch {} state.slideMap = null; }
+
+  const dirBtn = document.getElementById('slideDirectionsBtn');
+  const gmBtn = document.getElementById('slideOpenMapsBtn');
+
   if (!coords) {
-    document.getElementById('slideMap').innerHTML = '<div class="empty-state" style="padding:40px 20px;">კოორდინატები არ არის</div>';
+    container.innerHTML = '<div class="empty-state" style="padding:40px 20px;">კოორდინატები არ არის</div>';
+    if (dirBtn) dirBtn.disabled = true;
+    if (gmBtn) gmBtn.disabled = true;
     return;
   }
-  if (state.slideMap) { state.slideMap.remove(); state.slideMap = null; }
-  state.slideMap = L.map('slideMap').setView(coords, 15);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { attribution: '© OpenStreetMap © CARTO', subdomains: 'abcd' }).addTo(state.slideMap);
-  const color = STATUS_COLORS[b.status] || STATUS_COLORS.general;
-  L.circleMarker(coords, {
-    radius: 10, fillColor: color, color: '#fff', weight: 3, fillOpacity: 1,
-  }).addTo(state.slideMap).bindPopup(`<b>${escapeHtml(b.name)}</b><br>${escapeHtml(b.address)}`).openPopup();
+
+  const [lat, lng] = coords;
+  const label = encodeURIComponent(b.name || '');
+  const addrQ = encodeURIComponent(`${b.name}, ${b.address}, ${b.city}, საქართველო`);
+
+  container.innerHTML = `
+    <iframe
+      src="https://maps.google.com/maps?q=${lat},${lng}(${label})&z=15&hl=ka&output=embed"
+      style="width:100%; height:100%; border:0;"
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      allowfullscreen></iframe>
+  `;
+
+  if (dirBtn) {
+    dirBtn.disabled = false;
+    dirBtn.onclick = () => {
+      window.open(
+        `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+        '_blank', 'noopener,noreferrer'
+      );
+    };
+  }
+  if (gmBtn) {
+    gmBtn.disabled = false;
+    gmBtn.onclick = () => {
+      window.open(`https://www.google.com/maps/search/?api=1&query=${addrQ}`, '_blank', 'noopener,noreferrer');
+    };
+  }
 }
 
 function formatVisitFull(v) {
@@ -3269,24 +3303,37 @@ function openBranch(id) {
 }
 
 function setupDetailMap(b) {
-  setTimeout(() => {
-    if (typeof L === 'undefined') {
-      document.getElementById('detailMap').innerHTML = '<div class="empty-state" style="padding:40px 20px;">რუქა ვერ ჩაიტვირთა</div>';
-      return;
-    }
-    const coords = getBranchCoords(b);
-    if (!coords) {
-      document.getElementById('detailMap').innerHTML = '<div class="empty-state">კოორდინატები არ არის ხელმისაწვდომი</div>';
-      return;
-    }
-    if (state.detailMap) { state.detailMap.remove(); state.detailMap = null; }
-    state.detailMap = L.map('detailMap').setView(coords, 15);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      attribution: '© OpenStreetMap © CARTO', subdomains: 'abcd',
-    }).addTo(state.detailMap);
-    L.marker(coords).addTo(state.detailMap)
-      .bindPopup(`<b>${escapeHtml(b.name)}</b><br>${escapeHtml(b.address)}`);
-  }, 100);
+  const container = document.getElementById('detailMap');
+  if (state.detailMap) { try { state.detailMap.remove(); } catch {} state.detailMap = null; }
+
+  const dirBtn = document.getElementById('getDirectionsBtn');
+  const coords = getBranchCoords(b);
+  if (!coords) {
+    container.innerHTML = '<div class="empty-state">კოორდინატები არ არის ხელმისაწვდომი</div>';
+    if (dirBtn) dirBtn.disabled = true;
+    return;
+  }
+
+  const [lat, lng] = coords;
+  const label = encodeURIComponent(b.name || '');
+  container.innerHTML = `
+    <iframe
+      src="https://maps.google.com/maps?q=${lat},${lng}(${label})&z=15&hl=ka&output=embed"
+      style="width:100%; height:100%; border:0;"
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      allowfullscreen></iframe>
+  `;
+
+  if (dirBtn) {
+    dirBtn.disabled = false;
+    dirBtn.onclick = () => {
+      window.open(
+        `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`,
+        '_blank', 'noopener,noreferrer'
+      );
+    };
+  }
 }
 
 function renderPlannedEquipment(b) {
