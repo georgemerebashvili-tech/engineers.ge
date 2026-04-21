@@ -105,20 +105,53 @@
 
 <div id="crosshair-mode">კუბ-გარემო: ოთახი 6×4×3 მ · ავეჯი რეალური ზომებით · წყალი Rapier3D physics-ით</div>
 
+<div id="boot-status" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);padding:16px 24px;background:rgba(15,23,42,0.92);border:1px solid rgba(148,163,184,0.3);border-radius:10px;color:#e2e8f0;font-family:-apple-system,'Noto Sans Georgian',sans-serif;font-size:13px;z-index:100;text-align:center;max-width:500px;">
+  <div style="font-weight:700;margin-bottom:6px;">💧 Loading 3D physics…</div>
+  <div id="boot-msg" style="color:#94a3b8;font-size:11px;">Three.js + Rapier WASM იტვირთება</div>
+</div>
+
 <script type="importmap">
 {
   "imports": {
-    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
-    "@dimforge/rapier3d-compat": "https://cdn.skypack.dev/@dimforge/rapier3d-compat@0.12.0"
+    "three": "https://esm.sh/three@0.160.0",
+    "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/",
+    "@dimforge/rapier3d-compat": "https://esm.sh/@dimforge/rapier3d-compat@0.12.0"
   }
 }
 </script>
 
 <script type="module">
-import * as THREE from 'three';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import RAPIER from '@dimforge/rapier3d-compat';
+const bootEl = document.getElementById('boot-status');
+const bootMsg = document.getElementById('boot-msg');
+function setBoot(msg) { if (bootMsg) bootMsg.textContent = msg; }
+function bootError(err) {
+  console.error('[sprinkler-sim boot]', err);
+  if (!bootEl) return;
+  bootEl.innerHTML = `
+    <div style="font-weight:700;color:#fca5a5;margin-bottom:8px;">❌ Load failed</div>
+    <div style="color:#e2e8f0;font-size:12px;margin-bottom:8px;">${String(err?.message || err).slice(0, 400)}</div>
+    <div style="color:#94a3b8;font-size:10px;">შეამოწმე console (Cmd+Option+J) სრული stack trace-თვის</div>
+  `;
+}
+window.addEventListener('error', (e) => bootError(e.error || e.message));
+window.addEventListener('unhandledrejection', (e) => bootError(e.reason));
+
+setBoot('Three.js იტვირთება…');
+let THREE, OrbitControls, RAPIER;
+try {
+  THREE = await import('three');
+  setBoot('Three.js OrbitControls იტვირთება…');
+  ({ OrbitControls } = await import('three/addons/controls/OrbitControls.js'));
+  setBoot('Rapier physics (WASM) იტვირთება…');
+  const rapierMod = await import('@dimforge/rapier3d-compat');
+  RAPIER = rapierMod.default || rapierMod;
+  setBoot('Rapier init…');
+  await RAPIER.init();
+  setBoot('სცენის აწყობა…');
+} catch (err) {
+  bootError(err);
+  throw err;
+}
 
 // ============================================================
 // CONFIG
@@ -173,7 +206,6 @@ scene.add(key);
 // ============================================================
 // RAPIER
 // ============================================================
-await RAPIER.init();
 const gravity = new RAPIER.Vector3(0, -9.81, 0);
 const world = new RAPIER.World(gravity);
 const eventQueue = new RAPIER.EventQueue(true);
@@ -535,6 +567,11 @@ window.addEventListener('resize', () => {
 
 updateHUD();
 tick();
+
+// Hide boot overlay after first render
+requestAnimationFrame(() => {
+  if (bootEl) bootEl.remove();
+});
 </script>
 
 </body>
