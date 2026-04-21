@@ -16,24 +16,36 @@ export async function GET() {
 
   const db = supabaseAdmin();
 
-  const [devsRes, recentRes, totalsRes, integrityRes] = await Promise.all([
-    db
-      .from('sazeo_developers')
-      .select('id, name, email, disabled_at, created_at')
-      .order('created_at', {ascending: true}),
-    db
-      .from('sazeo_events')
-      .select(
-        'id, developer_id, session_id, event_type, ts_server, ts_client, repo_id, data, host, os, claude_version'
-      )
-      .order('id', {ascending: false})
-      .limit(RECENT_EVENT_LIMIT),
-    db.from('sazeo_events').select('id', {count: 'exact', head: true}),
-    db
-      .from('sazeo_events_integrity')
-      .select('id', {count: 'exact', head: true})
-      .eq('ok', false)
-  ]);
+  const [devsRes, recentRes, totalsRes, integrityRes, commitsRes, unmatchedRes] =
+    await Promise.all([
+      db
+        .from('sazeo_developers')
+        .select('id, name, email, disabled_at, created_at')
+        .order('created_at', {ascending: true}),
+      db
+        .from('sazeo_events')
+        .select(
+          'id, developer_id, session_id, event_type, ts_server, ts_client, repo_id, data, host, os, claude_version'
+        )
+        .order('id', {ascending: false})
+        .limit(RECENT_EVENT_LIMIT),
+      db.from('sazeo_events').select('id', {count: 'exact', head: true}),
+      db
+        .from('sazeo_events_integrity')
+        .select('id', {count: 'exact', head: true})
+        .eq('ok', false),
+      db
+        .from('sazeo_commit_audits')
+        .select(
+          'id, commit_sha, repo_full, branch, author_email, author_name, committed_at, developer_id, session_matched, matched_session_id, alert, pushed_at'
+        )
+        .order('pushed_at', {ascending: false})
+        .limit(40),
+      db
+        .from('sazeo_commit_audits')
+        .select('id', {count: 'exact', head: true})
+        .eq('session_matched', false)
+    ]);
 
   if (devsRes.error || recentRes.error) {
     return NextResponse.json({error: 'query failed'}, {status: 500});
@@ -225,8 +237,27 @@ export async function GET() {
     devs: developers.length,
     devs_online: devList.filter((d) => d.status === 'online').length,
     devs_idle: devList.filter((d) => d.status === 'idle').length,
-    errors_recent: recent.filter((r) => r.event_type === 'error').length
+    errors_recent: recent.filter((r) => r.event_type === 'error').length,
+    commits_unmatched: unmatchedRes.count ?? 0
   };
+
+  const commits = (commitsRes.data ?? []).map((c) => ({
+    id: c.id,
+    commit_sha: (c.commit_sha as string)?.slice(0, 10) ?? '',
+    repo_full: c.repo_full,
+    branch: c.branch,
+    author_email: c.author_email,
+    author_name: c.author_name,
+    committed_at: c.committed_at,
+    pushed_at: c.pushed_at,
+    developer:
+      (c.developer_id && devNameById.get(c.developer_id as string)) ||
+      c.author_name ||
+      c.author_email,
+    session_matched: c.session_matched,
+    matched_session_id: c.matched_session_id,
+    alert: c.alert
+  }));
 
   return NextResponse.json({
     generated_at: new Date().toISOString(),
@@ -241,6 +272,7 @@ export async function GET() {
       ts_server: r.ts_server,
       repo_id: r.repo_id,
       data: r.data
-    }))
+    })),
+    commits
   });
 }

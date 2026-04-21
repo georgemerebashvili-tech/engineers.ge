@@ -44,6 +44,21 @@ type EventRow = {
   data: Record<string, unknown>;
 };
 
+type CommitRow = {
+  id: number;
+  commit_sha: string;
+  repo_full: string;
+  branch: string | null;
+  author_email: string | null;
+  author_name: string | null;
+  committed_at: string;
+  pushed_at: string;
+  developer: string | null;
+  session_matched: boolean;
+  matched_session_id: string | null;
+  alert: string | null;
+};
+
 type State = {
   generated_at: string;
   totals: {
@@ -53,10 +68,12 @@ type State = {
     devs_online: number;
     devs_idle: number;
     errors_recent: number;
+    commits_unmatched: number;
   };
   developers: Developer[];
   sessions: SessionRow[];
   recent: EventRow[];
+  commits: CommitRow[];
 };
 
 const POLL_MS = 3000;
@@ -144,7 +161,12 @@ export function SazeoDashboard() {
       {label: 'დეველოპერი', value: totals?.devs ?? 0, tone: 'text-slate-900'},
       {label: 'ONLINE', value: totals?.devs_online ?? 0, tone: 'text-emerald-600'},
       {label: 'IDLE', value: totals?.devs_idle ?? 0, tone: 'text-amber-600'},
-      {label: 'შეცდომა', value: totals?.errors_recent ?? 0, tone: 'text-red-600'},
+      {
+        label: 'UNMATCHED COMMITS',
+        value: totals?.commits_unmatched ?? 0,
+        tone:
+          (totals?.commits_unmatched ?? 0) > 0 ? 'text-red-600' : 'text-emerald-600'
+      },
       {
         label: 'INTEGRITY BREAK',
         value: totals?.integrity_broken ?? 0,
@@ -262,6 +284,72 @@ export function SazeoDashboard() {
             </Card>
           </div>
         </div>
+
+        <Card
+          title="Git ↔ Claude commits"
+          subtle="GitHub webhook cross-check — წითელი = commit არის, Claude session არ"
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="font-mono text-[10px] uppercase tracking-wider text-[var(--text-3)]">
+                <tr className="border-b border-[var(--bdr)] bg-[var(--sur-2)]">
+                  <th className="px-3 py-2 text-left">Commit</th>
+                  <th className="px-3 py-2 text-left">Repo</th>
+                  <th className="px-3 py-2 text-left">ავტორი</th>
+                  <th className="px-3 py-2 text-left">დრო</th>
+                  <th className="px-3 py-2 text-left">სესია</th>
+                  <th className="px-3 py-2 text-left">სტატუსი</th>
+                </tr>
+              </thead>
+              <tbody>
+                {state?.commits?.map((c) => (
+                  <tr key={c.id} className="border-b border-[var(--bdr)] last:border-b-0">
+                    <td className="px-3 py-2 font-mono text-[11px]">{c.commit_sha}</td>
+                    <td className="px-3 py-2 font-mono text-[11px] text-[var(--text-2)]">
+                      {c.repo_full}
+                      {c.branch && (
+                        <span className="text-[var(--text-3)]"> @ {c.branch}</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-[11px]">
+                      {c.developer ?? c.author_name ?? c.author_email ?? '—'}
+                    </td>
+                    <td className="px-3 py-2 font-mono text-[11px] text-[var(--text-3)]">
+                      {fmtTime(c.committed_at)}
+                    </td>
+                    <td className="px-3 py-2 font-mono text-[11px] text-[var(--text-3)]">
+                      {c.matched_session_id ? c.matched_session_id.slice(0, 10) : '—'}
+                    </td>
+                    <td className="px-3 py-2">
+                      {c.session_matched ? (
+                        <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-mono text-[10px] text-emerald-700">
+                          matched
+                        </span>
+                      ) : (
+                        <span
+                          className="rounded bg-red-100 px-1.5 py-0.5 font-mono text-[10px] text-red-700"
+                          title={c.alert ?? 'no match'}
+                        >
+                          UNMATCHED
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {state && state.commits.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-3 py-6 text-center text-xs text-[var(--text-3)]"
+                    >
+                      GitHub webhook ჯერ არ დაკონფიგურდა ან commit არ მოსულა.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
 
         <Card title="Sessions" subtle="ბოლო 60 სესია">
           <div className="overflow-x-auto">
