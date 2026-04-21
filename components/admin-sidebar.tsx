@@ -37,6 +37,7 @@ import {
   FlaskConical,
   FolderKanban,
   Droplets,
+  Crown,
   type LucideIcon
 } from 'lucide-react';
 import type {FeatureMap, FeatureStatus} from '@/lib/feature-flags';
@@ -181,6 +182,12 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
           href: '/admin/banners',
           icon: Images,
           flagKey: 'admin.banners'
+        },
+        {
+          key: 'story',
+          label: 'storyabout.me',
+          href: '/admin/story',
+          icon: Crown
         },
         {
           key: 'redirects',

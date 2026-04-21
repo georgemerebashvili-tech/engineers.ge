@@ -26,6 +26,7 @@ import {
   Boxes,
   Key,
   Factory,
+  Megaphone,
   type LucideIcon
 } from 'lucide-react';
 
@@ -83,6 +84,7 @@ const SECTIONS: NavSection[] = [
       },
       {key: 'inspections', label: '2 · ინსპექტირება', href: '/dmt/inspections', icon: ClipboardCheck, badge: '6'},
       {key: 'invoices', label: '3 · ინვოისები', href: '/dmt/invoices', icon: FileText},
+      {key: 'announcements', label: 'განცხადებები', href: '/dmt/announcements', icon: Megaphone, badge: '12'},
       {
         key: 'inventory',
         label: 'ინვენტარიზაცია',

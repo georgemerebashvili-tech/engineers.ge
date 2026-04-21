@@ -9,6 +9,8 @@ import {
   type HeroAdSlot,
   type HeroOwner
 } from '@/lib/hero-ads';
+import {DEFAULT_STORY_EVENTS, type StoryEvent} from '@/lib/story-timeline';
+import {CrownButton, StoryTimelineModal} from '@/components/story-timeline';
 
 type Tile = {
   name: string;
@@ -258,8 +260,8 @@ function Cell(props: CellProps) {
           stroke="rgba(255,255,255,0.15)"
           strokeWidth={1}
         />
-        {bioText && innerW > 80 && (() => {
-          const btnW = 42;
+        {bioText && innerW > 130 && (() => {
+          const btnW = 106;
           const btnH = 22;
           const bx = innerX + innerW - btnW - 8;
           const by = innerY + 8;
@@ -289,7 +291,7 @@ function Cell(props: CellProps) {
               tabIndex={0}
               style={{cursor: 'pointer'}}
               role="button"
-              aria-label={`ბიოგრაფია${personalName ? `: ${personalName}` : ''}`}
+              aria-label={`storyabout.me${personalName ? `: ${personalName}` : ''}`}
             >
               <rect
                 x={bx}
@@ -309,9 +311,10 @@ function Cell(props: CellProps) {
                 fill="#fff"
                 fontSize={11}
                 fontWeight={600}
-                style={{letterSpacing: '0.02em'}}
+                fontFamily="var(--font-mono), monospace"
+                style={{letterSpacing: '0.03em'}}
               >
-                ბიო
+                storyabout.me
               </text>
             </g>
           );
@@ -563,10 +566,12 @@ function Cell(props: CellProps) {
 
 export function HeroTreemap({
   slots = DEFAULT_SLOTS,
-  owner = HERO_OWNER_DEFAULTS
-}: {slots?: HeroAdSlot[]; owner?: HeroOwner}) {
+  owner = HERO_OWNER_DEFAULTS,
+  storyEvents = DEFAULT_STORY_EVENTS
+}: {slots?: HeroAdSlot[]; owner?: HeroOwner; storyEvents?: StoryEvent[]}) {
   const [lightbox, setLightbox] = useState<LightboxState>(null);
   const [bio, setBio] = useState<BioState>(null);
+  const [storyOpen, setStoryOpen] = useState(false);
   const modalOpen = !!lightbox || !!bio;
   const tiles = buildTileMap(slots, owner);
 
@@ -693,9 +698,19 @@ export function HeroTreemap({
                 {bio.bio}
               </p>
             </div>
+            <div className="flex justify-center border-t border-bdr bg-sur-2 px-5 py-[18px]">
+              <CrownButton onClick={() => setStoryOpen(true)} />
+            </div>
           </div>
         </div>
       )}
+
+      <StoryTimelineModal
+        open={storyOpen}
+        ownerName={owner.name}
+        events={storyEvents}
+        onClose={() => setStoryOpen(false)}
+      />
     </>
   );
 }

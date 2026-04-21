@@ -8,6 +8,17 @@
 
 ---
 
+## 🟡 storyabout.me — Phase 2 (persistence + admin editor)
+
+Phase 1 shipped 2026-04-21: hero headline tile "ბიო" ღილაკი → "storyabout.me"; bio modal-ის ბოლოში გვირგვინი; timeline modal (navy + blue standard tokens, layered shadows, staggered animations, spine shimmer, hover lifts); hardcoded 5 event defaults in [lib/story-timeline.ts](../lib/story-timeline.ts). Preview: [public/experiments/storyabout-preview.html](../public/experiments/storyabout-preview.html).
+
+- [ ] 2026-04-21 — **Supabase migration** `0036_hero_owner_story.sql` — `hero_owner_story_events` table (id uuid, year int, title text, description text, image_url text, accent text, sort_order int, created_at, updated_at). RLS: public read; admin write.
+- [ ] 2026-04-21 — **Admin page** `/admin/(authed)/story` — CRUD events, re-order, image upload via Supabase storage bucket `hero-story`. Sidebar entry under "კონტენტი" with Crown icon.
+- [ ] 2026-04-21 — **Real event data** — user-ი შეავსებს რეალურ წლებს/ტექსტებს; placeholder 5 event-ი გადაიწეროს.
+- [ ] 2026-04-21 — **Prop-drill storyEvents** from server component `app/page.tsx` or `components/hero.tsx` fetching via supabase server client.
+
+---
+
 ## 🟢 Sprinklers simulator — Phase 2 (post-MVP)
 
 MVP shipped 2026-04-21 at `/calc/sprinklers`: L×W×H room, K-factor + pressure + hazard class, 3D droplet physics, heatmap, radial profile, compliance check.
