@@ -22,6 +22,10 @@ export type DevicePayload = {
   ai_missing: string[];
 };
 
+export type DeviceInitial = Partial<DevicePayload> & {
+  unplanned?: boolean;
+};
+
 const PHOTO_LABELS = ['ბირკა', 'ახლო', 'მსხვ.', 'გარე', 'დამატ.'];
 const EMPTY_PHOTOS: (string | null)[] = [null, null, null, null, null];
 const SITU_RECOMMENDED = 10;
@@ -35,6 +39,9 @@ type Props = {
   onSave: (payload: DevicePayload) => Promise<void> | void;
   saving?: boolean;
   currentUser?: string;
+  mode?: 'new' | 'edit';
+  initial?: DeviceInitial | null;
+  title?: string;
 };
 
 async function fileToDataUrl(
@@ -72,7 +79,10 @@ export function DeviceEditorModal({
   onClose,
   onSave,
   saving,
-  currentUser
+  currentUser,
+  mode = 'new',
+  initial,
+  title
 }: Props) {
   const [tab, setTab] = useState<TabKey>('photos');
   const [name, setName] = useState('');
@@ -101,26 +111,33 @@ export function DeviceEditorModal({
   const [commentInput, setCommentInput] = useState('');
 
   const reset = useCallback(() => {
+    const i = initial;
     setTab('photos');
-    setName('');
-    setCategory('');
-    setSubtype('');
-    setBrand('');
-    setModel('');
-    setSerial('');
-    setLocation('');
-    setPhotos(EMPTY_PHOTOS);
-    setSituational([]);
-    setNeeds([]);
-    setProhibitions([]);
-    setComments([]);
+    setName(i?.name ?? '');
+    setCategory(i?.category ?? '');
+    setSubtype(i?.subtype ?? '');
+    setBrand(i?.brand ?? '');
+    setModel(i?.model ?? '');
+    setSerial(i?.serial ?? '');
+    setLocation(i?.location ?? '');
+    if (i?.photos && i.photos.length) {
+      const next: (string | null)[] = [null, null, null, null, null];
+      for (let k = 0; k < 5; k++) next[k] = i.photos[k] ?? null;
+      setPhotos(next);
+    } else {
+      setPhotos(EMPTY_PHOTOS);
+    }
+    setSituational(i?.situational_photos ?? []);
+    setNeeds(i?.needs ?? []);
+    setProhibitions(i?.prohibitions ?? []);
+    setComments(i?.comments ?? []);
     setAiStatus('idle');
-    setAiMissing([]);
+    setAiMissing(i?.ai_missing ?? []);
     setAiMessage('');
     setNeedInput('');
     setProhibitInput('');
     setCommentInput('');
-  }, []);
+  }, [initial]);
 
   useEffect(() => {
     if (open) reset();
@@ -287,7 +304,6 @@ export function DeviceEditorModal({
   }
 
   function handleSave() {
-    if (photoCount === 0) return;
     const payload: DevicePayload = {
       name: name.trim(),
       category: category.trim(),
@@ -341,7 +357,7 @@ export function DeviceEditorModal({
         <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-3 py-2.5">
           <div className="min-w-0 flex-1">
             <div className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
-              ახალი დანადგარი
+              {title ?? (mode === 'edit' ? 'რედაქტირება' : 'ახალი დანადგარი')}
             </div>
             <div className="truncate text-sm font-bold text-slate-900">
               {name || '(დაასახელე ან დასკანირე)'}
@@ -780,10 +796,14 @@ export function DeviceEditorModal({
         <div className="shrink-0 border-t border-slate-200 bg-white px-3 py-3">
           <button
             onClick={handleSave}
-            disabled={saving || photoCount === 0}
+            disabled={saving}
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#00AA8D] py-4 text-base font-black text-white shadow-lg ring-2 ring-[#008A73]/30 disabled:opacity-40 active:scale-95"
           >
-            {saving ? '⏳ ინახება…' : photoCount === 0 ? '📷 ჯერ დაამატე ფოტო' : '💾 შენახვა'}
+            {saving
+              ? '⏳ ინახება…'
+              : mode === 'edit'
+              ? '💾 შენახვა'
+              : '➕ დამატება'}
           </button>
         </div>
 

@@ -1,11 +1,12 @@
 'use client';
 
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import type {TbcSession} from '@/lib/tbc/auth';
 import {
   DeviceEditorModal,
-  type DevicePayload
+  type DevicePayload,
+  type DeviceInitial
 } from '@/components/tbc/device-editor-modal';
 
 type PhotoMeta = {by?: string; at?: string} | null;
@@ -28,39 +29,6 @@ type Device = {
   ai_missing?: string[];
 };
 
-const PHOTO_LABELS = ['ბირკა', 'ახლო', 'მსხვ.', 'გარე', 'დამატ.'];
-const EMPTY_PHOTOS: (string | null)[] = [null, null, null, null, null];
-const EMPTY_META: PhotoMeta[] = [null, null, null, null, null];
-
-async function fileToDataUrl(
-  file: File,
-  maxDim: number,
-  quality: number
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('read_error'));
-    reader.onload = (ev) => {
-      const img = new Image();
-      img.onerror = () => reject(new Error('image_error'));
-      img.onload = () => {
-        let {width, height} = img;
-        if (width > maxDim || height > maxDim) {
-          const scale = maxDim / Math.max(width, height);
-          width = Math.round(width * scale);
-          height = Math.round(height * scale);
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        canvas.getContext('2d')?.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', quality));
-      };
-      img.src = ev.target?.result as string;
-    };
-    reader.readAsDataURL(file);
-  });
-}
 type Branch = {
   id: number;
   alias: string | null;
@@ -85,15 +53,14 @@ export function MobileApp({session}: {session: TbcSession}) {
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchId, setBranchId] = useState<number | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [editing, setEditing] = useState<{
+    deviceIdx: number;
+    initial: DeviceInitial;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [viewer, setViewer] = useState<{
-    deviceIdx: number;
-    photos: (string | null)[];
-    photoMeta: PhotoMeta[];
-  } | null>(null);
 
   const flash = (m: string) => {
     setToast(m);
@@ -150,8 +117,12 @@ export function MobileApp({session}: {session: TbcSession}) {
     }
     setSaving(true);
     try {
-      const save = await fetch(`/api/tbc/branches/${branchId}/devices`, {
-        method: 'POST',
+      const isEdit = editing !== null;
+      const url = isEdit
+        ? `/api/tbc/branches/${branchId}/devices/${editing!.deviceIdx}`
+        : `/api/tbc/branches/${branchId}/devices`;
+      const save = await fetch(url, {
+        method: isEdit ? 'PATCH' : 'POST',
         headers: {'content-type': 'application/json'},
         body: JSON.stringify(payload)
       });
@@ -163,32 +134,51 @@ export function MobileApp({session}: {session: TbcSession}) {
         flash('ვერ შეინახა');
         return;
       }
-      const body = await save.json();
-      const count = body.count || 0;
-      flash(
-        `✅ დამატებულია${
-          payload.ai_missing.length
-            ? ` (ვერ ამოიცნო ${payload.ai_missing.length})`
-            : ''
-        } · ${count}`
-      );
+      if (isEdit) {
+        flash('✅ განახლდა');
+      } else {
+        const body = await save.json();
+        const count = body.count || 0;
+        flash(
+          `✅ დამატებულია${
+            payload.ai_missing.length
+              ? ` (ვერ ამოიცნო ${payload.ai_missing.length})`
+              : ''
+          } · ${count}`
+        );
+      }
       setEditorOpen(false);
+      setEditing(null);
       loadBranches();
     } finally {
       setSaving(false);
     }
   }
 
-  function openViewer(deviceIdx: number, d: Device) {
+  function openEditor(deviceIdx: number, d: Device) {
     const srcPhotos = Array.isArray(d.photos) ? d.photos : [];
-    const srcMeta = Array.isArray(d.photo_meta) ? d.photo_meta : [];
     const photos: (string | null)[] = [null, null, null, null, null];
-    const photoMeta: PhotoMeta[] = [null, null, null, null, null];
-    for (let i = 0; i < 5; i++) {
-      photos[i] = srcPhotos[i] ?? null;
-      photoMeta[i] = srcMeta[i] ?? null;
-    }
-    setViewer({deviceIdx, photos, photoMeta});
+    for (let i = 0; i < 5; i++) photos[i] = srcPhotos[i] ?? null;
+    setEditing({
+      deviceIdx,
+      initial: {
+        name: d.name ?? '',
+        category: d.category ?? '',
+        subtype: d.subtype ?? '',
+        brand: d.brand ?? '',
+        model: d.model ?? '',
+        serial: d.serial ?? '',
+        location: d.location ?? '',
+        photos,
+        situational_photos: d.situational_photos ?? [],
+        needs: d.needs ?? [],
+        prohibitions: d.prohibitions ?? [],
+        comments: d.comments ?? [],
+        ai_missing: d.ai_missing ?? [],
+        unplanned: d.unplanned
+      }
+    });
+    setEditorOpen(true);
   }
 
   async function doDeleteLast() {
@@ -251,7 +241,10 @@ export function MobileApp({session}: {session: TbcSession}) {
       {/* Action row */}
       <div className="grid shrink-0 grid-cols-2 gap-2 border-b border-slate-200 bg-white px-3 py-2">
         <button
-          onClick={() => setEditorOpen(true)}
+          onClick={() => {
+            setEditing(null);
+            setEditorOpen(true);
+          }}
           disabled={!branchId}
           className="flex items-center justify-center gap-2 rounded-2xl bg-[#00AA8D] py-4 text-lg font-black text-white shadow-lg ring-2 ring-[#008A73]/30 disabled:opacity-40 active:scale-95"
         >
@@ -308,11 +301,11 @@ export function MobileApp({session}: {session: TbcSession}) {
                     key={idx}
                     role="button"
                     tabIndex={0}
-                    onClick={() => openViewer(idx, d)}
+                    onClick={() => openEditor(idx, d)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        openViewer(idx, d);
+                        openEditor(idx, d);
                       }
                     }}
                     className={`flex w-full items-center gap-2 rounded-xl bg-white p-2 text-left shadow-sm ring-1 transition active:scale-[0.99] ${
@@ -374,7 +367,7 @@ export function MobileApp({session}: {session: TbcSession}) {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        openViewer(idx, d);
+                        openEditor(idx, d);
                       }}
                       aria-label="ფოტოების დამატება"
                       className="relative flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-[#00AA8D] text-white shadow-md ring-2 ring-[#008A73]/30 active:scale-95"
@@ -398,13 +391,24 @@ export function MobileApp({session}: {session: TbcSession}) {
         </div>
       )}
 
-      {/* Editor modal */}
+      {/* Editor modal — add new OR edit existing */}
       <DeviceEditorModal
         open={editorOpen}
-        onClose={() => !saving && setEditorOpen(false)}
+        onClose={() => {
+          if (saving) return;
+          setEditorOpen(false);
+          setEditing(null);
+        }}
         onSave={handleSave}
         saving={saving}
         currentUser={session.displayName || session.username}
+        mode={editing ? 'edit' : 'new'}
+        initial={editing?.initial ?? null}
+        title={
+          editing
+            ? `რედაქტირება · #${editing.deviceIdx + 1}`
+            : 'ახალი დანადგარი'
+        }
       />
 
       {/* Confirm delete modal */}
@@ -442,247 +446,7 @@ export function MobileApp({session}: {session: TbcSession}) {
         </div>
       )}
 
-      {/* Photo viewer / editor */}
-      {viewer && (
-        <PhotoViewer
-          branchId={branchId}
-          deviceIdx={viewer.deviceIdx}
-          initialPhotos={viewer.photos}
-          initialMeta={viewer.photoMeta}
-          currentUser={session.username}
-          onClose={() => setViewer(null)}
-          onSaved={() => {
-            setViewer(null);
-            flash('✅ განახლდა');
-            loadBranches();
-          }}
-          onError={(m) => flash(m)}
-        />
-      )}
     </div>
   );
 }
 
-function PhotoViewer({
-  branchId,
-  deviceIdx,
-  initialPhotos,
-  initialMeta,
-  currentUser,
-  onClose,
-  onSaved,
-  onError
-}: {
-  branchId: number | null;
-  deviceIdx: number;
-  initialPhotos: (string | null)[];
-  initialMeta: PhotoMeta[];
-  currentUser: string;
-  onClose: () => void;
-  onSaved: () => void;
-  onError: (m: string) => void;
-}) {
-  const [photos, setPhotos] = useState<(string | null)[]>(initialPhotos);
-  const [meta, setMeta] = useState<PhotoMeta[]>(initialMeta);
-  const [active, setActive] = useState<number>(() =>
-    Math.max(
-      0,
-      initialPhotos.findIndex(Boolean) === -1
-        ? 0
-        : initialPhotos.findIndex(Boolean)
-    )
-  );
-  const [busy, setBusy] = useState(false);
-  const [dirty, setDirty] = useState(false);
-  const fileInput = useRef<HTMLInputElement>(null);
-  const pendingSlot = useRef<number | null>(null);
-
-  function pickPhoto(slot: number) {
-    pendingSlot.current = slot;
-    if (fileInput.current) {
-      fileInput.current.value = '';
-      fileInput.current.click();
-    }
-  }
-
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    const slot = pendingSlot.current;
-    if (!file || slot === null) return;
-    try {
-      const dataUrl = await fileToDataUrl(file, 1024, 0.82);
-      setPhotos((p) => {
-        const n = [...p];
-        n[slot] = dataUrl;
-        return n;
-      });
-      setMeta((m) => {
-        const n = [...m];
-        n[slot] = {by: currentUser, at: new Date().toISOString()};
-        return n;
-      });
-      setDirty(true);
-      setActive(slot);
-    } catch {
-      onError('ფოტო ვერ ჩაიტვირთა');
-    } finally {
-      pendingSlot.current = null;
-    }
-  }
-
-  function deletePhoto(slot: number) {
-    setPhotos((p) => {
-      const n = [...p];
-      n[slot] = null;
-      return n;
-    });
-    setMeta((m) => {
-      const n = [...m];
-      n[slot] = null;
-      return n;
-    });
-    setDirty(true);
-  }
-
-  async function save() {
-    if (!branchId || busy) return;
-    setBusy(true);
-    try {
-      const r = await fetch(
-        `/api/tbc/branches/${branchId}/devices/${deviceIdx}/photos`,
-        {
-          method: 'PATCH',
-          headers: {'content-type': 'application/json'},
-          body: JSON.stringify({photos, photo_meta: meta})
-        }
-      );
-      if (!r.ok) {
-        onError('ვერ შეინახა');
-        return;
-      }
-      onSaved();
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  const activePhoto = photos[active];
-  const activeMeta = meta[active];
-
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/95 backdrop-blur-sm">
-      {/* Header */}
-      <div className="flex shrink-0 items-center justify-between border-b border-white/10 px-3 py-2 text-white">
-        <button
-          type="button"
-          onClick={() => {
-            if (dirty && !confirm('შეცვლილი ფოტოები დაიკარგება. დავხურო?'))
-              return;
-            onClose();
-          }}
-          className="rounded-md bg-white/10 px-3 py-1.5 text-xs font-semibold"
-        >
-          ← უკან
-        </button>
-        <div className="text-xs font-bold">
-          დანადგარი #{deviceIdx + 1} · {PHOTO_LABELS[active]}
-        </div>
-        <button
-          type="button"
-          onClick={save}
-          disabled={!dirty || busy}
-          className="rounded-md bg-[#00AA8D] px-3 py-1.5 text-xs font-bold text-white disabled:opacity-40"
-        >
-          {busy ? '…' : '💾 შენახვა'}
-        </button>
-      </div>
-
-      {/* Main photo */}
-      <div className="flex min-h-0 flex-1 items-center justify-center px-3 py-4">
-        {activePhoto ? (
-          <img
-            src={activePhoto}
-            alt={PHOTO_LABELS[active]}
-            className="max-h-full max-w-full rounded-lg object-contain shadow-2xl"
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={() => pickPhoto(active)}
-            className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-white/30 px-8 py-12 text-white/70"
-          >
-            <span className="text-5xl">📷</span>
-            <span className="text-sm font-semibold">
-              ფოტო არ არის — დააჭირე ასატვირთად
-            </span>
-          </button>
-        )}
-      </div>
-
-      {/* Meta + per-slot actions */}
-      <div className="shrink-0 space-y-2 border-t border-white/10 bg-slate-900/60 px-3 py-2 text-white">
-        {activeMeta?.by && (
-          <div className="text-center text-[10px] text-white/60">
-            ატვირთა: {activeMeta.by}
-            {activeMeta.at
-              ? ` · ${new Date(activeMeta.at).toLocaleString('ka-GE')}`
-              : ''}
-          </div>
-        )}
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => pickPhoto(active)}
-            className="rounded-xl bg-[#0071CE] py-3 text-sm font-bold text-white active:scale-95"
-          >
-            📷 {activePhoto ? 'ახლით ჩანაცვლება' : 'ატვირთვა'}
-          </button>
-          <button
-            type="button"
-            onClick={() => deletePhoto(active)}
-            disabled={!activePhoto}
-            className="rounded-xl bg-red-600 py-3 text-sm font-bold text-white disabled:opacity-40 active:scale-95"
-          >
-            🗑 წაშლა
-          </button>
-        </div>
-
-        {/* Thumbnails row */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
-          {photos.map((p, i) => (
-            <button
-              type="button"
-              key={i}
-              onClick={() => setActive(i)}
-              className={`relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-lg border-2 ${
-                i === active
-                  ? 'border-[#00AA8D]'
-                  : 'border-white/20 opacity-70'
-              }`}
-            >
-              {p ? (
-                <img src={p} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <span className="text-[9px] font-semibold text-white/50">
-                  {PHOTO_LABELS[i]}
-                </span>
-              )}
-              <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-center text-[8px] font-bold text-white">
-                {PHOTO_LABELS[i]}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <input
-        ref={fileInput}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="hidden"
-        onChange={onFile}
-      />
-    </div>
-  );
-}
