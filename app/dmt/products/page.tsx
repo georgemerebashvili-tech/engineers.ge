@@ -760,6 +760,68 @@ function ComponentsTab({
     XLSX.writeFile(wb, `${safeName}-components.xlsx`);
   };
 
+  const downloadTemplate = async () => {
+    const XLSX = await import('xlsx');
+    // One real trm.ge model + placeholders so the user sees the image
+    // auto-match working after import.
+    const rows = [
+      {
+        'დასახელება': 'გაზის წყლის გამაცხელებელი',
+        'ტიპი / მოდელი': 'JSG30-16Q6S',
+        'რაოდ.': 1,
+        'განზ.': 'ც',
+        'ფასი': 890
+      },
+      {
+        'დასახელება': 'მილის ფიტინგი',
+        'ტიპი / მოდელი': '',
+        'რაოდ.': 10,
+        'განზ.': 'ც',
+        'ფასი': 5
+      },
+      {
+        'დასახელება': '',
+        'ტიპი / მოდელი': '',
+        'რაოდ.': '',
+        'განზ.': '',
+        'ფასი': ''
+      }
+    ];
+    const ws = XLSX.utils.json_to_sheet(rows, {
+      header: ['დასახელება', 'ტიპი / მოდელი', 'რაოდ.', 'განზ.', 'ფასი']
+    });
+    ws['!cols'] = [
+      {wch: 32}, {wch: 24}, {wch: 8}, {wch: 6}, {wch: 10}
+    ];
+
+    // Instruction sheet — printed as plain rows so it opens readably.
+    const instructions = [
+      ['DMT · კომპონენტების ატვირთვის შაბლონი'],
+      [''],
+      ['სვეტები (სახელების შეცვლა არ არის საჭირო):'],
+      ['  დასახელება       — კომპონენტის ადამიანური სახელი'],
+      ['  ტიპი / მოდელი   — SKU ან მოდელი; თუ trm.ge-ზე არსებობს, სურათი ავტომატურად ჩაიტვირთება'],
+      ['  რაოდ.            — რიცხვი (მაგ. 1, 2.5)'],
+      ['  განზ.            — ერთეული: ც, მ, კგ, ლ…'],
+      ['  ფასი             — ერთეულზე, ₾-ში'],
+      [''],
+      ['რჩევები:'],
+      ['  • მოდელი სრულად ჩაწერე (მაგ. „JSG30-16Q6S"), რომ სურათი ზუსტად შეერგოს'],
+      ['  • ცარიელი მწკრივები იგნორდება'],
+      ['  • ატვირთვისას გადახვევის კითხვაზე:'],
+      ['      OK     → ჩაანაცვლებს არსებულ კომპონენტებს'],
+      ['      Cancel → დაამატებს ბოლოში'],
+      ['  • კომპონენტის ატვირთვის შემდეგ ფორმულა (აწყობა, დღგ და ა.შ.) ცალკე ტაბშია']
+    ];
+    const wsInfo = XLSX.utils.aoa_to_sheet(instructions);
+    wsInfo['!cols'] = [{wch: 90}];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'components');
+    XLSX.utils.book_append_sheet(wb, wsInfo, 'README');
+    XLSX.writeFile(wb, 'dmt-components-template.xlsx');
+  };
+
   const importXlsx = async (file: File) => {
     const XLSX = await import('xlsx');
     const buf = await file.arrayBuffer();
@@ -879,10 +941,18 @@ function ComponentsTab({
           <div className="flex items-center gap-1.5">
             <button
               type="button"
+              onClick={downloadTemplate}
+              className="inline-flex items-center gap-1 rounded-md border border-bdr bg-sur px-2 py-1 text-[11px] font-semibold text-text-2 hover:border-blue-bd hover:bg-blue-lt hover:text-blue"
+              title="ჩამოტვირთე ცარიელი შაბლონი ქართული header-ებით + README"
+            >
+              <FileDown size={11} /> შაბლონი
+            </button>
+            <button
+              type="button"
               onClick={exportXlsx}
               disabled={product.components.length === 0}
               className="inline-flex items-center gap-1 rounded-md border border-bdr bg-sur px-2 py-1 text-[11px] font-semibold text-text-2 hover:border-blue-bd hover:bg-blue-lt hover:text-blue disabled:opacity-50 disabled:cursor-not-allowed"
-              title="ჩამოტვირთე Excel-ში"
+              title="ჩამოტვირთე მიმდინარე კომპონენტები"
             >
               <FileDown size={11} /> Excel
             </button>
