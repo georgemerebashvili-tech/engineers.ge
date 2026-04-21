@@ -41,7 +41,8 @@ export function RegulationsWorkspace({data}: {data: RegulationDashboardData}) {
         | {ok: true; result: {checked: number; changed: number; failed: number; unchanged: number}}
         | {error?: string; message?: string; hint?: string};
       if (!res.ok || !('ok' in json)) {
-        setMessage(json.message ?? json.hint ?? 'შემოწმება ვერ გაეშვა');
+        const err = json as {message?: string; hint?: string};
+        setMessage(err.message ?? err.hint ?? 'შემოწმება ვერ გაეშვა');
         return;
       }
       setMessage(

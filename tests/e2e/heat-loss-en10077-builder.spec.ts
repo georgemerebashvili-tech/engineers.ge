@@ -1,4 +1,4 @@
-import {expect, test} from '@playwright/test';
+import {expect, test, type Page} from '@playwright/test';
 
 /**
  * EN ISO 10077-1 whole-window Uw builder verification.
@@ -14,7 +14,7 @@ import {expect, test} from '@playwright/test';
 
 const URL = 'http://localhost:3000/calc/heat-loss.html';
 
-async function addWindow(page) {
+async function addWindow(page: Page) {
   await page.goto(URL);
   await page.addScriptTag({
     content: `addTwWindow();`,
@@ -22,7 +22,7 @@ async function addWindow(page) {
   await page.waitForTimeout(150);
 }
 
-async function readWin(page) {
+async function readWin(page: Page) {
   await page.addScriptTag({
     content: `window._w0 = (typeof tw_windows !== 'undefined' && tw_windows[0]) || null;`,
   });

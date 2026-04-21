@@ -1,4 +1,4 @@
-import {expect, test} from '@playwright/test';
+import {expect, test, type Page} from '@playwright/test';
 
 /**
  * Verifies 3 pro-level formula improvements on /calc/heat-loss.html:
@@ -13,7 +13,7 @@ import {expect, test} from '@playwright/test';
 
 const URL = 'http://localhost:3000/calc/heat-loss.html';
 
-async function seedSimpleRoom(page) {
+async function seedSimpleRoom(page: Page) {
   await page.goto(URL);
   await page.addScriptTag({
     content: `
@@ -51,7 +51,7 @@ async function seedSimpleRoom(page) {
   await page.waitForTimeout(200);
 }
 
-async function readTotals(page) {
+async function readTotals(page: Page) {
   await page.addScriptTag({
     content: `
       window._rt  = (typeof roomTotals !== 'undefined' && roomTotals[1]) || {};

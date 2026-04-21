@@ -74,6 +74,10 @@ function fallbackSource(seed: SeedSource, index: number): RegulationSource {
     last_changed_at: null,
     last_error: null,
     latest_excerpt: null,
+    published_hash: null,
+    published_excerpt: null,
+    published_snapshot_id: null,
+    published_at: null,
     notes: seed.notes
   };
 }
