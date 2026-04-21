@@ -5,6 +5,7 @@ import {
   HERO_OWNER_DEFAULTS,
   HERO_OWNER_NAME,
   getDefaultHeroAdSlots,
+  isHeroSlotExpired,
   type HeroAdSlot,
   type HeroOwner
 } from '@/lib/hero-ads';
@@ -26,6 +27,8 @@ type Tile = {
   personalName?: string;
   personalTitle?: string;
   bio?: string;
+  expired?: boolean;
+  formatHint?: string;
 };
 
 type LightboxState = {img: string; label: string} | null;
@@ -125,20 +128,24 @@ function buildTileMap(slots: HeroAdSlot[], owner: HeroOwner) {
 }
 
 function toPhotoTile(slot: HeroAdSlot, ownerName: string): Tile {
+  const expired = isHeroSlotExpired(slot);
   return {
     name: slot.slot_key,
     kind: 'photo',
-    label: slot.label,
-    sublabel: slot.sublabel,
-    img: slot.image_url,
-    linkUrl: slot.link_url,
+    // expired → strip client branding so the slot renders as an available-for-sale placeholder
+    label: expired ? 'სარეკლამო ადგილი' : slot.label,
+    sublabel: expired ? 'იყიდება — დაუკავშირდი' : slot.sublabel,
+    img: expired ? '' : slot.image_url,
+    linkUrl: expired ? '' : slot.link_url,
     accent: 'var(--blue)',
     adSlot: slot.is_ad_slot,
     priceGel: slot.price_gel,
-    occupiedUntil: slot.occupied_until,
-    clientName: slot.client_name,
-    ownerName: slot.client_name || ownerName,
-    promoBadge: slot.promo_badge
+    occupiedUntil: expired ? null : slot.occupied_until,
+    clientName: expired ? '' : slot.client_name,
+    ownerName: expired ? ownerName : slot.client_name || ownerName,
+    promoBadge: expired ? '' : slot.promo_badge,
+    expired,
+    formatHint: slot.format_hint
   };
 }
 
@@ -330,6 +337,62 @@ function Cell(props: CellProps) {
                 fontWeight={500}
               >
                 {personalTitle}
+              </text>
+            )}
+          </>
+        )}
+      </g>
+    );
+  }
+
+  if (kind === 'photo' && !img) {
+    // Empty slot — expired ad or unfilled. Render "ადგილი იყიდება" placeholder.
+    const expired = props.payload?.expired ?? false;
+    const formatHint = props.payload?.formatHint ?? '';
+    const fs = Math.max(10, Math.min(13, innerW / 18));
+    const sfs = Math.max(8, Math.min(10, innerW / 24));
+    return (
+      <g>
+        <defs>
+          <linearGradient id={`empty-${props.payload?.name ?? Math.round(x)}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(219,234,254,0.95)" />
+            <stop offset="100%" stopColor="rgba(191,219,254,0.75)" />
+          </linearGradient>
+        </defs>
+        <rect
+          x={innerX}
+          y={innerY}
+          width={innerW}
+          height={innerH}
+          rx={radius}
+          ry={radius}
+          fill={`url(#empty-${props.payload?.name ?? Math.round(x)})`}
+          stroke="rgba(37,99,235,0.35)"
+          strokeWidth={1.5}
+          strokeDasharray="6 4"
+        />
+        {innerW > 70 && innerH > 40 && (
+          <>
+            <text
+              x={innerX + innerW / 2}
+              y={innerY + innerH / 2 - (innerH > 80 ? 6 : 2)}
+              textAnchor="middle"
+              fill="rgba(29,78,216,0.9)"
+              fontSize={fs}
+              fontWeight={700}
+            >
+              {expired ? 'ადგილი ისევ იყიდება' : 'სარეკლამო ადგილი'}
+            </text>
+            {innerH > 80 && formatHint && (
+              <text
+                x={innerX + innerW / 2}
+                y={innerY + innerH / 2 + 10}
+                textAnchor="middle"
+                fill="rgba(29,78,216,0.6)"
+                fontSize={sfs}
+                fontWeight={500}
+              >
+                {formatHint}
               </text>
             )}
           </>

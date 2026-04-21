@@ -338,6 +338,21 @@ export function formatOccupiedUntil(value: string | null | undefined) {
   return `${dd}.${mm}.${yyyy}`;
 }
 
+export function isHeroSlotExpired(
+  slot: Pick<HeroAdSlot, 'occupied_until' | 'is_ad_slot'>,
+  now: Date = new Date()
+): boolean {
+  if (!slot.is_ad_slot) return false;
+  if (!slot.occupied_until) return false;
+  const until = new Date(slot.occupied_until);
+  if (Number.isNaN(until.getTime())) return false;
+  // Treat end-of-day as still valid — expire at 00:00 of the following day
+  const endOfDay = new Date(
+    Date.UTC(until.getUTCFullYear(), until.getUTCMonth(), until.getUTCDate(), 23, 59, 59)
+  );
+  return now.getTime() > endOfDay.getTime();
+}
+
 export function toWhatsAppHref(phone: string | null | undefined): string | null {
   const normalized = (phone ?? '').replace(/[^\d+]/g, '');
   const digitsOnly = normalized.replace(/\D/g, '');

@@ -263,16 +263,27 @@ export function HeroAdsForm({initial, initialOwner = HERO_OWNER_DEFAULTS}: Props
               ეს tile ჩანს მთავარ გვერდზე hero grid-ის მარცხენა ზედა კუთხეში. ყველა სარეკლამო
               slot-ზე owner ნიშნად გამოჩნდება „{owner.name || HERO_OWNER_NAME}".
             </p>
+            <a
+              href="#ad-slots-section"
+              className="mt-2 inline-flex w-fit items-center gap-1.5 rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 transition-colors hover:bg-blue-100"
+            >
+              ↓ სარეკლამო ბანერების მართვა (ქვემოთ)
+            </a>
           </div>
         </div>
       </section>
 
-      <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <section className="rounded-2xl border bg-surface p-4">
+      <div id="ad-slots-section" className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
+        <section className="rounded-2xl border-2 border-blue-300 bg-surface p-4 shadow-sm">
           <div className="mb-3 flex items-center gap-2">
             <MonitorPlay size={16} className="text-blue-600" />
-            <h2 className="text-sm font-semibold">სლოტის მართვა</h2>
+            <h2 className="text-sm font-semibold">
+              სარეკლამო ბანერი · ატვირთე სურათი და შეინახე
+            </h2>
           </div>
+          <p className="-mt-2 mb-3 text-[11px] text-fg-muted">
+            აირჩიე slot → ატვირთე JPG/PNG → შეავსე ფასი + ვადა → დააჭირე „შენახვა"-ს (ფორმის ბოლოში).
+          </p>
 
           <div className="space-y-3">
             <Field label="ადგილის არჩევა">
