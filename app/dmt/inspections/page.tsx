@@ -396,8 +396,8 @@ export default function InspectionsPage() {
             </div>
           </div>
 
-          {/* Detail panel */}
-          <aside className="rounded-[10px] border border-bdr bg-sur p-4">
+          {/* Detail panel — sticky so it stays visible while the list scrolls */}
+          <aside className="sticky top-0 self-start max-h-[calc(100vh-140px)] overflow-y-auto rounded-[10px] border border-bdr bg-sur p-4">
             {active ? (
               <InspectionDetail
                 inspection={active}
