@@ -12,23 +12,73 @@ import {
   ImagePlus,
   X,
   Calculator,
-  ChevronDown
+  ChevronDown,
+  FileDown,
+  FileUp,
+  Cable,
+  MousePointerClick,
+  AlertCircle,
+  Network,
+  Paperclip,
+  Image as ImageIcon
 } from 'lucide-react';
 import {ResizableTable} from '@/components/dmt/resizable-table';
 import {
   loadProducts,
   saveProducts,
   createProduct,
-  componentsSubtotal,
   computeBreakdown,
   cryptoRandomId,
   type Product,
   type ComponentRow,
   type OverheadRow,
-  type OverheadOp
+  type OverheadOp,
+  type IoConnector,
+  type ButtonAction,
+  type ErrorEntry,
+  type ProductFile
 } from '@/lib/dmt/products-store';
+import {loadTrmCatalog, type TrmProduct} from '@/lib/dmt/trm-catalog';
 
-type Tab = 'general' | 'components' | 'usage';
+type Tab =
+  | 'general'
+  | 'components'
+  | 'io'
+  | 'buttons'
+  | 'errors'
+  | 'wiring'
+  | 'files'
+  | 'usage';
+
+// Resolve a component row against the TRM catalog — prefer exact sku/model
+// match, then partial name match. Returns first hit or null.
+function matchTrmProduct(
+  row: ComponentRow,
+  products: TrmProduct[]
+): TrmProduct | null {
+  const keys = [row.type, row.name]
+    .map((s) => (s || '').trim().toLowerCase())
+    .filter(Boolean);
+  if (!keys.length) return null;
+  for (const k of keys) {
+    const exact = products.find(
+      (p) =>
+        p.sku.toLowerCase() === k ||
+        p.model.toLowerCase() === k
+    );
+    if (exact) return exact;
+  }
+  for (const k of keys) {
+    if (k.length < 3) continue;
+    const partial = products.find(
+      (p) =>
+        p.model.toLowerCase().includes(k) ||
+        p.name.toLowerCase().includes(k)
+    );
+    if (partial) return partial;
+  }
+  return null;
+}
 
 const OP_LABEL: Record<OverheadOp, string> = {
   add: '+ ფიქს.',
@@ -47,6 +97,7 @@ export default function ProductsCatalogPage() {
   const [tab, setTab] = useState<Tab>('general');
   const [q, setQ] = useState('');
   const [hydrated, setHydrated] = useState(false);
+  const [trm, setTrm] = useState<TrmProduct[]>([]);
 
   // hydrate from localStorage
   useEffect(() => {
@@ -54,6 +105,13 @@ export default function ProductsCatalogPage() {
     setProducts(list);
     if (list.length > 0) setSelectedId(list[0].id);
     setHydrated(true);
+  }, []);
+
+  // Load TRM catalog once — enables model-based image matching on components.
+  useEffect(() => {
+    loadTrmCatalog()
+      .then((c) => setTrm(c.products))
+      .catch(() => {});
   }, []);
 
   // persist
@@ -182,6 +240,7 @@ export default function ProductsCatalogPage() {
               tab={tab}
               onTab={setTab}
               onUpdate={updateSelected}
+              trm={trm}
             />
           ) : (
             <div className="flex h-full items-center justify-center">
@@ -282,12 +341,14 @@ function ProductDetail({
   product,
   tab,
   onTab,
-  onUpdate
+  onUpdate,
+  trm
 }: {
   product: Product;
   tab: Tab;
   onTab: (t: Tab) => void;
   onUpdate: (patch: Partial<Product>) => void;
+  trm: TrmProduct[];
 }) {
   const {subtotal, steps, total} = computeBreakdown(product);
 
@@ -349,7 +410,7 @@ function ProductDetail({
       </div>
 
       {/* Tabs */}
-      <div className="mb-4 flex items-center gap-0 border-b border-bdr">
+      <div className="mb-4 flex items-center gap-0 overflow-x-auto border-b border-bdr">
         <TabBtn active={tab === 'general'} onClick={() => onTab('general')} icon={Info}>
           ზოგადი
         </TabBtn>
@@ -359,6 +420,29 @@ function ProductDetail({
           icon={Boxes}
         >
           მაკომპლექტებლები · ფასი
+        </TabBtn>
+        <TabBtn active={tab === 'io'} onClick={() => onTab('io')} icon={Cable}>
+          I/O connectors
+        </TabBtn>
+        <TabBtn
+          active={tab === 'buttons'}
+          onClick={() => onTab('buttons')}
+          icon={MousePointerClick}
+        >
+          ღილაკები
+        </TabBtn>
+        <TabBtn
+          active={tab === 'errors'}
+          onClick={() => onTab('errors')}
+          icon={AlertCircle}
+        >
+          შეცდომები
+        </TabBtn>
+        <TabBtn active={tab === 'wiring'} onClick={() => onTab('wiring')} icon={Network}>
+          სქემა
+        </TabBtn>
+        <TabBtn active={tab === 'files'} onClick={() => onTab('files')} icon={Paperclip}>
+          ფაილები
         </TabBtn>
         <TabBtn active={tab === 'usage'} onClick={() => onTab('usage')} icon={Link2}>
           გამოყენება
@@ -374,8 +458,14 @@ function ProductDetail({
           steps={steps}
           total={total}
           onUpdate={onUpdate}
+          trm={trm}
         />
       )}
+      {tab === 'io' && <IoTab product={product} onUpdate={onUpdate} />}
+      {tab === 'buttons' && <ButtonsTab product={product} onUpdate={onUpdate} />}
+      {tab === 'errors' && <ErrorsTab product={product} onUpdate={onUpdate} />}
+      {tab === 'wiring' && <WiringTab product={product} onUpdate={onUpdate} />}
+      {tab === 'files' && <FilesTab product={product} onUpdate={onUpdate} />}
       {tab === 'usage' && <UsageTab product={product} onUpdate={onUpdate} />}
     </div>
   );
@@ -473,16 +563,144 @@ function GeneralTab({
       </div>
 
       <div className="md:col-span-2 space-y-3">
+        <div className="grid gap-3 md:grid-cols-2">
+          <Field label="PCB ID">
+            <TextInput
+              value={product.pcbId ?? ''}
+              onChange={(v) => onUpdate({pcbId: v})}
+              placeholder="1"
+            />
+          </Field>
+          <Field label="Connection type">
+            <TextInput
+              value={product.connectionType ?? ''}
+              onChange={(v) => onUpdate({connectionType: v})}
+              placeholder="Analog / Digital / Modbus RTU"
+            />
+          </Field>
+          <Field label="Connection name">
+            <TextInput
+              value={product.connectionName ?? ''}
+              onChange={(v) => onUpdate({connectionName: v})}
+              placeholder="—"
+            />
+          </Field>
+          <Field label="R/W options">
+            <TextInput
+              value={product.rwOptions ?? ''}
+              onChange={(v) => onUpdate({rwOptions: v})}
+              placeholder="—"
+            />
+          </Field>
+        </div>
+
+        <Field label="Reserved keys">
+          <PillEditor
+            values={product.reservedKeys ?? []}
+            onChange={(next) => onUpdate({reservedKeys: next})}
+            placeholder={'L1, I_L1, S_L1… (Enter ან მძიმე დამატებისთვის)'}
+          />
+        </Field>
+
         <Field label="აღწერა">
           <textarea
             value={product.description}
             onChange={(e) => onUpdate({description: e.target.value})}
             placeholder="რა არის ეს, რისთვის არის, სპეციფიკა…"
-            rows={6}
+            rows={4}
             className="w-full resize-y rounded-md border border-bdr bg-sur px-3 py-2 text-[12.5px] text-text outline-none focus:border-blue"
           />
         </Field>
+
+        <Field label="რეკომენდაცია">
+          <TextInput
+            value={product.recommendation ?? ''}
+            onChange={(v) => onUpdate({recommendation: v})}
+            placeholder="მაგ. Very recommended"
+          />
+        </Field>
       </div>
+    </div>
+  );
+}
+
+function TextInput({
+  value,
+  onChange,
+  placeholder
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="w-full rounded-md border border-bdr bg-sur px-3 py-1.5 text-[12.5px] text-text outline-none focus:border-blue"
+    />
+  );
+}
+
+function PillEditor({
+  values,
+  onChange,
+  placeholder
+}: {
+  values: string[];
+  onChange: (v: string[]) => void;
+  placeholder?: string;
+}) {
+  const [draft, setDraft] = useState('');
+  const commit = (raw: string) => {
+    const pieces = raw
+      .split(/[,\n]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (!pieces.length) return;
+    const set = new Set(values);
+    for (const p of pieces) set.add(p);
+    onChange([...set]);
+    setDraft('');
+  };
+  return (
+    <div className="flex min-h-[36px] flex-wrap items-center gap-1.5 rounded-md border border-bdr bg-sur px-2 py-1.5">
+      {values.map((v) => (
+        <span
+          key={v}
+          className="inline-flex items-center gap-1 rounded-full bg-sur-2 px-2 py-0.5 font-mono text-[11px] text-navy"
+        >
+          {v}
+          <button
+            type="button"
+            onClick={() => onChange(values.filter((x) => x !== v))}
+            className="text-text-3 hover:text-red"
+            aria-label={`წაშალე ${v}`}
+          >
+            <X size={10} />
+          </button>
+        </span>
+      ))}
+      <input
+        type="text"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            commit(draft);
+          } else if (e.key === 'Backspace' && !draft && values.length) {
+            onChange(values.slice(0, -1));
+          }
+        }}
+        onBlur={() => {
+          if (draft.trim()) commit(draft);
+        }}
+        placeholder={values.length === 0 ? placeholder : ''}
+        className="flex-1 min-w-[120px] bg-transparent py-0.5 text-[12px] text-text outline-none"
+      />
     </div>
   );
 }
@@ -509,14 +727,100 @@ function ComponentsTab({
   subtotal,
   steps,
   total,
-  onUpdate
+  onUpdate,
+  trm
 }: {
   product: Product;
   subtotal: number;
   steps: {id: string; label: string; delta: number; running: number}[];
   total: number;
   onUpdate: (patch: Partial<Product>) => void;
+  trm: TrmProduct[];
 }) {
+  const xlsxFileRef = useRef<HTMLInputElement>(null);
+
+  const exportXlsx = async () => {
+    const XLSX = await import('xlsx');
+    const rows = product.components.map((r, i) => ({
+      '#': i + 1,
+      'დასახელება': r.name,
+      'ტიპი / მოდელი': r.type,
+      'რაოდ.': r.qty,
+      'განზ.': r.unit,
+      'ფასი': r.price,
+      'ჯამი': r.qty * r.price
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [
+      {wch: 4}, {wch: 28}, {wch: 22}, {wch: 8}, {wch: 6}, {wch: 10}, {wch: 10}
+    ];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'components');
+    const safeName = (product.name || 'product').replace(/[\/\\?%*:|"<>]/g, '-');
+    XLSX.writeFile(wb, `${safeName}-components.xlsx`);
+  };
+
+  const importXlsx = async (file: File) => {
+    const XLSX = await import('xlsx');
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type: 'array'});
+    const first = wb.Sheets[wb.SheetNames[0]];
+    if (!first) return;
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(first, {
+      raw: true,
+      defval: ''
+    });
+
+    const pick = (r: Record<string, unknown>, keys: string[]): string => {
+      for (const k of keys) {
+        if (k in r && r[k] !== undefined && r[k] !== null && r[k] !== '') {
+          return String(r[k]);
+        }
+      }
+      return '';
+    };
+
+    const parsed: ComponentRow[] = rows
+      .map((r) => {
+        const name = pick(r, ['დასახელება', 'name', 'Name']);
+        const type = pick(r, ['ტიპი / მოდელი', 'ტიპი', 'მოდელი', 'type', 'model']);
+        const qty = parseFloat(pick(r, ['რაოდ.', 'qty', 'quantity'])) || 0;
+        const unit = pick(r, ['განზ.', 'unit']) || 'ც';
+        const price = parseFloat(pick(r, ['ფასი', 'price'])) || 0;
+        if (!name && !type && !qty && !price) return null;
+        return {
+          id: cryptoRandomId(),
+          name,
+          type,
+          qty,
+          unit,
+          price
+        } satisfies ComponentRow;
+      })
+      .filter((r): r is ComponentRow => r !== null);
+
+    if (!parsed.length) {
+      alert('ფაილში მწკრივები ვერ მოიძებნა.');
+      return;
+    }
+
+    const mode = product.components.length
+      ? confirm(
+          `მოიძებნა ${parsed.length} მწკრივი.\n\nOK — ჩაანაცვლებს არსებულ ${product.components.length}-ს.\nCancel — დაამატებს ბოლოში.`
+        )
+      : true;
+
+    onUpdate({
+      components: mode ? parsed : [...product.components, ...parsed]
+    });
+  };
+
+  const onPickXlsx = () => xlsxFileRef.current?.click();
+  const onXlsxChosen = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (f) importXlsx(f);
+    e.target.value = '';
+  };
   const addComponent = () => {
     const row: ComponentRow = {
       id: cryptoRandomId(),
@@ -567,25 +871,52 @@ function ComponentsTab({
     <div className="space-y-4">
       {/* Components table */}
       <div className="overflow-hidden rounded-[10px] border border-bdr bg-sur">
-        <div className="flex items-center justify-between border-b border-bdr bg-sur-2 px-4 py-2.5">
+        <div className="flex items-center justify-between gap-2 border-b border-bdr bg-sur-2 px-4 py-2.5">
           <div className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-navy">
             <Boxes size={13} strokeWidth={2} />
             მაკომპლექტებლები
           </div>
-          <button
-            type="button"
-            onClick={addComponent}
-            className="inline-flex items-center gap-1 rounded-md border border-blue-bd bg-blue-lt px-2 py-1 text-[11px] font-semibold text-blue hover:bg-blue hover:text-white"
-          >
-            <Plus size={11} /> კომპონენტი
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={exportXlsx}
+              disabled={product.components.length === 0}
+              className="inline-flex items-center gap-1 rounded-md border border-bdr bg-sur px-2 py-1 text-[11px] font-semibold text-text-2 hover:border-blue-bd hover:bg-blue-lt hover:text-blue disabled:opacity-50 disabled:cursor-not-allowed"
+              title="ჩამოტვირთე Excel-ში"
+            >
+              <FileDown size={11} /> Excel
+            </button>
+            <button
+              type="button"
+              onClick={onPickXlsx}
+              className="inline-flex items-center gap-1 rounded-md border border-bdr bg-sur px-2 py-1 text-[11px] font-semibold text-text-2 hover:border-blue-bd hover:bg-blue-lt hover:text-blue"
+              title="ატვირთე Excel-დან"
+            >
+              <FileUp size={11} /> ატვირთვა
+            </button>
+            <input
+              ref={xlsxFileRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+              onChange={onXlsxChosen}
+            />
+            <button
+              type="button"
+              onClick={addComponent}
+              className="inline-flex items-center gap-1 rounded-md border border-blue-bd bg-blue-lt px-2 py-1 text-[11px] font-semibold text-blue hover:bg-blue hover:text-white"
+            >
+              <Plus size={11} /> კომპონენტი
+            </button>
+          </div>
         </div>
         <ResizableTable storageKey="products-components" className="overflow-x-auto">
         <table className="w-full text-[12px]">
           <thead>
             <tr className="border-b border-bdr bg-sur-2 text-left font-mono text-[9.5px] uppercase tracking-[0.06em] text-text-3">
+              <th className="w-12 px-2 py-2 font-bold"></th>
               <th className="px-3 py-2 font-bold">დასახელება</th>
-              <th className="px-3 py-2 font-bold">ტიპი</th>
+              <th className="px-3 py-2 font-bold">ტიპი / მოდელი</th>
               <th className="px-3 py-2 text-right font-bold">რაოდ.</th>
               <th className="px-3 py-2 font-bold">განზ.</th>
               <th className="px-3 py-2 text-right font-bold">ფასი</th>
@@ -596,18 +927,39 @@ function ComponentsTab({
           <tbody>
             {product.components.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-[12px] text-text-3">
-                  ჯერ არაფერი არ არის. დააჭირე „+ კომპონენტი" რომ დაამატო მაკომპლექტებელი.
+                <td colSpan={8} className="px-4 py-6 text-center text-[12px] text-text-3">
+                  ჯერ არაფერი არ არის. დააჭირე „+ კომპონენტი" ან ატვირთე Excel.
                 </td>
               </tr>
             ) : (
               product.components.map((row) => {
                 const total = (row.qty || 0) * (row.price || 0);
+                const match = trm.length ? matchTrmProduct(row, trm) : null;
                 return (
                   <tr
                     key={row.id}
                     className="border-b border-bdr last:border-b-0 hover:bg-sur-2"
                   >
+                    <td className="px-2 py-1.5">
+                      <div
+                        className="h-9 w-9 shrink-0 overflow-hidden rounded-md border border-bdr bg-sur-2"
+                        title={match ? match.name : 'მოდელით ვერ მოიძებნა trm.ge-ზე'}
+                      >
+                        {match?.image ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={match.image}
+                            alt={match.name}
+                            loading="lazy"
+                            className="h-full w-full object-contain"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-text-3">
+                            <ImageIcon size={12} />
+                          </div>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-3 py-1.5">
                       <input
                         type="text"
@@ -626,7 +978,7 @@ function ComponentsTab({
                         onChange={(e) =>
                           updateComponent(row.id, {type: e.target.value})
                         }
-                        placeholder="ტიპი"
+                        placeholder="მოდელი ან ტიპი"
                         className="w-full bg-transparent text-[12px] text-text-2 outline-none"
                       />
                     </td>
@@ -828,6 +1180,443 @@ function ComponentsTab({
         ვრცელდება რიგრიგობით. მაგ. „+18% დღგ" გამოითვლება წინა მწკრივის Running
         თანხაზე. ცვლი რიგს → მიიღებ სხვა შედეგს.
       </div>
+    </div>
+  );
+}
+
+function IoTab({
+  product,
+  onUpdate
+}: {
+  product: Product;
+  onUpdate: (patch: Partial<Product>) => void;
+}) {
+  const list = product.ioConnectors ?? [];
+  const add = () =>
+    onUpdate({
+      ioConnectors: [
+        ...list,
+        {id: cryptoRandomId(), name: '', kind: '', pin: '', notes: ''}
+      ]
+    });
+  const upd = (id: string, patch: Partial<IoConnector>) =>
+    onUpdate({
+      ioConnectors: list.map((r) => (r.id === id ? {...r, ...patch} : r))
+    });
+  const del = (id: string) =>
+    onUpdate({ioConnectors: list.filter((r) => r.id !== id)});
+
+  return (
+    <SubTable
+      icon={Cable}
+      title="I/O კონექტორები"
+      onAdd={add}
+      cols={['სახელი', 'ტიპი', 'Pin / ქსელი', 'შენიშვნა']}
+      emptyHint="დაამატე პორტები: Analog IN, Digital OUT, Modbus, RS-485…"
+      rows={list.map((r) => ({
+        id: r.id,
+        cells: [
+          <input
+            key="name"
+            type="text"
+            value={r.name}
+            onChange={(e) => upd(r.id, {name: e.target.value})}
+            placeholder="J1"
+            className="w-full bg-transparent text-[12px] text-text outline-none"
+          />,
+          <input
+            key="kind"
+            type="text"
+            value={r.kind}
+            onChange={(e) => upd(r.id, {kind: e.target.value})}
+            placeholder="Analog IN"
+            className="w-full bg-transparent text-[12px] text-text outline-none"
+          />,
+          <input
+            key="pin"
+            type="text"
+            value={r.pin}
+            onChange={(e) => upd(r.id, {pin: e.target.value})}
+            placeholder="1, 2, 3…"
+            className="w-full bg-transparent font-mono text-[12px] text-text outline-none"
+          />,
+          <input
+            key="notes"
+            type="text"
+            value={r.notes}
+            onChange={(e) => upd(r.id, {notes: e.target.value})}
+            placeholder="—"
+            className="w-full bg-transparent text-[12px] text-text-2 outline-none"
+          />
+        ],
+        onDelete: () => del(r.id)
+      }))}
+    />
+  );
+}
+
+function ButtonsTab({
+  product,
+  onUpdate
+}: {
+  product: Product;
+  onUpdate: (patch: Partial<Product>) => void;
+}) {
+  const list = product.buttons ?? [];
+  const add = () =>
+    onUpdate({
+      buttons: [...list, {id: cryptoRandomId(), name: '', steps: '', notes: ''}]
+    });
+  const upd = (id: string, patch: Partial<ButtonAction>) =>
+    onUpdate({buttons: list.map((r) => (r.id === id ? {...r, ...patch} : r))});
+  const del = (id: string) =>
+    onUpdate({buttons: list.filter((r) => r.id !== id)});
+
+  return (
+    <SubTable
+      icon={MousePointerClick}
+      title="ღილაკები · Actions Step by Step"
+      onAdd={add}
+      cols={['სახელი', 'Actions Step by Step', 'შენიშვნა']}
+      colsWidth={['w-36', '', 'w-40']}
+      emptyHint="Connect / Calibration / Reset და ა.შ."
+      rows={list.map((r) => ({
+        id: r.id,
+        cells: [
+          <input
+            key="name"
+            type="text"
+            value={r.name}
+            onChange={(e) => upd(r.id, {name: e.target.value})}
+            placeholder="Connect"
+            className="w-full bg-transparent text-[12.5px] font-semibold text-navy outline-none"
+          />,
+          <textarea
+            key="steps"
+            value={r.steps}
+            onChange={(e) => upd(r.id, {steps: e.target.value})}
+            placeholder="ნაბიჯების აღწერა…"
+            rows={3}
+            className="w-full resize-y rounded-md bg-transparent text-[12px] text-text outline-none focus:bg-sur focus:px-2 focus:py-1"
+          />,
+          <input
+            key="notes"
+            type="text"
+            value={r.notes}
+            onChange={(e) => upd(r.id, {notes: e.target.value})}
+            placeholder="—"
+            className="w-full bg-transparent text-[12px] text-text-2 outline-none"
+          />
+        ],
+        alignTop: true,
+        onDelete: () => del(r.id)
+      }))}
+    />
+  );
+}
+
+function ErrorsTab({
+  product,
+  onUpdate
+}: {
+  product: Product;
+  onUpdate: (patch: Partial<Product>) => void;
+}) {
+  const list = product.errors ?? [];
+  const add = () =>
+    onUpdate({
+      errors: [
+        ...list,
+        {id: cryptoRandomId(), code: '', description: '', recovery: ''}
+      ]
+    });
+  const upd = (id: string, patch: Partial<ErrorEntry>) =>
+    onUpdate({errors: list.map((r) => (r.id === id ? {...r, ...patch} : r))});
+  const del = (id: string) =>
+    onUpdate({errors: list.filter((r) => r.id !== id)});
+
+  return (
+    <SubTable
+      icon={AlertCircle}
+      title="შეცდომის კოდები"
+      onAdd={add}
+      cols={['Code', 'აღწერა', 'აღდგენა']}
+      colsWidth={['w-48', '', 'w-64']}
+      emptyHint="voltage_sense_error, current_sense_error…"
+      rows={list.map((r) => ({
+        id: r.id,
+        cells: [
+          <input
+            key="code"
+            type="text"
+            value={r.code}
+            onChange={(e) => upd(r.id, {code: e.target.value})}
+            placeholder="voltage_sense_error"
+            className="w-full bg-transparent font-mono text-[12px] font-semibold text-red outline-none"
+          />,
+          <input
+            key="desc"
+            type="text"
+            value={r.description}
+            onChange={(e) => upd(r.id, {description: e.target.value})}
+            placeholder="რას ნიშნავს"
+            className="w-full bg-transparent text-[12px] text-text outline-none"
+          />,
+          <input
+            key="rec"
+            type="text"
+            value={r.recovery}
+            onChange={(e) => upd(r.id, {recovery: e.target.value})}
+            placeholder="როგორ გამოვიდეთ"
+            className="w-full bg-transparent text-[12px] text-text-2 outline-none"
+          />
+        ],
+        onDelete: () => del(r.id)
+      }))}
+    />
+  );
+}
+
+function WiringTab({
+  product,
+  onUpdate
+}: {
+  product: Product;
+  onUpdate: (patch: Partial<Product>) => void;
+}) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const onPick = () => fileRef.current?.click();
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () =>
+      onUpdate({wiringDiagramDataUrl: String(reader.result || '')});
+    reader.readAsDataURL(f);
+    e.target.value = '';
+  };
+
+  const url = product.wiringDiagramDataUrl ?? '';
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-navy">
+          <Network size={13} strokeWidth={2} />
+          ელ. სქემა / wiring diagram
+        </div>
+        <div className="flex items-center gap-1.5">
+          {url && (
+            <button
+              type="button"
+              onClick={() => onUpdate({wiringDiagramDataUrl: ''})}
+              className="inline-flex items-center gap-1 rounded-md border border-bdr bg-sur px-2 py-1 text-[11px] text-red hover:border-red"
+            >
+              <X size={11} /> წაშლა
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onPick}
+            className="inline-flex items-center gap-1 rounded-md border border-blue-bd bg-blue-lt px-2 py-1 text-[11px] font-semibold text-blue hover:bg-blue hover:text-white"
+          >
+            <ImagePlus size={11} /> ატვირთე
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*,.pdf,.svg"
+            className="hidden"
+            onChange={onFile}
+          />
+        </div>
+      </div>
+      <div className="overflow-hidden rounded-[10px] border border-bdr bg-sur">
+        {url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={url} alt="wiring diagram" className="max-h-[70vh] w-full object-contain" />
+        ) : (
+          <div className="flex h-64 items-center justify-center text-[12px] text-text-3">
+            სქემა ჯერ არ არის ატვირთული
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FilesTab({
+  product,
+  onUpdate
+}: {
+  product: Product;
+  onUpdate: (patch: Partial<Product>) => void;
+}) {
+  const list = product.files ?? [];
+  const add = () =>
+    onUpdate({
+      files: [
+        ...list,
+        {id: cryptoRandomId(), label: '', url: '', kind: 'manual' as const}
+      ]
+    });
+  const upd = (id: string, patch: Partial<ProductFile>) =>
+    onUpdate({files: list.map((r) => (r.id === id ? {...r, ...patch} : r))});
+  const del = (id: string) =>
+    onUpdate({files: list.filter((r) => r.id !== id)});
+
+  return (
+    <SubTable
+      icon={Paperclip}
+      title="ფაილები · Download"
+      onAdd={add}
+      cols={['დასახელება', 'ტიპი', 'URL', '']}
+      colsWidth={['', 'w-36', '', 'w-16']}
+      emptyHint="firmware / manual / drawing / datasheet"
+      rows={list.map((r) => ({
+        id: r.id,
+        cells: [
+          <input
+            key="label"
+            type="text"
+            value={r.label}
+            onChange={(e) => upd(r.id, {label: e.target.value})}
+            placeholder="User manual v1.2"
+            className="w-full bg-transparent text-[12px] text-text outline-none"
+          />,
+          <select
+            key="kind"
+            value={r.kind}
+            onChange={(e) =>
+              upd(r.id, {kind: e.target.value as ProductFile['kind']})
+            }
+            className="w-full rounded-md border border-bdr bg-sur px-2 py-1 text-[11.5px] text-text outline-none focus:border-blue"
+          >
+            <option value="firmware">firmware</option>
+            <option value="manual">manual</option>
+            <option value="drawing">drawing</option>
+            <option value="datasheet">datasheet</option>
+            <option value="other">other</option>
+          </select>,
+          <input
+            key="url"
+            type="text"
+            value={r.url}
+            onChange={(e) => upd(r.id, {url: e.target.value})}
+            placeholder="https://…"
+            className="w-full bg-transparent font-mono text-[11.5px] text-text-2 outline-none"
+          />,
+          r.url ? (
+            <a
+              key="open"
+              href={r.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-md border border-bdr bg-sur px-2 py-1 text-[11px] text-blue hover:bg-blue-lt"
+            >
+              <FileDown size={11} /> open
+            </a>
+          ) : (
+            <span key="open" className="text-[11px] text-text-3">
+              —
+            </span>
+          )
+        ],
+        onDelete: () => del(r.id)
+      }))}
+    />
+  );
+}
+
+function SubTable({
+  icon: Icon,
+  title,
+  cols,
+  colsWidth,
+  rows,
+  onAdd,
+  emptyHint
+}: {
+  icon: typeof Cable;
+  title: string;
+  cols: string[];
+  colsWidth?: string[];
+  rows: {
+    id: string;
+    cells: React.ReactNode[];
+    alignTop?: boolean;
+    onDelete: () => void;
+  }[];
+  onAdd: () => void;
+  emptyHint?: string;
+}) {
+  return (
+    <div className="overflow-hidden rounded-[10px] border border-bdr bg-sur">
+      <div className="flex items-center justify-between border-b border-bdr bg-sur-2 px-4 py-2.5">
+        <div className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-navy">
+          <Icon size={13} strokeWidth={2} />
+          {title}
+        </div>
+        <button
+          type="button"
+          onClick={onAdd}
+          className="inline-flex items-center gap-1 rounded-md border border-blue-bd bg-blue-lt px-2 py-1 text-[11px] font-semibold text-blue hover:bg-blue hover:text-white"
+        >
+          <Plus size={11} /> მწკრივი
+        </button>
+      </div>
+      <table className="w-full text-[12px]">
+        <thead>
+          <tr className="border-b border-bdr bg-sur-2 text-left font-mono text-[9.5px] uppercase tracking-[0.06em] text-text-3">
+            {cols.map((c, i) => (
+              <th
+                key={i}
+                className={`px-3 py-2 font-bold ${colsWidth?.[i] || ''}`}
+              >
+                {c}
+              </th>
+            ))}
+            <th className="w-10 px-2 py-2" />
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr>
+              <td
+                colSpan={cols.length + 1}
+                className="px-4 py-6 text-center text-[12px] text-text-3"
+              >
+                ცარიელია. {emptyHint}
+              </td>
+            </tr>
+          ) : (
+            rows.map((r) => (
+              <tr
+                key={r.id}
+                className={`border-b border-bdr last:border-b-0 hover:bg-sur-2 ${
+                  r.alignTop ? 'align-top' : ''
+                }`}
+              >
+                {r.cells.map((c, i) => (
+                  <td key={i} className="px-3 py-1.5">
+                    {c}
+                  </td>
+                ))}
+                <td className="px-2 py-1.5 text-center">
+                  <button
+                    type="button"
+                    onClick={r.onDelete}
+                    className="rounded-md p-1 text-text-3 hover:bg-red-lt hover:text-red"
+                    aria-label="წაშლა"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
     </div>
   );
 }
