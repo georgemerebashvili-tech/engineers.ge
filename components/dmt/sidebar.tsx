@@ -22,6 +22,8 @@ import {
   LayoutGrid,
   ClipboardCheck,
   Handshake,
+  Building2,
+  Boxes,
   type LucideIcon
 } from 'lucide-react';
 
@@ -77,8 +79,17 @@ const SECTIONS: NavSection[] = [
         ]
       },
       {key: 'inspections', label: '2 · ინსპექტირება', href: '/dmt/inspections', icon: ClipboardCheck, badge: '6'},
-      {key: 'invoices', label: '3 · ინვოისები', href: '/dmt/invoices', icon: FileText, badge: '12'},
-      {key: 'inventory', label: 'ინვენტარიზაცია', href: '/dmt/inventory', icon: Package, badge: '284'}
+      {key: 'invoices', label: '3 · ინვოისები', href: '/dmt/invoices', icon: FileText},
+      {
+        key: 'inventory',
+        label: 'ინვენტარიზაცია',
+        href: '/dmt/inventory',
+        icon: Package,
+        children: [
+          {key: 'inv-objects', label: 'ობიექტები', href: '/dmt/inventory?tab=objects', icon: Building2},
+          {key: 'inv-stock', label: 'მარაგი · SKU', href: '/dmt/inventory?tab=stock', icon: Boxes}
+        ]
+      }
     ]
   },
   {
