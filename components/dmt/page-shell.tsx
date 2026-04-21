@@ -10,6 +10,12 @@ type Props = {
   searchPlaceholder?: string;
   onQueryChange?: (q: string) => void;
   initialQuery?: string;
+  /** Right-side header actions. If provided, replaces default Export + ახალი buttons. */
+  actions?: ReactNode;
+  /** Right-side filter toolbar (next to search). If provided, replaces default "ფილტრი" button. */
+  filterSlot?: ReactNode;
+  /** Hide the default search input (page renders its own). */
+  hideSearch?: boolean;
   children: ReactNode;
 };
 
@@ -20,6 +26,9 @@ export function DmtPageShell({
   searchPlaceholder = 'ძიება…',
   onQueryChange,
   initialQuery = '',
+  actions,
+  filterSlot,
+  hideSearch = false,
   children
 }: Props) {
   const [q, setQ] = useState(initialQuery);
@@ -37,35 +46,43 @@ export function DmtPageShell({
             {subtitle && <p className="mt-0.5 text-[12px] text-text-2">{subtitle}</p>}
           </div>
           <div className="flex items-center gap-2">
-            <button className="inline-flex items-center gap-1.5 rounded-md border border-bdr bg-sur-2 px-3 py-1.5 text-[12px] font-semibold text-text-2 hover:border-blue hover:text-blue">
-              <Download size={14} /> Export
-            </button>
-            <button className="inline-flex items-center gap-1.5 rounded-md border border-blue bg-blue px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-navy-2">
-              <Plus size={14} /> ახალი
-            </button>
+            {actions ?? (
+              <>
+                <button className="inline-flex items-center gap-1.5 rounded-md border border-bdr bg-sur-2 px-3 py-1.5 text-[12px] font-semibold text-text-2 hover:border-blue hover:text-blue">
+                  <Download size={14} /> Export
+                </button>
+                <button className="inline-flex items-center gap-1.5 rounded-md border border-blue bg-blue px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-navy-2">
+                  <Plus size={14} /> ახალი
+                </button>
+              </>
+            )}
           </div>
         </div>
-        <div className="mt-3 flex items-center gap-2">
-          <div className="relative flex-1 max-w-md">
-            <Search
-              size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-text-3"
-            />
-            <input
-              type="text"
-              value={q}
-              onChange={(e) => {
-                setQ(e.target.value);
-                onQueryChange?.(e.target.value);
-              }}
-              placeholder={searchPlaceholder}
-              className="w-full rounded-md border border-bdr bg-sur-2 py-1.5 pl-9 pr-3 text-[12.5px] text-text placeholder:text-text-3 focus:border-blue focus:outline-none"
-            />
+        {!hideSearch && (
+          <div className="mt-3 flex items-center gap-2">
+            <div className="relative flex-1 max-w-md">
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-text-3"
+              />
+              <input
+                type="text"
+                value={q}
+                onChange={(e) => {
+                  setQ(e.target.value);
+                  onQueryChange?.(e.target.value);
+                }}
+                placeholder={searchPlaceholder}
+                className="w-full rounded-md border border-bdr bg-sur-2 py-1.5 pl-9 pr-3 text-[12.5px] text-text placeholder:text-text-3 focus:border-blue focus:outline-none"
+              />
+            </div>
+            {filterSlot ?? (
+              <button className="inline-flex items-center gap-1.5 rounded-md border border-bdr bg-sur-2 px-3 py-1.5 text-[12px] font-semibold text-text-2 hover:border-blue hover:text-blue">
+                <Filter size={14} /> ფილტრი
+              </button>
+            )}
           </div>
-          <button className="inline-flex items-center gap-1.5 rounded-md border border-bdr bg-sur-2 px-3 py-1.5 text-[12px] font-semibold text-text-2 hover:border-blue hover:text-blue">
-            <Filter size={14} /> ფილტრი
-          </button>
-        </div>
+        )}
       </header>
       <div className="flex-1 overflow-auto">{children}</div>
     </div>
