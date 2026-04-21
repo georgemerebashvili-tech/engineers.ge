@@ -34,6 +34,20 @@ Standalone multi-user portal for ინვოისები, ლიდები
 
 ---
 
+## 🟡 Heat-loss calc — professional upgrade (`/calc/heat-loss`)
+
+Formula audit (2026-04-21): core EN 12831 formulas (`Qh = U·A·ΔT·f·f_tb`, `Qvent = 0.335·q·ΔT`, `Qsol = I·A·K₁·solDiv`) verified correct. Ventilation constant 0.335 vs EN's 0.34 ~1.5% delta (acceptable). Ground heat loss uses simplified `Ti−Tg` instead of EN 12831's `fg1·fg2·Gw` reduction factor — flagged below.
+
+- [x] 2026-04-21 — **🪟 Glazing presets (1/2/3-pane)** — `WIN_PRESETS` library (5 presets: single · 2-pane air · 2-pane Argon+low-e · 3-pane · 3-pane Krypton + custom), each with Uw + g-value. Added preset dropdown + g-value input in both sidebar list (`renderTwWindows`) and `ctypesModal`. `_onCtSel` auto-fills row `solK1` from window.g. Manual U edit flips preset → 'custom'. Also fixed pre-existing bug: `tw_windows` now persisted in draft snapshot. *(Claude ✅ 2026-04-21)*
+- [x] 2026-04-21 — **🔥 Reheat ΦRH (EN 12831 §6.5)** — `f_rh` param (W/m²) + mode preset (continuous=0 / short-setback=11 / long-setback=18 / high-mass=27 / custom). Per-room `Q_rh = f_rh × A_floor` where `A_floor` sums `_isFloorCt(ti)` rows. CalcLog shows 🔥 ΦRH row with trace. `window._G_RH` exposed for PDF. *(Claude ✅ 2026-04-21)*
+- [x] 2026-04-21 — **🏠 EN 12831 ground factor f_g** — `f_g` param (default 1.0) applied as multiplier on ground-contact (`ct.gnd`) row heat loss: `Qh = U·A·ΔT·f·f_tb·f_g`. Typical fg1·fg2·Gw ≈ 0.5–0.7. Row trace shows `f_g=X` when ≠1. *(Claude ✅ 2026-04-21)*
+- [x] 2026-04-21 — **💡 Thermal bridge ΔUtb (EN ISO 14683)** — per-construction override W/m²K column in `ctypesModal`. If `dUtb>0`: `U_eff = U + dUtb`, and blanket `f_tb` is skipped for that row. Otherwise legacy blanket f_tb applies. Stored in `CTYPES_META[id].dUtb` for thermal walls + windows, direct on `CTYPES_MANUAL[].dUtb` for manual. Read via `getAllCtypes` merge. Row trace: `ΔUtb=X→U*=Y`. *(Claude ✅ 2026-04-21)*
+- [x] 2026-04-21 — **🔧 EN ISO 10077-1 whole-window Uw builder** — `FRAME_LIB` (6 types: PVC 3/2-chamber, Al-TB, Al no-TB, Wood, Wood+Al) + `SPACER_LIB` (warm-edge ψ=0.04, Al ψ=0.08, none). `computeUw()` implements `Uw = (1−f_fr)·Ug + f_fr·Uf + (1−f_fr)·(lg/Aw)·ψg` (default lg/Aw=3.2). Per-window `builder` flag toggles between preset Uw vs. auto-computed. Builder UI in sidebar (expandable box with frame/spacer/f_fr/Ug + live formula) + ctypesModal window row (compact box). U input read-only when builder ON. Preset change in builder mode updates `Ug` only, Uw recomputes. *(Claude ✅ 2026-04-21)*
+- [ ] 2026-04-21 — **🟢 Climate data per city** — Tbilisi −7, Kutaisi −4, Batumi 0, Akhaltsikhe −16, Mestia −20 drop-down (currently manual). Source: СНиП 23-01-99 (Georgia climate supplement).
+- [ ] 2026-04-21 — **🟢 Room setpoint library** — bedroom 20 / bath 24 / kitchen 20 / corridor 18 / stairwell 15 presets. Now Tø hard-coded 22°C globally.
+
+---
+
 ## 🟢 Delegated to Codex
 
 ### Phase 1 — Ventilation suite (master plan: [`PLAN-ventilation-suite.md`](./PLAN-ventilation-suite.md))

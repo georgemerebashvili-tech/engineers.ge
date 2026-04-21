@@ -1266,9 +1266,10 @@ html.hl-pinned  #topTotals{margin-left:258px;transition:margin-left .2s}
       <span id="saveStatusMsg" style="font-size:10px;color:var(--grn);font-weight:600;min-width:80px;transition:opacity .5s;opacity:0"></span>
       <!-- AUTO-SAVE ZONE -->
       <div style="display:flex;align-items:center;gap:6px;border-left:1px solid var(--bdr);padding-left:10px;margin-left:2px">
-        <button id="asSetupBtn" onclick="openAutoSavePrompt()" title="პროექტის შენახვის დაყენება"
-          style="display:flex;align-items:center;gap:4px;height:28px;padding:0 10px;border:1.5px solid var(--bdr2);border-radius:6px;background:#fff;color:var(--text2);font-family:var(--sans);font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">
-          💾 Auto-Save
+        <button id="asSetupBtn" onclick="openAutoSavePrompt()" title="პროექტის შენახვის დაყენება (ლოკალური, offline)"
+          style="display:flex;align-items:center;gap:5px;height:28px;padding:0 11px;border:1.5px solid #27ae60;border-radius:6px;background:linear-gradient(135deg,#e8f7ee,#d4f1df);color:#0f6e3a;font-family:var(--sans);font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 1px 2px rgba(39,174,96,.12)">
+          <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#27ae60;box-shadow:0 0 0 2px #c8ebd5"></span>
+          Offline Auto-Save
         </button>
         <span id="asCountdown" style="font-size:10px;font-family:var(--mono);color:var(--text3);min-width:32px;text-align:center"></span>
         <span id="asStatus" style="font-size:10px;font-weight:600;min-width:60px"></span>
@@ -1306,8 +1307,23 @@ html.hl-pinned  #topTotals{margin-left:258px;transition:margin-left .2s}
       <div class="vd"></div>
       <div class="pg">
         <div class="pg-t">კოეფ.</div>
-        <div class="pr"><span class="pl">f_tb — ხიდები</span><input class="pi" id="f_tb" type="number" value="1.05" step=".01" oninput="recalc()"></div>
-        <div class="pr"><span class="pl">f — ნაგულ.</span><input class="pi" id="f_def" type="number" value="1.2" step=".05" oninput="recalc()"></div>
+        <div class="pr" title="ხიდების blanket supplement (EN 12831) — გამოიყენება მხოლოდ თუ ΔUtb per-ctype არ არის დასმული"><span class="pl">f_tb — ხიდები</span><input class="pi" id="f_tb" type="number" value="1.05" step=".01" oninput="recalc()"></div>
+        <div class="pr" title="ორიენტაციის ნაგულ. ფაქტორი ყოველი ახალი row-ისთვის"><span class="pl">f — ნაგულ.</span><input class="pi" id="f_def" type="number" value="1.2" step=".05" oninput="recalc()"></div>
+        <div class="pr" title="EN 12831 ground factor fg1·fg2·Gw ≈ 0.5–0.7. 1.0 = ცვლილება არ არის (Tg დირექტი)."><span class="pl">f_g — მიწა</span><input class="pi" id="f_g" type="number" value="1.0" step=".05" min="0.3" max="1.5" oninput="recalc()"></div>
+      </div>
+      <div class="vd"></div>
+      <div class="pg" style="min-width:150px">
+        <div class="pg-t" style="color:var(--ora)">🔥 Reheat ΦRH</div>
+        <div class="pr" title="EN 12831 §6.5 · გათბობის რეჟიმი"><span class="pl">რეჟიმი</span>
+          <select class="pi" id="rh_mode" style="min-width:110px" onchange="_onRhModeChange()">
+            <option value="0">Continuous (0)</option>
+            <option value="11">Short setback (11)</option>
+            <option value="18">Long setback (18)</option>
+            <option value="27">High mass (27)</option>
+            <option value="custom">ხელით</option>
+          </select>
+        </div>
+        <div class="pr" title="Reheat supplement W/m² (მრ. ფართი)"><span class="pl">f_RH</span><input class="pi" id="f_rh" type="number" value="0" step="1" min="0" max="50" oninput="_onRhInput();recalc()"><span class="pu">W/m²</span></div>
       </div>
       <div class="vd"></div>
       <div class="pg">
@@ -2261,33 +2277,41 @@ function recalc(){
   const Ti_s=+document.getElementById('ti_s').value||20;
   const Te_s=+document.getElementById('te_s').value||40;
   const f_tb=+document.getElementById('f_tb').value||1.05;
+  // C · EN 12831 ground reduction factor (fg1·fg2·Gw). Default 1.0 = no extra correction on top of Tg.
+  const f_g=+((document.getElementById('f_g')||{value:1}).value)||1;
+  // B · EN 12831 §6.5 reheat supplement (W/m² on floor area).
+  const f_rh=+((document.getElementById('f_rh')||{value:0}).value)||0;
   const $=id=>document.getElementById(id);
-  let GH=0,GC=0,GA=0;
+  let GH=0,GC=0,GA=0,G_RH=0;
   rooms.forEach(r=>{
-    let RH=0,RC_=0,sQhk=0,sQcs=0,sQsol=0,sQint=0,sQlit=0;
+    let RH=0,RC_=0,sQhk=0,sQcs=0,sQsol=0,sQint=0,sQlit=0,RA_floor=0;
     r.rows.forEach((e,ei)=>{
       const ct=recalcGetCtype(e.ti);
       const A=e.l*e.h*e.q;
-      // Detect if this row is a window (sol-enabled) — also by tw_windows lookup
       const isSolRow=ct.sol||!!(window.tw_windows||[]).find(w=>w.id===e.ti);
+      const isFloorRow=_isFloorCt(e.ti);
       const Tref_w=ct.gnd?Tg:Te_w;
       const dT_w=Ti_w-Tref_w;
-      const Qh=ct.u*A*dT_w*e.f*f_tb;
+      // D · Per-ctype thermal-bridge supplement ΔUtb. If set → add to U and skip blanket f_tb.
+      const dUtb=+(ct.dUtb||0);
+      const U_eff=ct.u+dUtb;
+      const tbMult=dUtb>0?1:f_tb;
+      // C · Ground factor f_g applied only to ground-contact rows.
+      const gndMult=ct.gnd?f_g:1;
+      const Qh=U_eff*A*dT_w*e.f*tbMult*gndMult;
       const dT_s=ct.gnd?0:(Te_s-Ti_s);
-      const Qcs=ct.gnd?0:ct.u*A*dT_s*e.f*f_tb;
+      const Qcs=ct.gnd?0:U_eff*A*dT_s*e.f*tbMult;
       const sol=SOLAR.find(x=>x.id===e.solId)||SOLAR[4];
       const solDiv=+(document.getElementById('sol_div_f')||{value:0.7}).value||0.7;
       const Qsol=isSolRow?(sol.I*A*e.solK1*solDiv):0;
       const Qint=(e.intN||1)*e.intW*e.intK2;
-      const isFloorRow=_isFloorCt(e.ti);
       const Qlit=isFloorRow?(e.litWm*A*e.litK):0;
       const rowC=Qcs+Qsol+Qint+Qlit;
       if($(`Ti_${r.id}_${ei}`)) $(`Ti_${r.id}_${ei}`).textContent=Ti_w;
       if($(`Tg_${r.id}_${ei}`)) $(`Tg_${r.id}_${ei}`).textContent=Tref_w;
       if($(`Dt_${r.id}_${ei}`)) $(`Dt_${r.id}_${ei}`).textContent=dT_w.toFixed(0);
-      // ── Format helpers ──
       if($(`A_${r.id}_${ei}`))  $(`A_${r.id}_${ei}`).textContent=_fmtArea(A);
-      if($(`U_${r.id}_${ei}`))  $(`U_${r.id}_${ei}`).textContent=ct.u.toFixed(2);
+      if($(`U_${r.id}_${ei}`))  $(`U_${r.id}_${ei}`).textContent=dUtb>0?U_eff.toFixed(2)+'*':ct.u.toFixed(2);
       if($(`Qh_${r.id}_${ei}`)) $(`Qh_${r.id}_${ei}`).textContent=_fmtWatt(Qh);
       if($(`Qhk_${r.id}_${ei}`))$(`Qhk_${r.id}_${ei}`).textContent=(Qh/1000).toFixed(2);
       if($(`Ts_${r.id}_${ei}`)) $(`Ts_${r.id}_${ei}`).textContent=Ti_s;
@@ -2302,8 +2326,15 @@ function recalc(){
       if($(`TotC_${r.id}_${ei}`))$(`TotC_${r.id}_${ei}`).textContent=(rowC/1000).toFixed(2);
       RH+=Qh; RC_+=rowC;
       sQhk+=Qh; sQcs+=Qcs; sQsol+=Qsol; sQint+=Qint; sQlit+=Qlit;
+      // ΦRH uses any floor-like row (ground or inter-floor slab).
+      if(isFloorRow) RA_floor+=A;
+      // Global specific-load denominator: only ground-contact floors, preserves prior behavior.
       if(['slab_fnd','floor_g'].includes(e.ti)) GA+=A;
     });
+    // B · Reheat supplement per room = f_rh (W/m²) × A_floor
+    const Q_rh=f_rh*RA_floor;
+    RH+=Q_rh;
+    G_RH+=Q_rh;
     const sf=v=>v>0?(v/1000).toFixed(2)+'kW':'—';
     if($(`sumQhk_${r.id}`)) $(`sumQhk_${r.id}`).textContent=(sQhk/1000).toFixed(2)+'kW';
     if($(`sumQcs_${r.id}`)) $(`sumQcs_${r.id}`).textContent=sf(sQcs);
@@ -2315,7 +2346,7 @@ function recalc(){
     const hkw=(RH/1000).toFixed(2),ckw=(RC_/1000).toFixed(2);
     if($(`rbH_${r.id}`)) $(`rbH_${r.id}`).textContent=hkw+' kW';
     if($(`rbC_${r.id}`)) $(`rbC_${r.id}`).textContent=ckw+' kW';
-    roomTotals[r.id]={H:RH/1000,C:RC_/1000,name:r.name};
+    roomTotals[r.id]={H:RH/1000,C:RC_/1000,name:r.name,Q_rh:Q_rh/1000,A_floor:RA_floor};
     GH+=RH; GC+=RC_;
   });
   $('T_h').textContent=(GH/1000).toFixed(2);
@@ -2324,6 +2355,8 @@ function recalc(){
   $('T_a').textContent=GA.toFixed(1);
   $('T_sh').textContent=GA>0?(GH/GA).toFixed(0):'—';
   $('T_sc').textContent=GA>0?(GC/GA).toFixed(0):'—';
+  // Expose ΦRH total to window for CalcLog + PDF breakdowns.
+  window._G_RH=G_RH;
 }
 
 function toggleRoom(id,e){
@@ -2596,6 +2629,7 @@ function _getSnapshot(){
     walls:typeof walls!=='undefined'?walls:[],
     wc:typeof wc!=='undefined'?wc:0,
     climGroups:typeof climGroups!=='undefined'?climGroups:[],
+    twWindows:typeof window.tw_windows!=='undefined'?window.tw_windows:[],
     params:_getParams(),
   });
 }
@@ -2632,6 +2666,18 @@ function _applySnapshot(snap){
   }
   if(typeof climGroups!=='undefined'&&Array.isArray(snap.climGroups)){
     climGroups.length=0;snap.climGroups.forEach(g=>climGroups.push(g));
+  }
+  // Restore windows (+ backward-compat for pre-preset drafts)
+  if(Array.isArray(snap.twWindows) && typeof window.tw_windows!=='undefined'){
+    window.tw_windows.length=0;
+    snap.twWindows.forEach(w=>{
+      window.tw_windows.push({
+        ...w,
+        preset:w.preset||'custom',
+        g:(typeof w.g==='number')?w.g:0.75,
+      });
+    });
+    if(typeof renderTwWindows==='function') renderTwWindows();
   }
   if(snap.bldState&&typeof state!=='undefined'){
     state.std=snap.bldState.std||state.std;
@@ -2691,13 +2737,30 @@ function _historyInit(){
 
 function _getParams(){
   const g=id=>+(document.getElementById(id)||{value:0}).value;
-  return {ti_w:g('ti_w'),te_w:g('te_w'),tg:g('tg'),ti_s:g('ti_s'),te_s:g('te_s'),f_tb:g('f_tb'),f_def:g('f_def')};
+  const gs=id=>(document.getElementById(id)||{value:''}).value;
+  return {ti_w:g('ti_w'),te_w:g('te_w'),tg:g('tg'),ti_s:g('ti_s'),te_s:g('te_s'),
+    f_tb:g('f_tb'),f_def:g('f_def'),f_g:g('f_g'),f_rh:g('f_rh'),rh_mode:gs('rh_mode')};
 }
 function _setParams(p){
   if(!p) return;
   const s=(id,v)=>{const el=document.getElementById(id);if(el&&v!==undefined){el.value=v;}};
   s('ti_w',p.ti_w);s('te_w',p.te_w);s('tg',p.tg);
   s('ti_s',p.ti_s);s('te_s',p.te_s);s('f_tb',p.f_tb);s('f_def',p.f_def);
+  s('f_g',p.f_g);s('f_rh',p.f_rh);s('rh_mode',p.rh_mode);
+}
+// RH mode preset → f_rh value
+function _onRhModeChange(){
+  const m=document.getElementById('rh_mode').value;
+  const fi=document.getElementById('f_rh');
+  if(m!=='custom' && fi){ fi.value=+m||0; }
+  recalc();
+}
+// User types f_rh → switch mode to 'custom' if mismatch
+function _onRhInput(){
+  const m=document.getElementById('rh_mode');
+  const v=+(document.getElementById('f_rh')||{value:0}).value;
+  if(!m) return;
+  if(m.value!=='custom' && +m.value!==v){ m.value='custom'; }
 }
 function _showSaveMsg(txt,color){
   const el=document.getElementById('saveStatusMsg');
@@ -2837,6 +2900,8 @@ function openCalcLog(roomId) {
   const Ti_s  = +document.getElementById('ti_s').value  || 20;
   const Te_s  = +document.getElementById('te_s').value  || 40;
   const f_tb  = +document.getElementById('f_tb').value  || 1.05;
+  const f_g   = +((document.getElementById('f_g')||{value:1}).value) || 1;
+  const f_rh  = +((document.getElementById('f_rh')||{value:0}).value) || 0;
   const solDiv = +(document.getElementById('sol_div_f')||{value:0.7}).value || 0.7;
 
   const fmt2 = v => (+v).toFixed(2);
@@ -2844,17 +2909,22 @@ function openCalcLog(roomId) {
   const fA   = v => (+v).toFixed(2);
 
   // ── კომპონენტის სტრიქონები ──────────────────────
-  let totalH = 0, totalC = 0;
+  let totalH = 0, totalC = 0, A_floor = 0;
   const compRows = r.rows.map((e, ei) => {
     const ct      = recalcGetCtype(e.ti);
     const A       = e.l * e.h * e.q;
     const isSol   = ct.sol || !!(window.tw_windows||[]).find(w => w.id === e.ti);
     const isFloor = _isFloorCt(e.ti);
+    if (isFloor) A_floor += A;
     const Tref    = ct.gnd ? Tg : Te_w;
     const dT_w    = Ti_w - Tref;
     const dT_s    = ct.gnd ? 0 : (Te_s - Ti_s);
-    const Qh      = ct.u * A * dT_w * e.f * f_tb;
-    const Qcs     = ct.gnd ? 0 : ct.u * A * dT_s * e.f * f_tb;
+    const dUtb    = +(ct.dUtb || 0);
+    const U_eff   = ct.u + dUtb;
+    const tbMult  = dUtb > 0 ? 1 : f_tb;
+    const gndMult = ct.gnd ? f_g : 1;
+    const Qh      = U_eff * A * dT_w * e.f * tbMult * gndMult;
+    const Qcs     = ct.gnd ? 0 : U_eff * A * dT_s * e.f * tbMult;
     const sol     = SOLAR.find(x => x.id === e.solId) || SOLAR[4];
     const Qsol    = isSol  ? (sol.I * A * e.solK1 * solDiv) : 0;
     const Qint    = (e.intN||1) * e.intW * e.intK2;
@@ -2862,11 +2932,16 @@ function openCalcLog(roomId) {
     const rowC    = Qcs + Qsol + Qint + Qlit;
     totalH += Qh; totalC += rowC;
 
-    const ctLabel = (CTYPES.find(c=>c.id===e.ti)||{}).name || e.ti;
+    const ctLabel = ct.name || (CTYPES.find(c=>c.id===e.ti)||{}).name || e.ti;
     const noteC = [];
     if (isSol  && Qsol>0) noteC.push(`☀ I=${sol.I}W/m²×K₁=${e.solK1}→${fmtW(Qsol)}W`);
     if (e.intW > 0)       noteC.push(`👤 ${e.intN||1}×${e.intW}W×K₂=${e.intK2}→${fmtW(Qint)}W`);
     if (isFloor && e.litWm>0) noteC.push(`💡 ${e.litWm}W/m²×K=${e.litK}→${fmtW(Qlit)}W`);
+    // Formula-trace tail: shows which supplements applied
+    const trace = [`f=${e.f}`];
+    if (dUtb>0) trace.push(`ΔUtb=${dUtb.toFixed(2)}→U*=${U_eff.toFixed(2)}`);
+    else        trace.push(`f_tb=${f_tb}`);
+    if (ct.gnd && f_g!==1) trace.push(`f_g=${f_g}`);
 
     return `
       <tr>
@@ -2876,13 +2951,33 @@ function openCalcLog(roomId) {
           ${noteC.length?`<div style="font-size:9px;color:var(--text3);font-weight:400;margin-top:2px">${noteC.join(' &nbsp;·&nbsp; ')}</div>`:''}
         </td>
         <td style="font-family:var(--mono);text-align:right;padding:5px 8px">${fA(A)}</td>
-        <td style="font-family:var(--mono);text-align:right;padding:5px 8px">${fmt2(ct.u)}</td>
+        <td style="font-family:var(--mono);text-align:right;padding:5px 8px">${fmt2(ct.u)}${dUtb>0?`<span style="font-size:9px;color:var(--ora)">+${dUtb.toFixed(2)}</span>`:''}</td>
         <td style="font-family:var(--mono);text-align:right;padding:5px 8px">${ct.gnd?`${dT_w.toFixed(0)}°<span style="font-size:9px;color:var(--text3)">(მიწ.)</span>`:dT_w.toFixed(0)+'°'}</td>
         <td style="font-family:var(--mono);text-align:right;padding:5px 8px;font-weight:700;color:var(--ora)">${fmtW(Qh)}</td>
         <td style="font-family:var(--mono);text-align:right;padding:5px 8px;font-weight:700;color:var(--blue)">${rowC>0?fmtW(rowC):'—'}</td>
-        <td style="font-family:var(--mono);font-size:9px;color:var(--text3);padding:5px 8px">f=${e.f} · f_tb=${f_tb}</td>
+        <td style="font-family:var(--mono);font-size:9px;color:var(--text3);padding:5px 8px">${trace.join(' · ')}</td>
       </tr>`;
   }).join('');
+
+  // ── B · Reheat ΦRH supplement ───────────────────
+  const Q_rh = f_rh * A_floor;
+  let rhHtml = '';
+  if (Q_rh > 0) {
+    totalH += Q_rh;
+    rhHtml = `
+      <tr style="background:#fff4e8;border-top:2px dashed var(--bdr2)">
+        <td style="text-align:left;padding:5px 8px;font-weight:600;color:var(--ora)">
+          🔥 Reheat ΦRH
+          <div style="font-size:9px;color:var(--text3);font-weight:400">${f_rh} W/m² × ${A_floor.toFixed(1)} m² (EN 12831 §6.5)</div>
+        </td>
+        <td style="font-family:var(--mono);text-align:right;padding:5px 8px;color:var(--text3)">${A_floor.toFixed(1)}<span style="font-size:9px"> m²</span></td>
+        <td style="padding:5px 8px;color:var(--text3);text-align:center">—</td>
+        <td style="padding:5px 8px;color:var(--text3);text-align:center">—</td>
+        <td style="font-family:var(--mono);text-align:right;padding:5px 8px;font-weight:700;color:var(--ora)">${fmtW(Q_rh)}</td>
+        <td style="padding:5px 8px;color:var(--text3);text-align:center">—</td>
+        <td style="font-size:9px;color:var(--text3);padding:5px 8px">EN 12831 §6.5</td>
+      </tr>`;
+  }
 
   // ── ვენტილაციის სტრიქონი ────────────────────────
   let ventHtml = '';
@@ -2927,6 +3022,7 @@ function openCalcLog(roomId) {
         </thead>
         <tbody>
           ${compRows}
+          ${rhHtml}
           ${ventHtml}
           <tr style="background:linear-gradient(90deg,#fff8f0,#f0f4ff);border-top:2px solid var(--bdr2)">
             <td colspan="4" style="padding:8px 10px;font-size:12px;font-weight:700;color:var(--navy)">
@@ -2949,7 +3045,7 @@ function openCalcLog(roomId) {
     </div>
     <div class="cl-summary">
       <span>📐 Ti_w=${Ti_w}°C &nbsp; Te_w=${Te_w}°C &nbsp; Tg=${Tg}°C</span>
-      <span>Ti_s=${Ti_s}°C &nbsp; Te_s=${Te_s}°C &nbsp; f_tb=${f_tb}</span>
+      <span>Ti_s=${Ti_s}°C &nbsp; Te_s=${Te_s}°C &nbsp; f_tb=${f_tb}${f_g!==1?` &nbsp; f_g=${f_g}`:''}${f_rh>0?` &nbsp; f_RH=${f_rh}W/m²`:''}</span>
       ${qs>0?`<span style="color:#1a5080">💨 ${qs} m³/h</span>`:''}
       <span style="color:var(--ora);font-weight:700">∑🔴 env: ${(totalH/1000).toFixed(3)} kW ${qs>0?`+ vent: ${(Qvent_h/1000).toFixed(3)} kW`:''}</span>
       <span style="color:var(--blue);font-weight:700">∑🔵 ${(totalCfull/1000).toFixed(3)} kW</span>
@@ -4365,7 +4461,15 @@ function getAllCtypes(){
   thermal.forEach(t=>{
     const m=CTYPES_META['tw_'+t.wallRef]||{gnd:false,sol:false};
     t.gnd=m.gnd; t.sol=m.sol;
+    // D · Optional per-ctype thermal-bridge supplement ΔUtb (W/m²K). Overrides blanket f_tb when >0.
+    if(typeof m.dUtb==='number') t.dUtb=m.dUtb;
+    // Window meta (by winRef)
+    if(t.winRef){
+      const mw=CTYPES_META[t.winRef]||{};
+      if(typeof mw.dUtb==='number') t.dUtb=mw.dUtb;
+    }
   });
+  // CTYPES_MANUAL carries dUtb directly on the object when user set it.
   return [...thermal, ...CTYPES_MANUAL];
 }
 
@@ -4393,11 +4497,14 @@ function _isFloorCt(ti){
 
 function _onCtSel(rid, ri, val){
   sv(rid, ri, 'ti', val);
-  // If window ctype — auto fill solar direction & K from tw_windows data
+  // If window ctype — auto fill solar direction & K₁ from tw_windows data
   const tw=(window.tw_windows||[]).find(w=>w.id===val);
   if(tw){
     if(tw.orient) sv(rid, ri, 'solId', tw.orient); // always set orient, including N
-    // auto K₁: use 0.8 for glass default, 0.6 for shaded (already default)
+    // Auto K₁ from window's g-value (SHGC). Default fallback 0.6 if not set.
+    if(typeof tw.g==='number' && tw.g>0){
+      sv(rid, ri, 'solK1', +tw.g.toFixed(2));
+    }
   }
   render(); recalc();
 }
@@ -4629,10 +4736,14 @@ function renderCtypesModal(){
 
   const wallsHtml = thermalWalls.map(c=>{
     const m=CTYPES_META['tw_'+c.wallRef]||{gnd:false,sol:false,orient:''};
+    const dU=+(m.dUtb||0);
     return `<tr>
       <td><span class="tbadge tbadge-th">🔵 თბოგამტ.</span></td>
       <td><span style="display:inline-block;width:130px;font-size:11px;font-weight:600;color:var(--text2);padding:3px 5px;background:var(--sur2);border:1.5px solid var(--bdr);border-radius:3px;cursor:not-allowed;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${c.name} — ტაბ 3-ში იცვლება">🔒 ${c.name}</span></td>
       <td style="font-family:var(--mono);color:var(--grn,#107040);font-weight:700">${c.u.toFixed(3)}</td>
+      <td><input type="number" value="${dU}" step="0.01" min="0" max="0.5" style="width:60px;font-family:var(--mono)"
+          oninput="setCtypeMeta('tw_${c.wallRef}','dUtb',+this.value)"
+          title="ΔUtb W/(m²K) — >0 overrides f_tb"></td>
       <td><select style="width:72px" onchange="setCtypeMeta('tw_${c.wallRef}','gnd',this.value==='true')">
         <option value="false" ${!m.gnd?'selected':''}>გარე</option>
         <option value="true" ${m.gnd?'selected':''}>მიწა</option>
@@ -4652,16 +4763,62 @@ function renderCtypesModal(){
 
   const winsHtml = thermalWins.map(c=>{
     const tw=(window.tw_windows||[]).find(w=>w.id===c.winRef)||{};
-    // Default sol=true for windows
     if(tw.sol===undefined) tw.sol=true;
     const isSol=tw.sol!==false;
+    const presetId=tw.preset||'custom';
+    const gVal=(typeof tw.g==='number')?tw.g:0.75;
+    const isB=!!tw.builder;
+    const presetOpts=(window.WIN_PRESETS||[]).map(p=>
+      `<option value="${p.id}"${p.id===presetId?' selected':''}>${p.name}</option>`
+    ).join('');
+    const frameOpts=(window.FRAME_LIB||[]).map(f=>
+      `<option value="${f.id}"${f.id===(tw.frame||'pvc')?' selected':''}>${f.name} · ${f.Uf}</option>`
+    ).join('');
+    const spacerOpts=(window.SPACER_LIB||[]).map(s=>
+      `<option value="${s.id}"${s.id===(tw.spacer||'warm')?' selected':''}>${s.name}</option>`
+    ).join('');
+    const builderBox = isB ? `
+      <div style="margin-top:3px;padding:4px 6px;background:#f5f8ff;border:1px dashed #b8cce8;border-radius:4px;font-size:9px">
+        <div style="color:var(--blue);font-weight:700;margin-bottom:2px">🔧 EN 10077</div>
+        <select onchange="setTwWinFrame('${c.winRef}',this.value)" style="width:180px;font-size:9px;padding:1px 3px;margin-bottom:2px">${frameOpts}</select>
+        <select onchange="setTwWinSpacer('${c.winRef}',this.value)" style="width:180px;font-size:9px;padding:1px 3px;margin-bottom:2px">${spacerOpts}</select>
+        <div style="display:flex;gap:3px">
+          <input type="number" value="${+(tw.f_fr||0.30)}" step="0.05" min="0.1" max="0.6"
+            oninput="setTwWinFfr('${c.winRef}',+this.value)"
+            style="width:50px;font-family:var(--mono);font-size:9px;padding:1px 3px" title="f_fr">
+          <input type="number" value="${+(tw.Ug||3.0)}" step="0.05" min="0.1" max="10"
+            oninput="setTwWinUg('${c.winRef}',+this.value)"
+            style="width:50px;font-family:var(--mono);font-size:9px;padding:1px 3px" title="Ug">
+        </div>
+      </div>`:'';
     return `<tr>
       <td><span class="tbadge" style="background:#eef4fd;color:var(--blue);border:1px solid var(--bdr)">🪟 ვიტ./კარი</span></td>
-      <td><input value="${(tw.name||'').replace(/"/g,'&quot;')}" style="width:130px"
-        oninput="if(typeof setTwWinName!=='undefined')setTwWinName('${c.winRef}',this.value)"></td>
-      <td><input type="number" value="${(tw.u||2.8).toFixed(3)}" step=".05" min=".1" max="20"
-        style="width:72px;font-family:var(--mono);font-weight:700;color:var(--blue);border:1.5px solid var(--bdr2);border-radius:4px;padding:3px 5px;outline:none"
-        oninput="if(typeof setTwWinU!=='undefined')setTwWinU('${c.winRef}',+this.value)"></td>
+      <td>
+        <input value="${(tw.name||'').replace(/"/g,'&quot;')}" style="width:190px;display:block;margin-bottom:3px"
+          oninput="if(typeof setTwWinName!=='undefined')setTwWinName('${c.winRef}',this.value)">
+        <select style="width:190px;font-size:10px;font-weight:600;padding:2px 4px;border:1.5px solid var(--bdr2);border-radius:4px;background:#fff;color:var(--navy);outline:none;font-family:var(--sans);margin-bottom:3px"
+          onchange="if(typeof setTwWinPreset!=='undefined')setTwWinPreset('${c.winRef}',this.value)"
+          title="მინაპაკეტი — auto U & g">${presetOpts}</select>
+        <label style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--t3);cursor:pointer" title="EN 10077 Uw auto-compute">
+          <input type="checkbox" ${isB?'checked':''} onchange="setTwWinBuilder('${c.winRef}',this.checked)">🔧 EN 10077
+        </label>
+        ${builderBox}
+      </td>
+      <td>
+        <input type="number" value="${(tw.u||2.8).toFixed(3)}" step=".05" min=".1" max="20"
+          style="width:72px;font-family:var(--mono);font-weight:700;color:var(--blue);border:1.5px solid var(--bdr2);border-radius:4px;padding:3px 5px;outline:none;display:block;margin-bottom:3px${isB?';background:#f0f4fc;cursor:not-allowed':''}"
+          ${isB?'readonly':''}
+          oninput="if(typeof setTwWinU!=='undefined')setTwWinU('${c.winRef}',+this.value)"
+          title="${isB?'Uw EN 10077 auto':'Uw whole window'}">
+        <input type="number" value="${gVal}" step=".01" min="0" max="1"
+          style="width:72px;font-family:var(--mono);font-weight:700;color:var(--ora);border:1.5px solid var(--bdr2);border-radius:4px;padding:3px 5px;outline:none"
+          oninput="if(typeof setTwWinG!=='undefined')setTwWinG('${c.winRef}',+this.value)"
+          title="g-value (SHGC) 0–1">
+      </td>
+      <td><input type="number" value="${+((CTYPES_META[c.winRef]||{}).dUtb||0)}" step="0.01" min="0" max="0.5"
+        style="width:60px;font-family:var(--mono)"
+        oninput="setCtypeMeta('${c.winRef}','dUtb',+this.value)"
+        title="ΔUtb W/(m²K) — >0 overrides f_tb"></td>
       <td><span style="display:inline-flex;align-items:center;justify-content:center;width:68px;padding:3px 6px;background:var(--sur2);border:1px solid var(--bdr);border-radius:3px;font-size:11px;color:var(--text3);cursor:default" title="ფანჯარა/კარი ყოველთვის გარე">გარე 🔒</span></td>
       <td><select style="width:58px" onchange="const _wOr=((window.tw_windows||[]).find(w=>w.id==='${c.winRef}')||{}).orient||'';const _wS=this.value==='true';if(_wS&&!_autoSol(_wOr)&&_wOr){alert('ჩრდ./ჩრდ-აღ./ჩრდ-დას. ზედაპირს მზის რადიაცია არ ეკუთვნის!');this.value='false';return;}if(typeof setTwWinSol!=='undefined')setTwWinSol('${c.winRef}',_wS)">
         <option value="false" ${!isSol?'selected':''}>არა</option>
@@ -4683,6 +4840,9 @@ function renderCtypesModal(){
     <td><span class="tbadge tbadge-man">🔶 ხელით</span></td>
     <td><input value="${c.name}" style="width:120px" oninput="CTYPES_MANUAL[${i}].name=this.value;syncThermalToCtypes()"></td>
     <td><input type="number" value="${c.u}" step=".05" min=".01" style="width:58px;font-family:var(--mono)" oninput="CTYPES_MANUAL[${i}].u=+this.value;syncThermalToCtypes()"></td>
+    <td><input type="number" value="${+(c.dUtb||0)}" step="0.01" min="0" max="0.5" style="width:60px;font-family:var(--mono)"
+      oninput="CTYPES_MANUAL[${i}].dUtb=+this.value;syncThermalToCtypes()"
+      title="ΔUtb W/(m²K) — >0 overrides f_tb"></td>
     <td><select style="width:72px" onchange="CTYPES_MANUAL[${i}].gnd=this.value==='true';syncThermalToCtypes()">
       <option value="false" ${!c.gnd?'selected':''}>გარე</option>
       <option value="true" ${c.gnd?'selected':''}>მიწა</option>
@@ -5616,6 +5776,7 @@ if (window.ProjectBridge) {
       <table>
         <thead><tr>
           <th style="width:100px">წყარო</th><th>სახელი / მოდელი</th><th style="width:90px">U W/(m²K)</th>
+          <th style="width:80px" title="ΔUtb — thermal bridge supplement (W/m²K). Overrides blanket f_tb when >0.">ΔU<sub>tb</sub></th>
           <th style="width:80px">მიწა?</th><th style="width:65px">მზე?</th><th style="width:90px">ორიენტ.?</th><th style="width:45px"></th>
         </tr></thead>
         <tbody id="ctypesModalTbody"></tbody>
@@ -8185,6 +8346,56 @@ function bldInit(){
   if(typeof window.tw_windows==='undefined') window.tw_windows=[];
   let _twwc=0;
 
+  // ─── Glazing presets (EN 673 typical Ug + PVC frame Uf≈1.3 · 70/30 glass/frame · warm-edge spacer) ─
+  // Uw values are whole-window (typical residential 1.23×1.48m). g-values are glass-only SHGC.
+  // Source: EN 10077-1, EN 410, product data from Saint-Gobain / Guardian / AGC.
+  window.WIN_PRESETS = [
+    {id:'1pane',        name:'1-მინიანი (ერთფენიანი)',         u:5.0, g:0.87, Ug:5.8, tag:'old / single'},
+    {id:'2pane_air',    name:'2-მინიანი (ჰაერი)',              u:2.8, g:0.78, Ug:3.0, tag:'basic IGU'},
+    {id:'2pane_lowe',   name:'2-მინიანი (Argon + low-e)',      u:1.4, g:0.60, Ug:1.1, tag:'energy-eff.'},
+    {id:'3pane',        name:'3-მინიანი (Argon + 2×low-e)',    u:0.9, g:0.50, Ug:0.7, tag:'triple'},
+    {id:'3pane_kr',     name:'3-მინიანი (Krypton, passive)',   u:0.7, g:0.47, Ug:0.5, tag:'passive-house'},
+    {id:'custom',       name:'ხელით',                          u:null,g:null, Ug:null,tag:'manual'},
+  ];
+  window.getWinPreset = function(id){
+    return (window.WIN_PRESETS||[]).find(p=>p.id===id) || window.WIN_PRESETS[window.WIN_PRESETS.length-1];
+  };
+
+  // ─── EN ISO 10077-1 whole-window builder libraries ─
+  // Frame U-values (Uf) per EN 10077-1 Table F.1 — typical product categories.
+  window.FRAME_LIB = [
+    {id:'pvc',    name:'PVC (3-ფხული)',        Uf:1.3},
+    {id:'pvc_2',  name:'PVC (2-ფხული)',        Uf:1.6},
+    {id:'al_tb',  name:'ალუმინი (თბ. ხიდით)',  Uf:2.0},
+    {id:'al',     name:'ალუმინი (უთბხ.)',      Uf:5.0},
+    {id:'wood',   name:'ხის',                   Uf:1.2},
+    {id:'wood_al',name:'ხე + ალუმინი',          Uf:1.4},
+  ];
+  // Spacer linear thermal transmittance ψg — EN 10077-1 §G.2
+  window.SPACER_LIB = [
+    {id:'warm',   name:'Warm-edge (TGI / Swisspacer)', psi:0.04},
+    {id:'al',     name:'ალუმინის (standard)',          psi:0.08},
+    {id:'none',   name:'გაუქმ. (ψ=0)',                  psi:0.00},
+  ];
+  window.getFrame  = id => (window.FRAME_LIB ||[]).find(f=>f.id===id)  || window.FRAME_LIB[0];
+  window.getSpacer = id => (window.SPACER_LIB||[]).find(s=>s.id===id) || window.SPACER_LIB[0];
+
+  // EN ISO 10077-1 · Uw = (Ag·Ug + Af·Uf + lg·ψg) / (Ag + Af)
+  // Parameterized by frame fraction f_fr (Af/Aw) and perimeter/area ratio (lg/Aw) — default 3.2 m/m²
+  // for a typical residential window (1.23×1.48m with 5mm inset → lg ≈ 5.1m, Aw ≈ 1.82m² → 2.8).
+  window.computeUw = function(w){
+    if(!w) return null;
+    const fr=window.getFrame(w.frame||'pvc');
+    const sp=window.getSpacer(w.spacer||'warm');
+    const f_fr=+(w.f_fr||0.30);                  // frame fraction
+    const lgPerAw=+(w.lgPerAw||3.2);             // lg/Aw (m/m²)
+    const Ug=+(w.Ug!=null?w.Ug:(window.getWinPreset(w.preset||'custom').Ug||3.0));
+    if(!Ug) return null;
+    // Uw = (1−f_fr)·Ug + f_fr·Uf + (1−f_fr)·lgPerAw·ψ
+    const Uw = (1-f_fr)*Ug + f_fr*fr.Uf + (1-f_fr)*lgPerAw*sp.psi;
+    return Math.round(Uw*1000)/1000;
+  };
+
   function _checkWallUsed(ctypeId){
     // check if ctypeId is used in any Heat Loss room row
     if(typeof rooms==='undefined') return [];
@@ -8250,12 +8461,86 @@ function bldInit(){
   // ─── Windows CRUD ────────────────────────────────────
   window.addTwWindow=function(){
     _twwc++;
-    window.tw_windows.push({id:'tww_'+_twwc, name:'ვიტრაჟი '+_twwc, u:2.8, sol:true});
+    // Default: 2-pane (air) — most common in existing Georgian stock
+    const def=window.getWinPreset('2pane_air');
+    window.tw_windows.push({
+      id:'tww_'+_twwc, name:'ვიტრაჟი '+_twwc,
+      u:def.u, g:def.g, preset:def.id, sol:true,
+      // EN 10077 builder defaults (off by default — preset-based Uw used unless user enables)
+      builder:false, frame:'pvc', spacer:'warm', f_fr:0.30, lgPerAw:3.2, Ug:def.Ug,
+    });
     _syncToTab1(true);
-    // Update modal if open
     if(document.getElementById('ctypesModal')?.classList.contains('open')){
       setTimeout(()=>renderCtypesModal(),90);
     }
+  };
+
+  // EN 10077 builder toggles + inputs
+  window.setTwWinBuilder=function(id,on){
+    const w=window.tw_windows.find(x=>x.id===id); if(!w) return;
+    w.builder=!!on;
+    if(on) w.u=window.computeUw(w)||w.u;
+    _syncToTab1(true);
+    if(typeof renderTwWindows==='function') renderTwWindows();
+    if(document.getElementById('ctypesModal')?.classList.contains('open')){
+      setTimeout(()=>renderCtypesModal(),60);
+    }
+    if(typeof recalc==='function') recalc();
+  };
+  window.setTwWinFrame=function(id,val){
+    const w=window.tw_windows.find(x=>x.id===id); if(!w) return;
+    w.frame=val;
+    if(w.builder) w.u=window.computeUw(w)||w.u;
+    _syncToTab1(true);
+    if(typeof recalc==='function') recalc();
+  };
+  window.setTwWinSpacer=function(id,val){
+    const w=window.tw_windows.find(x=>x.id===id); if(!w) return;
+    w.spacer=val;
+    if(w.builder) w.u=window.computeUw(w)||w.u;
+    _syncToTab1(true);
+    if(typeof recalc==='function') recalc();
+  };
+  window.setTwWinFfr=function(id,val){
+    const w=window.tw_windows.find(x=>x.id===id); if(!w) return;
+    w.f_fr=Math.max(0.1,Math.min(0.6,+val||0.3));
+    if(w.builder) w.u=window.computeUw(w)||w.u;
+    _syncToTab1(true);
+    if(typeof recalc==='function') recalc();
+  };
+  window.setTwWinUg=function(id,val){
+    const w=window.tw_windows.find(x=>x.id===id); if(!w) return;
+    w.Ug=Math.max(0.1,Math.min(10,+val||0));
+    if(w.builder) w.u=window.computeUw(w)||w.u;
+    _syncToTab1(true);
+    if(typeof recalc==='function') recalc();
+  };
+
+  // Apply glazing preset — auto-fills Uw + g. 'custom' leaves current values.
+  window.setTwWinPreset=function(id,presetId){
+    const w=window.tw_windows.find(x=>x.id===id); if(!w) return;
+    const p=window.getWinPreset(presetId);
+    w.preset=p.id;
+    if(p.id!=='custom' && p.u!=null){
+      w.g=p.g;
+      if(p.Ug!=null) w.Ug=p.Ug;
+      // Builder mode: recompute Uw from glass + frame + spacer. Else: use preset Uw.
+      w.u = w.builder ? (window.computeUw(w)||p.u) : p.u;
+    }
+    _syncToTab1(true);
+    if(document.getElementById('ctypesModal')?.classList.contains('open')){
+      setTimeout(()=>renderCtypesModal(),60);
+    }
+    if(typeof render==='function') render();
+    if(typeof recalc==='function') recalc();
+  };
+
+  // g-value setter (user override within any preset)
+  window.setTwWinG=function(id,val){
+    const w=window.tw_windows.find(x=>x.id===id); if(!w) return;
+    w.g=Math.max(0,Math.min(1,+val||0));
+    _syncToTab1();
+    if(typeof recalc==='function') recalc();
   };
 
   window.delTwWindow=function(id){
@@ -8273,7 +8558,17 @@ function bldInit(){
   };
 
   window.setTwWinU=function(id,val){
-    const w=window.tw_windows.find(x=>x.id===id); if(w){w.u=+val||0; _syncToTab1();}
+    const w=window.tw_windows.find(x=>x.id===id);
+    if(!w) return;
+    w.u=+val||0;
+    // If user manually edits U — switch preset to 'custom' (unless already custom or matches preset)
+    if(w.preset && w.preset!=='custom'){
+      const p=window.getWinPreset(w.preset);
+      if(p && p.u!=null && Math.abs(p.u-w.u)>0.01){ w.preset='custom'; }
+    }
+    _syncToTab1();
+    // Re-render sidebar to reflect preset label change
+    if(typeof renderTwWindows==='function') renderTwWindows();
   };
   window.setTwWinSol=function(id,val){
     const w=window.tw_windows.find(x=>x.id===id); if(w){w.sol=val; _syncToTab1(true);}
@@ -8289,21 +8584,88 @@ function bldInit(){
       el.innerHTML='<div style="padding:10px 12px;font-size:10px;color:var(--t3);text-align:center">🪟 ვიტრაჟი არ არის — ＋ დაამატე</div>';
       return;
     }
+    const presetOpts=(cur)=>window.WIN_PRESETS.map(p=>
+      `<option value="${p.id}"${p.id===cur?' selected':''}>${p.name}</option>`
+    ).join('');
+
+    const frameOpts=(cur)=>window.FRAME_LIB.map(f=>
+      `<option value="${f.id}"${f.id===cur?' selected':''}>${f.name} · ${f.Uf}</option>`
+    ).join('');
+    const spacerOpts=(cur)=>window.SPACER_LIB.map(s=>
+      `<option value="${s.id}"${s.id===cur?' selected':''}>${s.name}</option>`
+    ).join('');
+
     el.innerHTML=window.tw_windows.map(w=>{
       const used=_checkWallUsed(w.id);
       const usedBadge=used.length?`<span class="tw-win-used">⚡ ${used.length} ადგ.</span>`:'';
-      return `<div class="tw-win-item">
-        <span class="tw-win-sol">☀</span>
-        <input class="tw-win-name" value="${w.name.replace(/"/g,'&quot;')}" 
-          oninput="setTwWinName('${w.id}',this.value)" placeholder="დასახელება">
-        <div class="tw-win-u-wrap">
-          <input type="number" class="tw-win-u" value="${w.u}" step="0.05" min="0.1" max="10"
-            oninput="setTwWinU('${w.id}',+this.value)" title="U W/(m²K)">
-          <span style="font-size:9px;color:var(--t3)">W/m²K</span>
+      const presetId=w.preset||'custom';
+      const gVal=(typeof w.g==='number')?w.g:0.75;
+      const isB=!!w.builder;
+      const Ug=(typeof w.Ug==='number')?w.Ug:(window.getWinPreset(presetId).Ug||3.0);
+      const f_fr=+(w.f_fr||0.30);
+      const builderRow=isB?`
+        <div style="display:flex;flex-direction:column;gap:3px;width:100%;padding:6px 14px;background:#f5f8ff;border-top:1px dashed var(--bdr2);border-radius:0 0 4px 4px">
+          <div style="font-size:9px;color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:.04em">🔧 EN 10077 builder</div>
+          <div style="display:flex;gap:4px;align-items:center">
+            <span style="font-size:9px;color:var(--t3);width:28px">Uf</span>
+            <select onchange="setTwWinFrame('${w.id}',this.value)"
+              style="flex:1;min-width:0;font-size:10px;padding:2px 4px;border:1px solid var(--bdr2);border-radius:3px;background:#fff;font-family:var(--sans)">
+              ${frameOpts(w.frame||'pvc')}
+            </select>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center">
+            <span style="font-size:9px;color:var(--t3);width:28px">ψg</span>
+            <select onchange="setTwWinSpacer('${w.id}',this.value)"
+              style="flex:1;min-width:0;font-size:10px;padding:2px 4px;border:1px solid var(--bdr2);border-radius:3px;background:#fff;font-family:var(--sans)">
+              ${spacerOpts(w.spacer||'warm')}
+            </select>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center">
+            <span style="font-size:9px;color:var(--t3);width:28px">f_fr</span>
+            <input type="number" value="${f_fr}" step="0.05" min="0.1" max="0.6"
+              oninput="setTwWinFfr('${w.id}',+this.value)"
+              style="width:48px;font-family:var(--mono);font-size:10px;padding:2px 4px;border:1px solid var(--bdr2);border-radius:3px" title="frame fraction Af/Aw">
+            <span style="font-size:9px;color:var(--t3);width:24px;margin-left:auto">Ug</span>
+            <input type="number" value="${Ug}" step="0.05" min="0.1" max="10"
+              oninput="setTwWinUg('${w.id}',+this.value)"
+              style="width:48px;font-family:var(--mono);font-size:10px;padding:2px 4px;border:1px solid var(--bdr2);border-radius:3px" title="glazing-only Ug W/(m²K)">
+          </div>
+          <div style="font-size:9px;color:var(--grn,#107040);font-weight:700;font-family:var(--mono)">
+            Uw = (1−${f_fr})·${Ug} + ${f_fr}·${window.getFrame(w.frame||'pvc').Uf} + (1−${f_fr})·${(w.lgPerAw||3.2)}·${window.getSpacer(w.spacer||'warm').psi} = <span style="color:var(--blue)">${(w.u||0).toFixed(3)}</span>
+          </div>
+        </div>`:'';
+      return `<div class="tw-win-item" style="flex-wrap:wrap;align-items:flex-start;row-gap:4px;padding:0;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:5px;width:100%;padding:6px 10px 4px">
+          <span class="tw-win-sol">☀</span>
+          <input class="tw-win-name" value="${w.name.replace(/"/g,'&quot;')}"
+            oninput="setTwWinName('${w.id}',this.value)" placeholder="დასახელება">
+          ${usedBadge}
+          <button class="tw-win-del" onclick="delTwWindow('${w.id}')"
+            ${used.length?'disabled title="გამოიყენება — ჯერ ამოშალე"':'title="წაშლა"'}>×</button>
         </div>
-        ${usedBadge}
-        <button class="tw-win-del" onclick="delTwWindow('${w.id}')" 
-          ${used.length?'disabled title="გამოიყენება — ჯერ ამოშალე"':'title="წაშლა"'}>×</button>
+        <div style="display:flex;align-items:center;gap:5px;width:100%;padding:0 10px 6px 14px">
+          <select class="tw-win-preset" onchange="setTwWinPreset('${w.id}',this.value)"
+            style="flex:1;min-width:0;font-size:10px;font-weight:600;padding:2px 4px;border:1.5px solid var(--bdr2);border-radius:4px;background:#fff;color:var(--navy);outline:none;font-family:var(--sans)"
+            title="მინაპაკეტის ტიპი — auto-fills U & g">
+            ${presetOpts(presetId)}
+          </select>
+          <label style="display:flex;align-items:center;gap:3px;font-size:9px;color:var(--t3);cursor:pointer;flex-shrink:0" title="EN 10077 whole-window Uw auto-compute">
+            <input type="checkbox" ${isB?'checked':''} onchange="setTwWinBuilder('${w.id}',this.checked)" style="cursor:pointer">🔧
+          </label>
+          <div class="tw-win-u-wrap" title="${isB?'Uw auto-computed (EN 10077)':'Uw W/(m²K) — whole window'}">
+            <input type="number" class="tw-win-u" value="${w.u}" step="0.05" min="0.1" max="10"
+              ${isB?'readonly style="background:#f0f4fc;color:var(--blue);cursor:not-allowed"':''}
+              oninput="setTwWinU('${w.id}',+this.value)">
+            <span style="font-size:9px;color:var(--t3)">U</span>
+          </div>
+          <div class="tw-win-u-wrap" title="g-value (SHGC) — solar heat gain 0–1">
+            <input type="number" class="tw-win-u" value="${gVal}" step="0.01" min="0" max="1"
+              style="color:var(--ora)"
+              oninput="setTwWinG('${w.id}',+this.value)">
+            <span style="font-size:9px;color:var(--t3)">g</span>
+          </div>
+        </div>
+        ${builderRow}
       </div>`;
     }).join('');
   };
@@ -8484,9 +8846,10 @@ async function autoSaveSetup() {
     _asStartCountdown();
     closeAutoSavePrompt();
     if (btn) {
-      btn.textContent = '✅ Auto-Save';
+      btn.innerHTML = '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#27ae60;box-shadow:0 0 0 2px #c8ebd5;margin-right:4px"></span>✅ Offline Auto-Save';
       btn.style.borderColor = '#27ae60';
-      btn.style.color = '#27ae60';
+      btn.style.color = '#0f6e3a';
+      btn.style.background = 'linear-gradient(135deg,#d4f1df,#b8e6c9)';
       btn.title = `პროექტი: ${AS.projectName}`;
     }
     console.log('%c✅ Auto-Save ჩართულია — 60 წამი', 'color:#0f6e3a;font-weight:700');
