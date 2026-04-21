@@ -30,8 +30,8 @@ import {
   COLOR_STYLES,
   COLORS,
   loadSets,
+  saveSets,
   randomId,
-  type VarColor,
   type VarOption,
   type VarSet
 } from '@/lib/dmt/variables';
@@ -490,6 +490,13 @@ export default function ManualLeadsPage() {
             {showAddCol && (
               <AddColumnInline
                 varSets={varSets}
+                onVarSetCreated={(set) => {
+                  setVarSets((prev) => {
+                    const next = [...prev, set];
+                    saveSets(next);
+                    return next;
+                  });
+                }}
                 onCancel={() => setShowAddCol(false)}
                 onSubmit={(col) => {
                   addExtraCol(col);
@@ -810,10 +817,12 @@ function renderExtraCell(
 
 function AddColumnInline({
   varSets,
+  onVarSetCreated,
   onSubmit,
   onCancel
 }: {
   varSets: VarSet[];
+  onVarSetCreated: (set: VarSet) => void;
   onSubmit: (col: {label: string; kind: ExtraKind; width: number; varSetId?: string}) => void;
   onCancel: () => void;
 }) {
@@ -821,98 +830,256 @@ function AddColumnInline({
   const [kind, setKind] = useState<ExtraKind>('text');
   const [varSetId, setVarSetId] = useState(varSets[0]?.id ?? '');
   const [width, setWidth] = useState(140);
+  const [creatingSet, setCreatingSet] = useState(false);
+
+  const handleSetCreated = (set: VarSet) => {
+    onVarSetCreated(set);
+    setVarSetId(set.id);
+    setCreatingSet(false);
+  };
 
   return (
-    <div className="flex flex-wrap items-end gap-2 border-b border-bdr bg-blue-lt/50 px-3 py-2.5">
-      <div className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-blue">
-        <Columns3 size={12} /> ახალი column
-      </div>
-      <div>
-        <label className="block font-mono text-[9.5px] text-text-3">სახელი</label>
-        <input
-          autoFocus
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
-          placeholder="e.g. რეგიონი"
-          className="w-48 rounded-md border border-bdr bg-sur px-2 py-1 text-[12px] focus:border-blue focus:outline-none"
-        />
-      </div>
-      <div>
-        <label className="block font-mono text-[9.5px] text-text-3">ტიპი</label>
-        <select
-          value={kind}
-          onChange={(e) => setKind(e.target.value as ExtraKind)}
-          className="rounded-md border border-bdr bg-sur px-2 py-1 text-[12px] focus:border-blue focus:outline-none"
-        >
-          <option value="text">text</option>
-          <option value="number">number</option>
-          <option value="select">select (ცვლადი)</option>
-        </select>
-      </div>
-      {kind === 'select' && (
-        <div>
-          <label className="flex items-center gap-1 font-mono text-[9.5px] text-text-3">
-            <Palette size={10} /> ცვლადი
-          </label>
-          {varSets.length === 0 ? (
-            <Link
-              href="/dmt/variables"
-              className="inline-flex items-center gap-1 rounded-md border border-ora-bd bg-ora-lt px-2 py-1 text-[11px] font-semibold text-ora"
-            >
-              ჯერ შექმენი ცვლადი →
-            </Link>
-          ) : (
-            <select
-              value={varSetId}
-              onChange={(e) => setVarSetId(e.target.value)}
-              className="rounded-md border border-bdr bg-sur px-2 py-1 text-[12px] focus:border-blue focus:outline-none"
-            >
-              {varSets.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.options.length})
-                </option>
-              ))}
-            </select>
-          )}
+    <div className="border-b border-bdr bg-blue-lt/50">
+      <div className="flex flex-wrap items-end gap-2 px-3 py-2.5">
+        <div className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-blue">
+          <Columns3 size={12} /> ახალი column
         </div>
-      )}
-      <div>
-        <label className="block font-mono text-[9.5px] text-text-3">სიგანე (px)</label>
-        <input
-          type="number"
-          value={width}
-          min={60}
-          max={400}
-          step={10}
-          onChange={(e) => setWidth(Number(e.target.value) || 140)}
-          className="w-20 rounded-md border border-bdr bg-sur px-2 py-1 font-mono text-[12px] focus:border-blue focus:outline-none"
+        <div>
+          <label className="block font-mono text-[9.5px] text-text-3">სახელი</label>
+          <input
+            autoFocus
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            placeholder="e.g. რეგიონი"
+            className="w-48 rounded-md border border-bdr bg-sur px-2 py-1 text-[12px] focus:border-blue focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block font-mono text-[9.5px] text-text-3">ტიპი</label>
+          <select
+            value={kind}
+            onChange={(e) => setKind(e.target.value as ExtraKind)}
+            className="rounded-md border border-bdr bg-sur px-2 py-1 text-[12px] focus:border-blue focus:outline-none"
+          >
+            <option value="text">text</option>
+            <option value="number">number</option>
+            <option value="select">select (ცვლადი)</option>
+          </select>
+        </div>
+        {kind === 'select' && (
+          <div>
+            <label className="flex items-center gap-1 font-mono text-[9.5px] text-text-3">
+              <Palette size={10} /> ცვლადი
+            </label>
+            <div className="flex items-center gap-1">
+              {varSets.length > 0 && (
+                <select
+                  value={varSetId}
+                  onChange={(e) => setVarSetId(e.target.value)}
+                  className="rounded-md border border-bdr bg-sur px-2 py-1 text-[12px] focus:border-blue focus:outline-none"
+                >
+                  {varSets.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.options.length})
+                    </option>
+                  ))}
+                </select>
+              )}
+              <button
+                type="button"
+                onClick={() => setCreatingSet((v) => !v)}
+                className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors ${
+                  creatingSet
+                    ? 'border-red bg-red-lt text-red'
+                    : 'border-blue bg-sur text-blue hover:bg-blue hover:text-white'
+                }`}
+                title="ახალი ცვლადი აქვე"
+              >
+                {creatingSet ? <X size={11} /> : <Plus size={11} />}
+                {creatingSet ? 'გაუქმება' : 'ახალი ცვლადი'}
+              </button>
+              <Link
+                href="/dmt/variables"
+                className="text-[11px] text-text-3 hover:text-blue"
+                title="ცვლადების მართვა ცალკე გვერდზე"
+              >
+                მართვა →
+              </Link>
+            </div>
+          </div>
+        )}
+        <div>
+          <label className="block font-mono text-[9.5px] text-text-3">სიგანე (px)</label>
+          <input
+            type="number"
+            value={width}
+            min={60}
+            max={400}
+            step={10}
+            onChange={(e) => setWidth(Number(e.target.value) || 140)}
+            className="w-20 rounded-md border border-bdr bg-sur px-2 py-1 font-mono text-[12px] focus:border-blue focus:outline-none"
+          />
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={onCancel}
+            className="rounded-md border border-bdr bg-sur px-3 py-1 text-[12px] font-semibold text-text-2 hover:border-red hover:text-red"
+          >
+            გაუქმება
+          </button>
+          <button
+            disabled={!label.trim() || (kind === 'select' && !varSetId)}
+            onClick={() =>
+              onSubmit({
+                label: label.trim(),
+                kind,
+                width,
+                varSetId: kind === 'select' ? varSetId : undefined
+              })
+            }
+            className="rounded-md border border-blue bg-blue px-3 py-1 text-[12px] font-semibold text-white hover:bg-navy-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            + დამატება
+          </button>
+        </div>
+      </div>
+      {kind === 'select' && creatingSet && (
+        <InlineVarSetCreator
+          onSubmit={handleSetCreated}
+          onCancel={() => setCreatingSet(false)}
         />
-      </div>
-      <div className="ml-auto flex items-center gap-2">
-        <button
-          onClick={onCancel}
-          className="rounded-md border border-bdr bg-sur px-3 py-1 text-[12px] font-semibold text-text-2 hover:border-red hover:text-red"
-        >
-          გაუქმება
-        </button>
-        <button
-          disabled={!label.trim() || (kind === 'select' && !varSetId)}
-          onClick={() =>
-            onSubmit({
-              label: label.trim(),
-              kind,
-              width,
-              varSetId: kind === 'select' ? varSetId : undefined
-            })
-          }
-          className="rounded-md border border-blue bg-blue px-3 py-1 text-[12px] font-semibold text-white hover:bg-navy-2 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          + დამატება
-        </button>
-      </div>
+      )}
     </div>
   );
 }
+
+function InlineVarSetCreator({
+  onSubmit,
+  onCancel
+}: {
+  onSubmit: (set: VarSet) => void;
+  onCancel: () => void;
+}) {
+  const [name, setName] = useState('');
+  const [options, setOptions] = useState<VarOption[]>([
+    {id: randomId('opt'), label: 'ვარიანტი 1', color: 'blue'},
+    {id: randomId('opt'), label: 'ვარიანტი 2', color: 'green'}
+  ]);
+
+  const patch = (id: string, p: Partial<VarOption>) =>
+    setOptions((prev) => prev.map((o) => (o.id === id ? {...o, ...p} : o)));
+  const remove = (id: string) =>
+    setOptions((prev) => prev.filter((o) => o.id !== id));
+  const add = () =>
+    setOptions((prev) => [
+      ...prev,
+      {id: randomId('opt'), label: `ვარიანტი ${prev.length + 1}`, color: 'gray'}
+    ]);
+
+  const canSave =
+    name.trim().length > 0 &&
+    options.length > 0 &&
+    options.every((o) => o.label.trim().length > 0);
+
+  const save = () => {
+    if (!canSave) return;
+    onSubmit({
+      id: randomId('set'),
+      name: name.trim(),
+      type: 'single',
+      options: options.map((o) => ({...o, label: o.label.trim()}))
+    });
+  };
+
+  return (
+    <div className="border-t border-blue-bd bg-sur px-3 py-3">
+      <div className="mb-2 flex items-center gap-2">
+        <div className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-blue">
+          <Palette size={12} /> ახალი ცვლადი (option set)
+        </div>
+        <input
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="სახელი — მაგ. რეგიონი"
+          className="w-60 rounded-md border border-bdr bg-sur-2 px-2 py-1 text-[12px] font-semibold text-navy focus:border-blue focus:outline-none"
+        />
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={onCancel}
+            className="rounded-md border border-bdr bg-sur px-2.5 py-1 text-[11.5px] font-semibold text-text-2 hover:border-red hover:text-red"
+          >
+            გაუქმება
+          </button>
+          <button
+            disabled={!canSave}
+            onClick={save}
+            className="inline-flex items-center gap-1 rounded-md border border-blue bg-blue px-2.5 py-1 text-[11.5px] font-semibold text-white hover:bg-navy-2 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus size={11} /> ცვლადის შენახვა
+          </button>
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        {options.map((opt, idx) => {
+          const st = COLOR_STYLES[opt.color];
+          return (
+            <div
+              key={opt.id}
+              className="flex items-center gap-2 rounded-md border border-bdr bg-sur-2 px-2 py-1.5"
+            >
+              <span className="font-mono text-[10px] text-text-3">{idx + 1}</span>
+              <span
+                className="shrink-0 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold"
+                style={{color: st.color, background: st.bg, borderColor: st.border}}
+              >
+                {opt.label || '—'}
+              </span>
+              <input
+                value={opt.label}
+                onChange={(e) => patch(opt.id, {label: e.target.value})}
+                placeholder="ლეიბლი"
+                className="flex-1 rounded-md border border-transparent bg-transparent px-2 py-0.5 text-[12px] hover:bg-sur focus:border-blue focus:bg-sur focus:outline-none"
+              />
+              <div className="flex shrink-0 items-center gap-0.5 rounded-md border border-bdr bg-sur p-1">
+                {COLORS.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => patch(opt.id, {color: c})}
+                    className={`h-3.5 w-3.5 rounded-full border transition-transform hover:scale-125 ${
+                      opt.color === c ? 'ring-2 ring-offset-1 ring-navy' : ''
+                    }`}
+                    style={{
+                      background: COLOR_STYLES[c].color,
+                      borderColor: COLOR_STYLES[c].border
+                    }}
+                    title={c}
+                    aria-label={c}
+                  />
+                ))}
+              </div>
+              <button
+                onClick={() => remove(opt.id)}
+                disabled={options.length <= 1}
+                className="shrink-0 rounded p-1 text-text-3 hover:bg-red-lt hover:text-red disabled:cursor-not-allowed disabled:opacity-30"
+                title="ვარიანტის წაშლა"
+              >
+                <Trash2 size={11} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <button
+        onClick={add}
+        className="mt-2 inline-flex items-center gap-1 rounded-md border border-dashed border-blue-bd px-2 py-1 text-[11px] font-semibold text-blue hover:border-blue hover:bg-blue-lt"
+      >
+        <Plus size={11} /> ვარიანტი
+      </button>
+    </div>
+  );
+}
+
 
 function StatCard({label, value, accent}: {label: string; value: string; accent?: 'grn' | 'red' | 'pur'}) {
   const color =
