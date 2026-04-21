@@ -1,4 +1,6 @@
 import type {Metadata} from 'next';
+import {headers} from 'next/headers';
+import {redirect} from 'next/navigation';
 import {DmtSidebar} from '@/components/dmt/sidebar';
 import {getCurrentDmtUser} from '@/lib/dmt/auth';
 
@@ -11,16 +13,37 @@ export const metadata: Metadata = {
   robots: {index: false, follow: false}
 };
 
-// Note: middleware.ts at repo root gates /dmt/* — redirects unauthenticated
-// requests to /dmt/login (except /dmt/login, /dmt/register, /dmt/forgot, /dmt/reset).
-// Layout just reads the user and renders sidebar conditionally.
+// proxy.ts gates /dmt/* and sets x-pathname on every request. Public auth
+// paths (login/register/forgot/reset) must render WITHOUT the sidebar — even
+// if the user is already authenticated — otherwise the login form shows up
+// inside the gated shell.
+const PUBLIC_PATHS = ['/dmt/login', '/dmt/register', '/dmt/forgot', '/dmt/reset'];
+
+function isPublicPath(pathname: string) {
+  return PUBLIC_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + '/')
+  );
+}
 
 export default async function DmtLayout({children}: {children: React.ReactNode}) {
+  const h = await headers();
+  const pathname = h.get('x-pathname') ?? '';
+  const onPublic = isPublicPath(pathname);
+
   const user = await getCurrentDmtUser();
 
+  // Authenticated user visiting a login/register page → bounce to /dmt.
+  if (user && onPublic) {
+    redirect('/dmt');
+  }
+
+  // Public path (unauthenticated) — render auth page without sidebar.
+  if (onPublic) {
+    return <div className="min-h-screen bg-bg text-text">{children}</div>;
+  }
+
+  // Gated path but no user (race with proxy.ts redirect) — render bare.
   if (!user) {
-    // No user — either public auth page (middleware allowed) or the first render
-    // before redirect. Render content without sidebar so login/register work.
     return <div className="min-h-screen bg-bg text-text">{children}</div>;
   }
 
