@@ -1,6 +1,6 @@
 'use client';
 
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {Fragment, useCallback, useEffect, useMemo, useState} from 'react';
 import {ChevronDown, ChevronRight, Filter, RefreshCw, ShieldCheck} from 'lucide-react';
 import {DmtPageShell} from '@/components/dmt/page-shell';
 
@@ -180,9 +180,8 @@ export default function DmtAuditPage() {
                 const isOpen = !!expanded[r.id];
                 const hasPayload = Object.keys(r.payload || {}).length > 0;
                 return (
-                  <>
+                  <Fragment key={r.id}>
                     <tr
-                      key={r.id}
                       className="cursor-pointer border-b border-bdr last:border-b-0 hover:bg-sur-2"
                       onClick={() =>
                         setExpanded((p) => ({...p, [r.id]: !p[r.id]}))
@@ -233,7 +232,7 @@ export default function DmtAuditPage() {
                       </td>
                     </tr>
                     {isOpen && hasPayload && (
-                      <tr key={`${r.id}-details`} className="border-b border-bdr bg-sur-2">
+                      <tr className="border-b border-bdr bg-sur-2">
                         <td></td>
                         <td colSpan={5} className="px-3 py-2">
                           <pre className="overflow-x-auto rounded-md border border-bdr bg-sur p-2 font-mono text-[10.5px] leading-relaxed text-text-2">
@@ -247,7 +246,7 @@ export default function DmtAuditPage() {
                         </td>
                       </tr>
                     )}
-                  </>
+                  </Fragment>
                 );
               })}
               {filtered.length === 0 && !loading && (

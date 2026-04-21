@@ -18,6 +18,7 @@ import {
   TrendingUp,
   Palette,
   UsersRound,
+  ScrollText,
   type LucideIcon
 } from 'lucide-react';
 
@@ -77,6 +78,12 @@ const SECTIONS: NavSection[] = [
     items: [
       {key: 'variables', label: 'ცვლადები', href: '/dmt/variables', icon: Palette},
       {key: 'users', label: 'მომხმარებლები', href: '/dmt/users', icon: UsersRound}
+    ]
+  },
+  {
+    title: 'უსაფრთხოება',
+    items: [
+      {key: 'audit', label: 'audit log', href: '/dmt/audit', icon: ScrollText}
     ]
   },
   {
