@@ -52,6 +52,8 @@ const PALETTE_ICONS: Record<WidgetType, React.ComponentType<{size?: number; stro
 };
 
 const ROW_H = 90; // px per row
+const DRAG_MIME_NEW = 'application/x-dmt-new-widget';
+const DRAG_MIME_TEMPLATE = 'application/x-dmt-template';
 
 export default function DashboardsPage() {
   const [dashboards, setDashboards] = useState<Dashboard[]>(DEMO_DASHBOARDS);
@@ -309,10 +311,24 @@ export default function DashboardsPage() {
                   const m = WIDGET_META[t];
                   const Icon = PALETTE_ICONS[t];
                   return (
-                    <button
+                    <div
                       key={t}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.effectAllowed = 'copy';
+                        e.dataTransfer.setData(DRAG_MIME_NEW, t);
+                        e.dataTransfer.setData('text/plain', t);
+                      }}
                       onClick={() => addWidget(t)}
-                      className="mb-1.5 w-full rounded-md border border-bdr bg-sur p-2.5 text-left transition-colors hover:border-blue hover:bg-blue-lt"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          addWidget(t);
+                        }
+                      }}
+                      className="mb-1.5 w-full cursor-grab rounded-md border border-bdr bg-sur p-2.5 text-left transition-colors hover:border-blue hover:bg-blue-lt active:cursor-grabbing"
                     >
                       <div className="flex items-start gap-2">
                         <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-lt text-blue">
@@ -324,9 +340,9 @@ export default function DashboardsPage() {
                             {m.description}
                           </div>
                         </div>
-                        <Plus size={12} className="mt-1.5 shrink-0 text-text-3" />
+                        <GripVertical size={12} className="mt-1.5 shrink-0 text-text-3" />
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
 
@@ -345,7 +361,13 @@ export default function DashboardsPage() {
                     return (
                       <div
                         key={tpl.id}
-                        className="group mb-1.5 rounded-md border border-bdr bg-sur p-2 transition-colors hover:border-blue"
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.effectAllowed = 'copy';
+                          e.dataTransfer.setData(DRAG_MIME_TEMPLATE, tpl.id);
+                          e.dataTransfer.setData('text/plain', tpl.name);
+                        }}
+                        className="group mb-1.5 cursor-grab rounded-md border border-bdr bg-sur p-2 transition-colors hover:border-blue active:cursor-grabbing"
                       >
                         <button onClick={() => addFromTemplate(tpl)} className="flex w-full items-start gap-2 text-left">
                           <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-lt text-blue">
@@ -371,7 +393,7 @@ export default function DashboardsPage() {
               )}
             </div>
             <div className="border-t border-bdr bg-sur p-2.5 text-[10.5px] leading-relaxed text-text-3">
-              💡 დააჭირე modul-ს → canvas-ზე გაჩნდება. შემდეგ drag-ით დალაგება და ზომის შეცვლა კონფიგ-პანელიდან.
+              💡 modul-ი **drag**-ით ჩააგდე canvas-ზე ან click-ით დაამატე. მიღების შემდეგ — drag რეორდერისთვის, ზომის შეცვლა კონფიგ-პანელიდან.
             </div>
           </aside>
         )}
@@ -387,17 +409,49 @@ export default function DashboardsPage() {
               onReorder={(newOrder) =>
                 setWidgets(() => newOrder)
               }
+              onDropNew={(type, targetId) => {
+                const meta = WIDGET_META[type];
+                const id = randomId('w');
+                const widget: Widget = {
+                  id,
+                  type,
+                  w: meta.defaultW,
+                  h: meta.defaultH,
+                  config: {...meta.defaultConfig}
+                };
+                setWidgets((ws) => {
+                  if (!targetId) return [...ws, widget];
+                  const idx = ws.findIndex((w) => w.id === targetId);
+                  if (idx < 0) return [...ws, widget];
+                  const next = [...ws];
+                  next.splice(idx, 0, widget);
+                  return next;
+                });
+                setSelectedWid(id);
+              }}
+              onDropTemplate={(tplId, targetId) => {
+                const tpl = templates.find((t) => t.id === tplId);
+                if (!tpl) return;
+                const id = randomId('w');
+                const widget: Widget = {
+                  id,
+                  type: tpl.type,
+                  w: tpl.w,
+                  h: tpl.h,
+                  config: {...tpl.config}
+                };
+                setWidgets((ws) => {
+                  if (!targetId) return [...ws, widget];
+                  const idx = ws.findIndex((w) => w.id === targetId);
+                  if (idx < 0) return [...ws, widget];
+                  const next = [...ws];
+                  next.splice(idx, 0, widget);
+                  return next;
+                });
+                setSelectedWid(id);
+              }}
               globalStatus={globalStatus}
             />
-          )}
-          {active && active.widgets.length === 0 && (
-            <div className="mt-8 rounded-[12px] border-2 border-dashed border-bdr bg-sur p-12 text-center">
-              <LayoutDashboard size={36} className="mx-auto mb-3 text-text-3" strokeWidth={1.2} />
-              <div className="text-[14px] font-bold text-navy">ცარიელი დესკბორდი</div>
-              <div className="mt-1 text-[12px] text-text-3">
-                აირჩიე modul მარცხენა panel-იდან რომ დაამატო.
-              </div>
-            </div>
           )}
         </main>
 
@@ -488,6 +542,8 @@ function Canvas({
   selectedId,
   onSelect,
   onReorder,
+  onDropNew,
+  onDropTemplate,
   globalStatus
 }: {
   widgets: Widget[];
@@ -495,31 +551,64 @@ function Canvas({
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   onReorder: (ws: Widget[]) => void;
+  onDropNew: (type: WidgetType, targetId: string | null) => void;
+  onDropTemplate: (tplId: string, targetId: string | null) => void;
   globalStatus: string;
 }) {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [paletteDragActive, setPaletteDragActive] = useState(false);
+  const [zoneHover, setZoneHover] = useState(false);
 
-  const onDragStart = (e: React.DragEvent, id: string) => {
+  const isPaletteDrag = (e: React.DragEvent): 'new' | 'template' | null => {
+    const types = e.dataTransfer.types;
+    if (types.includes(DRAG_MIME_NEW)) return 'new';
+    if (types.includes(DRAG_MIME_TEMPLATE)) return 'template';
+    return null;
+  };
+
+  const handlePaletteDrop = (e: React.DragEvent, targetId: string | null) => {
+    const kind = isPaletteDrag(e);
+    if (!kind) return false;
+    const value = e.dataTransfer.getData(kind === 'new' ? DRAG_MIME_NEW : DRAG_MIME_TEMPLATE);
+    if (!value) return false;
+    if (kind === 'new') onDropNew(value as WidgetType, targetId);
+    else onDropTemplate(value, targetId);
+    return true;
+  };
+
+  const onWidgetDragStart = (e: React.DragEvent, id: string) => {
     if (mode !== 'edit') return;
     setDraggingId(id);
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', id);
   };
 
-  const onDragOver = (e: React.DragEvent, id: string) => {
-    if (mode !== 'edit' || !draggingId) return;
+  const onWidgetDragOver = (e: React.DragEvent, id: string) => {
+    if (mode !== 'edit') return;
+    const palette = isPaletteDrag(e);
+    if (!palette && !draggingId) return;
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer.dropEffect = palette ? 'copy' : 'move';
     if (dragOverId !== id) setDragOverId(id);
   };
 
-  const onDrop = (e: React.DragEvent, targetId: string) => {
+  const onWidgetDrop = (e: React.DragEvent, targetId: string) => {
     if (mode !== 'edit') return;
     e.preventDefault();
+    e.stopPropagation();
+    setDragOverId(null);
+
+    // Palette → insert new before target
+    if (handlePaletteDrop(e, targetId)) {
+      setPaletteDragActive(false);
+      setZoneHover(false);
+      return;
+    }
+
+    // Reorder existing
     const src = draggingId;
     setDraggingId(null);
-    setDragOverId(null);
     if (!src || src === targetId) return;
     const srcIdx = widgets.findIndex((w) => w.id === src);
     const tgtIdx = widgets.findIndex((w) => w.id === targetId);
@@ -530,49 +619,134 @@ function Canvas({
     onReorder(next);
   };
 
+  // Container-level: palette drop on empty space → append at end
+  const onContainerDragEnter = (e: React.DragEvent) => {
+    if (mode !== 'edit') return;
+    if (!isPaletteDrag(e)) return;
+    setPaletteDragActive(true);
+  };
+
+  const onContainerDragOver = (e: React.DragEvent) => {
+    if (mode !== 'edit') return;
+    if (!isPaletteDrag(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    if (e.target === e.currentTarget) {
+      if (!zoneHover) setZoneHover(true);
+    } else if (zoneHover) {
+      setZoneHover(false);
+    }
+  };
+
+  const onContainerDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget === e.target) {
+      setPaletteDragActive(false);
+      setZoneHover(false);
+    }
+  };
+
+  const onContainerDrop = (e: React.DragEvent) => {
+    if (mode !== 'edit') return;
+    if (!isPaletteDrag(e)) return;
+    e.preventDefault();
+    handlePaletteDrop(e, null);
+    setPaletteDragActive(false);
+    setZoneHover(false);
+  };
+
+  const showEmptyZone = widgets.length === 0;
+
   return (
     <div
-      className="grid grid-cols-12 gap-3"
-      style={{gridAutoRows: `${ROW_H}px`}}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onSelect(null);
-      }}
+      className={`relative min-h-[50vh] rounded-[12px] transition-colors ${
+        paletteDragActive && mode === 'edit'
+          ? 'border-2 border-dashed border-blue bg-blue-lt/40 p-2'
+          : ''
+      }`}
+      onDragEnter={onContainerDragEnter}
+      onDragOver={onContainerDragOver}
+      onDragLeave={onContainerDragLeave}
+      onDrop={onContainerDrop}
     >
-      {widgets.map((w) => {
-        const isSelected = mode === 'edit' && selectedId === w.id;
-        const isDragOver = dragOverId === w.id && draggingId !== w.id;
-        return (
-          <div
-            key={w.id}
-            draggable={mode === 'edit'}
-            onDragStart={(e) => onDragStart(e, w.id)}
-            onDragOver={(e) => onDragOver(e, w.id)}
-            onDrop={(e) => onDrop(e, w.id)}
-            onDragEnd={() => {
-              setDraggingId(null);
-              setDragOverId(null);
-            }}
-            onClick={(e) => {
-              if (mode !== 'edit') return;
-              e.stopPropagation();
-              onSelect(w.id);
-            }}
-            style={{gridColumn: `span ${w.w}`, gridRow: `span ${w.h}`}}
-            className={`group relative overflow-hidden rounded-[10px] border bg-sur transition-all ${
-              isSelected ? 'border-blue ring-2 ring-blue/30' : 'border-bdr hover:border-bdr-2'
-            } ${isDragOver ? 'border-blue bg-blue-lt' : ''} ${
-              draggingId === w.id ? 'opacity-40' : ''
-            } ${mode === 'edit' ? 'cursor-pointer' : ''}`}
-          >
-            {mode === 'edit' && (
-              <div className="pointer-events-none absolute left-1 top-1 z-10 rounded-md bg-navy/70 px-1 py-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                <GripVertical size={12} className="text-white" />
-              </div>
-            )}
-            <WidgetView widget={w} globalStatus={globalStatus} />
+      <div
+        className="grid grid-cols-12 gap-3"
+        style={{gridAutoRows: `${ROW_H}px`}}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onSelect(null);
+        }}
+      >
+        {widgets.map((w) => {
+          const isSelected = mode === 'edit' && selectedId === w.id;
+          const isDragOver = dragOverId === w.id && draggingId !== w.id;
+          return (
+            <div
+              key={w.id}
+              draggable={mode === 'edit'}
+              onDragStart={(e) => onWidgetDragStart(e, w.id)}
+              onDragOver={(e) => onWidgetDragOver(e, w.id)}
+              onDragLeave={() => {
+                if (dragOverId === w.id) setDragOverId(null);
+              }}
+              onDrop={(e) => onWidgetDrop(e, w.id)}
+              onDragEnd={() => {
+                setDraggingId(null);
+                setDragOverId(null);
+              }}
+              onClick={(e) => {
+                if (mode !== 'edit') return;
+                e.stopPropagation();
+                onSelect(w.id);
+              }}
+              style={{gridColumn: `span ${w.w}`, gridRow: `span ${w.h}`}}
+              className={`group relative overflow-hidden rounded-[10px] border bg-sur transition-all ${
+                isSelected ? 'border-blue ring-2 ring-blue/30' : 'border-bdr hover:border-bdr-2'
+              } ${isDragOver ? 'border-blue ring-2 ring-blue/40 bg-blue-lt' : ''} ${
+                draggingId === w.id ? 'opacity-40' : ''
+              } ${mode === 'edit' ? 'cursor-pointer' : ''}`}
+            >
+              {mode === 'edit' && (
+                <div className="pointer-events-none absolute left-1 top-1 z-10 rounded-md bg-navy/70 px-1 py-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                  <GripVertical size={12} className="text-white" />
+                </div>
+              )}
+              {isDragOver && mode === 'edit' && (
+                <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-blue-lt/80 font-mono text-[11px] font-bold text-blue">
+                  აქ ჩააგდე
+                </div>
+              )}
+              <WidgetView widget={w} globalStatus={globalStatus} />
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Empty-state drop zone */}
+      {showEmptyZone && mode === 'edit' && (
+        <div
+          className={`mt-0 rounded-[12px] border-2 border-dashed p-12 text-center transition-colors ${
+            paletteDragActive
+              ? 'border-blue bg-blue-lt/60'
+              : 'border-bdr bg-sur'
+          }`}
+        >
+          <LayoutDashboard size={36} className="mx-auto mb-3 text-text-3" strokeWidth={1.2} />
+          <div className="text-[14px] font-bold text-navy">
+            {paletteDragActive ? 'ჩააგდე აქ' : 'ცარიელი დესკბორდი'}
           </div>
-        );
-      })}
+          <div className="mt-1 text-[12px] text-text-3">
+            {paletteDragActive
+              ? 'ახალი widget აქ დაემატება'
+              : 'აირჩიე modul მარცხნიდან — **drag-and-drop** ან click.'}
+          </div>
+        </div>
+      )}
+
+      {/* Active drag overlay hint when dashboard has widgets */}
+      {paletteDragActive && !showEmptyZone && mode === 'edit' && zoneHover && (
+        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-[12px] bg-blue-lt/30 font-mono text-[12px] font-bold text-blue">
+          ჩააგდე აქ — widget ბოლოში დაემატება
+        </div>
+      )}
     </div>
   );
 }
