@@ -1,9 +1,10 @@
 'use client';
 
 import {useMemo, useState} from 'react';
+import Link from 'next/link';
 import {DmtPageShell} from '@/components/dmt/page-shell';
 import {ResizableTable} from '@/components/dmt/resizable-table';
-import {Facebook, ExternalLink} from 'lucide-react';
+import {Facebook, ExternalLink, BarChart3} from 'lucide-react';
 
 type FbLead = {
   id: string;
@@ -79,6 +80,14 @@ export default function FacebookLeadsPage() {
       subtitle="Meta Lead Ads-იდან ავტომატურად შემოსული ლიდები — campaign / adset / ad / form მეტადატა"
       searchPlaceholder="ძიება სახელი / email / campaign / form…"
       onQueryChange={setQ}
+      actions={
+        <Link
+          href="/dmt/leads/facebook/analytics"
+          className="inline-flex items-center gap-1.5 rounded-md border border-blue bg-blue px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-navy-2"
+        >
+          <BarChart3 size={14} /> ანალიტიკა
+        </Link>
+      }
     >
       <div className="px-6 py-5 md:px-8">
         <div className="mb-4 grid gap-3 md:grid-cols-5">

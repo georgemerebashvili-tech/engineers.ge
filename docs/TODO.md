@@ -8,6 +8,45 @@
 
 ---
 
+## 🟢 DMT · Facebook Lead Ads — Analytics Dashboard (done 2026-04-21)
+
+Shipped 2026-04-21: `/dmt/leads/facebook/analytics` — live charts + KPIs reading from `public.dmt_fb_leads`. Populated by existing webhook at `/api/dmt/fb-webhook`. Sidebar entry added as sub-item under "1 · ლიდები" (BarChart3 icon).
+
+**რა ველებს ვიღებთ Meta Lead Ads-იდან** (table [dmt_fb_leads](../supabase/migrations/0035_dmt_fb_leads.sql)):
+
+*Webhook direct:*
+- `leadgen_id` (unique, dedupe key)
+- `page_id`, `ad_id`, `adset_id`, `campaign_id`, `form_id`
+- `created_time`
+
+*Graph API enrichment (needs `FB_PAGE_ACCESS_TOKEN`):*
+- `field_data` (JSONB) — ყველა ფორმის ველი + custom questions
+- `full_name`, `phone`, `email` (extracted)
+- `form_name`, `adset_id`, `campaign_id`
+
+*ჩვენი side:*
+- `lead_status` (new / called / scheduled / converted / lost)
+- `assigned_to` (DMT user)
+- `received_at`, `updated_at`
+- `raw` (JSONB) — full Meta payload for schema-future-proofing
+
+**Dashboard widgets:**
+- 5 KPI cards (total, 24h, 7d, 30d, conversion %)
+- Area chart — leads/day last 30 days
+- Pie — status distribution
+- Horizontal bar — funnel (new → converted)
+- Bar — hour-of-day + weekday breakdown
+- Rank cards — TOP campaigns / forms / ads / form-field usage
+- Recent 12 leads feed
+
+**Setup requirements:** Vercel env `FB_VERIFY_TOKEN` + `FB_APP_SECRET` (required), `FB_PAGE_ACCESS_TOKEN` (optional, for enrichment).
+
+- [x] 2026-04-21 — API route `/api/dmt/fb-leads/analytics` — server-side aggregations, 5000-row cap, last-30d seeded days. (done 2026-04-21)
+- [x] 2026-04-21 — Analytics page with recharts (Area/Pie/Bar) + KPI cards + recent activity. (done 2026-04-21)
+- [x] 2026-04-21 — Sidebar sub-item + cross-link button from FB leads table → analytics. (done 2026-04-21)
+
+---
+
 ## 🟡 storyabout.me — Phase 3 (real data + polish)
 
 Phase 1 shipped 2026-04-21: hero headline tile "ბიო" ღილაკი → "storyabout.me"; bio modal-ის ბოლოში გვირგვინი; timeline modal (navy + blue tokens, layered shadows, staggered animations, spine shimmer, hover lifts); hardcoded 5 event defaults. Preview: [public/experiments/storyabout-preview.html](../public/experiments/storyabout-preview.html).
