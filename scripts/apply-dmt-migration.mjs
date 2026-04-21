@@ -38,10 +38,7 @@ try {
     [SQL_PATH.split('/').pop()]
   );
   await c.query('commit');
-  const {rows} = await c.query(
-    "select count(*)::int as n from pg_tables where schemaname='public' and tablename='dmt_users'"
-  );
-  console.log('dmt_users present:', rows[0].n === 1 ? 'YES' : 'NO');
+  console.log('applied ✓', SQL_PATH);
 } catch (e) {
   await c.query('rollback');
   console.error('FAILED:', e.message);
