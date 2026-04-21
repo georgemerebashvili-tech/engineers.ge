@@ -20,6 +20,8 @@ import {
   UsersRound,
   ScrollText,
   LayoutGrid,
+  ClipboardCheck,
+  Handshake,
   type LucideIcon
 } from 'lucide-react';
 
@@ -61,19 +63,21 @@ const SECTIONS: NavSection[] = [
   {
     title: 'ოპერაციები',
     items: [
-      {key: 'invoices', label: 'ინვოისები', href: '/dmt/invoices', icon: FileText, badge: '12'},
       {
         key: 'leads',
-        label: 'ლიდები',
+        label: '1 · ლიდები',
         href: '/dmt/leads',
         icon: Users,
         badge: '47',
         children: [
           {key: 'leads-overview', label: 'Pipeline · მიმოხილვა', href: '/dmt/leads', icon: TrendingUp},
           {key: 'leads-fb', label: 'Facebook ლიდები', href: '/dmt/leads/facebook', icon: Facebook, badge: '18'},
-          {key: 'leads-manual', label: 'ყველა ლიდი · grid', href: '/dmt/leads/manual', icon: Table2}
+          {key: 'leads-manual', label: 'ყველა ლიდი · grid', href: '/dmt/leads/manual', icon: Table2},
+          {key: 'leads-negotiations', label: 'მოლაპარაკებები', href: '/dmt/leads?stage=negotiating', icon: Handshake}
         ]
       },
+      {key: 'inspections', label: '2 · ინსპექტირება', href: '/dmt/inspections', icon: ClipboardCheck, badge: '6'},
+      {key: 'invoices', label: '3 · ინვოისები', href: '/dmt/invoices', icon: FileText, badge: '12'},
       {key: 'inventory', label: 'ინვენტარიზაცია', href: '/dmt/inventory', icon: Package, badge: '284'}
     ]
   },
@@ -175,9 +179,13 @@ export function DmtSidebar({user}: {user?: SidebarUser} = {}) {
       <aside
         style={{width: expanded ? 240 : 56}}
         className={`${
-          expanded ? 'fixed md:sticky' : 'sticky'
+          pinned
+            ? 'sticky'
+            : expanded
+              ? 'fixed md:absolute md:left-0'
+              : 'sticky'
         } top-0 z-30 flex h-screen flex-col border-r border-bdr bg-sur shadow-lg md:shadow-none transition-[width] duration-150 ease-out ${
-          !pinned && hover ? 'shadow-xl' : ''
+          !pinned && hover ? 'md:shadow-xl' : ''
         }`}
         aria-expanded={expanded}
       >
