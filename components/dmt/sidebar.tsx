@@ -19,6 +19,7 @@ import {
   Palette,
   UsersRound,
   ScrollText,
+  LayoutGrid,
   type LucideIcon
 } from 'lucide-react';
 
@@ -40,18 +41,21 @@ type NavItem = {
   icon: LucideIcon;
   badge?: string;
   children?: NavChild[];
+  requireRole?: 'owner' | 'admin+';
 };
 
 type NavSection = {
   title: string;
   items: NavItem[];
+  requireRole?: 'owner' | 'admin+';
 };
 
 const SECTIONS: NavSection[] = [
   {
     title: 'მთავარი',
     items: [
-      {key: 'overview', label: 'მიმოხილვა', href: '/dmt', icon: LayoutDashboard}
+      {key: 'overview', label: 'მიმოხილვა', href: '/dmt', icon: LayoutDashboard},
+      {key: 'dashboards', label: 'დესკბორდები', href: '/dmt/dashboards', icon: LayoutGrid}
     ]
   },
   {
@@ -77,13 +81,14 @@ const SECTIONS: NavSection[] = [
     title: 'კონფიგურაცია',
     items: [
       {key: 'variables', label: 'ცვლადები', href: '/dmt/variables', icon: Palette},
-      {key: 'users', label: 'მომხმარებლები', href: '/dmt/users', icon: UsersRound}
+      {key: 'users', label: 'მომხმარებლები', href: '/dmt/users', icon: UsersRound, requireRole: 'admin+'}
     ]
   },
   {
     title: 'უსაფრთხოება',
+    requireRole: 'admin+',
     items: [
-      {key: 'audit', label: 'audit log', href: '/dmt/audit', icon: ScrollText}
+      {key: 'audit', label: 'audit log', href: '/dmt/audit', icon: ScrollText, requireRole: 'admin+'}
     ]
   },
   {
@@ -131,6 +136,15 @@ export function DmtSidebar({user}: {user?: SidebarUser} = {}) {
     setOpenKeys((prev) => ({...prev, [key]: !prev[key]}));
 
   const expanded = hydrated && (pinned || hover);
+
+  const role = user?.role || 'member';
+  const isPrivileged = role === 'owner' || role === 'admin';
+  const isOwner = role === 'owner';
+  const canSee = (req?: 'owner' | 'admin+') => {
+    if (!req) return true;
+    if (req === 'owner') return isOwner;
+    return isPrivileged;
+  };
 
   const isActive = (href: string) => {
     if (!pathname) return false;
@@ -210,7 +224,10 @@ export function DmtSidebar({user}: {user?: SidebarUser} = {}) {
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-2">
-          {SECTIONS.map((section) => (
+          {SECTIONS.filter((s) => canSee(s.requireRole)).map((section) => {
+            const visibleItems = section.items.filter((i) => canSee(i.requireRole));
+            if (visibleItems.length === 0) return null;
+            return (
             <div key={section.title} className={expanded ? 'mb-3' : 'mb-1'}>
               {expanded && (
                 <div className="px-3 pb-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-text-3">
@@ -218,7 +235,7 @@ export function DmtSidebar({user}: {user?: SidebarUser} = {}) {
                 </div>
               )}
               <ul className="space-y-0.5 px-1.5">
-                {section.items.map((item) => {
+                {visibleItems.map((item) => {
                   const Icon = item.icon;
                   const hasChildren = !!item.children?.length;
                   const isOpen = !!openKeys[item.key];
@@ -317,7 +334,8 @@ export function DmtSidebar({user}: {user?: SidebarUser} = {}) {
                 })}
               </ul>
             </div>
-          ))}
+            );
+          })}
         </nav>
 
         {/* User + exit */}

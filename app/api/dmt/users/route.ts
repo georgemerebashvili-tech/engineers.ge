@@ -19,7 +19,10 @@ export async function GET() {
   if (!isPrivilegedRole(me.role))
     return NextResponse.json({error: 'forbidden'}, {status: 403});
   const users = await listDmtUsers();
-  return NextResponse.json({users});
+  return NextResponse.json({
+    users,
+    me: {id: me.id, email: me.email, role: me.role}
+  });
 }
 
 const PatchBody = z.object({

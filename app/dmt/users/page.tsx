@@ -31,8 +31,11 @@ const STATUS_META: Record<Status, {label: string; color: string; bg: string; bor
   suspended: {label: 'გაყინული', color: 'var(--red)',  bg: 'var(--red-lt)',  border: '#f0b8b4'}
 };
 
+type Me = {id: string; email: string; role: Role};
+
 export default function DmtUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [me, setMe] = useState<Me | null>(null);
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -51,6 +54,7 @@ export default function DmtUsersPage() {
         return;
       }
       setUsers(data.users || []);
+      setMe(data.me || null);
       setError('');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'error');
@@ -106,6 +110,8 @@ export default function DmtUsersPage() {
       setFormBusy(false);
     }
   }
+
+  const isOwner = me?.role === 'owner';
 
   const filtered = users.filter((u) => {
     const t = q.trim().toLowerCase();
@@ -241,18 +247,28 @@ export default function DmtUsersPage() {
                       </div>
                     </td>
                     <td className="px-4 py-2.5">
-                      <select
-                        value={u.role}
-                        onChange={(e) => patch(u.id, {role: e.target.value as Role})}
-                        className="cursor-pointer appearance-none rounded-full border px-2 py-0.5 text-[10.5px] font-semibold focus:outline-none"
-                        style={{color: rm.color, background: rm.bg, borderColor: rm.border}}
-                      >
-                        {(['owner', 'admin', 'member', 'viewer'] as Role[]).map((r) => (
-                          <option key={r} value={r}>
-                            {ROLE_META[r].label}
-                          </option>
-                        ))}
-                      </select>
+                      {isOwner ? (
+                        <select
+                          value={u.role}
+                          onChange={(e) => patch(u.id, {role: e.target.value as Role})}
+                          className="cursor-pointer appearance-none rounded-full border px-2 py-0.5 text-[10.5px] font-semibold focus:outline-none"
+                          style={{color: rm.color, background: rm.bg, borderColor: rm.border}}
+                        >
+                          {(['owner', 'admin', 'member', 'viewer'] as Role[]).map((r) => (
+                            <option key={r} value={r}>
+                              {ROLE_META[r].label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span
+                          className="inline-block rounded-full border px-2 py-0.5 text-[10.5px] font-semibold"
+                          style={{color: rm.color, background: rm.bg, borderColor: rm.border}}
+                          title="role-ის შეცვლა მხოლოდ owner-ს შეუძლია"
+                        >
+                          {rm.label}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-2.5">
                       <select
@@ -275,13 +291,17 @@ export default function DmtUsersPage() {
                       {new Date(u.created_at).toLocaleDateString('en-GB')}
                     </td>
                     <td className="px-4 py-2.5 text-right">
-                      <button
-                        onClick={() => remove(u.id, u.email)}
-                        className="rounded p-1 text-text-3 hover:bg-red-lt hover:text-red"
-                        title="წაშლა"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                      {isOwner && u.id !== me?.id ? (
+                        <button
+                          onClick={() => remove(u.id, u.email)}
+                          className="rounded p-1 text-text-3 hover:bg-red-lt hover:text-red"
+                          title="წაშლა"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      ) : (
+                        <span className="font-mono text-[10px] text-text-3">—</span>
+                      )}
                     </td>
                   </tr>
                 );
@@ -299,10 +319,10 @@ export default function DmtUsersPage() {
 
         <div className="mt-4 flex flex-wrap gap-3 text-[11px] text-text-3">
           <span className="inline-flex items-center gap-1">
-            <ShieldCheck size={12} /> Owner: სრული უფლებები + სხვა owner-ების მართვა
+            <ShieldCheck size={12} /> Owner: სრული უფლებები — role-ის შეცვლა, წაშლა
           </span>
           <span className="inline-flex items-center gap-1">
-            <UserCheck size={12} /> Admin: მომხმარებლების მართვა
+            <UserCheck size={12} /> Admin: name/status-ის ცვლილება, invite — მაგრამ არა წაშლა/role
           </span>
           <span className="inline-flex items-center gap-1">
             <UserX size={12} /> Viewer: მხოლოდ კითხვა
