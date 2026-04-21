@@ -2875,7 +2875,6 @@ function closeSlidePanel() {
 function renderSlideMap(b) {
   const container = document.getElementById('slideMap');
   const coords = getBranchCoords(b);
-  // Clean any prior Leaflet instance
   if (state.slideMap) { try { state.slideMap.remove(); } catch {} state.slideMap = null; }
 
   const dirBtn = document.getElementById('slideDirectionsBtn');
@@ -2889,17 +2888,24 @@ function renderSlideMap(b) {
   }
 
   const [lat, lng] = coords;
-  const label = encodeURIComponent(b.name || '');
   const addrQ = encodeURIComponent(`${b.name}, ${b.address}, ${b.city}, საქართველო`);
 
-  container.innerHTML = `
-    <iframe
-      src="https://maps.google.com/maps?q=${lat},${lng}(${label})&z=15&hl=ka&output=embed"
-      style="width:100%; height:100%; border:0;"
-      loading="lazy"
-      referrerpolicy="no-referrer-when-downgrade"
-      allowfullscreen></iframe>
-  `;
+  container.innerHTML = '';
+  if (typeof L === 'undefined') {
+    container.innerHTML = '<div class="empty-state" style="padding:40px 20px;">რუქა ვერ ჩაიტვირთა</div>';
+  } else {
+    state.slideMap = L.map(container, { preferCanvas: true, zoomControl: true }).setView([lat, lng], 15);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap © CARTO', subdomains: 'abcd', maxZoom: 19,
+    }).addTo(state.slideMap);
+    const color = (typeof STATUS_COLORS !== 'undefined' && STATUS_COLORS[b.status]) || '#0071CE';
+    L.circleMarker([lat, lng], {
+      radius: 9, fillColor: color, color: '#fff', weight: 3, opacity: 1, fillOpacity: 0.95
+    }).addTo(state.slideMap)
+      .bindTooltip(`<b>${escapeHtml(b.alias || '#' + b.id)}</b> — ${escapeHtml((b.name || '').slice(0, 40))}`, { direction: 'top', permanent: false });
+    setTimeout(() => { if (state.slideMap) state.slideMap.invalidateSize(); }, 120);
+    setTimeout(() => { if (state.slideMap) state.slideMap.invalidateSize(); }, 360);
+  }
 
   if (dirBtn) {
     dirBtn.disabled = false;
@@ -3315,15 +3321,23 @@ function setupDetailMap(b) {
   }
 
   const [lat, lng] = coords;
-  const label = encodeURIComponent(b.name || '');
-  container.innerHTML = `
-    <iframe
-      src="https://maps.google.com/maps?q=${lat},${lng}(${label})&z=15&hl=ka&output=embed"
-      style="width:100%; height:100%; border:0;"
-      loading="lazy"
-      referrerpolicy="no-referrer-when-downgrade"
-      allowfullscreen></iframe>
-  `;
+
+  container.innerHTML = '';
+  if (typeof L === 'undefined') {
+    container.innerHTML = '<div class="empty-state">რუქა ვერ ჩაიტვირთა</div>';
+  } else {
+    state.detailMap = L.map(container, { preferCanvas: true, zoomControl: true }).setView([lat, lng], 15);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap © CARTO', subdomains: 'abcd', maxZoom: 19,
+    }).addTo(state.detailMap);
+    const color = (typeof STATUS_COLORS !== 'undefined' && STATUS_COLORS[b.status]) || '#0071CE';
+    L.circleMarker([lat, lng], {
+      radius: 9, fillColor: color, color: '#fff', weight: 3, opacity: 1, fillOpacity: 0.95
+    }).addTo(state.detailMap)
+      .bindTooltip(`<b>${escapeHtml(b.alias || '#' + b.id)}</b> — ${escapeHtml((b.name || '').slice(0, 40))}`, { direction: 'top', permanent: false });
+    setTimeout(() => { if (state.detailMap) state.detailMap.invalidateSize(); }, 120);
+    setTimeout(() => { if (state.detailMap) state.detailMap.invalidateSize(); }, 360);
+  }
 
   if (dirBtn) {
     dirBtn.disabled = false;
