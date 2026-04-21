@@ -235,13 +235,15 @@ export function SazeoDashboard() {
       <main className="mx-auto max-w-[1760px] space-y-3.5 px-5 pb-12 pt-4">
         <div className="grid grid-cols-1 gap-3.5 xl:grid-cols-12">
           <div className="xl:col-span-8">
-            <Card title="Developers">
+            <Card
+              title="Developers"
+              action={<RegisterDeveloperButton onRegistered={load} />}
+            >
               {state && state.developers.length === 0 && (
                 <div className="rounded-md border border-dashed border-[var(--bdr)] bg-[var(--sur-2)] p-8 text-center text-sm text-[var(--text-3)]">
                   ჯერ არცერთი დეველოპერი არ არის რეგისტრირებული.
                   <br />
-                  გააკეთე POST <code className="font-mono text-[11px]">/sazeo/api/developers</code>{' '}
-                  name-ით.
+                  დააჭირე <span className="font-semibold">„+ ახალი“</span> ღილაკს ზემოთ.
                 </div>
               )}
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -413,22 +415,222 @@ export function SazeoDashboard() {
 function Card({
   title,
   subtle,
+  action,
   children
 }: {
   title: string;
   subtle?: string;
+  action?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
     <section className="rounded-[var(--radius)] border border-[var(--bdr)] bg-[var(--sur)] p-4 shadow-[var(--shadow-card)]">
-      <header className="mb-3 flex items-baseline justify-between gap-2">
+      <header className="mb-3 flex items-center justify-between gap-2">
         <h3 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-[var(--text-3)]">
           {title}
         </h3>
-        {subtle && <span className="text-[11px] text-[var(--text-3)]">{subtle}</span>}
+        <div className="flex items-center gap-2">
+          {subtle && <span className="text-[11px] text-[var(--text-3)]">{subtle}</span>}
+          {action}
+        </div>
       </header>
       {children}
     </section>
+  );
+}
+
+function RegisterDeveloperButton({onRegistered}: {onRegistered: () => void}) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const reset = () => {
+    setName('');
+    setEmail('');
+    setError(null);
+    setToken(null);
+    setCopied(false);
+  };
+
+  const close = () => {
+    if (submitting) return;
+    setOpen(false);
+    setTimeout(reset, 200);
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      const r = await fetch('/sazeo/api/developers', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        credentials: 'include',
+        body: JSON.stringify({name: name.trim(), email: email.trim() || null})
+      });
+      const body = await r.json();
+      if (!r.ok) {
+        setError(body?.error ?? `HTTP ${r.status}`);
+      } else {
+        setToken(body.token as string);
+        onRegistered();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'network error');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const copyToken = async () => {
+    if (!token) return;
+    try {
+      await navigator.clipboard.writeText(token);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      /* user can copy manually */
+    }
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="rounded-md bg-[var(--blue)] px-2.5 py-1 font-mono text-[11px] font-medium text-white transition hover:bg-[var(--navy)]"
+      >
+        + ახალი
+      </button>
+      {open && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={close}
+        >
+          <div
+            className="w-full max-w-md rounded-[var(--radius)] border border-[var(--bdr)] bg-[var(--sur)] p-5 shadow-[var(--shadow-modal)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {!token ? (
+              <form onSubmit={submit} className="flex flex-col gap-3">
+                <header className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold">ახალი დეველოპერი</h4>
+                  <button
+                    type="button"
+                    onClick={close}
+                    className="font-mono text-[11px] text-[var(--text-3)] hover:text-[var(--text)]"
+                  >
+                    ✕
+                  </button>
+                </header>
+                <label className="flex flex-col gap-1">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--text-3)]">
+                    სახელი *
+                  </span>
+                  <input
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="rounded-md border border-[var(--bdr)] bg-[var(--sur)] px-2.5 py-1.5 text-sm outline-none focus:border-[var(--blue)]"
+                    placeholder="Argentina Dev"
+                  />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--text-3)]">
+                    GitHub commit email
+                  </span>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="rounded-md border border-[var(--bdr)] bg-[var(--sur)] px-2.5 py-1.5 text-sm outline-none focus:border-[var(--blue)]"
+                    placeholder="dev@example.com"
+                  />
+                  <span className="text-[10px] text-[var(--text-3)]">
+                    ზუსტად ის email, რაც commit-ში უწერია — webhook correlation ამაზე მუშაობს.
+                  </span>
+                </label>
+                {error && (
+                  <div className="rounded border border-red-200 bg-red-50 px-2.5 py-1.5 text-[11px] text-red-700">
+                    {error}
+                  </div>
+                )}
+                <footer className="mt-1 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={close}
+                    disabled={submitting}
+                    className="rounded-md px-3 py-1.5 font-mono text-[11px] text-[var(--text-2)] hover:bg-[var(--sur-2)] disabled:opacity-50"
+                  >
+                    გაუქმება
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting || !name.trim()}
+                    className="rounded-md bg-[var(--blue)] px-3 py-1.5 font-mono text-[11px] font-medium text-white transition hover:bg-[var(--navy)] disabled:opacity-50"
+                  >
+                    {submitting ? 'იქმნება…' : 'რეგისტრაცია'}
+                  </button>
+                </footer>
+              </form>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <header className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold text-emerald-700">
+                    ✓ შექმნილია
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={close}
+                    className="font-mono text-[11px] text-[var(--text-3)] hover:text-[var(--text)]"
+                  >
+                    ✕
+                  </button>
+                </header>
+                <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+                  ⚠️ ეს token მხოლოდ ერთხელ ჩანს. შეინახე ახლავე. სერვერს მხოლოდ sha256
+                  რჩება — დაკარგვის შემთხვევაში ახალი registration საჭიროა.
+                </div>
+                <div className="flex items-center gap-2 rounded-md border border-[var(--bdr)] bg-[var(--sur-2)] p-2">
+                  <code className="flex-1 break-all font-mono text-[11px]">{token}</code>
+                  <button
+                    type="button"
+                    onClick={copyToken}
+                    className="shrink-0 rounded bg-[var(--blue)] px-2 py-1 font-mono text-[10px] font-medium text-white hover:bg-[var(--navy)]"
+                  >
+                    {copied ? 'copied ✓' : 'copy'}
+                  </button>
+                </div>
+                <div className="text-[11px] text-[var(--text-3)]">
+                  <div className="mb-1 font-semibold text-[var(--text-2)]">
+                    დევისთვის გადასაცემი ბრძანება:
+                  </div>
+                  <pre className="overflow-x-auto rounded bg-[var(--sur-2)] p-2 font-mono text-[10px] text-[var(--text)]">
+{`CLAUDE_TRACKER_URL=https://engineers.ge/sazeo \\
+CLAUDE_TRACKER_TOKEN=${token} \\
+  bash dev-setup.sh`}
+                  </pre>
+                </div>
+                <footer className="mt-1 flex items-center justify-end">
+                  <button
+                    type="button"
+                    onClick={close}
+                    className="rounded-md bg-[var(--blue)] px-3 py-1.5 font-mono text-[11px] font-medium text-white hover:bg-[var(--navy)]"
+                  >
+                    დასრულება
+                  </button>
+                </footer>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
