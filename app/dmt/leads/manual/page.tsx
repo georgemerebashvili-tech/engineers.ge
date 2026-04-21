@@ -76,6 +76,11 @@ const SEED: Row[] = [
 const STORE_KEY = 'dmt_manual_leads_v1';
 const EXTRA_COLS_KEY = 'dmt_manual_extra_cols_v1';
 const EXTRA_VALS_KEY = 'dmt_manual_extra_vals_v1';
+const COL_WIDTHS_KEY = 'dmt_manual_col_widths_v1';
+
+// ~10 characters at the grid font — minimum width when user dbl-clicks resize handle
+const MIN_COL_WIDTH = 90;
+const MAX_COL_WIDTH = 640;
 
 type ExtraKind = 'text' | 'number' | 'select';
 
@@ -119,6 +124,8 @@ export default function ManualLeadsPage() {
   const [extraVals, setExtraVals] = useState<ExtraVals>({});
   const [varSets, setVarSets] = useState<VarSet[]>([]);
   const [showAddCol, setShowAddCol] = useState(false);
+  const [colWidths, setColWidths] = useState<Record<string, number>>({});
+  const [resizingKey, setResizingKey] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -128,6 +135,8 @@ export default function ManualLeadsPage() {
       if (ec) setExtraCols(JSON.parse(ec));
       const ev = localStorage.getItem(EXTRA_VALS_KEY);
       if (ev) setExtraVals(JSON.parse(ev));
+      const cw = localStorage.getItem(COL_WIDTHS_KEY);
+      if (cw) setColWidths(JSON.parse(cw));
       setVarSets(loadSets());
     } catch {}
     setHydrated(true);
@@ -139,8 +148,34 @@ export default function ManualLeadsPage() {
       localStorage.setItem(STORE_KEY, JSON.stringify(rows));
       localStorage.setItem(EXTRA_COLS_KEY, JSON.stringify(extraCols));
       localStorage.setItem(EXTRA_VALS_KEY, JSON.stringify(extraVals));
+      localStorage.setItem(COL_WIDTHS_KEY, JSON.stringify(colWidths));
     } catch {}
-  }, [rows, extraCols, extraVals, hydrated]);
+  }, [rows, extraCols, extraVals, colWidths, hydrated]);
+
+  const widthOf = (key: string, fallback: number) => colWidths[key] ?? fallback;
+
+  const startResize = (key: string, startWidth: number) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizingKey(key);
+    const startX = e.clientX;
+    const onMove = (ev: MouseEvent) => {
+      const delta = ev.clientX - startX;
+      const next = Math.min(MAX_COL_WIDTH, Math.max(MIN_COL_WIDTH, startWidth + delta));
+      setColWidths((prev) => ({...prev, [key]: next}));
+    };
+    const onUp = () => {
+      setResizingKey(null);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  const shrinkCol = (key: string) => () => {
+    setColWidths((prev) => ({...prev, [key]: MIN_COL_WIDTH}));
+  };
 
   const addExtraCol = (col: Omit<ExtraCol, 'key'>) => {
     const key = 'x_' + Date.now().toString(36);
@@ -167,8 +202,10 @@ export default function ManualLeadsPage() {
     }));
   };
 
-  const extraWidth = extraCols.reduce((s, c) => s + c.width, 0);
-  const gridTemplate = `40px ${COLS.map((c) => c.width + 'px').join(' ')} ${extraCols.map((c) => c.width + 'px').join(' ')} 44px 40px`;
+  const resolvedColWidth = (c: (typeof COLS)[number]) => widthOf(c.key as string, c.width);
+  const resolvedExtraWidth = (c: ExtraCol) => widthOf(c.key, c.width);
+  const extraWidth = extraCols.reduce((s, c) => s + resolvedExtraWidth(c), 0);
+  const gridTemplate = `40px ${COLS.map((c) => resolvedColWidth(c) + 'px').join(' ')} ${extraCols.map((c) => resolvedExtraWidth(c) + 'px').join(' ')} 44px 40px`;
 
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -236,7 +273,7 @@ export default function ManualLeadsPage() {
   };
 
   const totalContract = filtered.reduce((s, r) => s + (r.contract || 0), 0);
-  const fullWidth = COLS.reduce((s, c) => s + c.width, 0) + extraWidth + 40 + 44 + 40;
+  const fullWidth = COLS.reduce((s, c) => s + resolvedColWidth(c), 0) + extraWidth + 40 + 44 + 40;
 
   return (
     <DmtPageShell
@@ -264,17 +301,24 @@ export default function ManualLeadsPage() {
               <div className="px-2 py-2 font-mono text-[10px] text-text-3">#</div>
               {COLS.map((c) => {
                 const Icon = c.icon;
+                const w = resolvedColWidth(c);
+                const isResizing = resizingKey === (c.key as string);
                 return (
                   <div
                     key={c.key}
-                    className={`px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-text-3 ${
+                    className={`relative px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-text-3 ${
                       c.align === 'right' ? 'text-right' : ''
-                    }`}
+                    } ${isResizing ? 'bg-blue-lt/40' : ''}`}
                   >
-                    <span className="inline-flex items-center gap-1.5">
+                    <span className="inline-flex items-center gap-1.5 truncate">
                       <Icon size={11} strokeWidth={1.8} />
-                      {c.label}
+                      <span className="truncate">{c.label}</span>
                     </span>
+                    <ColResizeHandle
+                      onMouseDown={startResize(c.key as string, w)}
+                      onDoubleClick={shrinkCol(c.key as string)}
+                      active={isResizing}
+                    />
                   </div>
                 );
               })}
@@ -283,10 +327,14 @@ export default function ManualLeadsPage() {
                   ? varSets.find((v) => v.id === c.varSetId)?.name
                   : null;
                 const Icon = c.kind === 'text' ? Type : c.kind === 'number' ? Hash : List;
+                const w = resolvedExtraWidth(c);
+                const isResizing = resizingKey === c.key;
                 return (
                   <div
                     key={c.key}
-                    className="group relative flex items-center justify-between gap-1 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-text-3"
+                    className={`group relative flex items-center justify-between gap-1 px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-text-3 ${
+                      isResizing ? 'bg-blue-lt/40' : ''
+                    }`}
                   >
                     <span className="inline-flex items-center gap-1.5 truncate">
                       <Icon size={11} strokeWidth={1.8} />
@@ -307,6 +355,11 @@ export default function ManualLeadsPage() {
                     >
                       <X size={11} />
                     </button>
+                    <ColResizeHandle
+                      onMouseDown={startResize(c.key, w)}
+                      onDoubleClick={shrinkCol(c.key)}
+                      active={isResizing}
+                    />
                   </div>
                 );
               })}
@@ -350,6 +403,15 @@ export default function ManualLeadsPage() {
                       }`}
                     />
                     <span
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addRow(s);
+                      }}
+                      className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-blue-bd bg-blue-lt px-2 py-1 font-mono text-[10.5px] font-semibold text-blue hover:border-blue hover:bg-blue hover:text-white"
+                    >
+                      <Plus size={11} /> ახალი
+                    </span>
+                    <span
                       className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10.5px] font-semibold"
                       style={{color: st.color, background: st.bg, borderColor: st.border}}
                     >
@@ -362,15 +424,6 @@ export default function ManualLeadsPage() {
                       </span>
                     )}
                     <div className="flex-1" />
-                    <span
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        addRow(s);
-                      }}
-                      className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-bdr bg-sur px-2 py-1 font-mono text-[10.5px] font-semibold text-text-2 hover:border-blue hover:text-blue"
-                    >
-                      <Plus size={11} /> ახალი
-                    </span>
                   </button>
 
                   {!isCollapsed &&
@@ -443,7 +496,7 @@ export default function ManualLeadsPage() {
         </div>
 
         <div className="mt-4 rounded-[10px] border border-bdr bg-sur-2 p-3 text-[11.5px] leading-relaxed text-text-2">
-          <b>💡 ცოცხალი grid:</b> უჯრედი სადაც text-ია — click-ი + რედაქტირება. Status / როლი — dropdown. ცვლილებები ავტომატურად ინახება localStorage-ში (demo). Production-ში: Supabase real-time subscription + optimistic updates.
+          <b>💡 ცოცხალი grid:</b> უჯრედი სადაც text-ია — click-ი + რედაქტირება. Status / როლი — dropdown. <b>სვეტის ზომა:</b> header-ის მარჯვენა კიდეზე drag · ორმაგი click → მინიმუმი (~10 სიმბ.). ცვლილებები ავტომატურად ინახება localStorage-ში.
         </div>
       </div>
     </DmtPageShell>
@@ -547,6 +600,38 @@ function renderCell(
 
 function fmt(n: number) {
   return new Intl.NumberFormat('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(n);
+}
+
+function ColResizeHandle({
+  onMouseDown,
+  onDoubleClick,
+  active
+}: {
+  onMouseDown: (e: React.MouseEvent) => void;
+  onDoubleClick: () => void;
+  active?: boolean;
+}) {
+  return (
+    <span
+      role="separator"
+      aria-orientation="vertical"
+      onMouseDown={onMouseDown}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onDoubleClick();
+      }}
+      className={`group/rh absolute right-0 top-0 z-10 flex h-full w-[6px] cursor-col-resize items-stretch select-none ${
+        active ? 'bg-blue' : ''
+      }`}
+      title="Drag — ზომა · Dbl-click — მინიმუმი"
+    >
+      <span
+        className={`ml-auto h-full w-[2px] transition-colors ${
+          active ? 'bg-blue' : 'bg-transparent group-hover/rh:bg-blue-bd'
+        }`}
+      />
+    </span>
+  );
 }
 
 function renderExtraCell(
