@@ -82,26 +82,26 @@ function BarChart({days}: {days: {label: string; count: number}[]}) {
     <div className="flex h-full flex-col rounded-card border border-bdr bg-sur p-3.5 shadow-card">
       <p className="text-[11px] font-semibold text-text-2">გვერდების ნახვები</p>
       <p className="mt-0.5 text-[10px] text-text-3">ბოლო 7 დღე</p>
-      <div className="relative mt-3 flex h-40 items-end gap-2">
+      <div className="relative mt-5 flex h-40 items-end gap-2">
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-bdr" />
         {days.map((d, i) => {
-          const h = hasData
-            ? Math.max(4, Math.round((d.count / max) * 100))
-            : 4;
           const active = d.count > 0;
+          const h = active ? Math.max(8, Math.round((d.count / max) * 100)) : 6;
           return (
             <div key={i} className="flex flex-1 flex-col items-center gap-1">
               <div className="relative flex w-full flex-1 items-end">
-                {active && (
-                  <span className="absolute -top-4 left-1/2 -translate-x-1/2 font-mono text-[9px] font-semibold text-navy">
-                    {d.count}
-                  </span>
-                )}
+                <span
+                  className={`absolute -top-4 left-1/2 -translate-x-1/2 font-mono text-[9px] font-semibold ${
+                    active ? 'text-navy' : 'text-text-3'
+                  }`}
+                >
+                  {d.count}
+                </span>
                 <div
                   className={`w-full rounded-[4px] transition-all ${
-                    active ? 'bg-blue' : 'bg-bdr'
+                    active ? 'bg-blue opacity-90' : 'bg-sur-2 border border-bdr'
                   }`}
-                  style={{height: `${h}%`, opacity: active ? 0.9 : 0.6}}
+                  style={{height: `${h}%`}}
                   title={`${d.label}: ${d.count}`}
                 />
               </div>
