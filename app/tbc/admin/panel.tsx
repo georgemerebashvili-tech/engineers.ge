@@ -107,6 +107,14 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
   const [newRole, setNewRole] = useState<'admin' | 'user'>('user');
   const [creating, setCreating] = useState(false);
 
+  // company-access modal
+  const [accessUser, setAccessUser] = useState<TbcUser | null>(null);
+  const [accessWildcard, setAccessWildcard] = useState(false);
+  const [accessIds, setAccessIds] = useState<Set<number>>(new Set());
+  const [accessLoading, setAccessLoading] = useState(false);
+  const [accessSaving, setAccessSaving] = useState(false);
+  const [accessSummary, setAccessSummary] = useState<Record<string, {count: number; wildcard: boolean}>>({});
+
   const loadAudit = useCallback(async () => {
     const params = new URLSearchParams();
     params.set('limit', '300');
@@ -280,6 +288,80 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
     if (next === null) return;
     await patchUser(u.id, {email: next.trim()}, next.trim() ? 'ელფოსტა განახლდა' : 'ელფოსტა წაიშალა');
   }
+
+  async function openCompanyAccess(u: TbcUser) {
+    setAccessUser(u);
+    setAccessWildcard(false);
+    setAccessIds(new Set());
+    setAccessLoading(true);
+    try {
+      const r = await fetch(`/api/tbc/users/${u.id}/companies`);
+      if (r.ok) {
+        const b = await r.json();
+        setAccessWildcard(!!b.wildcard);
+        setAccessIds(new Set<number>((b.companyIds || []) as number[]));
+      } else {
+        flashToast('ვერ ჩაიტვირთა');
+      }
+    } finally {
+      setAccessLoading(false);
+    }
+  }
+
+  async function saveCompanyAccess() {
+    if (!accessUser) return;
+    setAccessSaving(true);
+    try {
+      const r = await fetch(`/api/tbc/users/${accessUser.id}/companies`, {
+        method: 'PUT',
+        headers: {'content-type': 'application/json'},
+        body: JSON.stringify({
+          wildcard: accessWildcard,
+          companyIds: accessWildcard ? [] : Array.from(accessIds)
+        })
+      });
+      if (!r.ok) {
+        flashToast('ვერ შეინახა');
+        return;
+      }
+      const count = accessWildcard ? companies.length : accessIds.size;
+      setAccessSummary((prev) => ({
+        ...prev,
+        [accessUser.id]: {count, wildcard: accessWildcard}
+      }));
+      flashToast(
+        accessWildcard
+          ? 'ყველა კომპანიის წვდომა მიანიჭა'
+          : `${count} კომპანიის წვდომა შეინახა`
+      );
+      setAccessUser(null);
+    } finally {
+      setAccessSaving(false);
+    }
+  }
+
+  const loadAccessSummaries = useCallback(async (list: TbcUser[]) => {
+    const nonAdmin = list.filter((u) => u.role === 'user');
+    const results = await Promise.all(
+      nonAdmin.map(async (u) => {
+        try {
+          const r = await fetch(`/api/tbc/users/${u.id}/companies`);
+          if (!r.ok) return null;
+          const b = await r.json();
+          return [u.id, {count: (b.companyIds || []).length, wildcard: !!b.wildcard}] as const;
+        } catch {
+          return null;
+        }
+      })
+    );
+    const map: Record<string, {count: number; wildcard: boolean}> = {};
+    for (const r of results) if (r) map[r[0]] = r[1];
+    setAccessSummary(map);
+  }, []);
+
+  useEffect(() => {
+    if (users.length > 0) loadAccessSummaries(users);
+  }, [users, loadAccessSummaries]);
 
   async function sendResetEmail(u: TbcUser) {
     if (!u.email) {
@@ -542,6 +624,28 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                               >
                                 პაროლი
                               </button>
+                              {u.role === 'user' && (
+                                <button
+                                  onClick={() => openCompanyAccess(u)}
+                                  className="inline-flex items-center gap-1 rounded border border-[#0071CE]/30 bg-white px-2 py-1 font-semibold text-[#0071CE] hover:bg-[#E6F2FB]"
+                                  title="მიანიჭე წვდომა კონკრეტულ კომპანიებზე"
+                                >
+                                  🏢 კომპანიები
+                                  {accessSummary[u.id]?.wildcard ? (
+                                    <span className="ml-0.5 rounded bg-[#0071CE] px-1 py-0 text-[10px] font-bold text-white">
+                                      ALL
+                                    </span>
+                                  ) : accessSummary[u.id]?.count ? (
+                                    <span className="ml-0.5 rounded bg-[#E6F2FB] px-1 py-0 text-[10px] font-bold">
+                                      {accessSummary[u.id].count}
+                                    </span>
+                                  ) : (
+                                    <span className="ml-0.5 rounded bg-red-100 px-1 py-0 text-[10px] font-bold text-red-700">
+                                      0
+                                    </span>
+                                  )}
+                                </button>
+                              )}
                               {!u.is_static && (
                                 <>
                                   <button
@@ -696,6 +800,234 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
           onClose={() => setHelpOpen(false)}
         />
       )}
+
+      {accessUser && (
+        <CompanyAccessModal
+          user={accessUser}
+          companies={companies}
+          wildcard={accessWildcard}
+          selected={accessIds}
+          loading={accessLoading}
+          saving={accessSaving}
+          onToggleWildcard={(v) => {
+            setAccessWildcard(v);
+            if (v) setAccessIds(new Set());
+          }}
+          onToggleCompany={(id) => {
+            setAccessIds((prev) => {
+              const next = new Set(prev);
+              if (next.has(id)) next.delete(id);
+              else next.add(id);
+              return next;
+            });
+          }}
+          onSelectAll={() => setAccessIds(new Set(companies.map((c) => c.id)))}
+          onClear={() => {
+            setAccessIds(new Set());
+            setAccessWildcard(false);
+          }}
+          onClose={() => setAccessUser(null)}
+          onSave={saveCompanyAccess}
+        />
+      )}
+    </div>
+  );
+}
+
+function CompanyAccessModal({
+  user,
+  companies,
+  wildcard,
+  selected,
+  loading,
+  saving,
+  onToggleWildcard,
+  onToggleCompany,
+  onSelectAll,
+  onClear,
+  onClose,
+  onSave
+}: {
+  user: TbcUser;
+  companies: Company[];
+  wildcard: boolean;
+  selected: Set<number>;
+  loading: boolean;
+  saving: boolean;
+  onToggleWildcard: (v: boolean) => void;
+  onToggleCompany: (id: number) => void;
+  onSelectAll: () => void;
+  onClear: () => void;
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  const [q, setQ] = useState('');
+  const filtered = companies.filter((c) => {
+    if (!q.trim()) return true;
+    const t = q.trim().toLowerCase();
+    return (
+      c.name.toLowerCase().includes(t) ||
+      (c.contact_person || '').toLowerCase().includes(t) ||
+      (c.tax_id || '').toLowerCase().includes(t) ||
+      c.type.toLowerCase().includes(t)
+    );
+  });
+
+  const countLabel = wildcard
+    ? 'ყველა კომპანია'
+    : `${selected.size} / ${companies.length} არჩეული`;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div
+        className="flex h-[80vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+          <div>
+            <div className="text-xs uppercase tracking-wide text-slate-500">
+              კომპანიების წვდომა
+            </div>
+            <div className="text-base font-bold text-slate-900">
+              {user.display_name || user.username}{' '}
+              <span className="font-mono text-sm font-normal text-slate-500">
+                ({user.username})
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded border border-slate-200 bg-white px-2.5 py-1 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            ✕
+          </button>
+        </header>
+
+        <div className="border-b border-slate-200 bg-slate-50 px-5 py-3">
+          <label className="flex cursor-pointer items-start gap-2.5">
+            <input
+              type="checkbox"
+              checked={wildcard}
+              onChange={(e) => onToggleWildcard(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[#0071CE]"
+            />
+            <div className="flex-1">
+              <div className="text-sm font-bold text-slate-900">
+                ყველა კომპანიის წვდომა (wildcard)
+              </div>
+              <div className="mt-0.5 text-xs text-slate-500">
+                მომავალში დამატებული კომპანიებიც ავტომატურად ხილული იქნება.
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-2">
+          <input
+            type="text"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="🔍 კომპანიის ძიება…"
+            className="flex-1 rounded border border-slate-200 bg-white px-3 py-1.5 text-sm focus:border-[#0071CE] focus:outline-none"
+            disabled={wildcard}
+          />
+          <button
+            onClick={onSelectAll}
+            disabled={wildcard}
+            className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+          >
+            ყველა
+          </button>
+          <button
+            onClick={onClear}
+            disabled={wildcard && selected.size === 0}
+            className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+          >
+            გასუფთავება
+          </button>
+        </div>
+
+        <div className={`min-h-0 flex-1 overflow-y-auto ${wildcard ? 'pointer-events-none opacity-50' : ''}`}>
+          {loading ? (
+            <div className="px-5 py-10 text-center text-sm text-slate-400">იტვირთება…</div>
+          ) : filtered.length === 0 ? (
+            <div className="px-5 py-10 text-center text-sm text-slate-400">
+              {companies.length === 0 ? 'კომპანიები ჯერ არაა დამატებული' : 'ვერ მოიძებნა'}
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {filtered.map((c) => {
+                const on = selected.has(c.id);
+                return (
+                  <li key={c.id}>
+                    <label className="flex cursor-pointer items-center gap-3 px-5 py-2 hover:bg-slate-50">
+                      <input
+                        type="checkbox"
+                        checked={on || wildcard}
+                        disabled={wildcard}
+                        onChange={() => onToggleCompany(c.id)}
+                        className="h-4 w-4 accent-[#0071CE]"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="truncate text-sm font-semibold text-slate-900">
+                            {c.name}
+                          </span>
+                          <span
+                            className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                              c.type === 'client'
+                                ? 'bg-[#E0F7F3] text-[#008A73]'
+                                : c.type === 'contractor'
+                                  ? 'bg-[#E6F2FB] text-[#0071CE]'
+                                  : c.type === 'supplier'
+                                    ? 'bg-amber-100 text-amber-700'
+                                    : 'bg-slate-100 text-slate-600'
+                            }`}
+                          >
+                            {c.type}
+                          </span>
+                          {!c.active && (
+                            <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">
+                              გამორთული
+                            </span>
+                          )}
+                        </div>
+                        {(c.contact_person || c.tax_id) && (
+                          <div className="mt-0.5 flex gap-3 text-xs text-slate-500">
+                            {c.contact_person && <span>👤 {c.contact_person}</span>}
+                            {c.tax_id && <span className="font-mono">#{c.tax_id}</span>}
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        <footer className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3">
+          <div className="text-xs text-slate-600">
+            <span className="font-semibold">{countLabel}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="rounded border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              გაუქმება
+            </button>
+            <button
+              onClick={onSave}
+              disabled={saving || loading}
+              className="rounded bg-[#0071CE] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#005ca8] disabled:opacity-50"
+            >
+              {saving ? 'ინახება…' : 'შენახვა'}
+            </button>
+          </div>
+        </footer>
+      </div>
     </div>
   );
 }

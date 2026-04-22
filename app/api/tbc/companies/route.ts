@@ -3,6 +3,7 @@ import {z} from 'zod';
 import {getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
 import {writeAudit} from '@/lib/tbc/audit';
+import {getAllowedCompanyIds} from '@/lib/tbc/company-access';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,13 +11,27 @@ export async function GET() {
   const session = await getTbcSession();
   if (!session) return NextResponse.json({error: 'unauthorized'}, {status: 401});
 
-  const res = await supabaseAdmin()
+  const db = supabaseAdmin();
+  let query = db
     .from('tbc_companies')
     .select(
       'id, name, type, contact_person, phone, email, address, tax_id, notes, active, created_at, created_by, updated_at, updated_by'
     )
     .order('name');
 
+  // Admins see everything. Non-admins: filter to their allowed set.
+  if (session.role !== 'admin') {
+    const allowed = await getAllowedCompanyIds(session.uid);
+    if (allowed === null) {
+      // wildcard — no filter applied
+    } else if (allowed.length === 0) {
+      return NextResponse.json({companies: []});
+    } else {
+      query = query.in('id', allowed);
+    }
+  }
+
+  const res = await query;
   if (res.error) return NextResponse.json({error: 'db_error'}, {status: 500});
   return NextResponse.json({companies: res.data || []});
 }

@@ -1,5 +1,5 @@
 import {notFound, redirect} from 'next/navigation';
-import {getTbcSession} from '@/lib/tbc/auth';
+import {canAccessTbcBranch, getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
 import {InvoicePrintButton} from './print-button';
 
@@ -44,15 +44,8 @@ export default async function InvoicePage({
 
   const db = supabaseAdmin();
 
-  if (session.role !== 'admin') {
-    const perms = await db
-      .from('tbc_branch_permissions')
-      .select('branch_id')
-      .eq('user_id', session.uid);
-    const rows = perms.data || [];
-    const seeAll = rows.some((r) => r.branch_id == null);
-    const has = rows.some((r) => r.branch_id === branchId);
-    if (!seeAll && !has) redirect('/tbc/app');
+  if (!(await canAccessTbcBranch(db, session, branchId))) {
+    redirect('/tbc/app');
   }
 
   const bRes = await db

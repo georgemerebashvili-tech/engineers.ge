@@ -1,5 +1,9 @@
 import {NextResponse} from 'next/server';
-import {getTbcSession} from '@/lib/tbc/auth';
+import {
+  branchMatchesTbcSession,
+  getTbcBranchAccess,
+  getTbcSession
+} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
 import {writeAudit, diffBranch} from '@/lib/tbc/audit';
 
@@ -25,18 +29,21 @@ export async function GET() {
   // Per-user visibility: admins see all; users see only assigned ones.
   let branches = res.data || [];
   if (session.role !== 'admin') {
-    const perms = await db
-      .from('tbc_branch_permissions')
-      .select('branch_id')
-      .eq('user_id', session.uid);
-    const allowedIds = new Set<number>();
-    let seeAll = false;
-    (perms.data || []).forEach((r) => {
-      if (r.branch_id == null) seeAll = true;
-      else allowedIds.add(r.branch_id as number);
-    });
+    const {seeAll, allowedIds} = await getTbcBranchAccess(db, session);
     if (!seeAll) {
-      branches = branches.filter((b) => allowedIds.has(b.id as number));
+      branches = branches.filter((b) => {
+        const branchId = Number(b.id);
+        return (
+          allowedIds.has(branchId) ||
+          branchMatchesTbcSession(
+            {
+              dmt_manager: (b.dmt_manager as string | null) || null,
+              tbc_manager: (b.tbc_manager as string | null) || null
+            },
+            session
+          )
+        );
+      });
     }
   }
 

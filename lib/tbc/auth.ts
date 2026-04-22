@@ -14,6 +14,11 @@ export type TbcSession = {
   displayName: string | null;
 };
 
+type TbcResponsibleBranch = {
+  dmt_manager?: string | null;
+  tbc_manager?: string | null;
+};
+
 function secret() {
   const s = process.env.TBC_JWT_SECRET || process.env.AUTH_SECRET;
   if (!s) throw new Error('TBC_JWT_SECRET (or AUTH_SECRET) is not set');
@@ -207,4 +212,98 @@ export async function requireTbcAdmin(): Promise<TbcSession> {
   const s = await requireTbcSession();
   if (s.role !== 'admin') throw new Error('forbidden');
   return s;
+}
+
+function normalizeIdentity(value: string | null | undefined) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function getSessionIdentityAliases(session: TbcSession) {
+  const aliases = new Set<string>();
+  const push = (value: string | null | undefined) => {
+    const normalized = normalizeIdentity(value);
+    if (normalized) aliases.add(normalized);
+  };
+
+  push(session.username);
+  push(session.username.replace(/[._-]+/g, ' '));
+  push(session.displayName);
+
+  return Array.from(aliases);
+}
+
+function matchesIdentity(value: string | null | undefined, aliases: string[]) {
+  const normalizedValue = normalizeIdentity(value);
+  if (!normalizedValue) return false;
+
+  const valueTokens = new Set(normalizedValue.split(' ').filter(Boolean));
+  return aliases.some((alias) => {
+    if (!alias) return false;
+    if (alias === normalizedValue) return true;
+    if (alias.length >= 3 && (normalizedValue.includes(alias) || alias.includes(normalizedValue))) {
+      return true;
+    }
+
+    const aliasTokens = alias.split(' ').filter(Boolean);
+    return aliasTokens.length > 1 && aliasTokens.every((token) => valueTokens.has(token));
+  });
+}
+
+export function branchMatchesTbcSession(
+  branch: TbcResponsibleBranch,
+  session: TbcSession
+) {
+  const aliases = getSessionIdentityAliases(session);
+  if (aliases.length === 0) return false;
+
+  return (
+    matchesIdentity(branch.dmt_manager, aliases) ||
+    matchesIdentity(branch.tbc_manager, aliases)
+  );
+}
+
+export async function getTbcBranchAccess(
+  db: ReturnType<typeof supabaseAdmin>,
+  session: TbcSession
+) {
+  if (session.role === 'admin') {
+    return {seeAll: true, allowedIds: new Set<number>()};
+  }
+
+  const perms = await db
+    .from('tbc_branch_permissions')
+    .select('branch_id')
+    .eq('user_id', session.uid);
+  const allowedIds = new Set<number>();
+  let seeAll = false;
+
+  for (const row of perms.data || []) {
+    if (row.branch_id == null) seeAll = true;
+    else allowedIds.add(row.branch_id as number);
+  }
+
+  return {seeAll, allowedIds};
+}
+
+export async function canAccessTbcBranch(
+  db: ReturnType<typeof supabaseAdmin>,
+  session: TbcSession,
+  branchId: number
+) {
+  const {seeAll, allowedIds} = await getTbcBranchAccess(db, session);
+  if (seeAll || allowedIds.has(branchId)) return true;
+
+  const branch = await db
+    .from('tbc_branches')
+    .select('id, dmt_manager, tbc_manager')
+    .eq('id', branchId)
+    .maybeSingle<TbcResponsibleBranch & {id: number}>();
+
+  if (!branch.data) return false;
+  return branchMatchesTbcSession(branch.data, session);
 }

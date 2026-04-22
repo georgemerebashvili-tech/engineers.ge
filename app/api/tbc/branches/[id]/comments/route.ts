@@ -1,25 +1,10 @@
 import {NextResponse} from 'next/server';
 import {z} from 'zod';
-import {getTbcSession} from '@/lib/tbc/auth';
+import {canAccessTbcBranch, getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
 import {writeAudit, truncate} from '@/lib/tbc/audit';
 
 export const dynamic = 'force-dynamic';
-
-async function ensureBranchVisible(
-  db: ReturnType<typeof supabaseAdmin>,
-  session: {uid: string; role: 'admin' | 'user'},
-  branchId: number
-) {
-  if (session.role === 'admin') return true;
-  const perms = await db
-    .from('tbc_branch_permissions')
-    .select('branch_id')
-    .eq('user_id', session.uid);
-  const rows = perms.data || [];
-  if (rows.some((r) => r.branch_id == null)) return true;
-  return rows.some((r) => r.branch_id === branchId);
-}
 
 export async function GET(
   _req: Request,
@@ -34,7 +19,7 @@ export async function GET(
     return NextResponse.json({error: 'bad_request'}, {status: 400});
 
   const db = supabaseAdmin();
-  if (!(await ensureBranchVisible(db, session, branchId)))
+  if (!(await canAccessTbcBranch(db, session, branchId)))
     return NextResponse.json({error: 'forbidden'}, {status: 403});
 
   const res = await db
@@ -76,7 +61,7 @@ export async function POST(
     return NextResponse.json({error: 'bad_request'}, {status: 400});
 
   const db = supabaseAdmin();
-  if (!(await ensureBranchVisible(db, session, branchId)))
+  if (!(await canAccessTbcBranch(db, session, branchId)))
     return NextResponse.json({error: 'forbidden'}, {status: 403});
 
   const ins = await db
