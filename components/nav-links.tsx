@@ -14,13 +14,6 @@ export function NavLinks() {
     <>
       <nav className="hidden items-center gap-4 md:flex">
         <Link
-          href="/leads"
-          className="inline-flex h-7 items-center gap-1 rounded-md border border-navy bg-navy px-2.5 text-[11.5px] font-bold uppercase tracking-wider text-white transition-colors hover:bg-navy-2"
-          title="Leads CRM — ანგარიშის საჭიროა"
-        >
-          Leads
-        </Link>
-        <Link
           href="/admin"
           className="text-xs font-semibold text-text-2 transition-colors hover:text-blue"
         >

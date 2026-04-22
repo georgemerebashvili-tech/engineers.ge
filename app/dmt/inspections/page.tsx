@@ -272,18 +272,10 @@ export default function InspectionsPage() {
         {/* Pipeline flow */}
         <div className="mb-5 flex flex-wrap items-center gap-2 rounded-[10px] border border-bdr bg-sur p-3 text-[11.5px]">
           <span className="font-mono text-[9.5px] font-bold uppercase tracking-[0.08em] text-text-3">flow</span>
-          <Link href="/dmt/leads" className="rounded-md bg-sur-2 px-2 py-1 font-semibold text-text-2 hover:bg-blue-lt hover:text-blue">
-            1 · ლიდი
-          </Link>
-          <ChevronRight size={12} className="text-text-3" />
-          <Link href="/dmt/leads?stage=negotiating" className="rounded-md bg-sur-2 px-2 py-1 font-semibold text-text-2 hover:bg-blue-lt hover:text-blue">
-            მოლაპარაკება
-          </Link>
-          <ChevronRight size={12} className="text-text-3" />
-          <span className="rounded-md bg-blue-lt px-2 py-1 font-semibold text-blue">2 · ინსპექტირება</span>
+          <span className="rounded-md bg-blue-lt px-2 py-1 font-semibold text-blue">1 · ინსპექტირება</span>
           <ChevronRight size={12} className="text-text-3" />
           <Link href="/dmt/invoices" className="rounded-md bg-sur-2 px-2 py-1 font-semibold text-text-2 hover:bg-blue-lt hover:text-blue">
-            3 · ინვოისი
+            2 · ინვოისი
           </Link>
         </div>
 

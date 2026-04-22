@@ -7,26 +7,20 @@ import {
   Pin,
   PinOff,
   FileText,
-  Users,
   Package,
   Settings,
   LogOut,
   LayoutDashboard,
   ChevronRight,
-  Facebook,
-  Table2,
-  TrendingUp,
   Palette,
   UsersRound,
   ScrollText,
   LayoutGrid,
   ClipboardCheck,
-  Handshake,
   Building2,
   Boxes,
   Factory,
   Megaphone,
-  BarChart3,
   type LucideIcon
 } from 'lucide-react';
 
@@ -35,7 +29,6 @@ const OPEN_KEY = 'dmt_sidebar_open_keys';
 
 // nav-item-key → localStorage key for count (undefined = server-side)
 const LS_COUNT_KEYS: Record<string, string> = {
-  leads:         'dmt_leads_v1',
   announcements: 'dmt_announcements_v1',
   inspections:   'dmt_inspections_v1',
 };
@@ -57,15 +50,6 @@ function useLiveCounts(): LiveCounts {
       }
     }
     setCounts(next);
-
-    fetch('/api/dmt/counts')
-      .then((r) => r.ok ? r.json() : null)
-      .then((d) => {
-        if (d && typeof d.fbLeads === 'number') {
-          setCounts((prev) => ({...prev, 'leads-fb': d.fbLeads}));
-        }
-      })
-      .catch(() => {});
   }, []);
 
   return counts;
@@ -106,21 +90,8 @@ const SECTIONS: NavSection[] = [
   {
     title: 'ოპერაციები',
     items: [
-      {
-        key: 'leads',
-        label: '1 · ლიდები',
-        href: '/dmt/leads',
-        icon: Users,
-        children: [
-          {key: 'leads-overview', label: 'Pipeline · მიმოხილვა', href: '/dmt/leads', icon: TrendingUp},
-          {key: 'leads-fb', label: 'Facebook ლიდები', href: '/dmt/leads/facebook', icon: Facebook},
-          {key: 'leads-fb-analytics', label: 'FB ანალიტიკა', href: '/dmt/leads/facebook/analytics', icon: BarChart3},
-          {key: 'leads-manual', label: 'ყველა ლიდი · grid', href: '/dmt/leads/manual', icon: Table2},
-          {key: 'leads-negotiations', label: 'მოლაპარაკებები', href: '/dmt/leads?stage=negotiating', icon: Handshake}
-        ]
-      },
-      {key: 'inspections', label: '2 · ინსპექტირება', href: '/dmt/inspections', icon: ClipboardCheck},
-      {key: 'invoices', label: '3 · ინვოისები', href: '/dmt/invoices', icon: FileText},
+      {key: 'inspections', label: '1 · ინსპექტირება', href: '/dmt/inspections', icon: ClipboardCheck},
+      {key: 'invoices', label: '2 · ინვოისები', href: '/dmt/invoices', icon: FileText},
       {key: 'announcements', label: 'განცხადებები', href: '/dmt/announcements', icon: Megaphone},
       {
         key: 'inventory',
@@ -144,7 +115,6 @@ const SECTIONS: NavSection[] = [
     title: 'კონფიგურაცია',
     items: [
       {key: 'variables', label: 'ცვლადები', href: '/dmt/variables', icon: Palette},
-      {key: 'fb-setup', label: 'Facebook setup', href: '/dmt/leads/facebook/setup', icon: Facebook, requireRole: 'admin+'},
       {key: 'users', label: 'მომხმარებლები', href: '/dmt/users', icon: UsersRound, requireRole: 'admin+'}
     ]
   },
@@ -170,7 +140,7 @@ export function DmtSidebar({user}: {user?: SidebarUser} = {}) {
   const [pinned, setPinned] = useState(false);
   const [hover, setHover] = useState(false);
   const [hydrated, setHydrated] = useState(false);
-  const [openKeys, setOpenKeys] = useState<Record<string, boolean>>({leads: true});
+  const [openKeys, setOpenKeys] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     try {
@@ -218,7 +188,6 @@ export function DmtSidebar({user}: {user?: SidebarUser} = {}) {
   const isActive = (href: string) => {
     if (!pathname) return false;
     if (href === '/dmt') return pathname === '/dmt';
-    if (href === '/dmt/leads') return pathname === '/dmt/leads';
     return pathname === href || pathname.startsWith(href + '/');
   };
 

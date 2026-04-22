@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platform Governance — Sazeo Platform</title>
+<style>
+:root {
+  --primary: #1565C0;
+  --primary-dark: #0D47A1;
+  --primary-light: #E3F2FD;
+  --surface: #FFFFFF;
+  --surface-alt: #F7F9FC;
+  --border: #E1E7EF;
+  --text: #1A2332;
+  --text-muted: #5A6B80;
+  --text-dim: #8A98AC;
+  --success: #2E7D32;
+  --success-bg: #E8F5E9;
+  --warning: #E6A100;
+  --warning-bg: #FFF8E1;
+  --info: #0277BD;
+  --info-bg: #E1F5FE;
+  --error: #C62828;
+  --error-bg: #FFEBEE;
+  --purple: #6A1B9A;
+  --purple-bg: #F3E5F5;
+  --orange: #E65100;
+  --orange-bg: #FFF3E0;
+  --teal: #00695C;
+  --teal-bg: #E0F2F1;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font: 13px/1.6 'Noto Sans Georgian', 'Inter', -apple-system, sans-serif;
+  color: var(--text); background: var(--surface-alt);
+}
+.page { max-width: 1100px; margin: 0 auto; padding: 32px 28px 80px; }
+
+.hero {
+  background: linear-gradient(135deg, #00695C 0%, #004D40 100%);
+  color: #fff; padding: 32px 36px; border-radius: var(--radius-md); margin-bottom: 24px;
+}
+.hero h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.hero .sub { font-size: 13px; opacity: 0.85; margin-bottom: 16px; line-height: 1.5; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 999px; font-size: 11px; }
+
+.toc {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 16px 20px; margin-bottom: 24px;
+}
+.toc-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 10px; }
+.toc-list { display: flex; flex-direction: column; gap: 4px; }
+.toc-list a { color: var(--primary); text-decoration: none; font-size: 12.5px; }
+.toc-list a:hover { text-decoration: underline; }
+.toc-list span { color: var(--text-dim); font-size: 11px; font-family: monospace; margin-right: 6px; }
+
+section { margin-bottom: 36px; scroll-margin-top: 16px; }
+h2 {
+  font-size: 16px; font-weight: 700; color: var(--text);
+  padding-bottom: 8px; border-bottom: 2px solid var(--border);
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+h2 .sec-tag {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 2px 8px; border-radius: 4px; font-family: monospace; flex-shrink: 0;
+}
+h3 { font-size: 13.5px; font-weight: 700; color: var(--text); margin: 18px 0 10px; }
+p { font-size: 13px; color: var(--text); margin-bottom: 10px; line-height: 1.65; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 16px 20px; margin-bottom: 12px;
+}
+.card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.card-id { font-family: monospace; font-size: 12px; font-weight: 700; color: var(--primary); background: var(--primary-light); padding: 2px 8px; border-radius: 4px; }
+.card-title { font-size: 14px; font-weight: 700; }
+.card-body { font-size: 12.5px; color: var(--text); line-height: 1.65; }
+.card-body code { background: var(--surface-alt); color: var(--primary-dark); padding: 1px 6px; border-radius: 3px; font-family: monospace; font-size: 11.5px; }
+.card-note { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 11px; color: var(--text-dim); font-family: monospace; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10.5px; font-weight: 600; font-family: monospace; text-transform: uppercase; letter-spacing: 0.4px; }
+.badge.locked { background: var(--success-bg); color: var(--success); border: 1px solid #9DDCBA; }
+.badge.open { background: var(--warning-bg); color: var(--warning); border: 1px solid #F5D06E; }
+.badge.new { background: var(--info-bg); color: var(--info); border: 1px solid #81C7E0; }
+.badge.critical { background: var(--error-bg); color: var(--error); border: 1px solid #FFCDD2; }
+
+.flow {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 18px 22px; margin-bottom: 14px; overflow-x: auto;
+}
+.flow-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 10px; }
+pre { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 1.7; color: var(--text); white-space: pre; }
+pre .c  { color: var(--text-dim); }
+pre .k  { color: var(--primary); font-weight: 600; }
+pre .s  { color: var(--success); }
+pre .w  { color: var(--warning); }
+pre .e  { color: var(--error); }
+pre .t  { color: var(--teal); font-weight: 600; }
+pre .p  { color: var(--purple); font-weight: 600; }
+
+.step-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.step { display: flex; gap: 12px; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; }
+.step-num { width: 24px; height: 24px; border-radius: 999px; background: var(--primary); color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.step.danger .step-num { background: var(--error); }
+.step.success .step-num { background: var(--success); }
+.step-body { flex: 1; font-size: 12.5px; }
+.step-body strong { display: block; margin-bottom: 3px; }
+.step-body code { background: var(--surface-alt); color: var(--primary-dark); padding: 1px 5px; border-radius: 3px; font-family: monospace; font-size: 11.5px; }
+
+.schema-table { width: 100%; border-collapse: collapse; font-size: 12px; background: var(--surface); border-radius: var(--radius-md); overflow: hidden; }
+.schema-table th { background: var(--surface-alt); color: var(--text-muted); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+.schema-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.schema-table tr:last-child td { border-bottom: none; }
+.schema-table .col-name { font-family: monospace; font-size: 12px; color: var(--primary-dark); font-weight: 600; }
+.schema-table .col-type { font-family: monospace; font-size: 11px; color: var(--text-muted); }
+.schema-table .pk { background: var(--warning-bg); }
+.schema-table .fk { background: var(--info-bg); }
+
+.alert { padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 14px; font-size: 12.5px; display: flex; gap: 10px; align-items: flex-start; }
+.alert-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+.alert.warning { background: var(--warning-bg); border: 1px solid #F5D06E; color: #7A4E00; }
+.alert.info    { background: var(--info-bg);    border: 1px solid #81C7E0; color: #014F7A; }
+.alert.error   { background: var(--error-bg);   border: 1px solid #FFCDD2; color: var(--error); }
+.alert.success { background: var(--success-bg); border: 1px solid #9DDCBA; color: var(--success); }
+.alert.teal    { background: var(--teal-bg);    border: 1px solid #80CBC4; color: var(--teal); }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+@media (max-width: 750px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+
+.tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.tag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; border: 1px solid; }
+.tag.green  { background: var(--success-bg); color: var(--success); border-color: #9DDCBA; }
+.tag.blue   { background: var(--primary-light); color: var(--primary); border-color: #90CAF9; }
+.tag.orange { background: var(--orange-bg); color: var(--orange); border-color: #FFCC80; }
+.tag.red    { background: var(--error-bg); color: var(--error); border-color: #FFCDD2; }
+.tag.teal   { background: var(--teal-bg); color: var(--teal); border-color: #80CBC4; }
+
+.footer { text-align: center; padding: 28px 0 0; color: var(--text-dim); font-size: 11.5px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ─── HERO ─── -->
+  <div class="hero">
+    <h1>Platform Governance — Sazeo Platform</h1>
+    <div class="sub">
+      Demo/staging environment · Auto-diagnostics · Personal user settings ·
+      GDPR right-to-erasure · Observability &amp; traceability
+    </div>
+    <div class="hero-meta">
+      <span class="pill"><strong>Status:</strong> Draft → Locked</span>
+      <span class="pill"><strong>Author:</strong> Claude (CTO)</span>
+      <span class="pill"><strong>Date:</strong> 2026-04-23</span>
+      <span class="pill"><strong>Topics:</strong> 5 domains</span>
+    </div>
+  </div>
+
+  <!-- ─── TOC ─── -->
+  <div class="toc">
+    <div class="toc-title">სარჩევი</div>
+    <div class="toc-list">
+      <div><a href="#s1"><span>01</span>Demo / Staging environment — live DB-ით გამართვა</a></div>
+      <div><a href="#s2"><span>02</span>Auto-diagnostics — თვით-დიაგნოსტიკა</a></div>
+      <div><a href="#s3"><span>03</span>Personal user settings — პირადი ნასტროიკა</a></div>
+      <div><a href="#s4"><span>04</span>GDPR Right-to-Erasure — მომხმარებლის ამოშლა</a></div>
+      <div><a href="#s5"><span>05</span>Observability &amp; Traceability — ყველაფრის ტრეკინგი</a></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       S1 — DEMO / STAGING
+  ══════════════════════════════════════════════════════ -->
+  <section id="s1">
+    <h2>
+      <span class="sec-tag" style="background:var(--orange-bg);color:var(--orange)">01</span>
+      Demo / Staging Environment — live DB-ით გამართვა
+    </h2>
+
+    <p>სისტემა <strong>demo რეჟიმში უნდა მუშაობდეს ნამდვილ (seed) მონაცემებთან</strong> — არა mock-ებთან — სანამ production-ში ეშვება. ეს ნიშნავს: staging-ი production-ის 1:1 კოპია, seed data-ით. Feature production-ში მხოლოდ staging გავლის შემდეგ.</p>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">🧪</span><span class="card-title">Staging</span></div>
+        <div class="card-body">
+          <strong>ცალკე DB</strong> — production-ის schema clone + seed data (realistic, not random).<br>
+          Real Firebase project (staging). Real AWS S3 bucket (staging-prefix).<br>
+          Feature flags off by default — ჩართვა staging-ზე პირველ.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">🎭</span><span class="card-title">Demo tenant</span></div>
+        <div class="card-body">
+          Staging-ზე ცალკე org: <code>org_demo</code> — pre-populated devices, alerts, reports.<br>
+          Demo user: <code>demo@sazeo.io / Demo1234!</code>. Reset-ი — ყოველ 24h cron job-ი. Public-ი — ანუ ნებისმიერს შეუძლია demo-ს ნახვა.
+        </div>
+      </div>
+    </div>
+
+    <h3>Promote-to-production workflow</h3>
+    <div class="step-list">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Feature branch → staging auto-deploy</strong>
+          GitHub Actions: merge to <code>dev</code> → staging deploy automatic. No manual step.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Staging smoke tests</strong>
+          Auto-run: <code>npm run test:e2e:staging</code> — 20+ critical path tests against staging URL. If fail → deploy blocked, Slack alert.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Demo validation (manual)</strong>
+          Dev logs into demo tenant, tests feature manually. Documents "tested at staging: ✓" on PR.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>CTO approval → merge to main → production</strong>
+          Production deploy gated by CTO PR approval. TypeORM migration auto-runs before app starts.
+        </div>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-title">Environment matrix</div>
+      <pre>
+  <span class="c">env       branch    URL                    DB               seed?  reset?</span>
+  <span class="s">local     any       localhost:3000/4000    local postgres   ✓      manual</span>
+  <span class="w">staging   dev       staging.sazeo.io       staging postgres  ✓      on-deploy</span>
+  <span class="k">demo      dev       demo.sazeo.io          staging postgres  ✓      daily 04:00</span>
+  <span class="t">prod      main      sazeo.io               prod postgres     ✗      never</span></pre>
+    </div>
+
+    <div class="alert warning">
+      <span class="alert-icon">⚠</span>
+      <div><strong>Production DB-ი staging-ზე არ გამოიყენება.</strong> ორი სხვადასხვა Postgres instance. Prod credentials-ი staging-ში არ ჩნდება. <code>DATABASE_URL</code> env var per-environment.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-id">PG-001</span><span class="card-title">Demo reset cron</span><span class="badge locked">Locked</span></div>
+      <div class="card-body">
+        <code>0 4 * * * node scripts/reset-demo-tenant.ts</code> — truncates demo tenant tables, re-seeds from <code>seeds/demo-data.ts</code>. Demo user password reset included. Log to CloudWatch.
+      </div>
+      <div class="card-note">Seeds: 3 demo buildings · 12 devices · 48h of fake sensor data · 5 unresolved alerts · 3 reports</div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       S2 — AUTO-DIAGNOSTICS
+  ══════════════════════════════════════════════════════ -->
+  <section id="s2">
+    <h2>
+      <span class="sec-tag" style="background:var(--teal-bg);color:var(--teal)">02</span>
+      Auto-Diagnostics — თვით-დიაგნოსტიკა
+    </h2>
+
+    <p>სიტემა <strong>თვითონ ადევნებს თვალყურს საკუთარ ჯანმრთელობას</strong>. ამას ეძახიან health check — სამ სიღრმეზე:</p>
+
+    <div class="three-col">
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">🟢</span><span class="card-title">Shallow</span></div>
+        <div class="card-body">
+          <code>GET /health</code><br><br>
+          Process alive? — 200 OK.<br>
+          Load balancer / uptime monitor-ისთვის. &lt;5ms response.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">🔵</span><span class="card-title">Deep</span></div>
+        <div class="card-body">
+          <code>GET /health/deep</code><br><br>
+          DB ping · Redis ping · S3 list · MQTT broker reachable. Per-component status.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">🧬</span><span class="card-title">Diagnostic</span></div>
+        <div class="card-body">
+          <code>GET /health/diagnostic</code><br><br>
+          Full system self-test: data integrity · migration status · queue depth · auth provider.
+        </div>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-title">Deep health response shape</div>
+      <pre>
+  <span class="k">GET</span> /health/deep
+
+  {
+    status:    <span class="s">"ok"</span> | <span class="w">"degraded"</span> | <span class="e">"down"</span>,
+    timestamp: <span class="s">"2026-04-23T10:00:00Z"</span>,
+    version:   <span class="s">"1.2.3"</span>,
+    uptime:    <span class="w">3600</span>,
+    checks: {
+      postgres:  { status: <span class="s">"ok"</span>,       latencyMs: <span class="w">4</span>  },
+      redis:     { status: <span class="s">"ok"</span>,       latencyMs: <span class="w">1</span>  },
+      s3:        { status: <span class="w">"degraded"</span>, latencyMs: <span class="w">850</span>, note: <span class="s">"high latency"</span> },
+      mqtt:      { status: <span class="s">"ok"</span>,       latencyMs: <span class="w">12</span> },
+      firebase:  { status: <span class="s">"ok"</span>,       latencyMs: <span class="w">88</span> }
+    }
+  }
+
+  <span class="c">HTTP 200 → ok | HTTP 207 → degraded | HTTP 503 → down</span></pre>
+    </div>
+
+    <h3>Diagnostic-level checks</h3>
+    <div class="step-list">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Migration status</strong> — <code>typeorm migration:show</code> equivalent — runs pending migrations count. If &gt;0 → <code>warning</code>.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Orphan tenancy check</strong> — spot-check 10 random org_access_grants: grantor + grantee orgs exist and are active. Broken FK = data integrity issue.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Queue depth</strong> — SQS/BullMQ queue depth. If &gt;1000 messages stale &gt;5min → <code>degraded</code>.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Expired invites cleanup</strong> — count expired pending invites. If &gt;500 → triggers background job. Diagnostic-ი არ ბლოკავს — ატყობინებს.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>Disk / memory</strong> — container memory usage vs limit. &gt;85% → <code>warning</code>. &gt;95% → <code>critical</code>.
+        </div>
+      </div>
+    </div>
+
+    <div class="alert teal">
+      <span class="alert-icon">🩺</span>
+      <div><strong>Auto-diagnostic runs:</strong> load balancer-ი shallow-ს 30s-ში ერთხელ. CloudWatch-ი deep-ს 1min-ში ერთხელ. Diagnostic-ი — deploy-ის შემდეგ ავტო, შემდეგ კვირაში ერთხელ cron.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-id">PG-002</span><span class="card-title">/health/deep auth — internal token</span><span class="badge locked">Locked</span></div>
+      <div class="card-body">
+        <code>/health</code> — public (no auth).<br>
+        <code>/health/deep</code> — <code>X-Internal-Token</code> header, value from env <code>HEALTH_SECRET</code>. Load balancer passes it; public internet-ი ვერ გამოიყენებს.<br>
+        <code>/health/diagnostic</code> — <code>system_admin</code> JWT or internal token.
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       S3 — PERSONAL SETTINGS
+  ══════════════════════════════════════════════════════ -->
+  <section id="s3">
+    <h2>
+      <span class="sec-tag" style="background:var(--purple-bg);color:var(--purple)">03</span>
+      Personal User Settings — პირადი ნასტროიკა
+    </h2>
+
+    <p>ყველა user-ს აქვს <strong>პირადი პარამეტრები</strong>, რომლებიც org-ისგან დამოუკიდებელია. ეს ნიშნავს: გიორგი TBC-ში და Silknet-ში განსხვავებული UI preference-ებით შეიძლება მუშაობდეს.</p>
+
+    <div class="two-col">
+      <div>
+        <h3>Global preferences (user-level)</h3>
+        <div class="card">
+          <div class="card-body">
+            <ul style="margin-left:16px;display:flex;flex-direction:column;gap:5px">
+              <li><strong>timezone</strong> — IANA timezone string (<code>Asia/Tbilisi</code>)</li>
+              <li><strong>locale</strong> — <code>ka-GE</code>, <code>en-US</code>, <code>de-DE</code>…</li>
+              <li><strong>theme</strong> — <code>light</code> | <code>dark</code> | <code>system</code></li>
+              <li><strong>date_format</strong> — <code>DD/MM/YYYY</code> vs <code>MM/DD/YYYY</code></li>
+              <li><strong>notification_channel</strong> — email / push / both / none</li>
+              <li><strong>default_org_id</strong> — სად იხსნება session login-ზე</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3>Per-org preferences (context-level)</h3>
+        <div class="card">
+          <div class="card-body">
+            <ul style="margin-left:16px;display:flex;flex-direction:column;gap:5px">
+              <li><strong>dashboard_layout</strong> — JSON blob (widget positions)</li>
+              <li><strong>table_columns</strong> — per-table visible columns + order</li>
+              <li><strong>alert_filter</strong> — default severity filter</li>
+              <li><strong>sidebar_pinned</strong> — pinned menu items</li>
+              <li><strong>report_format</strong> — PDF vs XLSX default</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3>DB Schema</h3>
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+      <table class="schema-table">
+        <tr><th>column</th><th>type</th><th>note</th></tr>
+        <tr class="pk"><td class="col-name">id</td><td class="col-type">uuid PK</td><td class="col-note"></td></tr>
+        <tr class="fk"><td class="col-name">user_id</td><td class="col-type">uuid FK → users UNIQUE</td><td class="col-note">one row per user (global prefs)</td></tr>
+        <tr><td class="col-name">timezone</td><td class="col-type">varchar(64)</td><td class="col-note">default: 'Asia/Tbilisi'</td></tr>
+        <tr><td class="col-name">locale</td><td class="col-type">varchar(10)</td><td class="col-note">default: 'ka-GE'</td></tr>
+        <tr><td class="col-name">theme</td><td class="col-type">enum</td><td class="col-note">light | dark | system</td></tr>
+        <tr><td class="col-name">date_format</td><td class="col-type">varchar(20)</td><td class="col-note">DD/MM/YYYY</td></tr>
+        <tr><td class="col-name">notification_channel</td><td class="col-type">enum</td><td class="col-note">email | push | both | none</td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td class="col-note">auto-update trigger</td></tr>
+      </table>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+      <div style="padding:8px 12px;font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">user_org_preferences — per-org context</div>
+      <table class="schema-table">
+        <tr><th>column</th><th>type</th><th>note</th></tr>
+        <tr class="fk"><td class="col-name">user_id</td><td class="col-type">uuid FK → users</td><td class="col-note">composite PK</td></tr>
+        <tr class="fk"><td class="col-name">org_id</td><td class="col-type">uuid FK → orgs</td><td class="col-note">composite PK</td></tr>
+        <tr><td class="col-name">dashboard_layout</td><td class="col-type">jsonb</td><td class="col-note">widget grid config</td></tr>
+        <tr><td class="col-name">table_column_prefs</td><td class="col-type">jsonb</td><td class="col-note">{ devices: ['name','status','last_seen'], … }</td></tr>
+        <tr><td class="col-name">sidebar_pinned</td><td class="col-type">text[]</td><td class="col-note">pinned nav item ids</td></tr>
+        <tr><td class="col-name">report_format</td><td class="col-type">enum</td><td class="col-note">pdf | xlsx</td></tr>
+        <tr><td class="col-name">updated_at</td><td class="col-type">timestamptz</td><td class="col-note"></td></tr>
+      </table>
+    </div>
+
+    <div class="flow">
+      <div class="flow-title">API endpoint</div>
+      <pre>
+  <span class="k">GET</span>   /me/preferences               <span class="c">→ global + active org prefs merged</span>
+  <span class="k">PATCH</span> /me/preferences               <span class="c">→ global prefs update</span>
+  <span class="k">PATCH</span> /me/preferences/org/:orgId    <span class="c">→ per-org prefs update</span>
+
+  <span class="c">Frontend auto-saves on change (debounced 800ms). No "save" button needed.</span>
+  <span class="c">On login: preferences fetched once → cached in Zustand store.</span></pre>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       S4 — GDPR RIGHT TO ERASURE
+  ══════════════════════════════════════════════════════ -->
+  <section id="s4">
+    <h2>
+      <span class="sec-tag" style="background:var(--error-bg);color:var(--error)">04</span>
+      GDPR Right-to-Erasure — მომხმარებლის ამოშლა
+    </h2>
+
+    <div class="alert error">
+      <span class="alert-icon">⚖</span>
+      <div><strong>სამართლებრივი მოთხოვნა.</strong> GDPR Art. 17 + საქართველოს „პერსონალური მონაცემების დაცვის შესახებ" კანონი (2024) — მომხმარებელს უფლება აქვს ითხოვოს მისი ყველა მონაცემის სრული წაშლა. 30 კალენდარული დღე ვადა. Audit log erasure-ისა თავად უნდა დარჩეს (GDPR Art. 30 — accountability).</div>
+    </div>
+
+    <p>ეს <strong>რამდენი საფეხურის გავლის</strong> process-ია:</p>
+
+    <div class="step-list">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>მოთხოვნა — user-ი ითხოვს</strong>
+          <code>POST /me/erasure-request</code> — user-ი authenticated ითხოვს. სისტემა გზავნის email confirmation-ს: "ნამდვილად გინდა? 7 დღე გაქვს გაუქმება."
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>7-დღიანი cooldown — გაუქმება შესაძლებელია</strong>
+          Status: <code>pending_confirmation</code>. Cron-ი ყოველ დღე reminder email-ს გზავნის. <code>DELETE /me/erasure-request</code> — cancel.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Org admin check</strong>
+          თუ user org_admin-ია — erasure blocked სანამ სხვა admin-ს არ გადაუქცევს. Error: "გთხოვ სხვა admin-ი დანიშნე ჯერ."
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Billing check</strong>
+          Open invoices? Unpaid subscription? → Erasure deferred. Email: "გთხოვ ანგარიშსწორება."
+        </div>
+      </div>
+      <div class="step danger">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>Erasure execution — irreversible</strong>
+          7 დღის cooldown + checks passed → background job-ი იწყებს.
+        </div>
+      </div>
+      <div class="step success">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <strong>Confirmation email + erasure certificate</strong>
+          "შენი მონაცემები წაიშალა. სერტიფიკატი: ERS-2026-XXXXX." GDPR სტანდარტია.
+        </div>
+      </div>
+    </div>
+
+    <h3>რა იშლება vs რა რჩება</h3>
+    <div class="flow">
+      <div class="flow-title">Erasure matrix</div>
+      <pre>
+  <span class="c">DELETED (hard delete):                 ANONYMIZED (კვლავ ინახება, PII ამოიშლება):</span>
+  <span class="e">─────────────────────────────</span>          <span class="w">─────────────────────────────────────────</span>
+  <span class="e">users row</span>                              <span class="w">user_audit_log → actor replaced with</span>
+  <span class="e">user_preferences</span>                       <span class="w">  "[deleted-user-ERS-XXXXX]"</span>
+  <span class="e">user_org_preferences</span>                   <span class="w">device_commands → user_id → NULL</span>
+  <span class="e">org_memberships (user's)</span>               <span class="w">billing_invoices → name/email → "[redacted]"</span>
+  <span class="e">Firebase Auth account</span>
+  <span class="e">notification_tokens</span>
+
+  <span class="c">RETAINED (legal basis — legitimate interest / GDPR Art. 17(3)(e)):</span>
+  <span class="s">────────────────────────────────────────────────────────────────</span>
+  <span class="s">erasure_requests row (proof of compliance) → retained 5 years</span>
+  <span class="s">billing_invoices (tax law — 7 years) → PII anonymized, amounts kept</span>
+  <span class="s">security audit logs (fraud prevention — 1 year)</span></pre>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+      <div style="padding:8px 12px;font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">erasure_requests table</div>
+      <table class="schema-table">
+        <tr><th>column</th><th>type</th><th>note</th></tr>
+        <tr class="pk"><td class="col-name">id</td><td class="col-type">varchar — ERS-YYYY-XXXXX</td><td class="col-note">human-readable certificate id</td></tr>
+        <tr><td class="col-name">user_id_hash</td><td class="col-type">char(64)</td><td class="col-note">SHA-256 of original user_id — PII-free reference</td></tr>
+        <tr><td class="col-name">email_hash</td><td class="col-type">char(64)</td><td class="col-note">to prove completion without storing email</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">enum</td><td class="col-note">pending_confirmation | queued | in_progress | completed | cancelled</td></tr>
+        <tr><td class="col-name">requested_at</td><td class="col-type">timestamptz</td><td class="col-note"></td></tr>
+        <tr><td class="col-name">executed_at</td><td class="col-type">timestamptz NULL</td><td class="col-note"></td></tr>
+        <tr><td class="col-name">steps_log</td><td class="col-type">jsonb</td><td class="col-note">per-step timestamps + results for audit</td></tr>
+        <tr><td class="col-name">retained_until</td><td class="col-type">timestamptz</td><td class="col-note">now + 5 years. Hard delete after.</td></tr>
+      </table>
+    </div>
+
+    <div class="alert info">
+      <span class="alert-icon">ℹ</span>
+      <div><strong>Erasure-ის შემდეგ re-registration:</strong> user-ს შეუძლია ხელახლა დარეგისტრირდეს — email_hash comparison-ით სისტემა ვერ "გაიხსენებს" — GDPR Art. 17 fulfilled.</div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       S5 — OBSERVABILITY & TRACEABILITY
+  ══════════════════════════════════════════════════════ -->
+  <section id="s5">
+    <h2>
+      <span class="sec-tag" style="background:var(--primary-light);color:var(--primary)">05</span>
+      Observability &amp; Traceability — ყველაფრის ტრეკინგი
+    </h2>
+
+    <p>"<em>სად რა როგორ რატომ კეთდება და რა რასთანაა დაკავშირებული</em>" — ეს observability-ს სამი სვეტია: <strong>Traces</strong> (request path), <strong>Metrics</strong> (numbers), <strong>Logs</strong> (events). გაერთიანებული: <strong>OpenTelemetry → CloudWatch</strong>.</p>
+
+    <div class="three-col">
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">🔬</span><span class="card-title">Traces</span></div>
+        <div class="card-body">
+          ყოველი HTTP request-ი → distributed trace. <code>X-Request-ID</code> propagation. NestJS → DB → S3 → Firebase — ყველა span-ი linked. AWS X-Ray.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">📊</span><span class="card-title">Metrics</span></div>
+        <div class="card-body">
+          Request count, latency p50/p99, error rate, queue depth, DB connection pool, tenant activity count. CloudWatch custom metrics.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">📋</span><span class="card-title">Logs</span></div>
+        <div class="card-body">
+          Structured JSON — <code>{timestamp, requestId, orgId, userId, action, durationMs}</code>. PII-free (§SECURITY-004). CloudWatch Logs Insights.
+        </div>
+      </div>
+    </div>
+
+    <h3>Architecture traceability — კოდი ↔ ADR ↔ DB</h3>
+    <p>სისტემის ნებისმიერი ნაწილი უნდა იყოს traceable — ანუ შეგეძლოს კოდიდან ADR-ზე, ADR-იდან DB schema-ზე, DB-დან API-ზე მიყვე. ეს კეთდება:</p>
+
+    <div class="flow">
+      <div class="flow-title">Traceability chain</div>
+      <pre>
+  <span class="k">ADR-MT-002</span>  <span class="c">→</span>  <span class="s">org_access_grants.scope (DB column)</span>
+                 <span class="c">→</span>  <span class="t">InviteScope enum (src/auth/scopes.enum.ts)</span>
+                 <span class="c">→</span>  <span class="p">@RequireScope() decorator (src/auth/decorators)</span>
+                 <span class="c">→</span>  <span class="k">CrossTenantGuard (src/guards/cross-tenant.guard.ts)</span>
+                 <span class="c">→</span>  <span class="s">Jest meta-test (tests/meta/cross-tenant.spec.ts)</span>
+                 <span class="c">→</span>  <span class="w">OpenAPI tag: "cross-tenant" (Swagger grouping)</span>
+
+  <span class="c">ნებისმიერი dev-ი PR-ში ხედავს: "ეს code ეხება ADR-MT-002-ს"</span>
+  <span class="c">JSDoc @see tag: /** @see ADR-MT-002 */ — არა comment-ი explanation-ისთვის,</span>
+  <span class="c">არამედ cross-reference-ისთვის.</span></pre>
+    </div>
+
+    <h3>Dependency graph — სად რასთანაა დაკავშირებული</h3>
+    <div class="card">
+      <div class="card-head"><span class="card-id">PG-005</span><span class="card-title">Automated dependency map generation</span><span class="badge new">Day-1</span></div>
+      <div class="card-body">
+        <code>npm run dep:graph</code> — ts-morph-ით სკანირებს <code>src/</code> → გენერირებს module dependency graph-ს SVG-ად.<br><br>
+        ახალი <code>@Module()</code> ემატება — graph auto-updates CI-ში. Circular dependencies → CI fail.<br><br>
+        Output: <code>docs/dependency-graph.svg</code> — auto-committed on merge to dev.
+      </div>
+    </div>
+
+    <h3>Change tracking — რა შეიცვალა, ვინ, რატომ</h3>
+    <div class="step-list">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>DB schema changes</strong> — TypeORM migration file-ი PR-ის ნაწილია. Migration სახელი: <code>1714000000000-AddOrgAccessGrants.ts</code> — timestamp + description. Zero-downtime migrations only.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>API changes</strong> — Swagger/OpenAPI spec auto-generated. Breaking change → major version bump (<code>/v2/…</code>). Changelog auto-generated from PR titles (<code>git cliff</code>).
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Config/env changes</strong> — ყოველი ახალი env var → <code>.env.example</code> + <code>config.module.ts</code> validation + documentation update. CI ამოწმებს: "undocumented env var → fail."
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Feature flags</strong> — <code>FEATURE_X=true/false</code> env vars. Per-environment. Documented in <code>docs/feature-flags.md</code>. Flag removal = cleanup PR within 2 sprints.
+        </div>
+      </div>
+    </div>
+
+    <h3>Real-time tenant activity dashboard (operator-only)</h3>
+    <div class="flow">
+      <div class="flow-title">System admin-ისთვის — live view</div>
+      <pre>
+  <span class="c">GET /admin/telemetry/live  (system_admin only)</span>
+
+  {
+    activeOrgs:        <span class="w">47</span>,
+    requestsPerMin:    <span class="w">1240</span>,
+    errorRate:         <span class="s">"0.12%"</span>,
+    slowestEndpoint:   <span class="w">"GET /devices/export — p99: 2100ms"</span>,
+    pendingOrgs:       <span class="w">3</span>,   <span class="c">// awaiting approval</span>
+    pendingErasures:   <span class="w">1</span>,   <span class="c">// in cooldown</span>
+    mqttConnected:     <span class="w">284</span>, <span class="c">// active device connections</span>
+    queueDepth:        <span class="w">12</span>
+  }</pre>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-id">PG-006</span><span class="card-title">ADR traceability in commit messages</span><span class="badge locked">Locked</span></div>
+      <div class="card-body">
+        Commit message convention: <code>feat(auth): implement cross-tenant guard [ADR-MT-001, MT-002]</code><br><br>
+        CI hooks: თუ <code>src/auth/</code> ან <code>src/guards/</code>-ი შეიცვალა და commit message-ში <code>[ADR-</code> არ არის → <strong>warning</strong> (not block — devs need room). 3+ warnings = CTO review required.
+      </div>
+      <div class="card-note">ADR tags in commits → auto-linkage in GitHub → clickable in PR reviews</div>
+    </div>
+  </section>
+
+  <div class="footer">
+    platform-governance-adr.html · Sazeo Platform · CTO: Claude (Anthropic) · 2026-04-23
+  </div>
+
+</div>
+</body>
+</html>

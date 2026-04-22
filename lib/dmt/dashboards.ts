@@ -10,7 +10,7 @@ export type WidgetType =
   | 'filter'
   | 'note';
 
-export type DataSource = 'leads' | 'invoices' | 'inventory';
+export type DataSource = 'invoices' | 'inventory';
 
 export type Aggregation = 'count' | 'sum' | 'avg' | 'min' | 'max';
 
@@ -61,13 +61,13 @@ export const DEMO_DASHBOARDS: Dashboard[] = [
     id: 'default',
     name: 'მთავარი მიმოხილვა',
     widgets: [
-      {id: 'w1', type: 'stat', w: 3, h: 1, config: {title: 'სულ ლიდი', source: 'leads', agg: 'count', color: 'navy'}},
-      {id: 'w2', type: 'stat', w: 3, h: 1, config: {title: 'Σ კონტრაქტი', source: 'leads', field: 'contract', agg: 'sum', color: 'green'}},
-      {id: 'w3', type: 'stat', w: 3, h: 1, config: {title: 'საშუალო ღირებულ.', source: 'leads', field: 'contract', agg: 'avg', color: 'blue'}},
-      {id: 'w4', type: 'stat', w: 3, h: 1, config: {title: 'მოგება', source: 'leads', agg: 'count', statusFilter: 'დახურული-მოგება', color: 'green'}},
-      {id: 'w5', type: 'pie', w: 6, h: 3, config: {title: 'განაწილება სტატუსის მიხედვით', source: 'leads', groupBy: 'status'}},
-      {id: 'w6', type: 'bar', w: 6, h: 3, config: {title: 'კონტრაქტი owner-ის მიხედვით', source: 'leads', groupBy: 'owner', field: 'contract', agg: 'sum'}},
-      {id: 'w7', type: 'table', w: 12, h: 3, config: {title: 'ბოლო ლიდები', source: 'leads', limit: 5, columns: ['company', 'contact', 'phone', 'status', 'contract']}}
+      {id: 'w1', type: 'stat', w: 3, h: 1, config: {title: 'სულ ინვოისი', source: 'invoices', agg: 'count', color: 'navy'}},
+      {id: 'w2', type: 'stat', w: 3, h: 1, config: {title: 'Σ თანხა', source: 'invoices', field: 'amount', agg: 'sum', color: 'green'}},
+      {id: 'w3', type: 'stat', w: 3, h: 1, config: {title: 'საშუალო ინვოისი', source: 'invoices', field: 'amount', agg: 'avg', color: 'blue'}},
+      {id: 'w4', type: 'stat', w: 3, h: 1, config: {title: 'გადახდილი', source: 'invoices', agg: 'count', statusFilter: 'paid', color: 'green'}},
+      {id: 'w5', type: 'pie', w: 6, h: 3, config: {title: 'განაწილება სტატუსის მიხედვით', source: 'invoices', groupBy: 'status'}},
+      {id: 'w6', type: 'bar', w: 6, h: 3, config: {title: 'თანხა კლიენტის მიხედვით', source: 'invoices', groupBy: 'client', field: 'amount', agg: 'sum'}},
+      {id: 'w7', type: 'table', w: 12, h: 3, config: {title: 'ბოლო ინვოისები', source: 'invoices', limit: 5, columns: ['id', 'client', 'amount', 'status', 'period']}}
     ],
     createdAt: Date.now(),
     updatedAt: Date.now()
@@ -83,42 +83,42 @@ export const WIDGET_META: Record<
     description: 'ერთი მეტრიკა — count / sum / avg',
     defaultW: 3,
     defaultH: 1,
-    defaultConfig: {title: 'მეტრიკა', source: 'leads', agg: 'count', color: 'blue'}
+    defaultConfig: {title: 'მეტრიკა', source: 'invoices', agg: 'count', color: 'blue'}
   },
   bar: {
     label: 'ბარ-დიაგრამა',
     description: 'ჯგუფების შედარება',
     defaultW: 6,
     defaultH: 3,
-    defaultConfig: {title: 'ბარ-დიაგრამა', source: 'leads', groupBy: 'status', agg: 'count'}
+    defaultConfig: {title: 'ბარ-დიაგრამა', source: 'invoices', groupBy: 'status', agg: 'count'}
   },
   pie: {
     label: 'Pie / დონატი',
     description: 'წილი მთელში',
     defaultW: 6,
     defaultH: 3,
-    defaultConfig: {title: 'განაწილება', source: 'leads', groupBy: 'status'}
+    defaultConfig: {title: 'განაწილება', source: 'invoices', groupBy: 'status'}
   },
   line: {
     label: 'ლაინ-დიაგრამა',
     description: 'ტრენდი დროში',
     defaultW: 6,
     defaultH: 3,
-    defaultConfig: {title: 'ტრენდი', source: 'leads', groupBy: 'period', field: 'contract', agg: 'sum'}
+    defaultConfig: {title: 'ტრენდი', source: 'invoices', groupBy: 'period', field: 'contract', agg: 'sum'}
   },
   table: {
     label: 'ცხრილი',
     description: 'ტოპ N row',
     defaultW: 12,
     defaultH: 3,
-    defaultConfig: {title: 'ცხრილი', source: 'leads', limit: 5, columns: ['company', 'contact', 'status', 'contract']}
+    defaultConfig: {title: 'ცხრილი', source: 'invoices', limit: 5, columns: ['company', 'contact', 'status', 'contract']}
   },
   filter: {
     label: 'ფილტრი',
     description: 'სტატუსით შეზღუდვა',
     defaultW: 3,
     defaultH: 1,
-    defaultConfig: {title: 'ფილტრი', source: 'leads', field: 'status'}
+    defaultConfig: {title: 'ფილტრი', source: 'invoices', field: 'status'}
   },
   note: {
     label: 'ჩანიშვნა',
@@ -147,17 +147,7 @@ const DEMO_INVOICES = [
   {id: 'INV-0045', client: 'BGEO Group', amount: 6300, status: 'paid', period: 'Q1 2026'}
 ];
 
-export function loadLeads(): Array<Record<string, unknown>> {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem('dmt_manual_leads_v1');
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return [];
-}
-
 export function loadDataSource(src: DataSource): Array<Record<string, unknown>> {
-  if (src === 'leads') return loadLeads();
   if (src === 'invoices') return DEMO_INVOICES;
   if (src === 'inventory') return DEMO_INVENTORY;
   return [];
@@ -166,8 +156,6 @@ export function loadDataSource(src: DataSource): Array<Record<string, unknown>> 
 export function getFields(src: DataSource): string[] {
   const rows = loadDataSource(src);
   if (rows.length === 0) {
-    // fallbacks
-    if (src === 'leads') return ['company', 'contact', 'phone', 'contract', 'status', 'role', 'owner', 'period'];
     if (src === 'invoices') return ['id', 'client', 'amount', 'status', 'period'];
     if (src === 'inventory') return ['sku', 'category', 'stock', 'price'];
   }

@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-Tenancy Architecture — Sazeo Platform</title>
+<style>
+:root {
+  --primary: #1565C0;
+  --primary-dark: #0D47A1;
+  --primary-light: #E3F2FD;
+  --surface: #FFFFFF;
+  --surface-alt: #F7F9FC;
+  --border: #E1E7EF;
+  --text: #1A2332;
+  --text-muted: #5A6B80;
+  --text-dim: #8A98AC;
+  --success: #2E7D32;
+  --success-bg: #E8F5E9;
+  --warning: #E6A100;
+  --warning-bg: #FFF8E1;
+  --info: #0277BD;
+  --info-bg: #E1F5FE;
+  --error: #C62828;
+  --error-bg: #FFEBEE;
+  --purple: #6A1B9A;
+  --purple-bg: #F3E5F5;
+  --orange: #E65100;
+  --orange-bg: #FFF3E0;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font: 13px/1.6 'Noto Sans Georgian', 'Inter', -apple-system, sans-serif;
+  color: var(--text); background: var(--surface-alt);
+}
+.page { max-width: 1100px; margin: 0 auto; padding: 32px 28px 80px; }
+
+.hero {
+  background: linear-gradient(135deg, #1565C0 0%, #0D47A1 100%);
+  color: #fff; padding: 32px 36px; border-radius: var(--radius-md); margin-bottom: 24px;
+}
+.hero h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.hero .sub { font-size: 13px; opacity: 0.85; margin-bottom: 16px; line-height: 1.5; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 999px; font-size: 11px; }
+
+.toc {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 16px 20px; margin-bottom: 24px;
+}
+.toc-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 10px; }
+.toc-list { display: flex; flex-direction: column; gap: 4px; }
+.toc-list a { color: var(--primary); text-decoration: none; font-size: 12.5px; }
+.toc-list a:hover { text-decoration: underline; }
+.toc-list span { color: var(--text-dim); font-size: 11px; font-family: monospace; margin-right: 6px; }
+
+section { margin-bottom: 32px; }
+h2 {
+  font-size: 16px; font-weight: 700; color: var(--text);
+  padding-bottom: 8px; border-bottom: 2px solid var(--border);
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+h2 .tag {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+  padding: 2px 7px; border-radius: 4px; font-family: monospace;
+}
+h3 { font-size: 13.5px; font-weight: 700; color: var(--text); margin-bottom: 10px; margin-top: 18px; }
+
+p { font-size: 13px; color: var(--text); margin-bottom: 10px; line-height: 1.65; }
+p strong { font-weight: 700; }
+
+.card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 16px 20px; margin-bottom: 12px;
+}
+.card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.card-id {
+  font-family: monospace; font-size: 12px; font-weight: 700;
+  color: var(--primary); background: var(--primary-light); padding: 2px 8px; border-radius: 4px;
+}
+.card-title { font-size: 14px; font-weight: 700; }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 10.5px; font-weight: 600; font-family: monospace;
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.badge.locked { background: var(--success-bg); color: var(--success); border: 1px solid #9DDCBA; }
+.badge.open { background: var(--warning-bg); color: var(--warning); border: 1px solid #F5D06E; }
+.badge.new { background: var(--info-bg); color: var(--info); border: 1px solid #81C7E0; }
+
+.card-body { font-size: 12.5px; color: var(--text); line-height: 1.6; }
+.card-body code { background: var(--surface-alt); color: var(--primary-dark); padding: 1px 6px; border-radius: 3px; font-family: monospace; font-size: 11.5px; }
+.card-note { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 11px; color: var(--text-dim); font-family: monospace; }
+
+.flow {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 20px 24px; margin-bottom: 16px; overflow-x: auto;
+}
+.flow-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 12px; }
+pre {
+  font-family: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+  font-size: 12px; line-height: 1.7; color: var(--text);
+  white-space: pre; tab-size: 2;
+}
+pre .c { color: var(--text-dim); }
+pre .k { color: var(--primary); font-weight: 600; }
+pre .s { color: var(--success); }
+pre .w { color: var(--warning); }
+pre .e { color: var(--error); }
+
+.schema-table {
+  width: 100%; border-collapse: collapse; font-size: 12px;
+  background: var(--surface); border-radius: var(--radius-md); overflow: hidden;
+}
+.schema-table th {
+  background: var(--surface-alt); color: var(--text-muted); font-size: 10.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 12px; text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.schema-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.schema-table tr:last-child td { border-bottom: none; }
+.schema-table .col-name { font-family: monospace; font-size: 12px; color: var(--primary-dark); font-weight: 600; }
+.schema-table .col-type { font-family: monospace; font-size: 11px; color: var(--text-muted); }
+.schema-table .col-note { font-size: 11.5px; color: var(--text); }
+.schema-table .pk { background: var(--warning-bg); }
+.schema-table .fk { background: var(--info-bg); }
+
+.role-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px;
+  margin-bottom: 16px;
+}
+.role-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+.role-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+.role-card .role-type { font-size: 10px; font-family: monospace; padding: 1px 6px; border-radius: 3px; font-weight: 700; text-transform: uppercase; }
+.role-card ul { margin: 8px 0 0 14px; font-size: 12px; color: var(--text-muted); display: flex; flex-direction: column; gap: 3px; }
+
+.alert {
+  padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 14px; font-size: 12.5px;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.alert-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+.alert.warning { background: var(--warning-bg); border: 1px solid #F5D06E; color: #7A4E00; }
+.alert.info { background: var(--info-bg); border: 1px solid #81C7E0; color: #014F7A; }
+.alert.error { background: var(--error-bg); border: 1px solid #FFCDD2; color: var(--error); }
+.alert.success { background: var(--success-bg); border: 1px solid #9DDCBA; color: var(--success); }
+
+.step-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.step {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+.step-num {
+  width: 24px; height: 24px; border-radius: 999px; background: var(--primary); color: #fff;
+  font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.step-body { flex: 1; font-size: 12.5px; }
+.step-body strong { display: block; margin-bottom: 2px; }
+.step-body code { background: var(--surface-alt); color: var(--primary-dark); padding: 1px 5px; border-radius: 3px; font-family: monospace; font-size: 11.5px; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+.footer { text-align: center; padding: 28px 0 0; color: var(--text-dim); font-size: 11.5px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ─── HERO ─── -->
+  <div class="hero">
+    <h1>Multi-Tenancy Architecture — Sazeo Platform</h1>
+    <div class="sub">
+      ორგანიზაციების სტრუქტურა · self-registration · invite-code cross-org access ·
+      service provider model · DB schema · security invariants
+    </div>
+    <div class="hero-meta">
+      <span class="pill"><strong>Status:</strong> Draft → Locked</span>
+      <span class="pill"><strong>Author:</strong> Claude (CTO)</span>
+      <span class="pill"><strong>Date:</strong> 2026-04-23</span>
+      <span class="pill"><strong>ADR refs:</strong> ADR-009, ADR-010, ADR-017</span>
+      <span class="pill"><strong>Replaces:</strong> none (new domain)</span>
+    </div>
+  </div>
+
+  <!-- ─── TOC ─── -->
+  <div class="toc">
+    <div class="toc-title">სარჩევი</div>
+    <div class="toc-list">
+      <div><a href="#s1"><span>01</span>პრობლემა — რა გვჭირდება</a></div>
+      <div><a href="#s2"><span>02</span>ორგანიზაციის ტიპები</a></div>
+      <div><a href="#s3"><span>03</span>Self-registration flow</a></div>
+      <div><a href="#s4"><span>04</span>Invite-code cross-org access (GitHub model)</a></div>
+      <div><a href="#s5"><span>05</span>Service provider pattern</a></div>
+      <div><a href="#s6"><span>06</span>DB schema</a></div>
+      <div><a href="#s7"><span>07</span>Security invariants</a></div>
+      <div><a href="#s8"><span>08</span>ADR decisions</a></div>
+    </div>
+  </div>
+
+  <!-- ─── S1: პრობლემა ─── -->
+  <section id="s1">
+    <h2><span class="tag" style="background:var(--primary-light);color:var(--primary)">01</span> პრობლემა — რა გვჭირდება</h2>
+    <p>Sazeo IoT/BMS პლატფორმაზე რამდენიმე სცენარი არსებობს ერთდროულად:</p>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-head"><span class="card-title">🏢 გარედან რეგისტრაცია</span></div>
+        <div class="card-body">ნებისმიერ კომპანიას შეუძლია self-register — შექმნას org და დაიწყოს პლატფორმის გამოყენება invite-ის გარეშე.</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">🔗 Cross-org წვდომა</span></div>
+        <div class="card-body">კომპანია A-ს შეუძლია მოიწვიოს კომპანია B, რომ B-ს user-ები A-ს resource-ებს შეზღუდულად ნახავდნენ.</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">🛠 სერვის-პროვაიდერი</span></div>
+        <div class="card-body">კონტრაქტორი (მაგ. HVAC კომპანია) შეიძლება "ჩემოდეს" კლიენტთან სერვისის მიმწოდებლად — შეზღუდული, revocable წვდომით.</div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span class="card-title">👁 DMT / Platform Operator</span></div>
+        <div class="card-body">DMT-ი ხედავს ყველა org-ს system-admin დონეზე. ეს <strong>არ არის</strong> cross-tenant grant — ეს platform-level privilege.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── S2: ORG TYPES ─── -->
+  <section id="s2">
+    <h2><span class="tag" style="background:var(--purple-bg);color:var(--purple)">02</span> ორგანიზაციის ტიპები</h2>
+    <p>სამი ტიპი — DB enum <code>org_type</code>:</p>
+    <div class="role-grid">
+      <div class="role-card">
+        <h4>
+          <span style="font-size:18px">🏛</span>
+          Platform Operator
+          <span class="role-type" style="background:var(--purple-bg);color:var(--purple)">platform_operator</span>
+        </h4>
+        <ul>
+          <li>DMT (მხოლოდ ერთი)</li>
+          <li>ხედავს ყველა org-ს</li>
+          <li>Grant-ის გარეშე — system privilege</li>
+          <li>user-ები: <code>system_admin</code> role</li>
+        </ul>
+      </div>
+      <div class="role-card">
+        <h4>
+          <span style="font-size:18px">🏢</span>
+          Client Company
+          <span class="role-type" style="background:var(--primary-light);color:var(--primary)">client</span>
+        </h4>
+        <ul>
+          <li>self-register ან platform-invite</li>
+          <li>ხედავს <strong>მხოლოდ</strong> საკუთარ data-ს</li>
+          <li>შეუძლია სხვა org-ს მოიწვიოს</li>
+          <li>მათ user-ებს: org_admin, member, viewer</li>
+        </ul>
+      </div>
+      <div class="role-card">
+        <h4>
+          <span style="font-size:18px">🛠</span>
+          Service Provider
+          <span class="role-type" style="background:var(--orange-bg);color:var(--orange)">service_provider</span>
+        </h4>
+        <ul>
+          <li>კონტრაქტორი / მომსახურე კომპანია</li>
+          <li>საკუთარი data — ისეთივე isolated</li>
+          <li>კლიენტ org-ებში — მხოლოდ granted scope-ით</li>
+          <li>კლიენტი revoke-ავს ნებისმიერ დროს</li>
+        </ul>
+      </div>
+    </div>
+    <div class="alert info">
+      <span class="alert-icon">ℹ</span>
+      <div>org_type-ი არ განსაზღვრავს permission-ებს — <code>org_membership.role</code> და <code>org_access_grant.scope</code> განსაზღვრავს. ტიპი მხოლოდ UI/UX logics-ს და billing plan-ს ეხება.</div>
+    </div>
+  </section>
+
+  <!-- ─── S3: SELF-REGISTRATION ─── -->
+  <section id="s3">
+    <h2><span class="tag" style="background:var(--success-bg);color:var(--success)">03</span> Self-registration flow</h2>
+    <p>გარე კომპანიას შეუძლია დარეგისტრირდეს — ისე, რომ DMT-ს წინასწარი invite არ სჭირდება:</p>
+
+    <div class="step-list">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Email + password რეგისტრაცია</strong>
+          Firebase Auth → UID. <code>POST /auth/register</code> → user ჩაიწერება <code>users</code> table-ში <code>status: pending_verification</code>.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Email verification</strong>
+          Firebase Send email verification. მანამ — API-ი limited access-ს ბრუნებს. user-ს შეუძლია login, მაგრამ org-ი ჯერ არ გაქვს.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>კომპანიის პროფილის შექმნა</strong>
+          <code>POST /organizations</code> — user ქმნის org-ს: სახელი, org_type, ქვეყანა. ავტომატურად ეძლევა <code>org_membership(role: org_admin)</code>.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Platform verification (optional gate)</strong>
+          თუ <code>requires_platform_approval = true</code> — org status <code>pending_approval</code>. DMT system_admin ადასტურებს. Manual gate production-ში spam/fraud-ის საწინააღმდეგოდ.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <strong>Active — სრული წვდომა</strong>
+          <code>org.status = active</code>. user-ს შეუძლია devices, members, billing და სხვა.
+        </div>
+      </div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-title">Registration state machine</div>
+      <pre>
+  <span class="c">// org.status enum</span>
+  <span class="k">pending_verification</span>   <span class="c">→ email-ი ჯერ არ არის confirmed</span>
+         ↓
+  <span class="k">pending_approval</span>       <span class="c">→ email OK, DMT-ი ადასტურებს (თუ gate ჩართულია)</span>
+         ↓
+  <span class="s">active</span>                 <span class="c">→ სრული წვდომა</span>
+         ↓
+  <span class="e">suspended</span>             <span class="c">→ billing overdue / policy violation</span>
+  <span class="e">terminated</span>            <span class="c">→ soft-deleted, data retained 90d (GDPR)</span></pre>
+    </div>
+
+    <div class="alert warning">
+      <span class="alert-icon">⚠</span>
+      <div><strong>Anti-spam gate:</strong> rate-limit <code>POST /organizations</code> — max 3 orgs per IP per 24h. Email domain blocking (disposable emails). Production-ში <code>requires_platform_approval = true</code> პირველ 6 თვეში.</div>
+    </div>
+  </section>
+
+  <!-- ─── S4: INVITE CODE ─── -->
+  <section id="s4">
+    <h2><span class="tag" style="background:var(--info-bg);color:var(--info)">04</span> Invite-code cross-org access (GitHub model)</h2>
+
+    <p>GitHub-ის organization invite-ის ანალოგი — Org A-მ შეუძლია Org B-ს კოდი გაუგზავნოს, B-მ კოდი შეიყვანოს, granted access-ი გაჩნდეს.</p>
+
+    <div class="flow">
+      <div class="flow-title">Invite flow — ორ მხარის პერსპექტივა</div>
+      <pre>
+  <span class="c">─── Org A (grantor) ───────────────────────────────────────</span>
+
+  <span class="k">POST</span> /organizations/:orgId/invites
+  {
+    scope: <span class="s">"read:devices,read:reports"</span>,   <span class="c">// scope enum-ით</span>
+    expiresInDays: <span class="w">30</span>,
+    label: <span class="s">"TBC Facilities team"</span>           <span class="c">// UI-ში ნახვისთვის</span>
+  }
+
+  ← {
+    inviteCode: <span class="s">"SAZEO-A3X9-2026"</span>,         <span class="c">// humanreadable, 16-char</span>
+    expiresAt:  <span class="s">"2026-05-23T00:00:00Z"</span>,
+    status:     <span class="s">"pending"</span>
+  }
+
+  <span class="c">Org A admin გადასცემს კოდს B-ს (email / copy-paste / Slack)</span>
+
+
+  <span class="c">─── Org B (grantee) ───────────────────────────────────────</span>
+
+  <span class="k">POST</span> /invites/accept
+  {
+    inviteCode: <span class="s">"SAZEO-A3X9-2026"</span>,
+    orgId:      <span class="s">"org_b_uuid"</span>             <span class="c">// B-ს org — user-ი B-ს member უნდა იყოს</span>
+  }
+
+  ← {
+    grantId:  <span class="s">"grant_xyz"</span>,
+    grantorOrg: { name: <span class="s">"სავაგო ენერგეტიკა"</span>, id: <span class="s">"org_a"</span> },
+    scope:    <span class="s">"read:devices,read:reports"</span>,
+    status:   <span class="s">"active"</span>
+  }
+
+  <span class="c">─── შემდეგ session-ში ─────────────────────────────────────</span>
+
+  <span class="c">B-ს user-ი Header-ში აგზავნის:</span>
+  <span class="k">Organization: org_a_uuid</span>           <span class="c">// A-ს context-ში ოპერირებს</span>
+  <span class="k">X-Grant-Id: grant_xyz</span>              <span class="c">// optional — logging-ისთვის</span>
+
+  <span class="c">Guard ამოწმებს: B-ს org_access_grants-ში არსებობს A-ზე active grant?</span>
+  <span class="c">თუ კი — scope-ის ფარგლებში წვდომა. თუ არა — 404.</span></pre>
+    </div>
+
+    <h3>Invite code format</h3>
+    <div class="card">
+      <div class="card-body">
+        <code>SAZEO-XXXX-YYYY</code> — prefix + 4-char segment + 4-char segment<br><br>
+        DB-ში ინახება <strong>SHA-256 hash</strong> (plaintext — არასოდეს). Single-use: accept-ის შემდეგ status → <code>accepted</code>, კოდი invalid ხდება.<br><br>
+        Brute-force protection: <code>POST /invites/accept</code> — max 10 attempts / IP / hour. Wrong code → generic error (not "code doesn't exist" vs "code expired" — enumeration prevention).
+      </div>
+    </div>
+
+    <h3>Scope enum</h3>
+    <div class="flow">
+      <pre>
+  <span class="k">enum InviteScope</span> {
+    read_devices     <span class="c">= "read:devices"</span>,      <span class="c">// მოწყობილობების ნახვა</span>
+    read_reports     <span class="c">= "read:reports"</span>,      <span class="c">// ანგარიშების ნახვა</span>
+    read_alerts      <span class="c">= "read:alerts"</span>,       <span class="c">// სიგნალების ნახვა</span>
+    write_commands   <span class="c">= "write:commands"</span>,    <span class="c">// ბრძანებების გაგზავნა</span>
+    full_access      <span class="c">= "full"</span>,              <span class="c">// სრული წვდომა (org_admin ახდენს grant-ს)</span>
+  }</pre>
+    </div>
+  </section>
+
+  <!-- ─── S5: SERVICE PROVIDER ─── -->
+  <section id="s5">
+    <h2><span class="tag" style="background:var(--orange-bg);color:var(--orange)">05</span> Service Provider Pattern</h2>
+
+    <p>სცენარი: კლიენტ კომპანია იყენებს გარე კონტრაქტორ კომპანიას (HVAC, ელექტრო, security). კონტრაქტორს სჭირდება კლიენტის IoT სისტემაში წვდომა, მაგრამ <strong>მხოლოდ შეზღუდული, revocable, auditable</strong>.</p>
+
+    <div class="two-col">
+      <div>
+        <h3>ეს ისეთივე invite-code flow-ია — განსხვავება ტიპშია</h3>
+        <div class="step-list">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <strong>სერვის-პროვაიდერი self-registers</strong>
+              ქმნის საკუთარ org-ს <code>org_type: service_provider</code>.
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <strong>კლიენტი invite-ს გენერირებს</strong>
+              <code>scope: "read:devices,write:commands"</code> + label <code>"TBC HVAC contractor"</code>.
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <strong>სერვის-პროვაიდერი accept-ავს</strong>
+              ახლა მათ user-ებს შეუძლიათ კლიენტის context-ში ოპერირება — scope-ის ფარგლებში.
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <strong>კლიენტი revoke-ავს</strong>
+              <code>DELETE /organizations/:orgId/grants/:grantId</code> — instant. სერვის-პროვაიდერი წყვეტს წვდომას.
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3>Audit trail — ყველა cross-tenant action-ი logged</h3>
+        <div class="flow">
+          <pre style="font-size:11px">
+  <span class="c">// user_audit_log table entry</span>
+  {
+    actor_user_id:   <span class="s">"user_sp_john"</span>,
+    actor_org_id:    <span class="s">"org_sp"</span>,       <span class="c">// სპ-ს org</span>
+    target_org_id:   <span class="s">"org_client"</span>,   <span class="c">// კლიენტის org</span>
+    grant_id:        <span class="s">"grant_xyz"</span>,    <span class="c">// via რომელი grant</span>
+    action:          <span class="s">"device.read"</span>,
+    resource_id:     <span class="s">"device_abc"</span>,
+    timestamp:       <span class="s">"2026-04-23T10:22:00Z"</span>,
+    ip:              <span class="s">"185.x.x.x"</span>
+  }</pre>
+        </div>
+        <div class="alert success">
+          <span class="alert-icon">✓</span>
+          <div>კლიენტს UI-ში ეჩვენება: "ბოლო 30 დღეში სერვის-პროვაიდერმა ეს actions შეასრულა" — სრული visibility.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── S6: DB SCHEMA ─── -->
+  <section id="s6">
+    <h2><span class="tag" style="background:var(--surface-alt);color:var(--text-muted)">06</span> DB Schema</h2>
+
+    <h3>organizations</h3>
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+      <table class="schema-table">
+        <tr><th>column</th><th>type</th><th>note</th></tr>
+        <tr class="pk"><td class="col-name">id</td><td class="col-type">uuid PK</td><td class="col-note">gen_random_uuid()</td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">varchar(120)</td><td class="col-note">კომპანიის სახელი</td></tr>
+        <tr><td class="col-name">slug</td><td class="col-type">varchar(80) UNIQUE</td><td class="col-note">URL-safe identifier</td></tr>
+        <tr><td class="col-name">org_type</td><td class="col-type">enum</td><td class="col-note">platform_operator | client | service_provider</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">enum</td><td class="col-note">pending_verification | pending_approval | active | suspended | terminated</td></tr>
+        <tr><td class="col-name">country_code</td><td class="col-type">char(2)</td><td class="col-note">ISO 3166-1 alpha-2 (GE, DE, US…)</td></tr>
+        <tr><td class="col-name">requires_approval</td><td class="col-type">boolean</td><td class="col-note">platform gate — default true prod</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td class="col-note"></td></tr>
+        <tr><td class="col-name">deleted_at</td><td class="col-type">timestamptz NULL</td><td class="col-note">soft-delete. hard delete 90d later (GDPR)</td></tr>
+      </table>
+    </div>
+
+    <h3>org_memberships — user belongs to org</h3>
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+      <table class="schema-table">
+        <tr><th>column</th><th>type</th><th>note</th></tr>
+        <tr class="pk"><td class="col-name">id</td><td class="col-type">uuid PK</td><td class="col-note"></td></tr>
+        <tr class="fk"><td class="col-name">user_id</td><td class="col-type">uuid FK → users</td><td class="col-note">CASCADE DELETE</td></tr>
+        <tr class="fk"><td class="col-name">org_id</td><td class="col-type">uuid FK → organizations</td><td class="col-note"></td></tr>
+        <tr><td class="col-name">role</td><td class="col-type">enum</td><td class="col-note">org_admin | member | viewer | billing_admin</td></tr>
+        <tr><td class="col-name">is_default</td><td class="col-type">boolean</td><td class="col-note">რომელ org-ში ხსნის session-ს login-ზე</td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td class="col-note"></td></tr>
+        <tr><td class="col-name">UNIQUE</td><td class="col-type">(user_id, org_id)</td><td class="col-note">user — ერთ org-ში ერთი membership</td></tr>
+      </table>
+    </div>
+
+    <h3>org_invites — invite token</h3>
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+      <table class="schema-table">
+        <tr><th>column</th><th>type</th><th>note</th></tr>
+        <tr class="pk"><td class="col-name">id</td><td class="col-type">uuid PK</td><td class="col-note"></td></tr>
+        <tr class="fk"><td class="col-name">grantor_org_id</td><td class="col-type">uuid FK → organizations</td><td class="col-note">invite-ის გამომწვევი org</td></tr>
+        <tr><td class="col-name">grantee_org_id</td><td class="col-type">uuid NULL</td><td class="col-note">accept-ის შემდეგ ივსება</td></tr>
+        <tr><td class="col-name">token_hash</td><td class="col-type">char(64)</td><td class="col-note">SHA-256 of plaintext token. Plaintext არ ინახება.</td></tr>
+        <tr><td class="col-name">scope</td><td class="col-type">varchar(255)</td><td class="col-note">comma-separated: "read:devices,read:reports"</td></tr>
+        <tr><td class="col-name">label</td><td class="col-type">varchar(120) NULL</td><td class="col-note">UI-ში label (e.g. "TBC Facilities")</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">enum</td><td class="col-note">pending | accepted | revoked | expired</td></tr>
+        <tr><td class="col-name">expires_at</td><td class="col-type">timestamptz</td><td class="col-note">NULL = 30 days default</td></tr>
+        <tr><td class="col-name">created_by_user_id</td><td class="col-type">uuid FK → users</td><td class="col-note">audit trail</td></tr>
+        <tr><td class="col-name">accepted_at</td><td class="col-type">timestamptz NULL</td><td class="col-note"></td></tr>
+      </table>
+    </div>
+
+    <h3>org_access_grants — active cross-org permissions</h3>
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">
+      <table class="schema-table">
+        <tr><th>column</th><th>type</th><th>note</th></tr>
+        <tr class="pk"><td class="col-name">id</td><td class="col-type">uuid PK</td><td class="col-note"></td></tr>
+        <tr class="fk"><td class="col-name">grantor_org_id</td><td class="col-type">uuid FK → organizations</td><td class="col-note">resource owner</td></tr>
+        <tr class="fk"><td class="col-name">grantee_org_id</td><td class="col-type">uuid FK → organizations</td><td class="col-note">access recipient</td></tr>
+        <tr class="fk"><td class="col-name">invite_id</td><td class="col-type">uuid FK → org_invites</td><td class="col-note">trace back to invite</td></tr>
+        <tr><td class="col-name">scope</td><td class="col-type">varchar(255)</td><td class="col-note">inherited from invite</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">enum</td><td class="col-note">active | revoked | expired</td></tr>
+        <tr><td class="col-name">revoked_at</td><td class="col-type">timestamptz NULL</td><td class="col-note"></td></tr>
+        <tr><td class="col-name">revoked_by_user_id</td><td class="col-type">uuid NULL</td><td class="col-note">audit</td></tr>
+        <tr><td class="col-name">UNIQUE</td><td class="col-type">(grantor_org_id, grantee_org_id)</td><td class="col-note">ერთი active grant per org pair</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ─── S7: SECURITY ─── -->
+  <section id="s7">
+    <h2><span class="tag" style="background:var(--error-bg);color:var(--error)">07</span> Security Invariants</h2>
+
+    <div class="alert error">
+      <span class="alert-icon">🔒</span>
+      <div><strong>Cross-tenant access-ი = explicit grant ან system_admin.</strong> სხვა შემთხვევაში — 404 (არა 403). 403-ი ადასტურებს resource-ის არსებობას. 404 — neutral.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-id">INV-001</span><span class="card-title">Guard logic — 3 validation layer</span><span class="badge locked">Required</span></div>
+      <div class="card-body">
+        <ol style="margin-left:16px;display:flex;flex-direction:column;gap:6px">
+          <li><strong>JWT valid + not expired</strong> — standard Firebase JWT check</li>
+          <li><strong>Organization header normalization</strong> — <code>normalizeOrgHeader()</code> rejects array, trims whitespace (<a href="../iot-bms-blueprint.html#l6" style="color:var(--primary)">ADR-009</a>)</li>
+          <li><strong>Membership OR grant check</strong> — user-ი ან target org-ის member-ია, ან active grant-ი აქვს target org-ზე. Platform operator — პირდაპირ passes.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-id">INV-002</span><span class="card-title">Scope validation — not just org membership</span><span class="badge locked">Required</span></div>
+      <div class="card-body">
+        Cross-tenant context-ში guard ამოწმებს <code>grant.scope</code>-ს. თუ endpoint-ს <code>@RequireScope('write:commands')</code> აქვს, მაგრამ grant-ს მხოლოდ <code>read:devices</code> — 403.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-id">INV-003</span><span class="card-title">Invite token — single-use + hashed + time-limited</span><span class="badge locked">Required</span></div>
+      <div class="card-body">
+        token_hash = SHA-256(plaintext_code). Plaintext-ი DB-ში არ ინახება. Accept-ზე status → <code>accepted</code> → კოდი invalid. Expired invite-ის accept → 404 (generic).
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-id">INV-004</span><span class="card-title">Meta-test: cross-tenant IDOR prevention</span><span class="badge new">Day-1</span></div>
+      <div class="card-body">
+        Jest meta-test: org_a-ს user-ი org_b-ს resource-ებს ითხოვს (without grant) → assert 404. ყოველი tenant-scoped entity-სთვის. მემკვიდრეობა: dmt-web-app <code>test_tenant_isolation.py</code> 9 regression test.
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── S8: ADR DECISIONS ─── -->
+  <section id="s8">
+    <h2><span class="tag" style="background:var(--primary-light);color:var(--primary)">08</span> ADR Decisions</h2>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="card-id">MT-001</span>
+        <span class="card-title">Invite code — humanreadable, not UUID</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="card-body">
+        <strong>Decision:</strong> <code>SAZEO-XXXX-YYYY</code> format (prefix + 8 random alphanum chars).<br>
+        <strong>Rationale:</strong> UUID-ები (e.g. <code>f47ac10b-58cc-4372-a567</code>) გადაცემისა და შეყვანისათვის შეცდომისადმია მოწყვლადი. Humanreadable format-ი (GitHub-style) გაცილებით user-friendly. Security — SHA-256 hash DB-ში უზრუნველყოფს.
+      </div>
+      <div class="card-note">Alternatives considered: UUID → rejected (UX). QR code → additional feature layer, not primary.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="card-id">MT-002</span>
+        <span class="card-title">Grant scope — string list, not bitmask</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="card-body">
+        <strong>Decision:</strong> Comma-separated scope strings <code>"read:devices,read:reports"</code>, not integer bitmask.<br>
+        <strong>Rationale:</strong> Human-readable in DB, easy to debug, extensible without migration. Bitmask — compresses well but makes debugging, audit log reading, and scope UI complexity worse. At Sazeo scale (&lt;50 scope types), string list გაცილებით readable-ია.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="card-id">MT-003</span>
+        <span class="card-title">UNIQUE(grantor, grantee) — ერთი active grant per pair</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="card-body">
+        <strong>Decision:</strong> org_access_grants-ში UNIQUE constraint (grantor_org_id, grantee_org_id).<br>
+        <strong>Rationale:</strong> Multiple grants between same org pair creates scope confusion and revoke complexity. თუ scope-ი გასაფართოვებელია — grant-ი update-ავს, არ ემატება ახალი row. Simpler mental model for both devs and ops.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="card-id">MT-004</span>
+        <span class="card-title">Self-registration — open by default, platform-gate available</span>
+        <span class="badge open">Open — configure per-env</span>
+      </div>
+      <div class="card-body">
+        <strong>Decision:</strong> <code>organizations.requires_approval</code> per-org flag, plus global env <code>REQUIRE_ORG_APPROVAL=true</code> for production.<br>
+        <strong>Rationale:</strong> Dev/staging — open signup for rapid testing. Production — gated to prevent spam and fraudulent orgs. Flag allows gradual rollout (open beta → gated).
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    multi-tenancy-adr.html · Sazeo Platform · CTO: Claude (Anthropic) · 2026-04-23
+  </div>
+
+</div>
+</body>
+</html>

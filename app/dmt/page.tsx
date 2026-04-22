@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import {FileText, Users, Package, TrendingUp} from 'lucide-react';
+import {FileText, Package, TrendingUp} from 'lucide-react';
 
 const STATS = [
   {
@@ -9,14 +9,6 @@ const STATS = [
     href: '/dmt/invoices',
     icon: FileText,
     trend: '+3 ამ კვირას'
-  },
-  {
-    label: 'ლიდები',
-    value: '47',
-    sub: '8 ცხელი · 22 გრძელვადიანი',
-    href: '/dmt/leads',
-    icon: Users,
-    trend: '+11 ამ თვეს'
   },
   {
     label: 'ინვენტარი · SKU',
@@ -39,7 +31,7 @@ export default function DmtHomePage() {
           მიმოხილვა
         </h1>
         <p className="mt-1 text-sm text-text-2">
-          ინვოისები, ლიდები, ინვენტარიზაცია — ერთ ადგილას.
+          ინვოისები, ინვენტარიზაცია — ერთ ადგილას.
         </p>
       </header>
 
@@ -81,12 +73,6 @@ export default function DmtHomePage() {
             className="rounded-md border border-bdr bg-sur-2 px-3 py-1.5 text-[12px] font-semibold text-text-2 hover:border-blue hover:text-blue"
           >
             + ახალი ინვოისი
-          </Link>
-          <Link
-            href="/dmt/leads"
-            className="rounded-md border border-bdr bg-sur-2 px-3 py-1.5 text-[12px] font-semibold text-text-2 hover:border-blue hover:text-blue"
-          >
-            + ლიდის დამატება
           </Link>
           <Link
             href="/dmt/inventory"

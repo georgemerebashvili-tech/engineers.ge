@@ -5,6 +5,8 @@ export type ComponentRow = {
   qty: number;
   unit: string;
   price: number;  // per unit
+  source?: 'catalog' | 'manual';
+  catalogProductId?: string;
 };
 
 export type IoConnector = {

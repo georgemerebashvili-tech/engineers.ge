@@ -94,7 +94,7 @@ function fmtCurrency(n: number) {
 export default function ProductsCatalogPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [tab, setTab] = useState<Tab>('general');
+  const [tab, setTab] = useState<Tab>('components');
   const [q, setQ] = useState('');
   const [hydrated, setHydrated] = useState(false);
   const [trm, setTrm] = useState<TrmProduct[]>([]);
@@ -237,6 +237,7 @@ export default function ProductsCatalogPage() {
             <ProductDetail
               key={selected.id}
               product={selected}
+              allProducts={products}
               tab={tab}
               onTab={setTab}
               onUpdate={updateSelected}
@@ -339,12 +340,14 @@ function ProductCard({
 
 function ProductDetail({
   product,
+  allProducts,
   tab,
   onTab,
   onUpdate,
   trm
 }: {
   product: Product;
+  allProducts: Product[];
   tab: Tab;
   onTab: (t: Tab) => void;
   onUpdate: (patch: Partial<Product>) => void;
@@ -354,58 +357,49 @@ function ProductDetail({
 
   return (
     <div className="px-6 py-5 md:px-8">
-      {/* Title row */}
-      <div className="mb-4 flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-14 w-20 shrink-0 items-center justify-center overflow-hidden rounded-md border border-bdr bg-sur">
-            {product.imageDataUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={product.imageDataUrl}
-                alt={product.name}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <Factory size={22} className="text-text-3" />
-            )}
-          </div>
-          <div>
+      {/* Title row — compact, no price box here */}
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-12 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md border border-bdr bg-sur">
+          {product.imageDataUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={product.imageDataUrl}
+              alt={product.name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <Factory size={18} className="text-text-3" />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <input
+            type="text"
+            value={product.name}
+            onChange={(e) => onUpdate({name: e.target.value})}
+            className="w-full bg-transparent text-[20px] font-bold tracking-tight text-navy outline-none border-b border-transparent focus:border-bdr-2"
+          />
+          <div className="mt-0.5 flex items-center gap-2">
             <input
               type="text"
-              value={product.name}
-              onChange={(e) => onUpdate({name: e.target.value})}
-              className="w-full bg-transparent text-[20px] font-bold tracking-tight text-navy outline-none border-b border-transparent focus:border-bdr-2"
+              value={product.version}
+              onChange={(e) => onUpdate({version: e.target.value})}
+              className="w-24 bg-transparent font-mono text-[11.5px] text-text-2 outline-none border-b border-transparent focus:border-bdr-2"
+              placeholder="V0.0.1"
             />
-            <div className="mt-0.5 flex items-center gap-2">
-              <input
-                type="text"
-                value={product.version}
-                onChange={(e) => onUpdate({version: e.target.value})}
-                className="w-24 bg-transparent font-mono text-[11.5px] text-text-2 outline-none border-b border-transparent focus:border-bdr-2"
-                placeholder="V0.0.1"
-              />
-              <span className="text-text-3">·</span>
-              <input
-                type="text"
-                value={product.type}
-                onChange={(e) => onUpdate({type: e.target.value})}
-                placeholder="ტიპი (მაგ. Control Board)"
-                className="min-w-0 flex-1 bg-transparent text-[11.5px] text-text-2 outline-none border-b border-transparent focus:border-bdr-2"
-              />
-            </div>
+            <span className="text-text-3">·</span>
+            <input
+              type="text"
+              value={product.type}
+              onChange={(e) => onUpdate({type: e.target.value})}
+              placeholder="ტიპი (მაგ. Control Board)"
+              className="min-w-0 flex-1 bg-transparent text-[11.5px] text-text-2 outline-none border-b border-transparent focus:border-bdr-2"
+            />
           </div>
         </div>
-
-        <div className="shrink-0 rounded-[10px] border border-ora-bd bg-ora-lt px-4 py-3 text-right">
-          <div className="font-mono text-[9.5px] font-bold uppercase tracking-[0.08em] text-text-3">
-            თვითღირებულება
-          </div>
-          <div className="font-mono text-[18px] font-bold text-ora">
-            {fmtCurrency(total)}
-          </div>
-          <div className="mt-0.5 font-mono text-[10px] text-text-3">
-            მაკომპლ. {fmtCurrency(subtotal)}
-          </div>
+        {/* Compact price pill always visible */}
+        <div className="shrink-0 rounded-lg border border-ora-bd bg-ora-lt px-3 py-1.5 text-right">
+          <div className="font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-text-3">გასაყიდი</div>
+          <div className="font-mono text-[16px] font-bold text-ora leading-tight">{fmtCurrency(total)}</div>
         </div>
       </div>
 
@@ -454,6 +448,7 @@ function ProductDetail({
       {tab === 'components' && (
         <ComponentsTab
           product={product}
+          allProducts={allProducts}
           subtotal={subtotal}
           steps={steps}
           total={total}
@@ -724,6 +719,7 @@ function Field({
 
 function ComponentsTab({
   product,
+  allProducts,
   subtotal,
   steps,
   total,
@@ -731,12 +727,14 @@ function ComponentsTab({
   trm
 }: {
   product: Product;
+  allProducts: Product[];
   subtotal: number;
   steps: {id: string; label: string; delta: number; running: number}[];
   total: number;
   onUpdate: (patch: Partial<Product>) => void;
   trm: TrmProduct[];
 }) {
+  const [catalogOpen, setCatalogOpen] = useState(false);
   const xlsxFileRef = useRef<HTMLInputElement>(null);
 
   const exportXlsx = async () => {
@@ -890,9 +888,26 @@ function ComponentsTab({
       type: '',
       qty: 1,
       unit: 'ც',
-      price: 0
+      price: 0,
+      source: 'manual'
     };
     onUpdate({components: [...product.components, row]});
+  };
+
+  const addFromCatalog = (src: Product) => {
+    const {total: srcTotal} = computeBreakdown(src);
+    const row: ComponentRow = {
+      id: cryptoRandomId(),
+      name: src.name,
+      type: src.type || src.version,
+      qty: 1,
+      unit: 'ც',
+      price: srcTotal,
+      source: 'catalog',
+      catalogProductId: src.id
+    };
+    onUpdate({components: [...product.components, row]});
+    setCatalogOpen(false);
   };
 
   const updateComponent = (id: string, patch: Partial<ComponentRow>) => {
@@ -941,6 +956,14 @@ function ComponentsTab({
           <div className="flex items-center gap-1.5">
             <button
               type="button"
+              onClick={() => setCatalogOpen(true)}
+              className="inline-flex items-center gap-1 rounded-md border border-blue-bd bg-blue-lt px-2 py-1 text-[11px] font-semibold text-blue hover:bg-blue hover:text-white"
+              title="კატალოგიდან პროდუქციის დამატება"
+            >
+              <Plus size={11} /> კატალოგიდან
+            </button>
+            <button
+              type="button"
               onClick={downloadTemplate}
               className="inline-flex items-center gap-1 rounded-md border border-bdr bg-sur px-2 py-1 text-[11px] font-semibold text-text-2 hover:border-blue-bd hover:bg-blue-lt hover:text-blue"
               title="ჩამოტვირთე ცარიელი შაბლონი ქართული header-ებით + README"
@@ -974,9 +997,9 @@ function ComponentsTab({
             <button
               type="button"
               onClick={addComponent}
-              className="inline-flex items-center gap-1 rounded-md border border-blue-bd bg-blue-lt px-2 py-1 text-[11px] font-semibold text-blue hover:bg-blue hover:text-white"
+              className="inline-flex items-center gap-1 rounded-md border border-bdr bg-sur px-2 py-1 text-[11px] font-semibold text-text-2 hover:border-blue-bd hover:bg-blue-lt hover:text-blue"
             >
-              <Plus size={11} /> კომპონენტი
+              <Plus size={11} /> მანუალური
             </button>
           </div>
         </div>
@@ -987,9 +1010,10 @@ function ComponentsTab({
               <th className="w-12 px-2 py-2 font-bold"></th>
               <th className="px-3 py-2 font-bold">დასახელება</th>
               <th className="px-3 py-2 font-bold">ტიპი / მოდელი</th>
+              <th className="w-16 px-2 py-2 font-bold text-center">წყარო</th>
               <th className="px-3 py-2 text-right font-bold">რაოდ.</th>
               <th className="px-3 py-2 font-bold">განზ.</th>
-              <th className="px-3 py-2 text-right font-bold">ფასი</th>
+              <th className="px-3 py-2 text-right font-bold">ერთ. ფასი</th>
               <th className="px-3 py-2 text-right font-bold">ჯამი</th>
               <th className="w-10 px-2 py-2" />
             </tr>
@@ -997,32 +1021,31 @@ function ComponentsTab({
           <tbody>
             {product.components.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-[12px] text-text-3">
-                  ჯერ არაფერი არ არის. დააჭირე „+ კომპონენტი" ან ატვირთე Excel.
+                <td colSpan={9} className="px-4 py-6 text-center text-[12px] text-text-3">
+                  ჯერ არაფერი. „+ კატალოგიდან" — სხვა პროდუქცია; „+ მანუალური" — ხელით შეყვანა.
                 </td>
               </tr>
             ) : (
               product.components.map((row) => {
-                const total = (row.qty || 0) * (row.price || 0);
-                const match = trm.length ? matchTrmProduct(row, trm) : null;
+                const rowTotal = (row.qty || 0) * (row.price || 0);
+                const match = row.source !== 'catalog' && trm.length ? matchTrmProduct(row, trm) : null;
+                const catProduct = row.source === 'catalog' && row.catalogProductId
+                  ? allProducts.find(p => p.id === row.catalogProductId)
+                  : null;
+                const thumb = catProduct?.imageDataUrl || (match?.image ?? null);
                 return (
                   <tr
                     key={row.id}
-                    className="border-b border-bdr last:border-b-0 hover:bg-sur-2"
+                    className={`border-b border-bdr last:border-b-0 hover:bg-sur-2 ${row.source === 'catalog' ? 'bg-blue-lt/20' : ''}`}
                   >
                     <td className="px-2 py-1.5">
                       <div
                         className="h-9 w-9 shrink-0 overflow-hidden rounded-md border border-bdr bg-sur-2"
-                        title={match ? match.name : 'მოდელით ვერ მოიძებნა trm.ge-ზე'}
+                        title={catProduct?.name ?? (match ? match.name : 'trm.ge-ზე ვერ მოიძებნა')}
                       >
-                        {match?.image ? (
+                        {thumb ? (
                           // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={match.image}
-                            alt={match.name}
-                            loading="lazy"
-                            className="h-full w-full object-contain"
-                          />
+                          <img src={thumb} alt="" loading="lazy" className="h-full w-full object-contain" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center text-text-3">
                             <ImageIcon size={12} />
@@ -1034,9 +1057,7 @@ function ComponentsTab({
                       <input
                         type="text"
                         value={row.name}
-                        onChange={(e) =>
-                          updateComponent(row.id, {name: e.target.value})
-                        }
+                        onChange={(e) => updateComponent(row.id, {name: e.target.value})}
                         placeholder="დასახელება"
                         className="w-full bg-transparent text-[12px] text-text outline-none"
                       />
@@ -1045,23 +1066,28 @@ function ComponentsTab({
                       <input
                         type="text"
                         value={row.type}
-                        onChange={(e) =>
-                          updateComponent(row.id, {type: e.target.value})
-                        }
+                        onChange={(e) => updateComponent(row.id, {type: e.target.value})}
                         placeholder="მოდელი ან ტიპი"
                         className="w-full bg-transparent text-[12px] text-text-2 outline-none"
                       />
+                    </td>
+                    <td className="px-2 py-1.5 text-center">
+                      {row.source === 'catalog' ? (
+                        <span className="inline-flex items-center rounded-full border border-blue-bd bg-blue-lt px-1.5 py-0.5 font-mono text-[9px] font-bold text-blue">
+                          კატ.
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full border border-bdr bg-sur-2 px-1.5 py-0.5 font-mono text-[9px] text-text-3">
+                          მანუ.
+                        </span>
+                      )}
                     </td>
                     <td className="px-3 py-1.5 text-right">
                       <input
                         type="number"
                         value={row.qty}
                         step="0.01"
-                        onChange={(e) =>
-                          updateComponent(row.id, {
-                            qty: parseFloat(e.target.value) || 0
-                          })
-                        }
+                        onChange={(e) => updateComponent(row.id, {qty: parseFloat(e.target.value) || 0})}
                         className="w-20 bg-transparent text-right font-mono text-[12px] text-text outline-none"
                       />
                     </td>
@@ -1069,9 +1095,7 @@ function ComponentsTab({
                       <input
                         type="text"
                         value={row.unit}
-                        onChange={(e) =>
-                          updateComponent(row.id, {unit: e.target.value})
-                        }
+                        onChange={(e) => updateComponent(row.id, {unit: e.target.value})}
                         placeholder="ც"
                         className="w-14 bg-transparent text-[12px] text-text-2 outline-none"
                       />
@@ -1081,16 +1105,12 @@ function ComponentsTab({
                         type="number"
                         value={row.price}
                         step="0.01"
-                        onChange={(e) =>
-                          updateComponent(row.id, {
-                            price: parseFloat(e.target.value) || 0
-                          })
-                        }
+                        onChange={(e) => updateComponent(row.id, {price: parseFloat(e.target.value) || 0})}
                         className="w-24 bg-transparent text-right font-mono text-[12px] text-text outline-none"
                       />
                     </td>
                     <td className="px-3 py-1.5 text-right font-mono text-[12px] font-semibold text-navy">
-                      {fmtCurrency(total)}
+                      {fmtCurrency(rowTotal)}
                     </td>
                     <td className="px-2 py-1.5 text-center">
                       <button
@@ -1109,7 +1129,7 @@ function ComponentsTab({
           </tbody>
           <tfoot>
             <tr className="border-t-2 border-bdr-2 bg-sur-2">
-              <td colSpan={5} className="px-3 py-2 text-right font-mono text-[10.5px] font-bold uppercase tracking-[0.06em] text-text-3">
+              <td colSpan={6} className="px-3 py-2 text-right font-mono text-[10.5px] font-bold uppercase tracking-[0.06em] text-text-3">
                 ქვეჯამი · მაკომპლექტებლები
               </td>
               <td className="px-3 py-2 text-right font-mono text-[13px] font-bold text-navy">
@@ -1246,9 +1266,130 @@ function ComponentsTab({
       </div>
 
       <div className="rounded-[10px] border border-bdr bg-sur-2 px-4 py-3 text-[11px] text-text-2">
-        <span className="font-semibold text-navy">შენიშვნა:</span> ფორმულები
-        ვრცელდება რიგრიგობით. მაგ. „+18% დღგ" გამოითვლება წინა მწკრივის Running
-        თანხაზე. ცვლი რიგს → მიიღებ სხვა შედეგს.
+        <span className="font-semibold text-navy">შენიშვნა:</span> ფორმულები ვრცელდება
+        რიგრიგობით. „+18% დღგ" ითვლება წინა Running-ზე. ცვლი რიგს → სხვა შედეგი.
+      </div>
+
+      {/* ── Catalog picker modal ── */}
+      {catalogOpen && (
+        <CatalogPickerModal
+          allProducts={allProducts}
+          excludeId={product.id}
+          onPick={addFromCatalog}
+          onClose={() => setCatalogOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+function CatalogPickerModal({
+  allProducts,
+  excludeId,
+  onPick,
+  onClose
+}: {
+  allProducts: Product[];
+  excludeId: string;
+  onPick: (p: Product) => void;
+  onClose: () => void;
+}) {
+  const [q, setQ] = useState('');
+
+  const list = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    return allProducts
+      .filter((p) => p.id !== excludeId)
+      .filter((p) =>
+        !t ||
+        p.name.toLowerCase().includes(t) ||
+        p.type.toLowerCase().includes(t) ||
+        p.version.toLowerCase().includes(t)
+      );
+  }, [allProducts, excludeId, q]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="flex h-[520px] w-[480px] flex-col overflow-hidden rounded-xl border border-bdr bg-sur shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-bdr bg-sur-2 px-4 py-3">
+          <div className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-navy">
+            <Boxes size={13} /> კატალოგიდან პროდუქციის დამატება
+          </div>
+          <button onClick={onClose} className="rounded p-1 text-text-3 hover:bg-sur hover:text-text">
+            <X size={14} />
+          </button>
+        </div>
+        {/* Search */}
+        <div className="border-b border-bdr bg-sur px-3 py-2">
+          <div className="relative">
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-3" />
+            <input
+              autoFocus
+              type="text"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="ძიება სახელი / ვერსია / ტიპი…"
+              className="w-full rounded-md border border-bdr bg-sur-2 py-1.5 pl-7 pr-3 text-[12px] text-text outline-none focus:border-blue"
+            />
+          </div>
+        </div>
+        {/* List */}
+        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+          {list.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <Factory size={28} className="mb-2 text-text-3" />
+              <div className="text-[12px] text-text-3">
+                {allProducts.filter(p => p.id !== excludeId).length === 0
+                  ? 'კატალოგი ცარიელია'
+                  : 'ძიების შედეგი ცარიელია'}
+              </div>
+            </div>
+          ) : (
+            list.map((p) => {
+              const {total} = computeBreakdown(p);
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => onPick(p)}
+                  className="flex w-full items-center gap-3 rounded-lg border border-transparent px-3 py-2 text-left transition-all hover:border-blue-bd hover:bg-blue-lt"
+                >
+                  <div className="flex h-10 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md border border-bdr bg-sur-2">
+                    {p.imageDataUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.imageDataUrl} alt={p.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <Factory size={14} className="text-text-3" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[12.5px] font-semibold text-navy">{p.name}</div>
+                    <div className="font-mono text-[10.5px] text-text-3">
+                      {p.version}{p.type ? ` · ${p.type}` : ''}
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <div className="font-mono text-[12px] font-bold text-ora">{fmtCurrency(total)}</div>
+                    <div className="font-mono text-[9.5px] text-text-3">თვითღირ.</div>
+                  </div>
+                </button>
+              );
+            })
+          )}
+        </div>
+        <div className="border-t border-bdr bg-sur-2 px-4 py-2 text-[11px] text-text-3">
+          {list.length} პროდუქცია · დაწკაპუნება → ავტომატური დამატება
+        </div>
       </div>
     </div>
   );
