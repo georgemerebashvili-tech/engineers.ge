@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Status State Machines — Sazeo Platform</title>
+<style>
+:root {
+  --primary:#1565C0; --primary-dark:#0D47A1; --primary-light:#E3F2FD;
+  --surface:#fff; --surface-alt:#F7F9FC; --border:#E1E7EF;
+  --text:#1A2332; --text-muted:#5A6B80; --text-dim:#8A98AC;
+  --s:#2E7D32; --s-bg:#E8F5E9; --s-bd:#9DDCBA;
+  --w:#E6A100; --w-bg:#FFF8E1; --w-bd:#F5D06E;
+  --e:#C62828; --e-bg:#FFEBEE; --e-bd:#FFCDD2;
+  --i:#0277BD; --i-bg:#E1F5FE; --i-bd:#81C7E0;
+  --p:#6A1B9A; --p-bg:#F3E5F5; --p-bd:#CE93D8;
+  --o:#E65100; --o-bg:#FFF3E0; --o-bd:#FFCC80;
+  --t:#00695C; --t-bg:#E0F2F1; --t-bd:#80CBC4;
+  --n:#283593; --n-bg:#E8EAF6; --n-bd:#9FA8DA;
+  --br:#4E342E; --br-bg:#EFEBE9; --br-bd:#BCAAA4;
+  --radius:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font:13px/1.6 'Noto Sans Georgian','Inter',-apple-system,sans-serif;color:var(--text);background:var(--surface-alt);}
+.page{max-width:1100px;margin:0 auto;padding:32px 28px 80px;}
+
+.hero{background:linear-gradient(135deg,#4A148C 0%,#311B92 100%);color:#fff;padding:32px 36px;border-radius:var(--radius);margin-bottom:24px;}
+.hero h1{font-size:22px;font-weight:700;margin-bottom:6px;}
+.hero .sub{font-size:13px;opacity:.85;margin-bottom:16px;}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px;}
+.pill{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);padding:4px 10px;border-radius:999px;font-size:11px;}
+
+.toc{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:24px;}
+.toc-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:10px;}
+.toc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:4px 20px;}
+.toc-grid a{color:var(--primary);text-decoration:none;font-size:12.5px;padding:2px 0;display:flex;align-items:center;gap:6px;}
+.toc-grid a span{color:var(--text-dim);font-family:monospace;font-size:11px;flex-shrink:0;}
+.toc-grid a:hover{text-decoration:underline;}
+
+section{margin-bottom:40px;scroll-margin-top:16px;}
+h2{font-size:16px;font-weight:700;padding-bottom:8px;border-bottom:2px solid var(--border);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+h2 .sec-tag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 8px;border-radius:4px;font-family:monospace;flex-shrink:0;}
+h3{font-size:13px;font-weight:700;margin:16px 0 10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;}
+p{font-size:13px;margin-bottom:10px;line-height:1.65;}
+
+/* STATUS BADGE */
+.st{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:700;font-family:monospace;border:1px solid;white-space:nowrap;}
+.st.ok  {background:var(--s-bg);color:var(--s);border-color:var(--s-bd);}
+.st.warn{background:var(--w-bg);color:var(--w);border-color:var(--w-bd);}
+.st.err {background:var(--e-bg);color:var(--e);border-color:var(--e-bd);}
+.st.info{background:var(--i-bg);color:var(--i);border-color:var(--i-bd);}
+.st.ppl {background:var(--p-bg);color:var(--p);border-color:var(--p-bd);}
+.st.org {background:var(--n-bg);color:var(--n);border-color:var(--n-bd);}
+.st.neu {background:var(--surface-alt);color:var(--text-muted);border-color:var(--border);}
+.st.teal{background:var(--t-bg);color:var(--t);border-color:var(--t-bd);}
+.st.brn {background:var(--br-bg);color:var(--br);border-color:var(--br-bd);}
+.dot{width:7px;height:7px;border-radius:50%;background:currentColor;flex-shrink:0;}
+
+/* STATE MACHINE DIAGRAM */
+.sm-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:16px;overflow-x:auto;}
+.sm-title{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted);margin-bottom:14px;}
+.sm-flow{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:10px;}
+.sm-arrow{color:var(--text-dim);font-size:14px;flex-shrink:0;}
+.sm-edge{font-size:10px;color:var(--text-dim);font-family:monospace;padding:0 4px;}
+
+/* TRANSITION TABLE */
+.tt{width:100%;border-collapse:collapse;font-size:12px;background:var(--surface);border-radius:var(--radius);overflow:hidden;}
+.tt th{background:var(--surface-alt);color:var(--text-muted);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+.tt td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:top;}
+.tt tr:last-child td{border-bottom:none;}
+.tt tr:hover td{background:#F7FBFF;}
+.tt .from{font-family:monospace;font-size:11.5px;}
+.tt .to{font-family:monospace;font-size:11.5px;}
+.tt .trigger{font-size:12px;color:var(--text);}
+.tt .effect{font-size:11.5px;color:var(--text-muted);}
+.tt-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;}
+
+/* BEHAVIOR TABLE */
+.beh{width:100%;border-collapse:collapse;font-size:12px;}
+.beh th{background:var(--surface-alt);color:var(--text-muted);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:7px 12px;text-align:left;border-bottom:1px solid var(--border);}
+.beh td{padding:7px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.beh tr:last-child td{border-bottom:none;}
+.chk{font-size:14px;}
+
+.alert{padding:11px 15px;border-radius:6px;margin-bottom:14px;font-size:12.5px;display:flex;gap:10px;align-items:flex-start;}
+.alert.info{background:var(--i-bg);border:1px solid var(--i-bd);color:#014F7A;}
+.alert.warn{background:var(--w-bg);border:1px solid var(--w-bd);color:#7A4E00;}
+.alert.err {background:var(--e-bg);border:1px solid var(--e-bd);color:var(--e);}
+
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;}
+@media(max-width:700px){.two-col{grid-template-columns:1fr;}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:12px;}
+
+.footer{text-align:center;padding:28px 0 0;color:var(--text-dim);font-size:11.5px;}
+
+code{background:var(--surface-alt);color:var(--primary-dark);padding:1px 5px;border-radius:3px;font-family:monospace;font-size:11.5px;}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hero">
+  <h1>Status &amp; State Machines — Sazeo Platform</h1>
+  <div class="sub">მომხმარებელი · ორგანიზაცია · მოწყობილობა · შეტყობინება · ინვოისი · ინვაიტი · წვდომა · ამოშლის მოთხოვნა</div>
+  <div class="hero-meta">
+    <span class="pill"><strong>Entities:</strong> 8</span>
+    <span class="pill"><strong>Total statuses:</strong> 38</span>
+    <span class="pill"><strong>Transitions:</strong> 54</span>
+    <span class="pill"><strong>Author:</strong> Claude (CTO) · 2026-04-23</span>
+  </div>
+</div>
+
+<div class="toc">
+  <div class="toc-title">სარჩევი</div>
+  <div class="toc-grid">
+    <a href="#s1"><span>01</span>User — მომხმარებლის სტატუსი</a>
+    <a href="#s2"><span>02</span>Organization — ორგანიზაციის სტატუსი</a>
+    <a href="#s3"><span>03</span>Org Membership — წევრობა და როლი</a>
+    <a href="#s4"><span>04</span>Device — მოწყობილობის სტატუსი</a>
+    <a href="#s5"><span>05</span>Alert — შეტყობინების სტატუსი</a>
+    <a href="#s6"><span>06</span>Invoice — ინვოისის სტატუსი</a>
+    <a href="#s7"><span>07</span>Org Invite — მოწვევის სტატუსი</a>
+    <a href="#s8"><span>08</span>Erasure Request — ამოშლის სტატუსი</a>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     S1 — USER
+══════════════════════════════════════════════════════ -->
+<section id="s1">
+  <h2><span class="sec-tag" style="background:var(--i-bg);color:var(--i)">01</span>User — მომხმარებლის სტატუსი</h2>
+
+  <h3>სტატუსები</h3>
+  <div class="sm-wrap">
+    <div class="sm-title">State flow</div>
+    <div class="sm-flow">
+      <span class="st warn"><span class="dot"></span>pending_verification</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">email confirmed</span>
+      <span class="st ok"><span class="dot"></span>active</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">admin action</span>
+      <span class="st err"><span class="dot"></span>suspended</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">admin lifts</span>
+      <span class="st ok"><span class="dot"></span>active</span>
+    </div>
+    <div class="sm-flow">
+      <span class="st ok"><span class="dot"></span>active</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">GDPR erasure complete</span>
+      <span class="st neu"><span class="dot"></span>deleted</span>
+      <span class="sm-edge" style="font-size:11px;color:var(--e)">(irreversible)</span>
+    </div>
+  </div>
+
+  <div class="tt-wrap">
+    <table class="tt">
+      <tr><th>From</th><th>To</th><th>Trigger</th><th>Side effects</th></tr>
+      <tr>
+        <td class="from"><span class="st warn" style="font-size:10.5px"><span class="dot"></span>pending_verification</span></td>
+        <td class="to"><span class="st ok" style="font-size:10.5px"><span class="dot"></span>active</span></td>
+        <td class="trigger">Firebase email verification link clicked</td>
+        <td class="effect">Session valid · org creation unlocked</td>
+      </tr>
+      <tr>
+        <td class="from"><span class="st ok" style="font-size:10.5px"><span class="dot"></span>active</span></td>
+        <td class="to"><span class="st err" style="font-size:10.5px"><span class="dot"></span>suspended</span></td>
+        <td class="trigger"><code>PATCH /admin/users/:id/status</code> by system_admin</td>
+        <td class="effect">All sessions revoked (Redis) · Firebase disabled · audit_log entry</td>
+      </tr>
+      <tr>
+        <td class="from"><span class="st err" style="font-size:10.5px"><span class="dot"></span>suspended</span></td>
+        <td class="to"><span class="st ok" style="font-size:10.5px"><span class="dot"></span>active</span></td>
+        <td class="trigger"><code>PATCH /admin/users/:id/status</code> lift</td>
+        <td class="effect">Firebase re-enabled · email notification to user</td>
+      </tr>
+      <tr>
+        <td class="from"><span class="st ok" style="font-size:10.5px"><span class="dot"></span>active</span></td>
+        <td class="to"><span class="st neu" style="font-size:10.5px"><span class="dot"></span>deleted</span></td>
+        <td class="trigger">GDPR erasure execution (after 7-day cooldown)</td>
+        <td class="effect">Firebase account deleted · PII scrubbed · all PATs revoked · memberships removed · erasure_requests row retained 5yr</td>
+      </tr>
+    </table>
+  </div>
+
+  <h3>სტატუსის მიხედვით ქცევა</h3>
+  <div class="tt-wrap">
+    <table class="beh">
+      <tr><th>შეძლება</th><th class="ok" style="color:var(--s)">active</th><th style="color:var(--w)">pending_verif.</th><th style="color:var(--e)">suspended</th><th style="color:var(--text-dim)">deleted</th></tr>
+      <tr><td>Login</td><td class="chk">✅</td><td class="chk">✅ (limited)</td><td class="chk">❌ 403</td><td class="chk">❌ 401</td></tr>
+      <tr><td>Create org</td><td class="chk">✅</td><td class="chk">❌ email first</td><td class="chk">❌</td><td class="chk">❌</td></tr>
+      <tr><td>Access org data</td><td class="chk">✅</td><td class="chk">❌</td><td class="chk">❌</td><td class="chk">❌</td></tr>
+      <tr><td>Use API tokens</td><td class="chk">✅</td><td class="chk">❌</td><td class="chk">❌ all tokens revoked</td><td class="chk">❌</td></tr>
+      <tr><td>Re-register same email</td><td class="chk">❌ exists</td><td class="chk">❌ exists</td><td class="chk">❌ exists</td><td class="chk">✅ email_hash match — no memory</td></tr>
+    </table>
+  </div>
+
+  <div class="alert info">
+    <span>ℹ</span>
+    <div><code>pending_verification</code> user-ს შეუძლია login, მაგრამ API-ი <code>{ code: "EMAIL_UNVERIFIED" }</code>-ს ბრუნებს org-scoped endpoint-ებზე. Frontend-ი გამოგზავნის "გადაამოწმე Email" banner-ს.</div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     S2 — ORGANIZATION
+══════════════════════════════════════════════════════ -->
+<section id="s2">
+  <h2><span class="sec-tag" style="background:var(--n-bg);color:var(--n)">02</span>Organization — ორგანიზაციის სტატუსი</h2>
+
+  <div class="sm-wrap">
+    <div class="sm-title">State flow</div>
+    <div class="sm-flow">
+      <span class="st warn"><span class="dot"></span>pending_verification</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">org admin email verified</span>
+      <span class="st info"><span class="dot"></span>pending_approval</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">DMT approves</span>
+      <span class="st ok"><span class="dot"></span>active</span>
+    </div>
+    <div class="sm-flow" style="margin-top:4px">
+      <span class="st info"><span class="dot"></span>pending_approval</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">DMT rejects</span>
+      <span class="st err"><span class="dot"></span>rejected</span>
+    </div>
+    <div class="sm-flow" style="margin-top:4px">
+      <span class="st ok"><span class="dot"></span>active</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">payment D+14 overdue</span>
+      <span class="st warn"><span class="dot"></span>suspended</span>
+      <span class="sm-arrow">→</span>
+      <span class="st err"><span class="dot"></span>terminated</span>
+      <span class="sm-edge" style="font-size:11px;color:var(--e)">(D+30, irreversible)</span>
+    </div>
+    <div class="sm-flow" style="margin-top:4px">
+      <span class="st warn"><span class="dot"></span>suspended</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">payment received / admin lifts</span>
+      <span class="st ok"><span class="dot"></span>active</span>
+    </div>
+    <div class="sm-flow" style="margin-top:4px">
+      <span class="st warn"><span class="dot"></span>REQUIRE_ORG_APPROVAL=false</span>
+      <span class="sm-arrow">→</span>
+      <span class="st ok"><span class="dot"></span>active</span>
+      <span class="sm-edge">(pending_approval skip)</span>
+    </div>
+  </div>
+
+  <div class="tt-wrap">
+    <table class="tt">
+      <tr><th>From</th><th>To</th><th>Trigger</th><th>Side effects</th></tr>
+      <tr>
+        <td class="from"><span class="st warn" style="font-size:10.5px"><span class="dot"></span>pending_verification</span></td>
+        <td class="to"><span class="st info" style="font-size:10.5px"><span class="dot"></span>pending_approval</span></td>
+        <td class="trigger">org admin-ის email verified + <code>REQUIRE_ORG_APPROVAL=true</code></td>
+        <td class="effect">DMT-ს admin dashboard-ზე badge ჩნდება · email to platform ops</td>
+      </tr>
+      <tr>
+        <td class="from"><span class="st info" style="font-size:10.5px"><span class="dot"></span>pending_approval</span></td>
+        <td class="to"><span class="st ok" style="font-size:10.5px"><span class="dot"></span>active</span></td>
+        <td class="trigger"><code>PATCH /admin/organizations/:id/status {status:"active"}</code></td>
+        <td class="effect">Welcoming email to org_admin · billing clock starts</td>
+      </tr>
+      <tr>
+        <td class="from"><span class="st info" style="font-size:10.5px"><span class="dot"></span>pending_approval</span></td>
+        <td class="to"><span class="st err" style="font-size:10.5px"><span class="dot"></span>rejected</span></td>
+        <td class="trigger"><code>PATCH /admin/organizations/:id/status {status:"rejected"}</code></td>
+        <td class="effect">Email with reason · org data retained 30d then deleted</td>
+      </tr>
+      <tr>
+        <td class="from"><span class="st ok" style="font-size:10.5px"><span class="dot"></span>active</span></td>
+        <td class="to"><span class="st warn" style="font-size:10.5px"><span class="dot"></span>suspended</span></td>
+        <td class="trigger">Invoice overdue D+14 (cron) ან admin action</td>
+        <td class="effect">All <code>POST/PATCH/DELETE</code> → <code>402</code> · read-only access preserved · all API tokens still valid but mutation blocked</td>
+      </tr>
+      <tr>
+        <td class="from"><span class="st warn" style="font-size:10.5px"><span class="dot"></span>suspended</span></td>
+        <td class="to"><span class="st ok" style="font-size:10.5px"><span class="dot"></span>active</span></td>
+        <td class="trigger">Payment received (Stripe webhook) ან admin lift</td>
+        <td class="effect">All endpoints restored · email notification</td>
+      </tr>
+      <tr>
+        <td class="from"><span class="st warn" style="font-size:10.5px"><span class="dot"></span>suspended</span></td>
+        <td class="to"><span class="st err" style="font-size:10.5px"><span class="dot"></span>terminated</span></td>
+        <td class="trigger">D+30 without payment (cron) ან admin action</td>
+        <td class="effect">All sessions revoked · devices disconnected · data retained 90d (GDPR) · users notified</td>
+      </tr>
+    </table>
+  </div>
+
+  <h3>სტატუსის მიხედვით ქცევა</h3>
+  <div class="tt-wrap">
+    <table class="beh">
+      <tr><th>შეძლება</th><th style="color:var(--s)">active</th><th style="color:var(--w)">pending</th><th style="color:var(--w)">suspended</th><th style="color:var(--e)">terminated</th></tr>
+      <tr><td>GET /devices, /alerts, /reports</td><td class="chk">✅</td><td class="chk">❌</td><td class="chk">✅ read-only</td><td class="chk">❌</td></tr>
+      <tr><td>POST/PATCH/DELETE mutations</td><td class="chk">✅</td><td class="chk">❌</td><td class="chk">❌ 402</td><td class="chk">❌</td></tr>
+      <tr><td>MQTT device connections</td><td class="chk">✅</td><td class="chk">❌</td><td class="chk">✅ (existing) / ❌ (new)</td><td class="chk">❌ disconnected</td></tr>
+      <tr><td>Invite other orgs</td><td class="chk">✅</td><td class="chk">❌</td><td class="chk">❌</td><td class="chk">❌</td></tr>
+      <tr><td>Download reports/invoices</td><td class="chk">✅</td><td class="chk">❌</td><td class="chk">✅</td><td class="chk">✅ 90d grace</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     S3 — ORG MEMBERSHIP & ROLES
+══════════════════════════════════════════════════════ -->
+<section id="s3">
+  <h2><span class="sec-tag" style="background:var(--p-bg);color:var(--p)">03</span>Org Membership — წევრობა და როლი</h2>
+
+  <p>Role hierarchy: <strong>org_admin ⊃ billing_admin ⊃ member ⊃ viewer</strong>. Roles-ი additive არ არის — ყოველი user-ი ერთ org-ში ერთ role-ს ატარებს.</p>
+
+  <div class="two-col">
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span class="st err" style="font-size:11px"><span class="dot"></span>org_admin</span>
+        <span style="font-size:11px;color:var(--text-dim)">ordinal: 4</span>
+      </div>
+      <ul style="margin-left:16px;font-size:12.5px;color:var(--text-muted);display:flex;flex-direction:column;gap:3px">
+        <li>ყველა ქვემოთ მოყვანილი ნებართვა</li>
+        <li>Member-ების მოწვევა / ამოშლა / role-ის შეცვლა</li>
+        <li>Cross-org invite გენერაცია / revoke</li>
+        <li>Device settings &amp; configuration</li>
+        <li>Org profile update</li>
+        <li>Integration tokens შექმნა</li>
+        <li>Org-level audit log ნახვა</li>
+        <li><strong>ვერ:</strong> Billing management (billing_admin-ს)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span class="st ppl" style="font-size:11px"><span class="dot"></span>billing_admin</span>
+        <span style="font-size:11px;color:var(--text-dim)">ordinal: 3</span>
+      </div>
+      <ul style="margin-left:16px;font-size:12.5px;color:var(--text-muted);display:flex;flex-direction:column;gap:3px">
+        <li>Invoice ნახვა / download</li>
+        <li>Payment method განახლება</li>
+        <li>Plan upgrade / downgrade</li>
+        <li>Billing portal წვდომა</li>
+        <li><strong>ვერ:</strong> Member management, device settings, invites</li>
+        <li><em>შენიშვნა:</em> org_admin ასევე ახდენს billing action-ებს</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span class="st ok" style="font-size:11px"><span class="dot"></span>member</span>
+        <span style="font-size:11px;color:var(--text-dim)">ordinal: 2</span>
+      </div>
+      <ul style="margin-left:16px;font-size:12.5px;color:var(--text-muted);display:flex;flex-direction:column;gap:3px">
+        <li>Device list / detail / claim</li>
+        <li>Commands გაგზავნა</li>
+        <li>Alert read + update (resolve/assign)</li>
+        <li>Report შექმნა / ნახვა / export</li>
+        <li>Calculator გამოყენება</li>
+        <li><strong>ვერ:</strong> Member management, device settings, invites, billing</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span class="st info" style="font-size:11px"><span class="dot"></span>viewer</span>
+        <span style="font-size:11px;color:var(--text-dim)">ordinal: 1</span>
+      </div>
+      <ul style="margin-left:16px;font-size:12.5px;color:var(--text-muted);display:flex;flex-direction:column;gap:3px">
+        <li>Read-only: devices, alerts, reports</li>
+        <li>Dashboard ნახვა</li>
+        <li><strong>ვერ:</strong> ყველა mutation — commands, resolve, create report, claim device</li>
+        <li><em>გამოყენება:</em> Auditor-ები, external stakeholders</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Role transition rules</h3>
+  <div class="tt-wrap">
+    <table class="tt">
+      <tr><th>Action</th><th>Who can do it</th><th>Constraint</th></tr>
+      <tr><td>Invite new member with role</td><td><span class="st err" style="font-size:10.5px">org_admin</span></td><td>Cannot invite with higher role than own (org_admin can invite org_admin)</td></tr>
+      <tr><td>Change member role</td><td><span class="st err" style="font-size:10.5px">org_admin</span></td><td>Cannot demote sole org_admin — must promote another first</td></tr>
+      <tr><td>Remove member</td><td><span class="st err" style="font-size:10.5px">org_admin</span></td><td>Cannot remove sole org_admin</td></tr>
+      <tr><td>Leave org voluntarily</td><td>any member</td><td>Sole org_admin cannot leave without reassigning</td></tr>
+      <tr><td>Change own role</td><td>❌ nobody</td><td>Self-escalation impossible — guard checks actor ≠ target for role changes</td></tr>
+    </table>
+  </div>
+
+  <h3>Cross-tenant grant roles</h3>
+  <div class="card">
+    <div style="font-size:12.5px;color:var(--text)">
+      Cross-tenant grant-ს <strong>scope-ი</strong> განსაზღვრავს permissions-ს (არა role). Scope enum:<br><br>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">
+        <span class="st info" style="font-size:11px">read:devices</span>
+        <span class="st info" style="font-size:11px">read:reports</span>
+        <span class="st info" style="font-size:11px">read:alerts</span>
+        <span class="st warn" style="font-size:11px">write:commands</span>
+        <span class="st err" style="font-size:11px">full</span>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:var(--text-muted)">
+        Cross-tenant user-ი ვერ ახდენს member management-ს, ვერ ქმნის invites-ებს, ვერ ხედავს billing-ს — scope <code>full</code>-ზეც კი. <strong>Grant = resource access, not org membership.</strong>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     S4 — DEVICE
+══════════════════════════════════════════════════════ -->
+<section id="s4">
+  <h2><span class="sec-tag" style="background:var(--t-bg);color:var(--t)">04</span>Device — მოწყობილობის სტატუსი</h2>
+
+  <div class="sm-wrap">
+    <div class="sm-title">State flow</div>
+    <div class="sm-flow">
+      <span class="st neu"><span class="dot"></span>unclaimed</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">POST /devices/claim</span>
+      <span class="st warn"><span class="dot"></span>never_seen</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">first MQTT connect</span>
+      <span class="st ok"><span class="dot"></span>online</span>
+    </div>
+    <div class="sm-flow" style="margin-top:4px">
+      <span class="st ok"><span class="dot"></span>online</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">heartbeat timeout (5min)</span>
+      <span class="st info"><span class="dot"></span>offline</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">reconnect</span>
+      <span class="st ok"><span class="dot"></span>online</span>
+    </div>
+    <div class="sm-flow" style="margin-top:4px">
+      <span class="st ok"><span class="dot"></span>online</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">error event received</span>
+      <span class="st err"><span class="dot"></span>error</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">device reports ok</span>
+      <span class="st ok"><span class="dot"></span>online</span>
+    </div>
+    <div class="sm-flow" style="margin-top:4px">
+      <span class="st ok"><span class="dot"></span>online / offline / error</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">admin decommission</span>
+      <span class="st neu"><span class="dot"></span>decommissioned</span>
+    </div>
+  </div>
+
+  <div class="tt-wrap">
+    <table class="tt">
+      <tr><th>სტატუსი</th><th>განმარტება</th><th>Trigger</th><th>Alert generated?</th></tr>
+      <tr>
+        <td><span class="st neu" style="font-size:10.5px"><span class="dot"></span>unclaimed</span></td>
+        <td class="effect">Manufacturer-ის registry-შია, კლიენტს არ ეკუთვნის</td>
+        <td class="trigger">Manufacturer-მა დაარეგისტრირა</td>
+        <td>—</td>
+      </tr>
+      <tr>
+        <td><span class="st warn" style="font-size:10.5px"><span class="dot"></span>never_seen</span></td>
+        <td class="effect">Claimed, მაგრამ ჯერ არ დაუკავშირდია</td>
+        <td class="trigger"><code>POST /devices/claim</code></td>
+        <td>— (90d-ზე warning manufacturer-ს)</td>
+      </tr>
+      <tr>
+        <td><span class="st ok" style="font-size:10.5px"><span class="dot"></span>online</span></td>
+        <td class="effect">MQTT connected · heartbeat OK</td>
+        <td class="trigger">MQTT connect event</td>
+        <td>— (first_seen: manufacturer notification)</td>
+      </tr>
+      <tr>
+        <td><span class="st info" style="font-size:10.5px"><span class="dot"></span>offline</span></td>
+        <td class="effect">heartbeat timeout (default 5min) ან clean disconnect</td>
+        <td class="trigger">MQTT will message ან timeout</td>
+        <td>✅ severity=medium if offline > threshold</td>
+      </tr>
+      <tr>
+        <td><span class="st err" style="font-size:10.5px"><span class="dot"></span>error</span></td>
+        <td class="effect">Device-ი online-ია მაგრამ error state-ს აბრუნებს</td>
+        <td class="trigger">error payload on device/+/telemetry topic</td>
+        <td>✅ severity depends on error_code</td>
+      </tr>
+      <tr>
+        <td><span class="st neu" style="font-size:10.5px"><span class="dot"></span>decommissioned</span></td>
+        <td class="effect">Device ამოღებულია სერვისიდან · ისტორია ინახება</td>
+        <td class="trigger"><code>PATCH /devices/:id {status:"decommissioned"}</code> by org_admin</td>
+        <td>—</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="alert info">
+    <span>ℹ</span>
+    <div><strong>Heartbeat threshold:</strong> configurable per-device (<code>device.heartbeatIntervalSec</code>, default 300). MQTT broker-ი will message-ს aaიგზავნის disconnect-ზე → NestJS event handler → status update + alert generation.</div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     S5 — ALERT
+══════════════════════════════════════════════════════ -->
+<section id="s5">
+  <h2><span class="sec-tag" style="background:var(--e-bg);color:var(--e)">05</span>Alert — შეტყობინების სტატუსი</h2>
+
+  <div class="sm-wrap">
+    <div class="sm-title">State flow</div>
+    <div class="sm-flow">
+      <span class="st err"><span class="dot"></span>open</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">member acknowledges</span>
+      <span class="st warn"><span class="dot"></span>acknowledged</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">member resolves</span>
+      <span class="st ok"><span class="dot"></span>resolved</span>
+    </div>
+    <div class="sm-flow" style="margin-top:4px">
+      <span class="st err"><span class="dot"></span>open</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">auto-resolve (condition clears)</span>
+      <span class="st ok"><span class="dot"></span>resolved</span>
+      <span class="sm-edge" style="font-size:10.5px">(note: "auto-closed")</span>
+    </div>
+    <div class="sm-flow" style="margin-top:4px">
+      <span class="st err"><span class="dot"></span>open</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">escalation rule</span>
+      <span class="st err" style="border-color:#FF6B6B"><span class="dot"></span>escalated</span>
+      <span class="sm-arrow">→</span>
+      <span class="st warn"><span class="dot"></span>acknowledged</span>
+    </div>
+  </div>
+
+  <div class="tt-wrap">
+    <table class="tt">
+      <tr><th>სტატუსი</th><th>Severity-ები</th><th>Trigger</th><th>Notification</th></tr>
+      <tr>
+        <td><span class="st err" style="font-size:10.5px"><span class="dot"></span>open</span></td>
+        <td><span class="st err" style="font-size:10px">critical</span> <span class="st err" style="font-size:10px;opacity:.7">high</span> <span class="st warn" style="font-size:10px">medium</span> <span class="st ok" style="font-size:10px">low</span></td>
+        <td class="trigger">Rule engine: threshold crossed · device error · offline</td>
+        <td>critical/high → immediate push+email · medium → digest · low → dashboard only</td>
+      </tr>
+      <tr>
+        <td><span class="st warn" style="font-size:10.5px"><span class="dot"></span>acknowledged</span></td>
+        <td>—</td>
+        <td class="trigger"><code>PATCH /alerts/:id {status:"acknowledged"}</code></td>
+        <td>Assignee set · notification silenced · timestamp logged</td>
+      </tr>
+      <tr>
+        <td><span class="st ok" style="font-size:10.5px"><span class="dot"></span>resolved</span></td>
+        <td>—</td>
+        <td class="trigger">Manual (<code>PATCH</code>) ან auto-resolve (device returns to ok)</td>
+        <td>Resolution note logged · duration calculated · audit entry</td>
+      </tr>
+      <tr>
+        <td><span class="st err" style="font-size:10.5px;border-color:#FF6B6B"><span class="dot"></span>escalated</span></td>
+        <td>critical only</td>
+        <td class="trigger">open > N minutes without acknowledge (configurable per org)</td>
+        <td>SMS + email to org_admin · webhook</td>
+      </tr>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     S6 — INVOICE
+══════════════════════════════════════════════════════ -->
+<section id="s6">
+  <h2><span class="sec-tag" style="background:var(--s-bg);color:var(--s)">06</span>Invoice — ინვოისის სტატუსი</h2>
+
+  <div class="sm-wrap">
+    <div class="sm-title">State flow</div>
+    <div class="sm-flow">
+      <span class="st neu"><span class="dot"></span>draft</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">billing cron runs</span>
+      <span class="st info"><span class="dot"></span>issued</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">payment success</span>
+      <span class="st ok"><span class="dot"></span>paid</span>
+    </div>
+    <div class="sm-flow" style="margin-top:4px">
+      <span class="st info"><span class="dot"></span>issued</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">D+14 no payment</span>
+      <span class="st err"><span class="dot"></span>overdue</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">payment received</span>
+      <span class="st ok"><span class="dot"></span>paid</span>
+    </div>
+    <div class="sm-flow" style="margin-top:4px">
+      <span class="st info"><span class="dot"></span>issued</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">admin void (error)</span>
+      <span class="st neu"><span class="dot"></span>void</span>
+    </div>
+  </div>
+
+  <div class="tt-wrap">
+    <table class="tt">
+      <tr><th>სტატუსი</th><th>Trigger</th><th>Org effect</th><th>RS.GE action</th></tr>
+      <tr><td><span class="st neu" style="font-size:10.5px"><span class="dot"></span>draft</span></td><td class="trigger">Usage aggregation complete, not yet sent</td><td class="effect">None</td><td>—</td></tr>
+      <tr><td><span class="st info" style="font-size:10.5px"><span class="dot"></span>issued</span></td><td class="trigger">1st of month cron · PDF generated · Stripe invoice created</td><td class="effect">Email with PDF · payment link</td><td>Submit if GEL ≥ 1000 + GE org</td></tr>
+      <tr><td><span class="st ok" style="font-size:10.5px"><span class="dot"></span>paid</span></td><td class="trigger">Stripe webhook <code>invoice.paid</code> ან admin mark-paid</td><td class="effect">Confirmation email · receipt PDF · org status restored if was suspended</td><td>Update RS.GE status</td></tr>
+      <tr><td><span class="st err" style="font-size:10.5px"><span class="dot"></span>overdue</span></td><td class="trigger">D+14 cron → <code>org.status=suspended</code></td><td class="effect">Org suspended → read-only · daily reminder email</td><td>—</td></tr>
+      <tr><td><span class="st neu" style="font-size:10.5px"><span class="dot"></span>void</span></td><td class="trigger">Admin action (billing error / duplicate)</td><td class="effect">Stripe invoice voided · credit note if already paid</td><td>RS.GE cancellation if submitted</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     S7 — ORG INVITE
+══════════════════════════════════════════════════════ -->
+<section id="s7">
+  <h2><span class="sec-tag" style="background:var(--o-bg);color:var(--o)">07</span>Org Invite — მოწვევის სტატუსი</h2>
+
+  <div class="sm-wrap">
+    <div class="sm-title">State flow</div>
+    <div class="sm-flow">
+      <span class="st warn"><span class="dot"></span>pending</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">accept before expiry</span>
+      <span class="st ok"><span class="dot"></span>accepted</span>
+    </div>
+    <div class="sm-flow" style="margin-top:4px">
+      <span class="st warn"><span class="dot"></span>pending</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">grantor org_admin revokes</span>
+      <span class="st err"><span class="dot"></span>revoked</span>
+    </div>
+    <div class="sm-flow" style="margin-top:4px">
+      <span class="st warn"><span class="dot"></span>pending</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">expires_at passes (cron)</span>
+      <span class="st neu"><span class="dot"></span>expired</span>
+    </div>
+  </div>
+
+  <div class="tt-wrap">
+    <table class="tt">
+      <tr><th>სტატუსი</th><th>Token valid?</th><th>Grant created?</th><th>Notes</th></tr>
+      <tr><td><span class="st warn" style="font-size:10.5px"><span class="dot"></span>pending</span></td><td>✅</td><td>❌ not yet</td><td class="effect">Token usable · single-use</td></tr>
+      <tr><td><span class="st ok" style="font-size:10.5px"><span class="dot"></span>accepted</span></td><td>❌ consumed</td><td>✅ active grant created</td><td class="effect">grantee_org_id filled · accepted_at logged</td></tr>
+      <tr><td><span class="st err" style="font-size:10.5px"><span class="dot"></span>revoked</span></td><td>❌</td><td>❌ or existing grant also revoked</td><td class="effect">Immediate effect via Redis invalidation</td></tr>
+      <tr><td><span class="st neu" style="font-size:10.5px"><span class="dot"></span>expired</span></td><td>❌</td><td>❌</td><td class="effect">Accept attempt → generic 404 (not "expired" — enumeration prevention)</td></tr>
+    </table>
+  </div>
+
+  <div class="alert warn">
+    <span>⚠</span>
+    <div><strong>Brute-force protection:</strong> wrong/expired/revoked code ყველა → <code>404 { code: "INVITE_INVALID" }</code>. არასოდეს "expired" vs "wrong" distinction over the wire. Rate limit: 10 attempts/IP/hour.</div>
+  </div>
+
+  <h3>Org Access Grant სტატუსი</h3>
+  <div class="tt-wrap">
+    <table class="tt">
+      <tr><th>სტატუსი</th><th>Access granted?</th><th>Trigger</th></tr>
+      <tr><td><span class="st ok" style="font-size:10.5px"><span class="dot"></span>active</span></td><td>✅</td><td class="trigger">Invite accepted</td></tr>
+      <tr><td><span class="st err" style="font-size:10.5px"><span class="dot"></span>revoked</span></td><td>❌ instant</td><td class="trigger"><code>DELETE /organizations/:id/grants/:gid</code> → Redis invalidation</td></tr>
+      <tr><td><span class="st neu" style="font-size:10.5px"><span class="dot"></span>expired</span></td><td>❌</td><td class="trigger">grant.expires_at passes (if set)</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════
+     S8 — ERASURE REQUEST
+══════════════════════════════════════════════════════ -->
+<section id="s8">
+  <h2><span class="sec-tag" style="background:var(--e-bg);color:var(--e)">08</span>Erasure Request — GDPR ამოშლის სტატუსი</h2>
+
+  <div class="sm-wrap">
+    <div class="sm-title">State flow — სრული lifecycle</div>
+    <div class="sm-flow">
+      <span class="st warn"><span class="dot"></span>pending_confirmation</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">7 days pass (no cancel)</span>
+      <span class="st info"><span class="dot"></span>queued</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">worker picks up</span>
+      <span class="st ppl"><span class="dot"></span>in_progress</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">all steps complete</span>
+      <span class="st ok"><span class="dot"></span>completed</span>
+    </div>
+    <div class="sm-flow" style="margin-top:4px">
+      <span class="st warn"><span class="dot"></span>pending_confirmation</span>
+      <span class="sm-arrow">→</span><span class="sm-edge">user cancels (DELETE /me/erasure-request)</span>
+      <span class="st neu"><span class="dot"></span>cancelled</span>
+    </div>
+  </div>
+
+  <div class="tt-wrap">
+    <table class="tt">
+      <tr><th>სტატუსი</th><th>User session?</th><th>Trigger</th><th>Action</th></tr>
+      <tr>
+        <td><span class="st warn" style="font-size:10.5px"><span class="dot"></span>pending_confirmation</span></td>
+        <td>✅ still active</td>
+        <td class="trigger"><code>POST /me/erasure-request</code></td>
+        <td class="effect">Daily reminder email · 7-day countdown · cancel available</td>
+      </tr>
+      <tr>
+        <td><span class="st info" style="font-size:10.5px"><span class="dot"></span>queued</span></td>
+        <td>✅ still active</td>
+        <td class="trigger">7-day cooldown expires (cron)</td>
+        <td class="effect">Checks: sole admin? open invoices? → if fail → email user to resolve</td>
+      </tr>
+      <tr>
+        <td><span class="st ppl" style="font-size:10.5px"><span class="dot"></span>in_progress</span></td>
+        <td>❌ revoked</td>
+        <td class="trigger">Worker starts execution</td>
+        <td class="effect">Firebase delete · DB PII scrub · PATs revoke · memberships remove · steps_log filled</td>
+      </tr>
+      <tr>
+        <td><span class="st ok" style="font-size:10.5px"><span class="dot"></span>completed</span></td>
+        <td>❌</td>
+        <td class="trigger">All steps logged OK</td>
+        <td class="effect">Certificate email (ERS-YYYY-XXXXX) · erasure_requests row retained 5yr · user.status = deleted</td>
+      </tr>
+      <tr>
+        <td><span class="st neu" style="font-size:10.5px"><span class="dot"></span>cancelled</span></td>
+        <td>✅ restored</td>
+        <td class="trigger"><code>DELETE /me/erasure-request</code> within 7 days</td>
+        <td class="effect">Reminder emails stop · user continues normally</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="alert err">
+    <span>⚖</span>
+    <div><strong>GDPR Art. 17 deadline:</strong> request-დან 30 კალენდარული დღე. Internal SLA: queued → completed ≤ 72h. steps_log-ი არის proof of compliance. erasure_requests table-ი append-only — არ იშლება.</div>
+  </div>
+
+  <h3>Execution steps (steps_log)</h3>
+  <div class="card">
+    <div style="font-size:12.5px;display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;gap:8px;align-items:center"><span class="st ok" style="font-size:10px;min-width:80px">step_1</span> Firebase Auth account delete</div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="st ok" style="font-size:10px;min-width:80px">step_2</span> All PATs revoked (Redis + DB)</div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="st ok" style="font-size:10px;min-width:80px">step_3</span> All sessions invalidated (Redis)</div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="st ok" style="font-size:10px;min-width:80px">step_4</span> org_memberships removed (all orgs)</div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="st ok" style="font-size:10px;min-width:80px">step_5</span> user_preferences + user_org_preferences deleted</div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="st ok" style="font-size:10px;min-width:80px">step_6</span> audit_log.actor_user_id → <code>[deleted-ERS-XXXXX]</code></div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="st ok" style="font-size:10px;min-width:80px">step_7</span> billing_invoices: name/email → <code>[redacted]</code> (amounts retained 7yr)</div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="st ok" style="font-size:10px;min-width:80px">step_8</span> users row: PII nulled, status=deleted</div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="st ok" style="font-size:10px;min-width:80px">step_9</span> erasure certificate email sent</div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="st warn" style="font-size:10px;min-width:80px">RETAINED</span> erasure_requests row (5yr) · billing amounts · security audit log (1yr anonymized)</div>
+    </div>
+  </div>
+</section>
+
+<div class="footer">status-state-machines.html · Sazeo Platform · CTO: Claude (Anthropic) · 2026-04-23</div>
+</div>
+</body>
+</html>
