@@ -298,11 +298,14 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
     await patchUser(u.id, {email: next.trim()}, next.trim() ? 'ელფოსტა განახლდა' : 'ელფოსტა წაიშალა');
   }
 
+  const [accessLoadError, setAccessLoadError] = useState(false);
+
   async function openCompanyAccess(u: TbcUser) {
     setAccessUser(u);
     setAccessWildcard(false);
     setAccessIds(new Set());
     setAccessLoading(true);
+    setAccessLoadError(false);
     try {
       const r = await fetch(`/api/tbc/users/${u.id}/companies`);
       if (r.ok) {
@@ -310,18 +313,25 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
         setAccessWildcard(!!b.wildcard);
         setAccessIds(new Set<number>((b.companyIds || []) as number[]));
       } else {
-        flashToast('ვერ ჩაიტვირთა');
+        setAccessLoadError(true);
+        flashToast('ვერ ჩაიტვირთა — save გათიშულია');
       }
+    } catch {
+      setAccessLoadError(true);
+      flashToast('ვერ ჩაიტვირთა — save გათიშულია');
     } finally {
       setAccessLoading(false);
     }
   }
+
+  const [branchAccessLoadError, setBranchAccessLoadError] = useState(false);
 
   async function openBranchAccess(u: TbcUser) {
     setBranchAccessUser(u);
     setBranchWildcard(false);
     setBranchIds(new Set());
     setBranchAccessLoading(true);
+    setBranchAccessLoadError(false);
     try {
       // load branch list if needed
       if (branchList.length === 0) {
@@ -344,8 +354,12 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
         setBranchWildcard(!!b.wildcard);
         setBranchIds(new Set<number>((b.branchIds || []) as number[]));
       } else {
-        flashToast('ვერ ჩაიტვირთა');
+        setBranchAccessLoadError(true);
+        flashToast('ვერ ჩაიტვირთა — save გათიშულია');
       }
+    } catch {
+      setBranchAccessLoadError(true);
+      flashToast('ვერ ჩაიტვირთა — save გათიშულია');
     } finally {
       setBranchAccessLoading(false);
     }
@@ -949,6 +963,7 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
           selected={branchIds}
           loading={branchAccessLoading}
           saving={branchAccessSaving}
+          loadError={branchAccessLoadError}
           onToggleWildcard={(v) => {
             setBranchWildcard(v);
             if (v) setBranchIds(new Set());
@@ -979,6 +994,7 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
           selected={accessIds}
           loading={accessLoading}
           saving={accessSaving}
+          loadError={accessLoadError}
           onToggleWildcard={(v) => {
             setAccessWildcard(v);
             if (v) setAccessIds(new Set());
@@ -1011,6 +1027,7 @@ function CompanyAccessModal({
   selected,
   loading,
   saving,
+  loadError,
   onToggleWildcard,
   onToggleCompany,
   onSelectAll,
@@ -1024,6 +1041,7 @@ function CompanyAccessModal({
   selected: Set<number>;
   loading: boolean;
   saving: boolean;
+  loadError: boolean;
   onToggleWildcard: (v: boolean) => void;
   onToggleCompany: (id: number) => void;
   onSelectAll: () => void;
@@ -1179,7 +1197,13 @@ function CompanyAccessModal({
 
         <footer className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3">
           <div className="text-xs text-slate-600">
-            <span className="font-semibold">{countLabel}</span>
+            {loadError ? (
+              <span className="font-semibold text-red-600">
+                ⚠ მონაცემების ჩატვირთვა ვერ მოხერხდა — save გათიშული (data-safety)
+              </span>
+            ) : (
+              <span className="font-semibold">{countLabel}</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -1190,7 +1214,7 @@ function CompanyAccessModal({
             </button>
             <button
               onClick={onSave}
-              disabled={saving || loading}
+              disabled={saving || loading || loadError}
               className="rounded bg-[#0071CE] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#005ca8] disabled:opacity-50"
             >
               {saving ? 'ინახება…' : 'შენახვა'}
@@ -1209,6 +1233,7 @@ function BranchAccessModal({
   selected,
   loading,
   saving,
+  loadError,
   onToggleWildcard,
   onToggleBranch,
   onSelectAll,
@@ -1222,6 +1247,7 @@ function BranchAccessModal({
   selected: Set<number>;
   loading: boolean;
   saving: boolean;
+  loadError: boolean;
   onToggleWildcard: (v: boolean) => void;
   onToggleBranch: (id: number) => void;
   onSelectAll: () => void;
@@ -1387,7 +1413,13 @@ function BranchAccessModal({
 
         <footer className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3">
           <div className="text-xs text-slate-600">
-            <span className="font-semibold">{countLabel}</span>
+            {loadError ? (
+              <span className="font-semibold text-red-600">
+                ⚠ მონაცემების ჩატვირთვა ვერ მოხერხდა — save გათიშული (data-safety)
+              </span>
+            ) : (
+              <span className="font-semibold">{countLabel}</span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -1398,7 +1430,7 @@ function BranchAccessModal({
             </button>
             <button
               onClick={onSave}
-              disabled={saving || loading}
+              disabled={saving || loading || loadError}
               className="rounded bg-[#0071CE] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#005ca8] disabled:opacity-50"
             >
               {saving ? 'ინახება…' : 'შენახვა'}
