@@ -700,15 +700,13 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                               {u.role === 'user' && (
                                 <>
                                   <AccessPill
-                                    label="🏪"
-                                    srLabel="ფილიალები"
+                                    label="ფილიალები"
                                     summary={branchAccessSummary[u.id]}
                                     onClick={() => openBranchAccess(u)}
                                     title="ფილიალებზე წვდომა"
                                   />
                                   <AccessPill
-                                    label="🏢"
-                                    srLabel="კომპანიები"
+                                    label="კომპანიები"
                                     summary={accessSummary[u.id]}
                                     onClick={() => openCompanyAccess(u)}
                                     title="კომპანიებზე წვდომა"
@@ -719,19 +717,19 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                               {u.email && !u.is_static && (
                                 <button
                                   onClick={() => regenerateUserPassword(u)}
-                                  className="rounded border border-[#0071CE]/30 bg-[#E6F2FB] px-2 py-1 font-semibold text-[#0071CE] hover:bg-[#0071CE] hover:text-white"
+                                  className="rounded border border-[#0071CE]/30 bg-[#E6F2FB] px-2.5 py-1 font-semibold text-[#0071CE] hover:bg-[#0071CE] hover:text-white"
                                   title="ახალი 4-სიმბოლოიანი პაროლი ელფოსტაზე"
                                 >
-                                  🔑
+                                  ახალი პაროლი
                                 </button>
                               )}
                               {u.email && (
                                 <button
                                   onClick={() => sendResetEmail(u)}
-                                  className="rounded border border-slate-200 bg-white px-2 py-1 hover:bg-slate-50"
+                                  className="rounded border border-slate-200 bg-white px-2.5 py-1 text-slate-700 hover:bg-slate-50"
                                   title="reset ბმული ელფოსტაზე"
                                 >
-                                  📧
+                                  reset ბმული
                                 </button>
                               )}
                               {!u.is_static && (
@@ -745,17 +743,17 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                                         u.active ? 'გამოირთო' : 'ჩაირთო'
                                       )
                                     }
-                                    className="rounded border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50"
+                                    className="rounded border border-slate-200 bg-white px-2.5 py-1 text-slate-700 hover:bg-slate-50"
                                     title={u.active ? 'გამორთვა' : 'ჩართვა'}
                                   >
-                                    {u.active ? '⏸' : '▶'}
+                                    {u.active ? 'გამორთვა' : 'ჩართვა'}
                                   </button>
                                   <button
                                     onClick={() => deleteUser(u)}
-                                    className="rounded border border-red-200 bg-white px-2 py-1 text-red-600 hover:bg-red-50"
+                                    className="rounded border border-red-200 bg-white px-2.5 py-1 text-red-600 hover:bg-red-50"
                                     title="წაშლა"
                                   >
-                                    ✕
+                                    წაშლა
                                   </button>
                                 </>
                               )}
