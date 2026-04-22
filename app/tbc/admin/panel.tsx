@@ -698,20 +698,12 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                           <td className="px-4 py-2.5 text-right">
                             <div className="inline-flex items-center justify-end gap-1 text-xs">
                               {u.role === 'user' ? (
-                                <>
-                                  <AccessPill
-                                    label="ფილიალები"
-                                    summary={branchAccessSummary[u.id]}
-                                    onClick={() => openBranchAccess(u)}
-                                    title="ფილიალებზე წვდომა"
-                                  />
-                                  <AccessPill
-                                    label="კომპანიები"
-                                    summary={accessSummary[u.id]}
-                                    onClick={() => openCompanyAccess(u)}
-                                    title="კომპანიებზე წვდომა"
-                                  />
-                                </>
+                                <AccessPill
+                                  label="ფილიალები"
+                                  summary={branchAccessSummary[u.id]}
+                                  onClick={() => openBranchAccess(u)}
+                                  title="ფილიალებზე წვდომა"
+                                />
                               ) : (
                                 <span
                                   className="inline-flex items-center rounded border border-dashed border-slate-200 px-2 py-1 text-[11px] text-slate-400"
