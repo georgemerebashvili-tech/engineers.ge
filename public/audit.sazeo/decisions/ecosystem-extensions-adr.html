@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ecosystem Extensions — Sazeo Platform</title>
+<style>
+:root {
+  --primary: #1565C0;
+  --primary-dark: #0D47A1;
+  --primary-light: #E3F2FD;
+  --surface: #FFFFFF;
+  --surface-alt: #F7F9FC;
+  --border: #E1E7EF;
+  --text: #1A2332;
+  --text-muted: #5A6B80;
+  --text-dim: #8A98AC;
+  --success: #2E7D32;
+  --success-bg: #E8F5E9;
+  --warning: #E6A100;
+  --warning-bg: #FFF8E1;
+  --info: #0277BD;
+  --info-bg: #E1F5FE;
+  --error: #C62828;
+  --error-bg: #FFEBEE;
+  --purple: #6A1B9A;
+  --purple-bg: #F3E5F5;
+  --orange: #E65100;
+  --orange-bg: #FFF3E0;
+  --teal: #00695C;
+  --teal-bg: #E0F2F1;
+  --indigo: #283593;
+  --indigo-bg: #E8EAF6;
+  --brown: #4E342E;
+  --brown-bg: #EFEBE9;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font: 13px/1.6 'Noto Sans Georgian', 'Inter', -apple-system, sans-serif;
+  color: var(--text); background: var(--surface-alt);
+}
+.page { max-width: 1100px; margin: 0 auto; padding: 32px 28px 80px; }
+
+.hero {
+  background: linear-gradient(135deg, #283593 0%, #1A237E 100%);
+  color: #fff; padding: 32px 36px; border-radius: var(--radius-md); margin-bottom: 24px;
+}
+.hero h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.hero .sub { font-size: 13px; opacity: 0.85; margin-bottom: 16px; line-height: 1.5; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 999px; font-size: 11px; }
+
+.toc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 24px; }
+.toc-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 10px; }
+.toc-list { display: flex; flex-direction: column; gap: 4px; }
+.toc-list a { color: var(--primary); text-decoration: none; font-size: 12.5px; }
+.toc-list a:hover { text-decoration: underline; }
+.toc-list span { color: var(--text-dim); font-size: 11px; font-family: monospace; margin-right: 6px; }
+
+section { margin-bottom: 36px; scroll-margin-top: 16px; }
+h2 { font-size: 16px; font-weight: 700; color: var(--text); padding-bottom: 8px; border-bottom: 2px solid var(--border); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+h2 .sec-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 4px; font-family: monospace; flex-shrink: 0; }
+h3 { font-size: 13.5px; font-weight: 700; color: var(--text); margin: 18px 0 10px; }
+p { font-size: 13px; color: var(--text); margin-bottom: 10px; line-height: 1.65; }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px 20px; margin-bottom: 12px; }
+.card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+.card-id { font-family: monospace; font-size: 12px; font-weight: 700; color: var(--primary); background: var(--primary-light); padding: 2px 8px; border-radius: 4px; }
+.card-title { font-size: 14px; font-weight: 700; }
+.card-body { font-size: 12.5px; color: var(--text); line-height: 1.65; }
+.card-body code { background: var(--surface-alt); color: var(--primary-dark); padding: 1px 6px; border-radius: 3px; font-family: monospace; font-size: 11.5px; }
+.card-note { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 11px; color: var(--text-dim); font-family: monospace; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10.5px; font-weight: 600; font-family: monospace; text-transform: uppercase; letter-spacing: 0.4px; }
+.badge.locked  { background: var(--success-bg); color: var(--success); border: 1px solid #9DDCBA; }
+.badge.open    { background: var(--warning-bg); color: var(--warning); border: 1px solid #F5D06E; }
+.badge.new     { background: var(--info-bg); color: var(--info); border: 1px solid #81C7E0; }
+.badge.critical{ background: var(--error-bg); color: var(--error); border: 1px solid #FFCDD2; }
+
+.flow { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 18px 22px; margin-bottom: 14px; overflow-x: auto; }
+.flow-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 10px; }
+pre { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 12px; line-height: 1.7; color: var(--text); white-space: pre; }
+pre .c  { color: var(--text-dim); }
+pre .k  { color: var(--primary); font-weight: 600; }
+pre .s  { color: var(--success); }
+pre .w  { color: var(--warning); }
+pre .e  { color: var(--error); }
+pre .t  { color: var(--teal); font-weight: 600; }
+pre .p  { color: var(--purple); font-weight: 600; }
+pre .i  { color: var(--indigo); font-weight: 600; }
+
+.step-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.step { display: flex; gap: 12px; align-items: flex-start; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; }
+.step-num { width: 24px; height: 24px; border-radius: 999px; background: var(--primary); color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.step-num.warn { background: var(--warning); }
+.step-num.ok   { background: var(--success); }
+.step-body { flex: 1; font-size: 12.5px; }
+.step-body strong { display: block; margin-bottom: 3px; }
+.step-body code { background: var(--surface-alt); color: var(--primary-dark); padding: 1px 5px; border-radius: 3px; font-family: monospace; font-size: 11.5px; }
+
+.schema-table { width: 100%; border-collapse: collapse; font-size: 12px; background: var(--surface); border-radius: var(--radius-md); overflow: hidden; }
+.schema-table th { background: var(--surface-alt); color: var(--text-muted); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+.schema-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.schema-table tr:last-child td { border-bottom: none; }
+.schema-table .col-name { font-family: monospace; font-size: 12px; color: var(--primary-dark); font-weight: 600; }
+.schema-table .col-type { font-family: monospace; font-size: 11px; color: var(--text-muted); }
+.schema-table .pk { background: var(--warning-bg); }
+.schema-table .fk { background: var(--info-bg); }
+
+.alert { padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 14px; font-size: 12.5px; display: flex; gap: 10px; align-items: flex-start; }
+.alert-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+.alert.warning { background: var(--warning-bg); border: 1px solid #F5D06E; color: #7A4E00; }
+.alert.info    { background: var(--info-bg);    border: 1px solid #81C7E0; color: #014F7A; }
+.alert.error   { background: var(--error-bg);   border: 1px solid #FFCDD2; color: var(--error); }
+.alert.success { background: var(--success-bg); border: 1px solid #9DDCBA; color: var(--success); }
+.alert.indigo  { background: var(--indigo-bg);  border: 1px solid #9FA8DA; color: var(--indigo); }
+
+.two-col   { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 14px; }
+.three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+@media (max-width: 750px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+
+.stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+.stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px 16px; text-align: center; }
+.stat .val { font-size: 22px; font-weight: 700; color: var(--primary); font-family: monospace; }
+.stat .lbl { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+@media (max-width: 700px) { .stat-row { grid-template-columns: 1fr 1fr; } }
+
+.monitor-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px; }
+.monitor-icon { font-size: 18px; flex-shrink: 0; }
+.monitor-body { flex: 1; }
+.monitor-body strong { font-size: 13px; display: block; }
+.monitor-body span { font-size: 12px; color: var(--text-muted); }
+.monitor-status { font-family: monospace; font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+.monitor-status.ok   { background: var(--success-bg); color: var(--success); }
+.monitor-status.warn { background: var(--warning-bg); color: var(--warning); }
+.monitor-status.info { background: var(--info-bg); color: var(--info); }
+
+.footer { text-align: center; padding: 28px 0 0; color: var(--text-dim); font-size: 11.5px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hero">
+    <h1>Ecosystem Extensions — Sazeo Platform</h1>
+    <div class="sub">
+      Platform monitoring (health · vitals · rate limits · CSP · audit log) ·
+      Manufacturer portal (device tracking · stats · notifications) ·
+      Tax &amp; financial system (invoicing · payments · RS.GE)
+    </div>
+    <div class="hero-meta">
+      <span class="pill"><strong>Status:</strong> Draft → Locked</span>
+      <span class="pill"><strong>Author:</strong> Claude (CTO)</span>
+      <span class="pill"><strong>Date:</strong> 2026-04-23</span>
+      <span class="pill"><strong>Domains:</strong> 3</span>
+    </div>
+  </div>
+
+  <div class="toc">
+    <div class="toc-title">სარჩევი</div>
+    <div class="toc-list">
+      <div><a href="#s1"><span>01</span>Platform monitoring — System health · Web Vitals · Rate limits · CSP · Audit log</a></div>
+      <div><a href="#s2"><span>02</span>Manufacturer portal — device tracking · statistics · notifications</a></div>
+      <div><a href="#s3"><span>03</span>Tax &amp; financial system — invoicing · payments · RS.GE integration</a></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       S1 — PLATFORM MONITORING
+  ══════════════════════════════════════════════════ -->
+  <section id="s1">
+    <h2>
+      <span class="sec-tag" style="background:var(--indigo-bg);color:var(--indigo)">01</span>
+      Platform Monitoring — მონიტორინგი
+    </h2>
+
+    <p>Vercel-ის monitoring panel-ის ანალოგი — Sazeo-ს საკუთარი operator dashboard. <strong>System health, Web Vitals, Rate limits, CSP violations, Audit log</strong> — ხუთი განყოფილება, operator console-ში ხელმისაწვდომი.</p>
+
+    <!-- SYSTEM HEALTH -->
+    <h3>① System health — სერვისების მდგომარეობა</h3>
+    <div class="monitor-item"><div class="monitor-icon">💚</div><div class="monitor-body"><strong>API (NestJS)</strong><span>p99 latency 42ms · error rate 0.08% · 4 replicas</span></div><div class="monitor-status ok">healthy</div></div>
+    <div class="monitor-item"><div class="monitor-icon">💚</div><div class="monitor-body"><strong>PostgreSQL</strong><span>connections 18/100 · replication lag 0ms · WAL ok</span></div><div class="monitor-status ok">healthy</div></div>
+    <div class="monitor-item"><div class="monitor-icon">🟡</div><div class="monitor-body"><strong>S3 / Object Storage</strong><span>latency 820ms (elevated) · no errors · us-east-1</span></div><div class="monitor-status warn">degraded</div></div>
+    <div class="monitor-item"><div class="monitor-icon">💚</div><div class="monitor-body"><strong>MQTT Broker</strong><span>284 connected devices · 12k msg/min · no dropped</span></div><div class="monitor-status ok">healthy</div></div>
+    <div class="monitor-item"><div class="monitor-icon">💚</div><div class="monitor-body"><strong>Redis (cache/rate-limit)</strong><span>memory 42% · hit rate 94% · 0 evictions</span></div><div class="monitor-status ok">healthy</div></div>
+    <div class="monitor-item"><div class="monitor-icon">ℹ</div><div class="monitor-body"><strong>Firebase Auth</strong><span>external dependency · status from Firebase status page</span></div><div class="monitor-status info">external</div></div>
+
+    <div class="flow" style="margin-top:14px">
+      <div class="flow-title">GET /admin/health/summary — operator console feed</div>
+      <pre>
+  {
+    overall:  <span class="s">"degraded"</span>,   <span class="c">// worst-case aggregation</span>
+    services: [
+      { name: <span class="s">"api"</span>,      status: <span class="s">"ok"</span>,       p99Ms: <span class="w">42</span>  },
+      { name: <span class="s">"postgres"</span>, status: <span class="s">"ok"</span>,       p99Ms: <span class="w">4</span>   },
+      { name: <span class="s">"s3"</span>,       status: <span class="w">"degraded"</span>, p99Ms: <span class="w">820</span> },
+      { name: <span class="s">"mqtt"</span>,     status: <span class="s">"ok"</span>,       p99Ms: <span class="w">8</span>   },
+      { name: <span class="s">"redis"</span>,    status: <span class="s">"ok"</span>,       p99Ms: <span class="w">1</span>   }
+    ],
+    alerts_firing: <span class="w">1</span>,
+    checked_at: <span class="s">"2026-04-23T10:00:00Z"</span>
+  }</pre>
+    </div>
+
+    <!-- WEB VITALS -->
+    <h3>② Web Vitals — Frontend performance</h3>
+    <div class="stat-row">
+      <div class="stat"><div class="val" style="color:var(--success)">1.2s</div><div class="lbl">LCP p75</div></div>
+      <div class="stat"><div class="val" style="color:var(--success)">8ms</div><div class="lbl">INP p75</div></div>
+      <div class="stat"><div class="val" style="color:var(--success)">0.04</div><div class="lbl">CLS p75</div></div>
+      <div class="stat"><div class="val" style="color:var(--success)">480ms</div><div class="lbl">TTFB p75</div></div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        Web Vitals — Real User Monitoring (RUM) — Next.js <code>reportWebVitals()</code> → <code>POST /api/vitals</code> → CloudWatch custom metrics. Dashboard: LCP, INP, CLS, TTFB per page, per org tier, per country.
+        <br><br>
+        <strong>SLO targets:</strong> LCP &lt; 2.5s · INP &lt; 200ms · CLS &lt; 0.1 · TTFB &lt; 800ms. P75 threshold. Breach → PagerDuty alert.
+      </div>
+    </div>
+
+    <!-- RATE LIMITS -->
+    <h3>③ Rate limits — API quota monitoring</h3>
+    <div class="flow">
+      <div class="flow-title">Rate limit layers — სამი დონე</div>
+      <pre>
+  <span class="c">Layer 1 — Global (AWS WAF / CloudFront)</span>
+  <span class="k">  10 000 req/min</span> per IP → <span class="e">429 + Retry-After</span>   <span class="c">DDoS protection</span>
+
+  <span class="c">Layer 2 — Org-level (Redis token bucket)</span>
+  <span class="k">  plan-based quota</span> (100–unlimited req/min)    <span class="c">billing enforcement</span>
+  Header: <span class="s">X-RateLimit-Limit / Remaining / Reset</span>
+
+  <span class="c">Layer 3 — Endpoint-specific</span>
+  <span class="k">  POST /auth/login</span>  → 10/min per IP         <span class="c">brute force</span>
+  <span class="k">  POST /invites/accept</span> → 10/hr per IP        <span class="c">token guessing</span>
+  <span class="k">  POST /erasure-request</span> → 3/day per user     <span class="c">abuse prevention</span></pre>
+    </div>
+    <p>Operator dashboard-ზე: live rate-limit hit graph (429 rate per minute), top-10 orgs by quota usage, throttled IPs list.</p>
+
+    <!-- CSP -->
+    <h3>④ CSP violations — Content Security Policy</h3>
+    <div class="card">
+      <div class="card-body">
+        <code>Content-Security-Policy-Report-Only</code> → <code>report-uri /api/csp-report</code>. Violations persist-ავს DB-ში (30-day retention). Dashboard: violations by directive, by page, by user-agent.
+        <br><br>
+        <strong>Rollout strategy:</strong> Report-Only mode პირველ 2 კვირა → violations-ის ანალიზი → enforce mode. Inline scripts პროჰიბირებულია — <code>nonce</code>-ბაზირებული approach Next.js middleware-ში.
+      </div>
+    </div>
+    <div class="flow">
+      <div class="flow-title">CSP policy (target state)</div>
+      <pre>
+  <span class="s">default-src</span> 'self';
+  <span class="s">script-src</span>  'self' 'nonce-{per-request}';
+  <span class="s">style-src</span>   'self' 'nonce-{per-request}';
+  <span class="s">img-src</span>     'self' data: blob: https://storage.sazeo.io;
+  <span class="s">connect-src</span> 'self' wss://mqtt.sazeo.io https://firebaseapp.com;
+  <span class="s">frame-src</span>   'none';
+  <span class="s">object-src</span>  'none';
+  <span class="s">report-uri</span>  /api/csp-report;</pre>
+    </div>
+
+    <!-- AUDIT LOG -->
+    <h3>⑤ Audit log — ვინ რა გააკეთა</h3>
+    <p>ყოველი security-sensitive action-ი ბაზაში ლოგდება. Operator dashboard-ზე searchable, filterable.</p>
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+      <table class="schema-table">
+        <tr><th>column</th><th>type</th><th>note</th></tr>
+        <tr class="pk"><td class="col-name">id</td><td class="col-type">uuid PK</td><td class="col-note"></td></tr>
+        <tr class="fk"><td class="col-name">actor_user_id</td><td class="col-type">uuid NULL</td><td class="col-note">NULL = system action</td></tr>
+        <tr class="fk"><td class="col-name">actor_org_id</td><td class="col-type">uuid NULL</td><td class="col-note"></td></tr>
+        <tr><td class="col-name">action</td><td class="col-type">varchar(80)</td><td class="col-note">namespaced: "org.invite.accept", "user.erasure.request", "device.command.send"</td></tr>
+        <tr><td class="col-name">resource_type</td><td class="col-type">varchar(40)</td><td class="col-note">organization | user | device | invoice | token</td></tr>
+        <tr><td class="col-name">resource_id</td><td class="col-type">uuid NULL</td><td class="col-note"></td></tr>
+        <tr><td class="col-name">meta</td><td class="col-type">jsonb</td><td class="col-note">action-specific payload (PII-scrubbed)</td></tr>
+        <tr><td class="col-name">ip</td><td class="col-type">inet</td><td class="col-note"></td></tr>
+        <tr><td class="col-name">user_agent</td><td class="col-type">text NULL</td><td class="col-note"></td></tr>
+        <tr><td class="col-name">created_at</td><td class="col-type">timestamptz</td><td class="col-note">immutable — no UPDATE/DELETE on this table</td></tr>
+      </table>
+    </div>
+    <div class="alert indigo">
+      <span class="alert-icon">🔒</span>
+      <div><strong>Append-only guarantee:</strong> PostgreSQL row-level policy — <code>DENY UPDATE, DELETE ON audit_log</code> for all roles except a dedicated read-only archiver. Audit log integrity-ის violation-ი = GDPR Art. 5(2) breach.</div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════
+       S2 — MANUFACTURER PORTAL
+  ══════════════════════════════════════════════════ -->
+  <section id="s2">
+    <h2>
+      <span class="sec-tag" style="background:var(--brown-bg);color:var(--brown)">02</span>
+      Manufacturer Portal — მწარმოებლის პორტალი
+    </h2>
+
+    <p>ქარხანა/მწარმოებელი ყიდის IoT მოწყობილობებს სხვადასხვა კლიენტებზე. მას სჭირდება <strong>საკუთარი მოწყობილობების fleet-ის ხილვა</strong> — სად არიან, ჩართულია თუ არა, firmware-ის ვერსია, error rate. კლიენტის ბიზნეს-მონაცემები კი — <strong>არ ეკუთვნის</strong>.</p>
+
+    <div class="alert warning">
+      <span class="alert-icon">⚠</span>
+      <div><strong>Privacy boundary:</strong> მწარმოებელი ხედავს device-ის ოპერაციულ მეტრიკებს (online/offline, firmware, error count, uptime), მაგრამ <strong>ვერ ხედავს</strong> კლიენტ ორგანიზაციის სახელს, business data-ს, ან user-ების ინფორმაციას. Tenant isolation პრინციპი (ADR-MT-001) ვრცელდება.</div>
+    </div>
+
+    <h3>Org type: manufacturer</h3>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">🏭</span><span class="card-title">Manufacturer org</span></div>
+        <div class="card-body">
+          ახალი <code>org_type: manufacturer</code>. Self-registers ან platform invite-ით. Registration-ზე ავტომატური KYB (Know Your Business) check — საგადასახადო ID validation. Verified badge.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">📋</span><span class="card-title">Device registry</span></div>
+        <div class="card-body">
+          მწარმოებელი ქმნის <strong>device model</strong>-ებს: სახელი, ფოტო, specs, firmware changelog, certifications (UL/IEC). ყოველ model-ს აქვს serial prefix pattern (<code>DMT-SENS-*</code>).
+        </div>
+      </div>
+    </div>
+
+    <h3>Device claim / registration flow</h3>
+    <div class="step-list">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>მწარმოებელი ატვირთავს serial range-ებს</strong>
+          <code>POST /manufacturer/devices/batch-register</code> → CSV ან JSON. Fields: serial, model_id, production_date, firmware_version.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>კლიენტი "claim" ავს მოწყობილობას</strong>
+          <code>POST /devices/claim</code> → serial number. სისტემა ამოწმებს manufacturer registry-ში. Claim → device-ი ეკუთვნება კლიენტის org-ს, მაგრამ manufacturer_id link ინახება.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Device online event → manufacturer-ი ატყობინება</strong>
+          Rule engine: "when device first_online → notify manufacturer". Notification: Webhook / email / dashboard badge.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Manufacturer ხედავს aggregate fleet stats</strong>
+          Anonymized: "342 devices online across 47 deployments". კლიენტი ვინ არის — invisible.
+        </div>
+      </div>
+    </div>
+
+    <h3>Manufacturer dashboard — სტატისტიკის გვერდი</h3>
+    <div class="stat-row">
+      <div class="stat"><div class="val">1 240</div><div class="lbl">გაყიდული devices</div></div>
+      <div class="stat"><div class="val" style="color:var(--success)">87%</div><div class="lbl">Online rate</div></div>
+      <div class="stat"><div class="val" style="color:var(--warning)">2.3%</div><div class="lbl">Error rate (7d)</div></div>
+      <div class="stat"><div class="val">v2.4.1</div><div class="lbl">Most common fw</div></div>
+    </div>
+
+    <div class="flow">
+      <div class="flow-title">GET /manufacturer/analytics — dashboard feed</div>
+      <pre>
+  {
+    fleet: {
+      total_registered:  <span class="w">1240</span>,
+      claimed:           <span class="w">1098</span>,   <span class="c">// კლიენტებზე</span>
+      unclaimed:         <span class="w">142</span>,    <span class="c">// warehouse-ში</span>
+      online_now:        <span class="w">954</span>,
+      offline:           <span class="w">144</span>,
+      never_seen:        <span class="w">142</span>
+    },
+    firmware: {
+      <span class="s">"v2.4.1"</span>: <span class="w">720</span>,
+      <span class="s">"v2.3.8"</span>: <span class="w">330</span>,
+      <span class="s">"v2.2.0"</span>: <span class="w">48</span>,    <span class="c">// outdated → upgrade nudge</span>
+    },
+    errors_7d: {
+      total:         <span class="w">284</span>,
+      by_model: { <span class="s">"SENS-T100"</span>: <span class="w">180</span>, <span class="s">"SENS-H200"</span>: <span class="w">104</span> }
+    },
+    deployments_count: <span class="w">47</span>,    <span class="c">// კლიენტების რაოდენობა (anonymized)</span>
+    <span class="c">// კლიენტების სახელები — არ არის</span>
+  }</pre>
+    </div>
+
+    <h3>Notification rules — მწარმოებლის შეტყობინებები</h3>
+    <div class="card">
+      <div class="card-head"><span class="card-id">EE-001</span><span class="card-title">Manufacturer notification rule engine</span><span class="badge new">New</span></div>
+      <div class="card-body">
+        UI-ში მწარმოებელი ქმნის წესებს (no-code rule builder):
+        <ul style="margin:8px 0 0 16px;display:flex;flex-direction:column;gap:4px">
+          <li><strong>WHEN</strong> device_status changes TO online <strong>FOR FIRST TIME</strong> → email + webhook</li>
+          <li><strong>WHEN</strong> error_count &gt; 10 IN 24h FOR model="SENS-T100" → alert</li>
+          <li><strong>WHEN</strong> firmware_version = "v2.2.0" AND last_seen &gt; 30d → remind update</li>
+          <li><strong>WHEN</strong> device unclaimed &gt; 90d → sales follow-up trigger</li>
+        </ul>
+      </div>
+      <div class="card-note">Rule engine: EventBridge Rules → Lambda evaluator → SES/SNS/Webhook. Per-manufacturer rule limit: 20.</div>
+    </div>
+
+    <h3>DB Schema additions</h3>
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:10px">
+      <div style="padding:8px 12px;font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">device_models</div>
+      <table class="schema-table">
+        <tr><th>column</th><th>type</th><th>note</th></tr>
+        <tr class="pk"><td class="col-name">id</td><td class="col-type">uuid PK</td></tr>
+        <tr class="fk"><td class="col-name">manufacturer_org_id</td><td class="col-type">uuid FK → organizations</td><td class="col-note"></td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">varchar(120)</td><td class="col-note">e.g. "SENS-T100 Temperature Sensor"</td></tr>
+        <tr><td class="col-name">serial_prefix</td><td class="col-type">varchar(20)</td><td class="col-note">e.g. "DMT-T1-" — claim validation-ისთვის</td></tr>
+        <tr><td class="col-name">specs</td><td class="col-type">jsonb</td><td class="col-note">voltage, IP rating, measurement range…</td></tr>
+        <tr><td class="col-name">certifications</td><td class="col-type">text[]</td><td class="col-note">["UL", "CE", "IEC 62368"]</td></tr>
+        <tr><td class="col-name">current_firmware</td><td class="col-type">varchar(20)</td><td class="col-note">latest recommended version</td></tr>
+      </table>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+      <div style="padding:8px 12px;font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">devices table — new columns</div>
+      <table class="schema-table">
+        <tr><th>column</th><th>type</th><th>note</th></tr>
+        <tr class="fk"><td class="col-name">manufacturer_org_id</td><td class="col-type">uuid NULL FK</td><td class="col-note">populated on claim from registry</td></tr>
+        <tr class="fk"><td class="col-name">device_model_id</td><td class="col-type">uuid NULL FK</td><td class="col-note"></td></tr>
+        <tr><td class="col-name">serial_number</td><td class="col-type">varchar(64) UNIQUE NULL</td><td class="col-note">NULL if not registered in manufacturer DB</td></tr>
+        <tr><td class="col-name">claimed_at</td><td class="col-type">timestamptz NULL</td><td class="col-note">when client claimed this device</td></tr>
+        <tr><td class="col-name">first_seen_at</td><td class="col-type">timestamptz NULL</td><td class="col-note">first MQTT connect — triggers manufacturer notification</td></tr>
+        <tr><td class="col-name">firmware_version</td><td class="col-type">varchar(20) NULL</td><td class="col-note">reported by device on connect</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════
+       S3 — TAX & FINANCIAL SYSTEM
+  ══════════════════════════════════════════════════ -->
+  <section id="s3">
+    <h2>
+      <span class="sec-tag" style="background:var(--success-bg);color:var(--success)">03</span>
+      Tax &amp; Financial System — გადახდები · ინვოისი · RS.GE
+    </h2>
+
+    <p>პლატფორმას სჭირდება <strong>ავტომატური billing pipeline</strong> — Stripe-ის საერთაშორისო ბარათებით გადახდა, ქართული RS.GE (revenue.ge) ელ-ინვოისი, საგადასახადო ანგარიში, ნაღდი გადახდის flow.</p>
+
+    <h3>Payment stack</h3>
+    <div class="three-col">
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">💳</span><span class="card-title">Stripe</span></div>
+        <div class="card-body">
+          International cards, SEPA, Google/Apple Pay. Subscription management (monthly/annual). Usage-based billing (API calls, device count). Webhook → billing events.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">🇬🇪</span><span class="card-title">TBC Pay / BOG Pay</span></div>
+        <div class="card-body">
+          Georgian local payment gateway-ები. GEL ანგარიშსწორება. Installment plans. ქართული კლიენტებისთვის preferred option.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">🏦</span><span class="card-title">Bank Transfer</span></div>
+        <div class="card-body">
+          Enterprise-ებისთვის: საგადახდო ბარათი → ანგარიშის ნომერი + reference. Manual reconciliation operator dashboard-ში.
+        </div>
+      </div>
+    </div>
+
+    <h3>Billing pipeline — ავტომატური ციკლი</h3>
+    <div class="step-list">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Usage metering — real-time</strong>
+          ყოველ API call-ზე, device connect-ზე, storage write-ზე → usage event → SQS. Aggregator Lambda: კვირის განმავლობაში ჯამდება per-org.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Invoice generation — billing cycle-ის ბოლო</strong>
+          <code>POST /admin/billing/generate-invoices</code> cron (1-ე რიცხვი, 00:00). Per-org: plan fee + overage. Invoice object Stripe-ში + local DB. PDF auto-generated (pdfmake).
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>RS.GE ელ-ინვოისი (Georgian e-invoice)</strong>
+          Georgian law: B2B transactions &gt;GEL 1000 require e-invoice via RS.GE API. <code>POST https://api.rs.ge/rs/invoices</code> → invoice ID. Response stored in <code>invoices.rs_invoice_id</code>.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Payment attempt</strong>
+          Stripe auto-charges saved card. Failure → retry (D+3, D+7). BOG/TBC: payment link გაიგზავნება email-ზე. Bank transfer: 7 სამუშაო დღის ვადა.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num ok">5</div>
+        <div class="step-body">
+          <strong>Reconciliation + confirmation</strong>
+          Payment success → invoice.status = <code>paid</code> → confirmation email + PDF receipt → audit log entry.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num warn">!</div>
+        <div class="step-body">
+          <strong>Overdue → suspension</strong>
+          D+14 unpaid → org.status = <code>suspended</code> (read-only access). D+30 → <code>terminated</code>. Data retention 90d (GDPR grace).
+        </div>
+      </div>
+    </div>
+
+    <h3>RS.GE integration architecture</h3>
+    <div class="flow">
+      <div class="flow-title">Georgian e-invoice flow</div>
+      <pre>
+  <span class="c">1. Invoice generated locally</span>
+     invoices { id, org_id, amount_gel, period, line_items[] }
+
+  <span class="c">2. RS.GE API call (if org.country_code = 'GE' AND amount >= 1000 GEL)</span>
+     <span class="k">POST</span> https://api.rs.ge/rs/invoices
+     {
+       seller_tin:   <span class="s">"405123456"</span>,      <span class="c">// Sazeo-ს საგადასახადო ID</span>
+       buyer_tin:    <span class="s">"406789012"</span>,      <span class="c">// კლიენტის საგადასახადო ID</span>
+       invoice_date: <span class="s">"2026-04-01"</span>,
+       currency:     <span class="s">"GEL"</span>,
+       total:        <span class="w">2400.00</span>,
+       items: [
+         { name: <span class="s">"Sazeo Professional — April 2026"</span>, qty: <span class="w">1</span>, price: <span class="w">2400</span>, vat_pct: <span class="w">18</span> }
+       ]
+     }
+     ← { rs_invoice_id: <span class="s">"RS-2026-00184521"</span>, status: <span class="s">"issued"</span> }
+
+  <span class="c">3. Local record updated</span>
+     invoices.rs_invoice_id = <span class="s">"RS-2026-00184521"</span>
+     invoices.rs_submitted_at = NOW()
+
+  <span class="c">4. RS.GE confirmation stored — buyer sees it on revenue.ge portal</span></pre>
+    </div>
+
+    <h3>DB Schema — billing</h3>
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:10px">
+      <div style="padding:8px 12px;font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">invoices</div>
+      <table class="schema-table">
+        <tr><th>column</th><th>type</th><th>note</th></tr>
+        <tr class="pk"><td class="col-name">id</td><td class="col-type">varchar — INV-YYYY-XXXXX</td><td class="col-note">human-readable</td></tr>
+        <tr class="fk"><td class="col-name">org_id</td><td class="col-type">uuid FK → organizations</td></tr>
+        <tr><td class="col-name">period_start / end</td><td class="col-type">date</td></tr>
+        <tr><td class="col-name">amount_usd</td><td class="col-type">numeric(10,2)</td><td class="col-note">Stripe currency</td></tr>
+        <tr><td class="col-name">amount_gel</td><td class="col-type">numeric(10,2)</td><td class="col-note">GEL equivalent (NBG rate on invoice date)</td></tr>
+        <tr><td class="col-name">vat_amount_gel</td><td class="col-type">numeric(10,2)</td><td class="col-note">18% VAT</td></tr>
+        <tr><td class="col-name">status</td><td class="col-type">enum</td><td class="col-note">draft | issued | paid | overdue | void</td></tr>
+        <tr><td class="col-name">payment_method</td><td class="col-type">enum</td><td class="col-note">stripe | bog | tbc | bank_transfer | manual</td></tr>
+        <tr><td class="col-name">stripe_invoice_id</td><td class="col-type">varchar NULL</td></tr>
+        <tr><td class="col-name">rs_invoice_id</td><td class="col-type">varchar NULL</td><td class="col-note">RS.GE reference</td></tr>
+        <tr><td class="col-name">rs_submitted_at</td><td class="col-type">timestamptz NULL</td></tr>
+        <tr><td class="col-name">paid_at</td><td class="col-type">timestamptz NULL</td></tr>
+        <tr><td class="col-name">pdf_url</td><td class="col-type">text NULL</td><td class="col-note">S3 signed URL</td></tr>
+        <tr><td class="col-name">line_items</td><td class="col-type">jsonb</td><td class="col-note">plan, overages, discounts</td></tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-id">EE-002</span><span class="card-title">NBG exchange rate daily fetch</span><span class="badge locked">Locked</span></div>
+      <div class="card-body">
+        National Bank of Georgia-ს API: <code>https://nbg.gov.ge/gw/api/ct/monetarypolicy/currencies/</code> — ყოველდღე 00:30 cron. Rate-ი cache-ში. Invoice-ის გენერაციაზე: invoice date-ის rate-ი გამოიყენება (არა real-time). FX risk: Sazeo GEL-ში ინვოისირებს ქართულ კლიენტებს, USD-ში — საერთაშორისოებს.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="card-id">EE-003</span><span class="card-title">Tax compliance per jurisdiction</span><span class="badge open">Ongoing</span></div>
+      <div class="card-body">
+        <strong>Georgia:</strong> 18% VAT (დღგ) B2B on digital services. RS.GE e-invoice mandatory ≥ GEL 1000.<br>
+        <strong>EU:</strong> MOSS/OSS scheme — VAT of buyer's country. Stripe Tax-ი handles calculation.<br>
+        <strong>US:</strong> No federal digital services tax. State-level varies (NY, TX, etc.) — Stripe Tax.<br>
+        <strong>Rule:</strong> თუ org.country_code-ი ცნობილი jurisdiction-ია — auto-calculate tax. Unknown → 0% + warning to org_admin to confirm tax status.
+      </div>
+    </div>
+
+    <div class="alert success">
+      <span class="alert-icon">✓</span>
+      <div><strong>PCI DSS:</strong> Sazeo არ ინახავს card data-ს. Stripe-ი handles tokenization. Payment form: Stripe Elements (iframe) — no card number touches Sazeo servers. PCI SAQ-A compliance.</div>
+    </div>
+  </section>
+
+  <div class="footer">
+    ecosystem-extensions-adr.html · Sazeo Platform · CTO: Claude (Anthropic) · 2026-04-23
+  </div>
+
+</div>
+</body>
+</html>
