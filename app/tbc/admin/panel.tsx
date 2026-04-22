@@ -549,7 +549,7 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
         </div>
       </div>
 
-      <main className="mx-auto max-w-5xl p-6">
+      <main className="mx-auto max-w-7xl p-6">
         {tab === 'users' && (
           <div className="space-y-6">
             {/* Create user card */}
@@ -700,16 +700,18 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                               {u.role === 'user' && (
                                 <>
                                   <AccessPill
-                                    label="🏪 ფილიალები"
+                                    label="🏪"
+                                    srLabel="ფილიალები"
                                     summary={branchAccessSummary[u.id]}
                                     onClick={() => openBranchAccess(u)}
-                                    title="მიანიჭე წვდომა ფილიალებზე"
+                                    title="ფილიალებზე წვდომა"
                                   />
                                   <AccessPill
-                                    label="🏢 კომპანიები"
+                                    label="🏢"
+                                    srLabel="კომპანიები"
                                     summary={accessSummary[u.id]}
                                     onClick={() => openCompanyAccess(u)}
-                                    title="მიანიჭე წვდომა კომპანიებზე"
+                                    title="კომპანიებზე წვდომა"
                                   />
                                   <span className="mx-0.5 h-5 w-px bg-slate-200" aria-hidden />
                                 </>
@@ -718,18 +720,18 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                                 <button
                                   onClick={() => regenerateUserPassword(u)}
                                   className="rounded border border-[#0071CE]/30 bg-[#E6F2FB] px-2 py-1 font-semibold text-[#0071CE] hover:bg-[#0071CE] hover:text-white"
-                                  title="ახალი 4-char პაროლი + email"
+                                  title="ახალი 4-სიმბოლოიანი პაროლი ელფოსტაზე"
                                 >
-                                  🔑 pw
+                                  🔑
                                 </button>
                               )}
                               {u.email && (
                                 <button
                                   onClick={() => sendResetEmail(u)}
                                   className="rounded border border-slate-200 bg-white px-2 py-1 hover:bg-slate-50"
-                                  title="reset ბმული email-ზე"
+                                  title="reset ბმული ელფოსტაზე"
                                 >
-                                  📧 reset
+                                  📧
                                 </button>
                               )}
                               {!u.is_static && (
@@ -957,11 +959,13 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
 
 function AccessPill({
   label,
+  srLabel,
   summary,
   onClick,
   title
 }: {
   label: string;
+  srLabel?: string;
   summary?: {count: number; wildcard: boolean};
   onClick: () => void;
   title: string;
@@ -984,6 +988,7 @@ function AccessPill({
       onClick={onClick}
       title={title}
       className="inline-flex items-center rounded border border-[#0071CE]/30 bg-white px-2 py-1 font-semibold text-[#0071CE] hover:bg-[#E6F2FB]"
+      aria-label={srLabel || title}
     >
       {label}
       {badge}
