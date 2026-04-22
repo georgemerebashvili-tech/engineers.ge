@@ -1,0 +1,2875 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<title>IoT BMS SaaS — Infrastructure Composition v1.3</title>
+<style>
+:root {
+  --primary: #1565C0;
+  --primary-dark: #0D47A1;
+  --primary-light: #E3F2FD;
+  --surface: #FFFFFF;
+  --surface-alt: #F7F9FC;
+  --surface-hover: #EEF3F9;
+  --border: #E1E7EF;
+  --border-strong: #C9D3E0;
+  --text: #1A2332;
+  --text-muted: #5A6B80;
+  --text-dim: #8A98AC;
+  --success: #2E7D32;
+  --warning: #E6A100;
+  --danger: #D32F2F;
+  --accent-amber-bg: #FFF8E1;
+  --accent-amber-border: #FFD54F;
+  --accent-amber-text: #8D6E00;
+  --accent-green-bg: #E8F5E9;
+  --accent-green-border: #66BB6A;
+  --accent-green-text: #1B5E20;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-lg: 0 6px 20px rgba(21,101,192,0.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Noto Sans Georgian', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--surface-alt);
+  padding: 0;
+}
+
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px 28px 80px;
+}
+
+/* HERO */
+.hero {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: #fff;
+  padding: 40px 36px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 280px; height: 280px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 50%;
+}
+.hero::after {
+  content: '';
+  position: absolute;
+  bottom: -80px; right: 120px;
+  width: 200px; height: 200px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 50%;
+}
+.hero h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 1;
+}
+.hero .sub {
+  font-size: 15px;
+  opacity: 0.9;
+  margin-bottom: 18px;
+  position: relative;
+  z-index: 1;
+}
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+}
+.pill strong { font-weight: 700; }
+.pill.new { background: rgba(255,213,79,0.25); border-color: rgba(255,213,79,0.5); }
+
+/* REVIEW BANNER */
+.review-banner {
+  background: linear-gradient(135deg, var(--accent-green-bg) 0%, #F1F8E9 100%);
+  border: 1px solid var(--accent-green-border);
+  border-radius: var(--radius-md);
+  padding: 18px 22px;
+  margin-bottom: 22px;
+  box-shadow: var(--shadow-sm);
+}
+.review-banner h3 {
+  color: var(--accent-green-text);
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.review-banner h3::before { content: '✓'; font-size: 16px; }
+.review-banner .caption {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.review-tbl {
+  margin-top: 10px;
+  border: 1px solid var(--accent-green-border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: #fff;
+}
+.review-tbl table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.review-tbl th, .review-tbl td {
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.review-tbl th { background: var(--accent-green-bg); color: var(--accent-green-text); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px; }
+.review-tbl td.was { color: var(--danger); text-decoration: line-through; opacity: 0.75; }
+.review-tbl td.is { color: var(--accent-green-text); font-weight: 600; }
+.review-tbl tr:last-child td { border-bottom: none; }
+
+/* INTRO */
+.intro {
+  background: var(--surface);
+  padding: 20px 24px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  margin-bottom: 28px;
+  box-shadow: var(--shadow-sm);
+  color: var(--text-muted);
+}
+.intro strong { color: var(--text); }
+
+/* DECISIONS LOG */
+.decisions {
+  background: #FFFDE7;
+  border: 1px solid #FFE082;
+  border-radius: var(--radius-md);
+  padding: 18px 22px;
+  margin-bottom: 28px;
+}
+.decisions h3 {
+  color: var(--accent-amber-text);
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.decisions table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.decisions th, .decisions td { padding: 7px 10px; text-align: left; border-bottom: 1px dashed rgba(141,110,0,0.2); vertical-align: top; }
+.decisions th { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--accent-amber-text); font-weight: 700; }
+.decisions td strong { color: var(--primary-dark); }
+.decisions tr:last-child td { border-bottom: none; }
+
+/* SUMMARY NAV */
+.nav-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 36px;
+}
+.nav-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  text-decoration: none;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.nav-card:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+.nav-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px; height: 24px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* SECTIONS */
+.layer {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 18px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.layer.revised { border-left: 4px solid var(--accent-green-border); }
+.layer-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 22px;
+  background: linear-gradient(to right, var(--primary-light), var(--surface));
+  border-bottom: 1px solid var(--border);
+}
+.layer-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px; height: 34px;
+  background: var(--primary);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.layer-title { flex: 1; }
+.layer-title h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.2px;
+}
+.layer-title .adr {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-top: 2px;
+}
+.revised-tag {
+  background: var(--accent-green-bg);
+  color: var(--accent-green-text);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border: 1px solid var(--accent-green-border);
+}
+
+/* subsection inside layer */
+.layer-sub {
+  padding: 10px 22px 4px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border);
+}
+
+/* TABLE */
+.tbl-wrap { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+thead th {
+  text-align: left;
+  padding: 10px 16px;
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+tbody td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--surface-hover); }
+td.component {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+td.service {
+  color: var(--primary);
+  font-weight: 500;
+}
+td.service code {
+  background: var(--primary-light);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  color: var(--primary-dark);
+}
+td.role { color: var(--text-muted); }
+td.service strong { color: var(--primary-dark); font-weight: 700; }
+
+/* note under table */
+.layer-note {
+  padding: 12px 22px;
+  background: #FFFDE7;
+  border-top: 1px solid #FFE082;
+  font-size: 11.5px;
+  color: var(--accent-amber-text);
+}
+.layer-note strong { color: var(--accent-amber-text); }
+.layer-note code { background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+
+/* code block */
+pre.code {
+  margin: 10px 22px 16px;
+  background: #0D1626;
+  color: #E6EDF3;
+  padding: 14px 18px;
+  border-radius: var(--radius-sm);
+  font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-x: auto;
+  border: 1px solid #1F2A40;
+}
+pre.code .kw { color: #FF7B72; }
+pre.code .cm { color: #8B949E; }
+
+/* INVARIANTS */
+.invariants {
+  background: linear-gradient(135deg, #FFF8E1 0%, #FFFDE7 100%);
+  border: 1px solid #FFD54F;
+  border-radius: var(--radius-md);
+  padding: 22px 26px;
+  margin-top: 32px;
+}
+.invariants h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #8D6E00;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.invariants h3::before { content: '⚠'; font-size: 18px; }
+.invariants ul { list-style: none; padding: 0; }
+.invariants li {
+  padding: 7px 0 7px 22px;
+  position: relative;
+  font-size: 12.5px;
+  color: var(--text);
+  border-bottom: 1px dashed rgba(141,110,0,0.2);
+}
+.invariants li:last-child { border-bottom: none; }
+.invariants li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  color: #C9870A;
+  font-weight: 700;
+}
+.invariants li strong { color: #8D6E00; }
+
+/* PHASE 2 PARK */
+.phase2 {
+  background: var(--surface);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-md);
+  padding: 22px 26px;
+  margin-top: 22px;
+}
+.phase2 h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+.phase2 ol {
+  padding-left: 22px;
+  color: var(--text-muted);
+  font-size: 12.5px;
+}
+.phase2 li { margin: 5px 0; }
+.phase2 li strong { color: var(--text); }
+
+/* SUMMARY FINAL */
+.summary-final {
+  background: var(--primary-dark);
+  color: #fff;
+  padding: 28px 32px;
+  border-radius: var(--radius-md);
+  margin-top: 28px;
+}
+.summary-final h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  opacity: 0.95;
+}
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 10px;
+}
+.summary-item {
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.08);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid #64B5F6;
+  font-size: 12.5px;
+}
+.summary-item b { color: #BBDEFB; font-weight: 700; }
+.summary-item.revised { border-left-color: #FFD54F; }
+.summary-item.revised b { color: #FFE082; }
+
+/* FOOTER */
+.footer {
+  text-align: center;
+  padding: 28px 0 0;
+  color: var(--text-dim);
+  font-size: 11.5px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 720px) {
+  .page { padding: 16px 12px 60px; }
+  .hero { padding: 28px 22px; }
+  .hero h1 { font-size: 22px; }
+  .layer-header { padding: 14px 16px; }
+  thead th, tbody td { padding: 8px 10px; font-size: 11.5px; }
+  .nav-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hero">
+    <h1>IoT BMS SaaS — Infrastructure Composition</h1>
+    <div class="sub">რისგან შედგება სისტემა · Sazeo/DMT-ის successor platform · <b>post-Codex review</b></div>
+    <div class="hero-meta">
+      <span class="pill new"><strong>Version</strong> v1.3</span>
+      <span class="pill"><strong>Date</strong> 2026-04-22</span>
+      <span class="pill"><strong>ADRs</strong> 22 + 5 rev + 3 new (23–25)</span>
+      <span class="pill new"><strong>Layers</strong> 19</span>
+      <span class="pill"><strong>Cloud</strong> AWS-first</span>
+    </div>
+  </div>
+
+  <!-- REVIEW BANNER -->
+  <div class="review-banner">
+    <h3>v1.2 — რა შეიცვალა Codex review-ის შემდეგ</h3>
+    <div class="caption">Codex-მა 8 ადგილი გამოავლინა. ყველა მიღებულია — 5 არქიტექტურული რევიზია + 6 ადრე A-or-B-ს დალუქვა v1 default-ებად + 1 layer-count fix.</div>
+
+    <div class="review-tbl">
+      <table>
+        <thead>
+          <tr><th>#</th><th>სფერო</th><th>v1.1</th><th>v1.2</th><th>რატომ</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><strong>Data stack</strong></td>
+            <td class="was">Aurora regional + Global DB + Timescale + OpenSearch + sep scene-graph + sep feature store</td>
+            <td class="is">Aurora regional + Timescale + S3 + Redis + pgvector (Aurora ext)</td>
+            <td>too much ops-tax v1-ში</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><strong>Identity JWT</strong></td>
+            <td class="was"><code>userId + activeOrganizationId</code> JWT-ში</td>
+            <td class="is"><code>userId + sessionId</code>; org-context server-side, Redis 30s cache</td>
+            <td>stale-role risk membership change-ზე</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><strong>Edge runtime</strong></td>
+            <td class="was">Greengrass v2 + Rust/Go fallback</td>
+            <td class="is">Greengrass v2 <b>sole</b>; fallback deferred</td>
+            <td>2 edge platform = 2× OTA/obs burden</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td><strong>Cert rotation</strong></td>
+            <td class="was">12 months</td>
+            <td class="is">24 months v1; 12mo Phase 2 after 6mo stage proof</td>
+            <td>field ops pain without automation proof</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td><strong>Billing source</strong></td>
+            <td class="was">Timescale CA → Stripe meter events</td>
+            <td class="is"><code>usage_events</code> append-only ledger → Stripe (daily batch)</td>
+            <td>shared-infra tag attribution არასრული</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td><strong>Layer count</strong></td>
+            <td class="was">intro ამბობდა "13 layer", სინამდვილეში 14</td>
+            <td class="is">14 layer (drift fixed)</td>
+            <td>doc drift</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DECISIONS LOG -->
+  <div class="decisions">
+    <h3>🔒 Locked v1 defaults (ადრე A-or-B)</h3>
+    <table>
+      <thead>
+        <tr><th>კომპონენტი</th><th>v1 locked</th><th>Revise-trigger</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Real-time transport</td><td><strong>Socket.io via NestJS Gateway</strong></td><td>>5k concurrent subscribers/node → AppSync</td></tr>
+        <tr><td>Charts</td><td><strong>ECharts</strong></td><td>React-only constraint ან rare IoT volume → Recharts</td></tr>
+        <tr><td>Monorepo</td><td><strong>Turborepo</strong></td><td>team experience → Nx</td></tr>
+        <tr><td>IaC</td><td><strong>Terraform</strong></td><td>heavy L3 constructs needed → CDK</td></tr>
+        <tr><td>Feature flags</td><td><strong>LaunchDarkly</strong> (free tier)</td><td>tenant count / cost spike → Unleash self-hosted</td></tr>
+        <tr><td>Status page</td><td><strong>Statuspage.io</strong></td><td>regulated tenant on-prem demand → self-hosted</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="intro">
+    ეს არ არის ეტაპები. ეს არის <strong>შემადგენელი ნაწილების სია</strong> — <strong>28 layer</strong>,
+    თითოეულში კონკრეტული სერვისები/ინსტრუმენტები და რას აკეთებენ.
+    ბაზა: 22 ADR locked + 5 revisions (Codex review round 2).
+  </div>
+
+  <nav class="nav-grid">
+    <a class="nav-card" href="#l1"><span class="nav-num">1</span>Cloud foundation</a>
+    <a class="nav-card" href="#l2"><span class="nav-num">2</span>Networking & edge</a>
+    <a class="nav-card" href="#l3"><span class="nav-num">3</span>Compute</a>
+    <a class="nav-card" href="#l4"><span class="nav-num">4</span>Async backbone</a>
+    <a class="nav-card" href="#l5"><span class="nav-num">5</span>Data stores ✶</a>
+    <a class="nav-card" href="#l6"><span class="nav-num">6</span>Identity & access ✶</a>
+    <a class="nav-card" href="#l7"><span class="nav-num">7</span>Device ingress & edge ✶</a>
+    <a class="nav-card" href="#l8"><span class="nav-num">8</span>AI / ML stack ✶</a>
+    <a class="nav-card" href="#l9"><span class="nav-num">9</span>Digital Twin ✶</a>
+    <a class="nav-card" href="#l10"><span class="nav-num">10</span>App surfaces</a>
+    <a class="nav-card" href="#l11"><span class="nav-num">11</span>Observability ✶</a>
+    <a class="nav-card" href="#l12"><span class="nav-num">12</span>Security & compliance</a>
+    <a class="nav-card" href="#l13"><span class="nav-num">13</span>CI/CD & DevEx</a>
+    <a class="nav-card" href="#l14"><span class="nav-num">14</span>External + Billing ✶</a>
+    <a class="nav-card" href="#l15"><span class="nav-num">15</span>Current platform (iot.dmt.ge)</a>
+    <a class="nav-card" href="#l16"><span class="nav-num">16</span>DB schemas (ქართული)</a>
+    <a class="nav-card" href="#l17"><span class="nav-num">17</span>Code organization</a>
+    <a class="nav-card" href="#l18"><span class="nav-num">18</span>Protocols & info exchange</a>
+    <a class="nav-card" href="#l19"><span class="nav-num">19</span>Operator console ✶</a>
+    <a class="nav-card" href="#l20"><span class="nav-num">20</span>System diagram · node tree</a>
+    <a class="nav-card" href="#l21"><span class="nav-num">21</span>API design</a>
+    <a class="nav-card" href="#l22"><span class="nav-num">22</span>Notifications · SMS + Email</a>
+    <a class="nav-card" href="#l23"><span class="nav-num">23</span>Rationale · comparisons</a>
+    <a class="nav-card" href="#l24"><span class="nav-num">24</span>როლი · საჭიროება (ქართ.)</a>
+    <a class="nav-card" href="#l25"><span class="nav-num">25</span>Hardware · UL/IEC certs</a>
+    <a class="nav-card" href="#l26"><span class="nav-num">26</span>Self-learning bug detection</a>
+    <a class="nav-card" href="#l27"><span class="nav-num">27</span>External integration API</a>
+    <a class="nav-card" href="#l28"><span class="nav-num">28</span>Scheduling · GMT/tz</a>
+  </nav>
+
+  <!-- LAYER 1 -->
+  <section class="layer" id="l1">
+    <div class="layer-header">
+      <div class="layer-num">1</div>
+      <div class="layer-title">
+        <h2>Cloud foundation</h2>
+        <div class="adr">ADR-001, 021</div>
+      </div>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>სერვისი</th><th>როლი</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Org management</td><td class="service"><strong>AWS Organizations + Control Tower</strong></td><td class="role">multi-account governance</td></tr>
+        <tr><td class="component">Identity for humans</td><td class="service"><strong>AWS IAM Identity Center (SSO)</strong></td><td class="role">engineer-ების წვდომა, არა IAM user-ები</td></tr>
+        <tr><td class="component">Accounts (day-1)</td><td class="service"><code>shared-services</code>, <code>prod-eu-central-1</code>, <code>log-archive</code></td><td class="role">3 core account</td></tr>
+        <tr><td class="component">Accounts (SOC 2)</td><td class="service"><code>prod-us-east-1</code>, <code>stage</code>, <code>security</code>, <code>dev</code></td><td class="role">+4 account SOC 2 audit-მდე</td></tr>
+        <tr><td class="component">Guardrails</td><td class="service"><strong>Service Control Policies (SCP)</strong></td><td class="role">region lock, deny public S3, KMS enforce</td></tr>
+        <tr><td class="component">Secrets</td><td class="service"><strong>AWS Secrets Manager + Parameter Store</strong></td><td class="role">DB creds, API keys, rotated</td></tr>
+        <tr><td class="component">Keys</td><td class="service"><strong>KMS</strong> — regional CMK per (env, region)</td><td class="role">envelope encryption სრულად</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- LAYER 2 -->
+  <section class="layer" id="l2">
+    <div class="layer-header">
+      <div class="layer-num">2</div>
+      <div class="layer-title">
+        <h2>Networking & edge</h2>
+        <div class="adr">traffic ingress, TLS, WAF</div>
+      </div>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>სერვისი</th><th>როლი</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Private networking</td><td class="service"><strong>VPC</strong> per account, 3 AZ</td><td class="role">base network</td></tr>
+        <tr><td class="component">VPC connectivity</td><td class="service"><strong>Transit Gateway</strong></td><td class="role">cross-account VPC peering</td></tr>
+        <tr><td class="component">Edge CDN</td><td class="service"><strong>CloudFront</strong></td><td class="role">static + API edge cache + TLS termination</td></tr>
+        <tr><td class="component">WAF</td><td class="service"><strong>AWS WAF</strong></td><td class="role">L7 protection</td></tr>
+        <tr><td class="component">Load balancer</td><td class="service"><strong>ALB</strong> per region</td><td class="role">traffic to Fargate</td></tr>
+        <tr><td class="component">DNS</td><td class="service"><strong>Route 53</strong> + ACM</td><td class="role">domains, regional routing</td></tr>
+        <tr><td class="component">Private endpoints</td><td class="service"><strong>VPC Endpoints</strong></td><td class="role">traffic never leaves VPC</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- LAYER 3 -->
+  <section class="layer" id="l3">
+    <div class="layer-header">
+      <div class="layer-num">3</div>
+      <div class="layer-title">
+        <h2>Compute — API & workers</h2>
+        <div class="adr">ADR-004 · NestJS sole API platform</div>
+      </div>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>სერვისი</th><th>როლი</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Container orchestration</td><td class="service"><strong>ECS Fargate</strong></td><td class="role">stateless services</td></tr>
+        <tr><td class="component">Container registry</td><td class="service"><strong>ECR</strong> per env</td><td class="role">images</td></tr>
+        <tr><td class="component">API platform</td><td class="service"><strong>NestJS</strong> (monorepo)</td><td class="role">REST, WebSocket</td></tr>
+        <tr><td class="component">Sync workers</td><td class="service">Fargate services</td><td class="role">async events consumers</td></tr>
+        <tr><td class="component">Scheduled jobs</td><td class="service"><strong>EventBridge Scheduler</strong> → Fargate</td><td class="role">cron, scheduled maintenance</td></tr>
+        <tr><td class="component">Serverless glue</td><td class="service"><strong>Lambda</strong> (minimal)</td><td class="role">S3 triggers, Cognito hooks, webhook ingress</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- LAYER 4 -->
+  <section class="layer" id="l4">
+    <div class="layer-header">
+      <div class="layer-num">4</div>
+      <div class="layer-title">
+        <h2>Async backbone</h2>
+        <div class="adr">ADR-005</div>
+      </div>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>სერვისი</th><th>როლი</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Work queues</td><td class="service"><strong>SQS</strong> (standard + FIFO)</td><td class="role">per domain: <code>alerts</code>, <code>workorders-sync</code>, <code>ai-jobs</code>, <code>scene-index</code></td></tr>
+        <tr><td class="component">Dead-letter</td><td class="service">SQS DLQ per queue</td><td class="role">failed message quarantine</td></tr>
+        <tr><td class="component">Domain events</td><td class="service"><strong>EventBridge</strong> custom bus</td><td class="role"><code>device.provisioned</code>, <code>alarm.triggered</code>, <code>workorder.closed</code></td></tr>
+        <tr><td class="component">Cache / presence / session</td><td class="service"><strong>ElastiCache Redis</strong></td><td class="role">short-TTL cache, rate limits, presence, <strong>session org-context cache</strong></td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- LAYER 5 -->
+  <section class="layer revised" id="l5">
+    <div class="layer-header">
+      <div class="layer-num">5</div>
+      <div class="layer-title">
+        <h2>Data stores</h2>
+        <div class="adr">ADR-006, 007, 008, 015, 018 · v1 simplified per Codex</div>
+      </div>
+      <span class="revised-tag">Revised</span>
+    </div>
+    <div class="layer-sub">v1 core (mandatory)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>სერვისი</th><th>როლი</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Tenant relational</td><td class="service"><strong>Aurora PostgreSQL 16</strong> — per-region cluster</td><td class="role">tenant rows, RLS enforced</td></tr>
+        <tr><td class="component">Time-series</td><td class="service"><strong>TimescaleDB</strong> (Timescale Cloud / EC2)</td><td class="role">telemetry hypertable, continuous aggregates</td></tr>
+        <tr><td class="component">Cold storage</td><td class="service"><strong>S3</strong> Intelligent-Tiering</td><td class="role">Parquet cold telemetry, attachments, 3D assets</td></tr>
+        <tr><td class="component">Geospatial</td><td class="service"><strong>PostGIS</strong> extension on Aurora</td><td class="role">GPS, scene spatial index</td></tr>
+        <tr><td class="component">Vector / AI</td><td class="service"><strong>pgvector + pgai</strong> extension on Aurora</td><td class="role">RAG embeddings (NOT separate DB)</td></tr>
+        <tr><td class="component">Audit / compliance</td><td class="service"><strong>S3 Object Lock</strong> in <code>log-archive</code></td><td class="role">immutable evidence, regulated paths</td></tr>
+        <tr><td class="component">Data lake query</td><td class="service"><strong>Athena + Glue catalog</strong></td><td class="role">ad-hoc on cold Parquet</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">Deferred to Phase 2 (was v1 in v1.1)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>რატომ გადავდეთ</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Aurora Global Database</td><td class="role">v1-ში catalogs regional-ად დუბლირდება DMS-ით; Global DB-ის ops-tax არ ჯდება</td></tr>
+        <tr><td class="component">OpenSearch</td><td class="role">Postgres FTS (tsvector + trigram) v1-ისთვის საკმარისია; OpenSearch მხოლოდ როცა corpus >10M docs</td></tr>
+        <tr><td class="component">Separate scene-graph DB</td><td class="role">v1 scene graph = Aurora-ს <code>twin</code> schema (same cluster); სეპარაცია მხოლოდ scene ops >5% Aurora load-ზე</td></tr>
+        <tr><td class="component">Separate feature-store DB</td><td class="role">v1 features = Timescale CA + Redis; separate Postgres მხოლოდ cross-asset-class shared features-ისთვის</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- LAYER 6 -->
+  <section class="layer revised" id="l6">
+    <div class="layer-header">
+      <div class="layer-num">6</div>
+      <div class="layer-title">
+        <h2>Identity & access</h2>
+        <div class="adr">ADR-009, 010, 017 · session-resolved org-context per Codex</div>
+      </div>
+      <span class="revised-tag">Revised</span>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>ინსტრუმენტი</th><th>როლი</th></tr></thead>
+      <tbody>
+        <tr><td class="component">End-user auth</td><td class="service"><strong>Cognito User Pools</strong> MVP → WorkOS/Clerk-ready</td><td class="role">sign-in, MFA, SSO</td></tr>
+        <tr><td class="component">Enterprise SSO</td><td class="service"><strong>WorkOS</strong> (Phase 2)</td><td class="role">SAML/OIDC</td></tr>
+        <tr><td class="component">Internal schema</td><td class="service"><code>users / organizations / memberships / visibility_grants / allowlists</code></td><td class="role"><strong>user-first</strong> identity model</td></tr>
+        <tr><td class="component"><strong>JWT payload (v1.2)</strong></td><td class="service"><code>userId + sessionId + iat/exp</code> only</td><td class="role">minimal, no org-context</td></tr>
+        <tr><td class="component"><strong>Session org-context</strong></td><td class="service"><strong>Redis session store</strong> <code>session:{sessionId}</code> → <code>{userId, activeOrgId, roles, grants, fetched_at}</code></td><td class="role">30s TTL, invalidated on membership/role change event</td></tr>
+        <tr><td class="component">Per-request resolution</td><td class="service">middleware loads session → refresh if <code>fetched_at &gt; 30s</code> or invalidation fired</td><td class="role">stale-role attack window &lt; 30s</td></tr>
+        <tr><td class="component">RLS enforcement</td><td class="service">PostgreSQL RLS + <code>SET LOCAL app.tenant_id</code></td><td class="role">row-level isolation</td></tr>
+        <tr><td class="component">Allowlists</td><td class="service"><code>allowlist_entries</code> (IP/device/email/integration)</td><td class="role">first-class, bypass = P0</td></tr>
+      </tbody>
+    </table></div>
+    <div class="layer-note"><strong>Why not org-context in JWT:</strong> JWT lifetime 15–60 min; membership/role change happens anytime; revoked member keeps prior JWT valid ⇒ stale permissions. Server-side resolution with event-driven cache invalidation = &lt;30s stale window even on 60-min JWT.</div>
+  </section>
+
+  <!-- LAYER 7 -->
+  <section class="layer revised" id="l7">
+    <div class="layer-header">
+      <div class="layer-num">7</div>
+      <div class="layer-title">
+        <h2>Device ingress & edge</h2>
+        <div class="adr">ADR-002, 003 · single runtime + conservative cert rotation per Codex</div>
+      </div>
+      <span class="revised-tag">Revised</span>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>სერვისი</th><th>როლი</th></tr></thead>
+      <tbody>
+        <tr><td class="component">MQTT broker</td><td class="service"><strong>AWS IoT Core</strong></td><td class="role">device connectivity</td></tr>
+        <tr><td class="component">Device onboarding</td><td class="service"><strong>Fleet Provisioning</strong> (claim cert)</td><td class="role">zero-touch enrollment</td></tr>
+        <tr><td class="component">Device certs</td><td class="service"><strong>IoT Core CA + ACM PCA</strong></td><td class="role">X.509 rotated <strong>24 months v1</strong>; 12mo Phase 2 after 6mo stage proof</td></tr>
+        <tr><td class="component">OTA / firmware</td><td class="service"><strong>IoT Jobs</strong></td><td class="role">staged rollout (canary → 10% → full)</td></tr>
+        <tr><td class="component">Device security</td><td class="service"><strong>Device Defender</strong></td><td class="role">quarantine on anomaly</td></tr>
+        <tr><td class="component">Rule engine</td><td class="service"><strong>IoT Rules</strong> → Kinesis/SQS/Timescale</td><td class="role">telemetry routing</td></tr>
+        <tr><td class="component">Edge runtime</td><td class="service"><strong>Greengrass v2 — sole platform v1</strong></td><td class="role">write-back, life-safety (no parallel fallback)</td></tr>
+        <tr><td class="component">Edge local store</td><td class="service"><strong>SQLite</strong> (Greengrass-packaged)</td><td class="role">≥72h telemetry buffer</td></tr>
+      </tbody>
+    </table></div>
+    <div class="layer-note">
+      <strong>Revise-triggers:</strong><br>
+      • Edge runtime: real device-class appears with &lt;128 MB RAM ან Linux-incompatible → evaluate lightweight agent <em>separately</em>, არა parallel default.<br>
+      • Cert rotation: automated rotation stage-ში ≥6 თვე zero human intervention → prod-ზე 12-month cycle.
+    </div>
+  </section>
+
+  <!-- LAYER 8 -->
+  <section class="layer revised" id="l8">
+    <div class="layer-header">
+      <div class="layer-num">8</div>
+      <div class="layer-title">
+        <h2>AI / ML stack</h2>
+        <div class="adr">ADR-011, 014 · feature store simplified per Codex</div>
+      </div>
+      <span class="revised-tag">Revised</span>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>სერვისი</th><th>როლი</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Model access</td><td class="service"><strong>Amazon Bedrock</strong></td><td class="role">primary LLM gateway</td></tr>
+        <tr><td class="component">Reasoning model</td><td class="service"><strong>Claude Sonnet</strong> via Bedrock</td><td class="role">user-facing copilot</td></tr>
+        <tr><td class="component">Classification model</td><td class="service"><strong>Claude Haiku</strong> via Bedrock</td><td class="role">routing, tagging</td></tr>
+        <tr><td class="component">Safety</td><td class="service"><strong>Bedrock Guardrails</strong></td><td class="role">PII redaction, grounding, denied topics</td></tr>
+        <tr><td class="component">Fallback</td><td class="service">Direct Anthropic API (off by default)</td><td class="role">non-regulated only</td></tr>
+        <tr><td class="component">Embeddings</td><td class="service"><strong>Titan v2</strong> (Bedrock)</td><td class="role">RAG vectors</td></tr>
+        <tr><td class="component">Prompt caching</td><td class="service">Anthropic prompt cache</td><td class="role">system prompt + tool schemas + tenant ctx</td></tr>
+        <tr><td class="component">Retrieval</td><td class="service"><strong>pgvector + pgai</strong> on tenant Aurora</td><td class="role">tenant-scoped at SQL level</td></tr>
+        <tr><td class="component"><strong>Features v1</strong></td><td class="service"><strong>Timescale CA</strong> (offline) + <strong>Redis</strong> (online)</td><td class="role">no separate feature store DB</td></tr>
+        <tr><td class="component">Anomaly models</td><td class="service">seasonal decomposition + IsolationForest</td><td class="role">per (tenant, asset_class)</td></tr>
+        <tr><td class="component">DP aggregates</td><td class="service"><strong>differential privacy</strong> library</td><td class="role">cross-tenant benchmarks only</td></tr>
+      </tbody>
+    </table></div>
+    <div class="layer-note"><strong>Phase 2 promotion trigger:</strong> &gt;3 asset classes need cross-asset shared features → introduce dedicated feature store Postgres.</div>
+  </section>
+
+  <!-- LAYER 9 -->
+  <section class="layer revised" id="l9">
+    <div class="layer-header">
+      <div class="layer-num">9</div>
+      <div class="layer-title">
+        <h2>Digital Twin stack</h2>
+        <div class="adr">ADR-012, 013 · scene graph as Aurora schema, not separate DB</div>
+      </div>
+      <span class="revised-tag">Revised</span>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>ინსტრუმენტი</th><th>როლი</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Scene graph store</td><td class="service"><strong>Aurora schema <code>twin</code></strong> (same per-region cluster as tenant data)</td><td class="role">nodes, bindings, versions</td></tr>
+        <tr><td class="component">Binary asset store</td><td class="service"><strong>S3</strong> per-region, per-tenant prefix</td><td class="role">glTF, 3D Tiles, USD</td></tr>
+        <tr><td class="component">3D authoring formats</td><td class="service"><strong>glTF</strong> + <strong>3D Tiles</strong> + <strong>USD</strong></td><td class="role">internal authoring</td></tr>
+        <tr><td class="component">Compression</td><td class="service"><strong>Draco</strong></td><td class="role">mesh compression</td></tr>
+        <tr><td class="component">Client renderer</td><td class="service"><strong>Three.js</strong> (React Three Fiber)</td><td class="role">web viewer</td></tr>
+        <tr><td class="component">Live overlay</td><td class="service">WebSocket channel (Socket.io)</td><td class="role">bound metric streaming</td></tr>
+        <tr><td class="component">Scene binding</td><td class="service">5-tuple: <code>tenant_id + site_id + asset_id + scene_node_id + metric_binding</code></td><td class="role">non-negotiable</td></tr>
+        <tr><td class="component">LLM scene tools</td><td class="service"><code>resolve_scene_node</code>, <code>get_scene_neighborhood</code></td><td class="role">structured tool calls</td></tr>
+      </tbody>
+    </table></div>
+    <div class="layer-note"><strong>Phase 2 promotion trigger:</strong> scene read/write &gt; 5% Aurora CPU → split to dedicated Postgres cluster.</div>
+  </section>
+
+  <!-- LAYER 10 -->
+  <section class="layer" id="l10">
+    <div class="layer-header">
+      <div class="layer-num">10</div>
+      <div class="layer-title">
+        <h2>Application surfaces</h2>
+        <div class="adr">locked v1 defaults</div>
+      </div>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>ინსტრუმენტი</th><th>როლი</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Web app</td><td class="service"><strong>Next.js</strong> (App Router) + React + <strong>KAYA</strong></td><td class="role">dashboard, twin, CMMS UI</td></tr>
+        <tr><td class="component">Mobile</td><td class="service"><strong>React Native</strong> (Phase 2)</td><td class="role">field technician</td></tr>
+        <tr><td class="component">Real-time</td><td class="service"><strong>NestJS Gateway (Socket.io)</strong> — 🔒 v1</td><td class="role">live telemetry UI (AppSync if &gt;5k concurrent/node)</td></tr>
+        <tr><td class="component">Charts</td><td class="service"><strong>ECharts</strong> — 🔒 v1</td><td class="role">telemetry visualization (heavy time-series)</td></tr>
+        <tr><td class="component">Tables</td><td class="service"><strong>MUI X DataGrid</strong> (KAYA §12)</td><td class="role">CMMS, asset lists</td></tr>
+        <tr><td class="component">3D viewer</td><td class="service"><strong>Three.js / R3F</strong></td><td class="role">twin scene</td></tr>
+        <tr><td class="component">Design system</td><td class="service"><strong>KAYA</strong></td><td class="role">standard ყველა გვერდზე</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- LAYER 11 -->
+  <section class="layer revised" id="l11">
+    <div class="layer-header">
+      <div class="layer-num">11</div>
+      <div class="layer-title">
+        <h2>Observability</h2>
+        <div class="adr">traces, metrics, logs, SLO · monitoring surfaces · ledger-based cost attribution</div>
+      </div>
+      <span class="revised-tag">Revised</span>
+    </div>
+
+    <div class="layer-sub">Plumbing (data pipelines)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>სერვისი</th><th>როლი</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Traces</td><td class="service"><strong>OpenTelemetry SDK</strong> → <strong>X-Ray</strong></td><td class="role">distributed tracing</td></tr>
+        <tr><td class="component">Metrics</td><td class="service"><strong>CloudWatch Metrics</strong></td><td class="role">SLO</td></tr>
+        <tr><td class="component">Logs</td><td class="service"><strong>CloudWatch Logs</strong> (structured JSON)</td><td class="role"><code>tenant_id + user_id + trace_id</code> on every record</td></tr>
+        <tr><td class="component">Alerts (ops)</td><td class="service"><strong>CloudWatch Alarms</strong> → <strong>SNS</strong> → PagerDuty</td><td class="role">on-call</td></tr>
+        <tr><td class="component">RUM</td><td class="service"><strong>CloudWatch RUM</strong></td><td class="role">frontend perf raw data</td></tr>
+        <tr><td class="component">Error tracking</td><td class="service"><strong>Sentry</strong></td><td class="role">exceptions, source maps</td></tr>
+        <tr><td class="component"><strong>Tenant cost attribution</strong></td><td class="service"><strong><code>usage_events</code> ledger</strong> (primary) + AWS Cost Allocation Tags (secondary)</td><td class="role">billing truth = ledger, not tags</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">Monitoring surfaces (in-app UI views — shown in sidebar)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Surface</th><th>წყარო</th><th>ვინ ხედავს</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td class="component">System health · Launch</td><td class="service">CloudWatch Metrics + Synthetics + IoT Core status</td><td class="role">tenant admin + internal ops</td><td class="role">API / queue / DB / IoT connectivity real-time status; Launch checklist (readiness probes, SLO burn)</td></tr>
+        <tr><td class="component">Web Vitals</td><td class="service">CloudWatch RUM → aggregated</td><td class="role">internal ops</td><td class="role">LCP / INP / CLS per route, regression tracking</td></tr>
+        <tr><td class="component">Rate limits</td><td class="service">WAF + NestJS rate-limit middleware → CloudWatch</td><td class="role">tenant admin + internal ops</td><td class="role">per-tenant API quota consumption, 429 rate, top endpoints hit</td></tr>
+        <tr><td class="component">CSP violations</td><td class="service">browser CSP report endpoint → Lambda → S3</td><td class="role">internal ops</td><td class="role"><code>Content-Security-Policy</code> violation stream, noise vs signal filter</td></tr>
+        <tr><td class="component">Audit log</td><td class="service"><code>audit_events</code> table (RLS-scoped)</td><td class="role">tenant admin (own) + internal ops (all)</td><td class="role">who / what / when, filterable by actor / resource / action</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-note"><strong>Why not tags-as-primary:</strong> AWS Cost Allocation Tags don't propagate through every shared resource (IoT Core ingest, CloudFront, WAF); shared-infra attribution = approximation. Billing on tags drifts vs invoice.</div>
+  </section>
+
+  <!-- LAYER 12 -->
+  <section class="layer" id="l12">
+    <div class="layer-header">
+      <div class="layer-num">12</div>
+      <div class="layer-title">
+        <h2>Security & compliance</h2>
+        <div class="adr">ADR-019, 020, 022 · SOC 2 / ISO 27001 / IEC 62443 SL2</div>
+      </div>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>სერვისი</th><th>როლი</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Threat detection</td><td class="service"><strong>GuardDuty</strong></td><td class="role">anomaly, cryptomining</td></tr>
+        <tr><td class="component">Posture</td><td class="service"><strong>Security Hub</strong></td><td class="role">CIS, PCI, NIST benchmarks</td></tr>
+        <tr><td class="component">Forensics</td><td class="service"><strong>Detective</strong></td><td class="role">investigation</td></tr>
+        <tr><td class="component">Data classification</td><td class="service"><strong>Macie</strong></td><td class="role">PII discovery in S3</td></tr>
+        <tr><td class="component">Vuln scanning</td><td class="service"><strong>Inspector</strong> (ECR + EC2)</td><td class="role">image + instance scan</td></tr>
+        <tr><td class="component">AV scan</td><td class="service"><strong>ClamAV</strong> Lambda</td><td class="role">CMMS attachment scan</td></tr>
+        <tr><td class="component">Secrets scan</td><td class="service"><strong>git-secrets + TruffleHog</strong> in CI</td><td class="role">pre-merge</td></tr>
+        <tr><td class="component">SAST</td><td class="service"><strong>Semgrep / CodeQL</strong></td><td class="role">GitHub Actions</td></tr>
+        <tr><td class="component">DAST</td><td class="service"><strong>OWASP ZAP</strong> (staged)</td><td class="role">nightly stage scan</td></tr>
+        <tr><td class="component">SBOM</td><td class="service"><strong>Syft + Grype</strong></td><td class="role">per-release SBOM</td></tr>
+        <tr><td class="component">Audit events</td><td class="service"><code>audit_events</code> + hash chain (regulated paths only)</td><td class="role">immutable evidence</td></tr>
+        <tr><td class="component">Compliance frameworks</td><td class="service">SOC 2 II, ISO 27001, IEC 62443 SL2, GDPR, NIST CSF, ISO 22301</td><td class="role">control matrix</td></tr>
+        <tr><td class="component">DSAR tooling</td><td class="service">internal endpoints + S3 export</td><td class="role">GDPR right-of-access</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- LAYER 13 -->
+  <section class="layer" id="l13">
+    <div class="layer-header">
+      <div class="layer-num">13</div>
+      <div class="layer-title">
+        <h2>CI/CD & developer platform</h2>
+        <div class="adr">locked v1 defaults with revise-triggers</div>
+      </div>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>ინსტრუმენტი</th><th>როლი</th></tr></thead>
+      <tbody>
+        <tr><td class="component">SCM</td><td class="service"><strong>GitHub</strong></td><td class="role">code + issues + PRs</td></tr>
+        <tr><td class="component">CI</td><td class="service"><strong>GitHub Actions</strong> → OIDC</td><td class="role">build, test, deploy</td></tr>
+        <tr><td class="component">Monorepo</td><td class="service"><strong>Turborepo</strong> — 🔒 v1</td><td class="role">workspace orchestration</td></tr>
+        <tr><td class="component">Deploy to ECS</td><td class="service">blue/green via <strong>CodeDeploy</strong></td><td class="role">zero-downtime</td></tr>
+        <tr><td class="component">DB migrations</td><td class="service"><strong>Liquibase</strong></td><td class="role">pre-deploy dry-run, gated</td></tr>
+        <tr><td class="component">IaC</td><td class="service"><strong>Terraform</strong> — 🔒 v1</td><td class="role">all infra code-managed</td></tr>
+        <tr><td class="component">Feature flags</td><td class="service"><strong>LaunchDarkly</strong> (free tier) — 🔒 v1</td><td class="role">tenant-scoped rollout</td></tr>
+        <tr><td class="component">Environments</td><td class="service"><code>dev</code>, <code>stage</code>, <code>prod-eu</code>, <code>prod-us</code></td><td class="role">isolated</td></tr>
+        <tr><td class="component">Preview deploys</td><td class="service">per-PR ephemeral stack</td><td class="role">review before merge</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- LAYER 14 -->
+  <section class="layer revised" id="l14">
+    <div class="layer-header">
+      <div class="layer-num">14</div>
+      <div class="layer-title">
+        <h2>External integrations & billing</h2>
+        <div class="adr">ledger-based billing per Codex review</div>
+      </div>
+      <span class="revised-tag">Revised</span>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>ინსტრუმენტი</th><th>როლი</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Email</td><td class="service"><strong>SES</strong></td><td class="role">alert notifications, onboarding</td></tr>
+        <tr><td class="component">SMS</td><td class="service"><strong>SNS → carrier</strong></td><td class="role">critical alerts</td></tr>
+        <tr><td class="component">Push</td><td class="service"><strong>Pinpoint</strong></td><td class="role">mobile alerts</td></tr>
+        <tr><td class="component">Webhooks out</td><td class="service">NestJS dispatch + HMAC sign</td><td class="role">tenant integrations out</td></tr>
+        <tr><td class="component">Webhook ingress</td><td class="service">Lambda behind API Gateway</td><td class="role">tenant integrations in</td></tr>
+        <tr><td class="component">Payments</td><td class="service"><strong>Stripe</strong></td><td class="role">subscription, usage billing</td></tr>
+        <tr><td class="component">Status page</td><td class="service"><strong>Statuspage.io</strong> — 🔒 v1</td><td class="role">public uptime</td></tr>
+        <tr><td class="component">On-call</td><td class="service"><strong>PagerDuty</strong></td><td class="role">incident rotation</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">Usage metering (v1.2 — revised)</div>
+<pre class="code"><span class="cm">-- append-only usage ledger — source of truth for billing</span>
+<span class="kw">CREATE TABLE</span> usage_events (
+  id               ulid        <span class="kw">PRIMARY KEY</span>,
+  tenant_id        uuid        <span class="kw">NOT NULL</span>,
+  metric           text        <span class="kw">NOT NULL</span>,  <span class="cm">-- telemetry_point | device_active | ai_token | storage_gb_day …</span>
+  qty              numeric     <span class="kw">NOT NULL</span>,
+  at               timestamptz <span class="kw">NOT NULL</span>,
+  source_id        text        <span class="kw">NOT NULL</span>,
+  source_type      text        <span class="kw">NOT NULL</span>,  <span class="cm">-- device | api | worker | batch_job</span>
+  idempotency_key  text        <span class="kw">UNIQUE</span>
+);
+
+<span class="cm">-- daily batch aggregates ledger → Stripe meter events</span>
+<span class="cm">-- Stripe is derived; disputes resolved by replaying ledger</span>
+<span class="cm">-- gaps excluded (ADR-015): filter rows where device.gap_ratio &gt; 0.1 that hour</span></pre>
+
+    <div class="layer-note">
+      AWS Cost Allocation Tags kept only as <strong>internal ops signal</strong>, not user-facing billing.
+      Billing lineage: <code>usage_events</code> → daily aggregate → Stripe meter events → invoice.
+    </div>
+  </section>
+
+  <!-- LAYER 15 — CURRENT PLATFORM SNAPSHOT -->
+  <section class="layer" id="l15">
+    <div class="layer-header">
+      <div class="layer-num">15</div>
+      <div class="layer-title">
+        <h2>Current platform — iot.dmt.ge</h2>
+        <div class="adr">Migration source · DMT IoT v1 (legacy) · 2026-04-22 snapshot</div>
+      </div>
+    </div>
+    <div class="layer-sub">Production topology (რისგანაც ვიგრაციას ვიწყებთ)</div>
+<pre class="code"><span class="cm">DMT IoT Platform (iot.dmt.ge)</span>
+│
+├── ☁️  CLOUD
+│   ├── 🟦 GCP ← PRIMARY
+│   │   ├── Cloud SQL  PostgreSQL 13         <span class="cm"># ⭐ მთავარი DB</span>
+│   │   ├── Cloud Functions  (europe-central2)
+│   │   │   └── project: sigma-sector-318207
+│   │   ├── Cloud Storage
+│   │   │   ├── dmt-web-images
+│   │   │   └── dmt-web-files
+│   │   └── Firebase Auth  (serviceAccountKey.json)
+│   │
+│   ├── 🟧 AWS (limited)
+│   │   └── AWS IoT Events → functions/aws_iot_events_parser
+│   │
+│   └── 📊 Sentry  (errors + performance)
+│
+├── 🐳 DOCKER  (dmt-app)
+│   ├── :8000  FastAPI   → app.py + flask_routers/*
+│   └── :3000  NestJS    → api/src/* (aggregates, auth, controllers)
+│
+├── 🔧 BACKGROUND  (functions/)
+│   ├── alerts_monitor · rate_anomaly_checker
+│   ├── action_scheduler_handler_2 · emails_* · sms_handler
+│   ├── events_store · send_command_handler
+│   ├── cleanup_tables · health_check_handler
+│   └── aws_iot_events_parser    <span class="cm"># AWS → GCP bridge</span>
+│
+└── 🗄️  DATA
+    ├── db/models.py       <span class="cm"># SQLAlchemy ORM</span>
+    ├── db/db.py           <span class="cm"># session / connection</span>
+    └── alembic/versions/  <span class="cm"># migrations</span>
+</pre>
+
+    <div class="layer-sub">Migration map (v1 → v1.2)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>ამჟამად (GCP)</th><th>სამიზნე (AWS)</th><th>მიგრაციის ნოტა</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Cloud SQL Postgres 13</td><td class="service"><strong>Aurora PostgreSQL 16</strong> per-region</td><td class="role">DMS continuous replication → cutover; PG13→16 upgrade გზად</td></tr>
+        <tr><td class="component">Cloud Functions (europe-central2)</td><td class="service"><strong>ECS Fargate (NestJS)</strong> + Lambda (minimal)</td><td class="role">Flask EOL (ADR-004); Python handlers → NestJS services</td></tr>
+        <tr><td class="component">Cloud Storage <code>dmt-web-*</code></td><td class="service"><strong>S3</strong> Intelligent-Tiering</td><td class="role">Storage Transfer Service → eu-central-1 bucket</td></tr>
+        <tr><td class="component">Firebase Auth</td><td class="service"><strong>Cognito User Pools</strong></td><td class="role">batch export → Cognito import; sub-claim bridge <code>users.cognito_sub</code></td></tr>
+        <tr><td class="component">AWS IoT Events parser</td><td class="service"><strong>IoT Core + Greengrass v2</strong></td><td class="role">Bridge retired — device-side runtime სრულდება edge-ზე</td></tr>
+        <tr><td class="component">Sentry (errors)</td><td class="service"><strong>OpenTelemetry → CloudWatch + Sentry</strong></td><td class="role">Sentry რჩება front-end error-ებისთვის; backend OTel-ზე</td></tr>
+        <tr><td class="component">Alembic migrations</td><td class="service"><strong>Drizzle migrations</strong> (packages/db)</td><td class="role">per-tenant/per-region აპლიკაცია; ADR-ებში ნახსენები</td></tr>
+      </tbody>
+    </table></div>
+    <div class="layer-note">
+      <strong>მიგრაციის პრინციპი:</strong> strangler pattern — ახალი NestJS API ჯერ იდენტური endpoints-ით dual-write-ს აკეთებს ორივე ბაზაში, შემდეგ read-traffic გადადის Aurora-ზე, ბოლოს Cloud SQL decommission. Life-safety traffic (alerts, commands) <em>არასდროს</em> გადის ცრუ-path-ით — edge agent (Greengrass) უკვე ავტონომიურია.
+    </div>
+  </section>
+
+  <!-- LAYER 16 — DATABASE SCHEMAS -->
+  <section class="layer" id="l16">
+    <div class="layer-header">
+      <div class="layer-num">16</div>
+      <div class="layer-title">
+        <h2>Database architecture — core schemas</h2>
+        <div class="adr">ADR-006, 007, 009, 010, 017, 022 · RLS + user-first + append-only audit</div>
+      </div>
+    </div>
+
+    <div class="layer-sub">Identity (user-first — ADR-009, 010)</div>
+<pre class="code"><span class="cm">-- ორგანიზაცია = tenant boundary. მონაცემები home-region-ს არასდროს ტოვებენ.</span>
+<span class="kw">CREATE TABLE</span> organizations (
+  id              uuid        <span class="kw">PRIMARY KEY</span>,
+  name            text        <span class="kw">NOT NULL</span>,           <span class="cm">-- ორგანიზაციის სახელი</span>
+  tier            text        <span class="kw">NOT NULL</span>,           <span class="cm">-- free | pro | enterprise</span>
+  home_region     text        <span class="kw">NOT NULL</span>,           <span class="cm">-- eu-central-1 | us-east-1 | …</span>
+  created_at      timestamptz <span class="kw">NOT NULL DEFAULT</span> now()
+);
+
+<span class="cm">-- user ≠ org-is მოქალაქე default-ად. visibility მხოლოდ explicit grant-ით.</span>
+<span class="kw">CREATE TABLE</span> users (
+  id              uuid        <span class="kw">PRIMARY KEY</span>,
+  email           citext      <span class="kw">NOT NULL UNIQUE</span>,    <span class="cm">-- case-insensitive ელფოსტა</span>
+  email_verified  boolean     <span class="kw">NOT NULL DEFAULT</span> false,
+  cognito_sub     text        <span class="kw">UNIQUE</span>,              <span class="cm">-- Cognito <code>sub</code>-ის ხიდი</span>
+  created_at      timestamptz <span class="kw">NOT NULL DEFAULT</span> now()
+);
+
+<span class="cm">-- N:M grant (ADR-010). როლი = org-scope. JWT-ში არ ვდებთ — session-resolved.</span>
+<span class="kw">CREATE TABLE</span> memberships (
+  user_id         uuid        <span class="kw">NOT NULL REFERENCES</span> users(id),
+  organization_id uuid        <span class="kw">NOT NULL REFERENCES</span> organizations(id),
+  role            text        <span class="kw">NOT NULL</span>,           <span class="cm">-- owner | admin | operator | viewer</span>
+  granted_at      timestamptz <span class="kw">NOT NULL DEFAULT</span> now(),
+  <span class="kw">PRIMARY KEY</span> (user_id, organization_id)
+);
+
+<span class="cm">-- RLS ყოველ tenant-scoped ცხრილზე. middleware SET LOCAL app.tenant_id-ს უკეთებს.</span>
+<span class="kw">ALTER TABLE</span> memberships <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="kw">CREATE POLICY</span> memberships_tenant <span class="kw">ON</span> memberships
+  <span class="kw">USING</span> (organization_id = current_setting(<span class="cm">'app.tenant_id'</span>)::uuid);</pre>
+
+    <div class="layer-sub">Devices & credentials (ADR-002, 003)</div>
+<pre class="code"><span class="cm">-- მოწყობილობის რეესტრი, per-tenant isolated. cert_thumbprint ACM PCA-დან.</span>
+<span class="kw">CREATE TABLE</span> devices (
+  id              uuid        <span class="kw">PRIMARY KEY</span>,
+  tenant_id       uuid        <span class="kw">NOT NULL</span>,           <span class="cm">-- RLS სივრცე</span>
+  serial          text        <span class="kw">NOT NULL</span>,           <span class="cm">-- ქარხნული სერიული ნომერი</span>
+  kind            text        <span class="kw">NOT NULL</span>,           <span class="cm">-- bms | meter | relay | gateway</span>
+  site_id         uuid,                           <span class="cm">-- ობიექტი/ფილიალი (optional)</span>
+  cert_thumbprint text        <span class="kw">NOT NULL UNIQUE</span>,    <span class="cm">-- X.509 CN (24-mo rotation v1)</span>
+  firmware        text        <span class="kw">NOT NULL</span>,           <span class="cm">-- ფირმვეარის ვერსია</span>
+  status          text        <span class="kw">NOT NULL</span>,           <span class="cm">-- active | quarantined | retired</span>
+  last_seen_at    timestamptz,                    <span class="cm">-- ბოლო MQTT keepalive</span>
+  created_at      timestamptz <span class="kw">NOT NULL DEFAULT</span> now(),
+  <span class="kw">UNIQUE</span> (tenant_id, serial)
+);
+
+<span class="kw">ALTER TABLE</span> devices <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="kw">CREATE POLICY</span> devices_tenant <span class="kw">ON</span> devices
+  <span class="kw">USING</span> (tenant_id = current_setting(<span class="cm">'app.tenant_id'</span>)::uuid);
+
+<span class="cm">-- გახმაურებული commands (outbound, to device). idempotent by client_ref.</span>
+<span class="kw">CREATE TABLE</span> commands (
+  id              ulid        <span class="kw">PRIMARY KEY</span>,
+  tenant_id       uuid        <span class="kw">NOT NULL</span>,
+  device_id       uuid        <span class="kw">NOT NULL REFERENCES</span> devices(id),
+  client_ref      text        <span class="kw">NOT NULL</span>,           <span class="cm">-- კლიენტის idempotency key</span>
+  kind            text        <span class="kw">NOT NULL</span>,           <span class="cm">-- relay.on | setpoint.update | fw.stage</span>
+  payload         jsonb       <span class="kw">NOT NULL</span>,
+  status          text        <span class="kw">NOT NULL</span>,           <span class="cm">-- queued | sent | acked | failed</span>
+  issued_by       uuid        <span class="kw">REFERENCES</span> users(id),
+  issued_at       timestamptz <span class="kw">NOT NULL DEFAULT</span> now(),
+  acked_at        timestamptz,
+  <span class="kw">UNIQUE</span> (tenant_id, device_id, client_ref)
+);</pre>
+
+    <div class="layer-sub">Telemetry — TimescaleDB hypertable (ADR-007, 008)</div>
+<pre class="code"><span class="cm">-- სენსორის წერტილები. partitioned by time; 7-day chunks; continuous aggregates.</span>
+<span class="kw">CREATE TABLE</span> telemetry (
+  time            timestamptz <span class="kw">NOT NULL</span>,           <span class="cm">-- სენსორის დროშტამპი (device clock)</span>
+  tenant_id       uuid        <span class="kw">NOT NULL</span>,
+  device_id       uuid        <span class="kw">NOT NULL</span>,
+  metric          text        <span class="kw">NOT NULL</span>,           <span class="cm">-- temperature | voltage | flow | pressure</span>
+  value           double precision <span class="kw">NOT NULL</span>,
+  unit            text        <span class="kw">NOT NULL</span>,           <span class="cm">-- °C | V | m³/h | bar</span>
+  quality         smallint    <span class="kw">NOT NULL DEFAULT</span> 100, <span class="cm">-- 0–100 (sensor confidence)</span>
+  gap_ratio       real        <span class="kw">NOT NULL DEFAULT</span> 0   <span class="cm">-- ADR-015: >0.1 → billing-ში გამოვიცვალოთ</span>
+);
+
+<span class="kw">SELECT</span> create_hypertable(<span class="cm">'telemetry'</span>, <span class="cm">'time'</span>, chunk_time_interval =&gt; <span class="kw">interval</span> <span class="cm">'7 days'</span>);
+
+<span class="cm">-- საათობრივი CA → feature store (ADR-008). AI/ML Timescale-დან კითხულობს.</span>
+<span class="kw">CREATE MATERIALIZED VIEW</span> telemetry_1h
+<span class="kw">WITH</span> (timescaledb.continuous) <span class="kw">AS</span>
+  <span class="kw">SELECT</span> time_bucket(<span class="cm">'1 hour'</span>, time) <span class="kw">AS</span> hour,
+         tenant_id, device_id, metric,
+         avg(value) <span class="kw">AS</span> v_avg,
+         min(value) <span class="kw">AS</span> v_min,
+         max(value) <span class="kw">AS</span> v_max,
+         count(*)   <span class="kw">AS</span> samples
+  <span class="kw">FROM</span> telemetry
+  <span class="kw">GROUP BY</span> 1, 2, 3, 4;
+
+<span class="cm">-- ცოცხალი 24h Aurora-ში PostGIS + pgvector-ით; ცივი &gt;24h → S3 Parquet (Athena).</span></pre>
+
+    <div class="layer-sub">Audit log — append-only (ADR-022)</div>
+<pre class="code"><span class="cm">-- რეგულირებული ევიდენსი. UPDATE/DELETE trigger-ით დაბლოკილია.</span>
+<span class="kw">CREATE TABLE</span> audit_log (
+  id              ulid        <span class="kw">PRIMARY KEY</span>,
+  tenant_id       uuid        <span class="kw">NOT NULL</span>,
+  actor_id        uuid,                           <span class="cm">-- user.id ან device.id</span>
+  actor_kind      text        <span class="kw">NOT NULL</span>,           <span class="cm">-- user | device | system | worker</span>
+  action          text        <span class="kw">NOT NULL</span>,           <span class="cm">-- login.success | device.command.sent | …</span>
+  entity_type     text        <span class="kw">NOT NULL</span>,
+  entity_id       text,
+  payload         jsonb       <span class="kw">NOT NULL DEFAULT</span> <span class="cm">'{}'</span>,
+  ip              inet,
+  prev_hash       text,                           <span class="cm">-- hash-chain მხოლოდ regulated paths-ზე</span>
+  row_hash        text        <span class="kw">NOT NULL</span>,
+  at              timestamptz <span class="kw">NOT NULL DEFAULT</span> now()
+);
+
+<span class="cm">-- DB trigger: UPDATE / DELETE → exception. service role-იც ვერ ცვლის არსებულ row-ს.</span>
+<span class="kw">CREATE OR REPLACE FUNCTION</span> audit_log_no_mutation() <span class="kw">RETURNS</span> trigger
+<span class="kw">LANGUAGE</span> plpgsql <span class="kw">AS</span> $$
+<span class="kw">BEGIN</span>
+  <span class="kw">RAISE EXCEPTION</span> <span class="cm">'audit_log is append-only'</span>;
+<span class="kw">END</span> $$;
+
+<span class="kw">CREATE TRIGGER</span> audit_log_no_mut <span class="kw">BEFORE UPDATE OR DELETE ON</span> audit_log
+  <span class="kw">FOR EACH ROW EXECUTE FUNCTION</span> audit_log_no_mutation();</pre>
+
+    <div class="layer-note">
+      <strong>ინვარიანტები:</strong> ყველა <code>tenant_id</code>-ის მქონე ცხრილს <strong>RLS</strong>-ი ჩართული აქვს. middleware ითხოვს <code>SET LOCAL app.tenant_id = '&lt;org_id&gt;'</code> session-resolved org-context-იდან — <em>JWT-ში tenant_id არ არის</em> (ADR-017). hash-chain მხოლოდ <code>audit_log</code> + <code>usage_events</code>-ზეა, არა ყოველ ცხრილზე (ADR-022 — regulated paths only).
+    </div>
+  </section>
+
+  <!-- LAYER 17 — CODE ORGANIZATION -->
+  <section class="layer" id="l17">
+    <div class="layer-header">
+      <div class="layer-num">17</div>
+      <div class="layer-title">
+        <h2>Code organization — how we store & ship code</h2>
+        <div class="adr">ADR-004 · Turborepo monorepo · GitHub Actions · Trunk-based</div>
+      </div>
+    </div>
+
+    <div class="layer-sub">Monorepo layout (Turborepo)</div>
+<pre class="code"><span class="cm">dmt-platform/          # git repo root, Turborepo</span>
+├── apps/
+│   ├── api/           <span class="cm"># NestJS — ერთადერთი API (ADR-004, Python EOL)</span>
+│   ├── web/           <span class="cm"># Next.js 15 App Router, KAYA tokens</span>
+│   ├── admin/         <span class="cm"># Next.js admin UI (internal ops)</span>
+│   ├── edge-agent/    <span class="cm"># Greengrass v2 component (Python, life-safety)</span>
+│   └── twin-renderer/ <span class="cm"># Three.js scene renderer (ADR-013)</span>
+│
+├── packages/
+│   ├── ui/            <span class="cm"># KAYA shared primitives (shadcn + tokens)</span>
+│   ├── tokens/        <span class="cm"># CSS vars + Tailwind preset (single source)</span>
+│   ├── contracts/     <span class="cm"># zod schemas + OpenAPI + protobufs (API &lt;→ frontends)</span>
+│   ├── db/            <span class="cm"># Drizzle schemas + migrations + seed fixtures</span>
+│   ├── telemetry/     <span class="cm"># OTel wrapper (trace + metric + log)</span>
+│   ├── sdk-js/        <span class="cm"># tenant-facing API SDK (published npm)</span>
+│   └── eslint-config/ <span class="cm"># shared lint rules</span>
+│
+├── infra/
+│   ├── terraform/     <span class="cm"># per-region modules (ADR-001) — root, networking, db, app</span>
+│   ├── helm/          <span class="cm"># EKS charts for async workers</span>
+│   └── scripts/       <span class="cm"># deploy, rollback, break-glass</span>
+│
+├── .github/workflows/ <span class="cm"># CI (lint/test/build) + release + deploy-{stage,prod}</span>
+├── .claude/           <span class="cm"># subagents, CLAUDE.md governance</span>
+└── turbo.json         <span class="cm"># pipeline (build &gt; test &gt; lint cache strategy)</span></pre>
+
+    <div class="layer-sub">Branching & release</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>ნაკადი</th><th>წესი</th><th>მიზანი</th></tr></thead>
+      <tbody>
+        <tr><td class="component"><code>main</code></td><td class="service">protected · PR required · 2 reviewers · status checks required</td><td class="role">production truth; tag-ები <code>v1.x.y</code></td></tr>
+        <tr><td class="component"><code>dev</code></td><td class="service">integration; auto-deploy → staging</td><td class="role">feature-ების კონვერგენცია</td></tr>
+        <tr><td class="component"><code>feat/*</code> · <code>fix/*</code> · <code>chore/*</code></td><td class="service">short-lived (&lt;5 days), squash-merge dev-ში</td><td class="role">ერთი feature = ერთი branch</td></tr>
+        <tr><td class="component">Release cadence</td><td class="service"><strong>Thu</strong> weekly → staging · <strong>Mon</strong> → prod if green 48h</td><td class="role">LaunchDarkly gates risky changes</td></tr>
+        <tr><td class="component">Hotfix</td><td class="service"><code>fix/*</code> → main მეჩანიზმი (skip dev), post-deploy back-merge</td><td class="role">P0 production-ის შესწორება</td></tr>
+        <tr><td class="component">Rollback</td><td class="service">Terraform state lock + <code>deploy-prod-rollback.yml</code></td><td class="role">&lt;5 წთ recovery</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">CI enforcement</div>
+<pre class="code"><span class="cm"># .github/workflows/ci.yml — ყოველ PR-ზე სავალდებულო</span>
+<span class="kw">jobs:</span>
+  lint:        <span class="cm"># eslint + prettier + stylelint</span>
+  typecheck:   <span class="cm"># tsc --noEmit + mypy edge-agent-ისთვის</span>
+  test:        <span class="cm"># vitest (api+web) + pytest (edge) + e2e (playwright smoke)</span>
+  build:       <span class="cm"># turbo build — cache hit ≥ 80% დანიშვნა</span>
+  migrate:     <span class="cm"># drizzle migrate --dry-run → planned-diff PR-ზე კომენტარი</span>
+  contracts:   <span class="cm"># zod → OpenAPI diff; breaking change = manual approval</span>
+  security:    <span class="cm"># npm audit + snyk + secret-scan (truffleHog)</span>
+
+<span class="cm"># მერე — მხოლოდ main-ზე merge-ის შემდეგ:</span>
+<span class="kw">deploy-staging:</span>
+  needs: [<span class="kw">lint, typecheck, test, build, migrate, contracts, security</span>]
+  <span class="cm"># terraform plan+apply → staging; smoke tests; notify #deploys</span></pre>
+
+    <div class="layer-note">
+      <strong>Code-as-contract:</strong> <code>packages/contracts</code> — zod + OpenAPI + protobuf ერთი წყაროდან გენერირდება. API-მ <em>ვერ</em> გადასცა ცვლილება frontend-ს კონტრაქტის განახლების გარეშე — CI breaking-change-ს ავტომატურად flag-ავს და manual approval-ს მოითხოვს.
+    </div>
+  </section>
+
+  <!-- LAYER 18 — PROTOCOLS & INFO EXCHANGE -->
+  <section class="layer" id="l18">
+    <div class="layer-header">
+      <div class="layer-num">18</div>
+      <div class="layer-title">
+        <h2>Protocols & information exchange</h2>
+        <div class="adr">ADR-002, 003, 004, 005, 017 · per-channel transport + life-safety bypass</div>
+      </div>
+    </div>
+
+    <div class="layer-sub">Channel map (transport per direction)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>მიმართულება</th><th>პროტოკოლი</th><th>გამოყენება</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Device → Cloud (telemetry)</td><td class="service"><strong>MQTT 5 over TLS</strong> (AWS IoT Core)</td><td class="role">QoS 1, retained topics, client cert</td></tr>
+        <tr><td class="component">Cloud → Device (commands)</td><td class="service"><strong>MQTT</strong> same topic tree</td><td class="role">QoS 1 ACK-ების ჩათვლით; timeout 5s</td></tr>
+        <tr><td class="component">Edge (Greengrass) ↔ local sensors</td><td class="service"><strong>Modbus RTU/TCP</strong> · <strong>BACnet/IP</strong> · <strong>OPC UA</strong></td><td class="role">site-bus; cloud-independent; life-safety loop</td></tr>
+        <tr><td class="component">Client ↔ API</td><td class="service"><strong>HTTPS/REST</strong> (JSON) · <strong>OpenAPI 3.1</strong></td><td class="role">tenant users, admin, CLI, SDK</td></tr>
+        <tr><td class="component">Client ↔ API (realtime)</td><td class="service"><strong>Socket.io</strong> via NestJS Gateway</td><td class="role">live dashboards; &lt;5k subs/node v1</td></tr>
+        <tr><td class="component">Client ↔ API (server push, 1-way)</td><td class="service"><strong>SSE</strong> (<code>/events</code>)</td><td class="role">notifications, job progress</td></tr>
+        <tr><td class="component">Service ↔ Service (intra-cluster)</td><td class="service"><strong>HTTP + Protobuf</strong> via mTLS</td><td class="role">sync calls, NestJS microservices</td></tr>
+        <tr><td class="component">Service → Queue (async)</td><td class="service"><strong>SQS</strong> + <strong>EventBridge</strong></td><td class="role">decoupled jobs, domain events</td></tr>
+        <tr><td class="component">Webhook out (tenant integrations)</td><td class="service">HTTPS POST + <strong>HMAC-SHA256</strong> sign</td><td class="role">retry w/ exponential back-off, dead-letter</td></tr>
+        <tr><td class="component">Webhook in</td><td class="service">API Gateway → Lambda (verify sig) → SQS</td><td class="role">tenant integrations ingress</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">MQTT topic convention (per-tenant scoped)</div>
+<pre class="code"><span class="cm">// tenant-scoped; policy denies cross-tenant subscribe</span>
+dmt/t/<span class="kw">{tenant_id}</span>/d/<span class="kw">{device_id}</span>/tlm/<span class="kw">{metric}</span>      <span class="cm">→ device publishes telemetry</span>
+dmt/t/<span class="kw">{tenant_id}</span>/d/<span class="kw">{device_id}</span>/cmd/<span class="kw">{kind}</span>        <span class="cm">→ cloud publishes commands</span>
+dmt/t/<span class="kw">{tenant_id}</span>/d/<span class="kw">{device_id}</span>/ack/<span class="kw">{cmd_id}</span>       <span class="cm">→ device ACKs command</span>
+dmt/t/<span class="kw">{tenant_id}</span>/d/<span class="kw">{device_id}</span>/evt/<span class="kw">{kind}</span>        <span class="cm">→ alarms, state changes</span>
+dmt/t/<span class="kw">{tenant_id}</span>/d/<span class="kw">{device_id}</span>/health               <span class="cm">→ heartbeat (retained, keep-alive 60s)</span>
+
+<span class="cm">// IoT Core policy snippet — device-certificate-ით tenant_id ვფილტრავთ</span>
+{
+  <span class="cm">"Effect"</span>: <span class="cm">"Allow"</span>,
+  <span class="cm">"Action"</span>: [<span class="cm">"iot:Publish"</span>, <span class="cm">"iot:Subscribe"</span>],
+  <span class="cm">"Resource"</span>: [
+    <span class="cm">"arn:aws:iot:*:*:topic/dmt/t/${iot:Connection.Thing.Attributes[tenant_id]}/*"</span>
+  ]
+}</pre>
+
+    <div class="layer-sub">Payload envelope (ყოველი message-ისთვის)</div>
+<pre class="code"><span class="cm">// JSON envelope — MQTT, SQS, EventBridge-ზე იდენტური</span>
+{
+  <span class="cm">"v"</span>: <span class="cm">"1"</span>,                                    <span class="cm">// schema version</span>
+  <span class="cm">"id"</span>: <span class="cm">"01HW8K5..."</span>,                          <span class="cm">// ULID, idempotency key</span>
+  <span class="cm">"tenant_id"</span>: <span class="cm">"9b7a..."</span>,
+  <span class="cm">"src"</span>: { <span class="cm">"kind"</span>: <span class="cm">"device"</span>, <span class="cm">"id"</span>: <span class="cm">"dev_abc"</span> },
+  <span class="cm">"at"</span>: <span class="cm">"2026-04-22T16:47:12.391Z"</span>,           <span class="cm">// device-clock (device ingress); server-clock საბოლოოდ override</span>
+  <span class="cm">"kind"</span>: <span class="cm">"telemetry.point"</span>,                  <span class="cm">// event type (contracts registry)</span>
+  <span class="cm">"payload"</span>: { <span class="cm">"metric"</span>: <span class="cm">"temperature"</span>, <span class="cm">"value"</span>: 22.4, <span class="cm">"unit"</span>: <span class="cm">"°C"</span> },
+  <span class="cm">"trace_id"</span>: <span class="cm">"3f9a..."</span>                      <span class="cm">// OTel W3C trace context</span>
+}</pre>
+
+    <div class="layer-note">
+      <strong>Life-safety bypass (ADR-003):</strong> alarms & critical commands edge-ზე local-ად გადაწყდება (Greengrass v2) — cloud outage-ს არ აჩერებს BMS-ს. Cloud-ი მხოლოდ observer + coordinator. Contract: edge-დან cloud-მდე latency > 2s = alarm handled locally; cloud-მა იგივე ACK-ი postfactum უნდა დაამუშაოს.
+    </div>
+    <div class="layer-note" style="border-top: 1px solid #FFE082; margin-top: -1px;">
+      <strong>Contract registry:</strong> ყველა payload kind (<code>telemetry.point</code>, <code>device.command</code>, <code>alarm.raised</code> …) იწერება <code>packages/contracts</code>-ში zod-ით. CI-ი breaking-change-ს flag-ავს; consumers-ს automated PR-ით ჩავახვდენთ.
+    </div>
+  </section>
+
+  <!-- LAYER 19 — OPERATOR CONSOLE & GOVERNANCE -->
+  <section class="layer revised" id="l19">
+    <div class="layer-header">
+      <div class="layer-num">19</div>
+      <div class="layer-title">
+        <h2>Operator console & governance surfaces</h2>
+        <div class="adr">NEW v1.3 · Monitoring + Reports + Decisions — in-app sidebar structure</div>
+      </div>
+      <span class="revised-tag">New</span>
+    </div>
+
+    <div class="layer-sub">§19.1 — Monitoring (UI view of Layer 11 pipelines)</div>
+<pre class="code"><span class="cm">📊 Monitoring</span>
+ ├─ System health · Launch    <span class="cm"># real-time status + readiness</span>
+ ├─ Web Vitals                <span class="cm"># LCP / INP / CLS, regression</span>
+ ├─ Rate limits               <span class="cm"># per-tenant quota, 429 rate</span>
+ ├─ CSP violations            <span class="cm"># browser CSP report stream</span>
+ └─ Audit log                 <span class="cm"># RLS-scoped who/what/when</span></pre>
+
+    <div class="layer-sub">§19.2 — Reports (compliance evidence artifacts)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Surface</th><th>წყარო</th><th>გენერაცია</th><th>Output</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component">Audit snapshot</td>
+          <td class="service"><code>audit_events</code> + <code>usage_events</code> + system config</td>
+          <td class="role">Monthly batch + on-demand</td>
+          <td class="role">Signed PDF + JSON bundle; SOC 2 / ISO 27001 evidence; S3 Object Lock for regulated tenants</td>
+        </tr>
+        <tr>
+          <td class="component">Tenant-scoping review</td>
+          <td class="service">RLS policy audit + cross-tenant read detection + visibility grant ledger</td>
+          <td class="role">Nightly automated + on-demand</td>
+          <td class="role">RLS active ✓, zero cross-tenant reads ✓, visibility grants active/expired ✓; failed check → P0 alert</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-note">
+      <strong>Audit snapshot content</strong> (per-tenant, per-period):
+      activity summary · access events (logins, failed auth, allowlist bypass attempts) ·
+      data access (exports, DSAR, bulk queries) · config changes (roles, grants, rules, integrations) ·
+      billable usage from <code>usage_events</code> ledger (gaps annotated) · hash-chain anchor (regulated paths only — ADR-022).
+    </div>
+
+    <div class="layer-note" style="border-top: 1px solid #FFE082; margin-top: -1px;">
+      <strong>Tenant-scoping review automation:</strong>
+      integration test suite nightly in stage (multi-tenant fixtures, cross-read assertion = 0) ·
+      production <code>pg_stat</code> scan for missing <code>tenant_id =</code> filters on hot queries ·
+      visibility grant audit (expired grants still referenced = alert) ·
+      CSV/PDF output filed monthly in <code>log-archive</code> S3.
+    </div>
+
+    <div class="layer-sub">§19.3 — Decisions (ADR registry)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Surface</th><th>წყარო</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component">ADR index</td>
+          <td class="service"><code>docs/adr/*.md</code> + ADR metadata DB</td>
+          <td class="role">Registry UI: all ADRs (locked / proposed / revised / superseded), status, author, date, dependent ADRs, diff history</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-note">
+      <strong>ADR index features:</strong>
+      list view (filter by status/area/year) · detail view (content + supersession chain + related ADRs) ·
+      proposal flow (draft → review → decision → locked) · changelog (who, when, why) — feeds <code>audit_events</code> ·
+      each ADR as <code>docs/adr/NNN-title.md</code> with YAML frontmatter; UI reads Git + DB metadata table.
+    </div>
+
+    <div class="layer-note" style="border-top: 1px solid #FFE082; margin-top: -1px;">
+      <strong>v1.3 new ADRs introduced by this layer:</strong>
+      <strong>ADR-023</strong> session-resolved org-context (supersedes JWT-embedded piece of ADR-009) ·
+      <strong>ADR-024</strong> usage-ledger-based billing (supersedes Timescale→Stripe piece of ADR-015) ·
+      <strong>ADR-025</strong> compliance reports (Audit snapshot + Tenant-scoping review) as first-class surfaces.
+    </div>
+  </section>
+
+  <!-- LAYER 20 — SYSTEM DIAGRAM (NODE TREE) -->
+  <section class="layer" id="l20">
+    <div class="layer-header">
+      <div class="layer-num">20</div>
+      <div class="layer-title">
+        <h2>System architecture diagram — node tree</h2>
+        <div class="adr">რისი რას უკავშირდება · request path · telemetry path · life-safety bypass</div>
+      </div>
+    </div>
+
+    <div class="layer-sub">Full topology (request flow ▼ blue · telemetry flow ▲ green · async ─ ─ dashed)</div>
+    <div style="padding: 18px 22px 10px; background: #FFFFFF; border-bottom: 1px solid var(--border); overflow-x: auto;">
+      <svg viewBox="0 0 1040 870" xmlns="http://www.w3.org/2000/svg" style="width: 100%; min-width: 900px; height: auto; display: block;">
+        <defs>
+          <marker id="arr-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#1565C0"/>
+          </marker>
+          <marker id="arr-grn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#2E7D32"/>
+          </marker>
+          <marker id="arr-gry" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="#5A6B80"/>
+          </marker>
+        </defs>
+        <style>
+          .band { fill: #F7F9FC; stroke: #E1E7EF; stroke-width: 1; }
+          .band-t { font: 700 10px 'Noto Sans Georgian', sans-serif; fill: #5A6B80; letter-spacing: 1px; }
+          .box { fill: #FFFFFF; stroke: #C9D3E0; stroke-width: 1; }
+          .box-pri { fill: #E3F2FD; stroke: #1565C0; stroke-width: 1.5; }
+          .box-warn { fill: #FFF8E1; stroke: #E6A100; stroke-width: 1.5; }
+          .box-ok { fill: #E8F5E9; stroke: #2E7D32; stroke-width: 1.5; }
+          .box-red { fill: #FDECEA; stroke: #D32F2F; stroke-width: 1.5; }
+          text.t { font: 600 12.5px 'Noto Sans Georgian', -apple-system, sans-serif; fill: #1A2332; text-anchor: middle; }
+          text.st { font: 10px 'JetBrains Mono', monospace; fill: #5A6B80; text-anchor: middle; }
+          text.lbl { font: 500 10px 'JetBrains Mono', monospace; fill: #5A6B80; text-anchor: middle; }
+          .arr { stroke: #1565C0; stroke-width: 1.6; fill: none; }
+          .arr-grn { stroke: #2E7D32; stroke-width: 1.6; fill: none; }
+          .arr-dash { stroke: #5A6B80; stroke-width: 1; fill: none; stroke-dasharray: 4,3; }
+        </style>
+
+        <!-- BAND: CLIENTS -->
+        <rect class="band" x="20" y="20" width="1000" height="110" rx="8"/>
+        <text class="band-t" x="36" y="42">CLIENTS</text>
+        <g><rect class="box-pri" x="70"  y="55" width="180" height="60" rx="6"/><text class="t" x="160" y="80">Web</text><text class="st" x="160" y="98">Next.js 15 · KAYA</text></g>
+        <g><rect class="box"     x="290" y="55" width="180" height="60" rx="6"/><text class="t" x="380" y="80">Mobile</text><text class="st" x="380" y="98">RN (Phase 2)</text></g>
+        <g><rect class="box-pri" x="510" y="55" width="180" height="60" rx="6"/><text class="t" x="600" y="80">Admin</text><text class="st" x="600" y="98">Next.js · internal</text></g>
+        <g><rect class="box"     x="730" y="55" width="220" height="60" rx="6"/><text class="t" x="840" y="80">3rd-party / SDK</text><text class="st" x="840" y="98">OAuth · webhooks · npm</text></g>
+
+        <!-- Clients → Edge -->
+        <path class="arr" marker-end="url(#arr-blue)" d="M160,115 L160,160"/>
+        <text class="lbl" x="160" y="142">HTTPS/JWT</text>
+        <path class="arr" marker-end="url(#arr-blue)" d="M380,115 L380,160"/>
+        <text class="lbl" x="380" y="142">Socket.io</text>
+        <path class="arr" marker-end="url(#arr-blue)" d="M600,115 L600,160"/>
+        <text class="lbl" x="600" y="142">SSE</text>
+        <path class="arr" marker-end="url(#arr-blue)" d="M840,115 L840,160"/>
+        <text class="lbl" x="840" y="142">REST · OAuth</text>
+
+        <!-- BAND: EDGE -->
+        <rect class="band" x="20" y="165" width="1000" height="50" rx="8"/>
+        <text class="band-t" x="36" y="186">CDN · WAF</text>
+        <rect class="box-pri" x="160" y="178" width="790" height="28" rx="5"/>
+        <text class="t" x="555" y="197">CloudFront · AWS WAF · ACM (TLS 1.3) · Route 53</text>
+
+        <!-- Edge → API -->
+        <path class="arr" marker-end="url(#arr-blue)" d="M555,215 L555,250"/>
+
+        <!-- BAND: API COMPUTE -->
+        <rect class="band" x="20" y="255" width="780" height="140" rx="8"/>
+        <text class="band-t" x="36" y="276">API COMPUTE — ECS Fargate · NestJS (ADR-004, sole API)</text>
+        <g><rect class="box-pri" x="50"  y="290" width="170" height="85" rx="6"/><text class="t" x="135" y="317">HTTP API</text><text class="st" x="135" y="335">Fastify · REST</text><text class="st" x="135" y="352">OpenAPI 3.1</text></g>
+        <g><rect class="box"     x="240" y="290" width="170" height="85" rx="6"/><text class="t" x="325" y="317">WS Gateway</text><text class="st" x="325" y="335">Socket.io</text><text class="st" x="325" y="352">rooms · presence</text></g>
+        <g><rect class="box"     x="430" y="290" width="170" height="85" rx="6"/><text class="t" x="515" y="317">SSE</text><text class="st" x="515" y="335">/events stream</text><text class="st" x="515" y="352">server push 1-way</text></g>
+        <g><rect class="box-pri" x="620" y="290" width="170" height="85" rx="6"/><text class="t" x="705" y="317">Workers</text><text class="st" x="705" y="335">NestJS consumers</text><text class="st" x="705" y="352">SQS + EventBridge</text></g>
+
+        <!-- BAND: SESSION -->
+        <rect class="band" x="820" y="255" width="200" height="140" rx="8"/>
+        <text class="band-t" x="836" y="276">SESSION</text>
+        <rect class="box-warn" x="835" y="290" width="170" height="85" rx="6"/>
+        <text class="t" x="920" y="317">Redis</text>
+        <text class="st" x="920" y="335">session store</text>
+        <text class="st" x="920" y="352">30s TTL · invalidate</text>
+
+        <!-- API ↔ Redis -->
+        <path class="arr-dash" marker-end="url(#arr-gry)" d="M800,332 L835,332"/>
+        <text class="lbl" x="818" y="326">org-ctx</text>
+
+        <!-- API → Data -->
+        <path class="arr" marker-end="url(#arr-blue)" d="M415,395 L415,440"/>
+        <text class="lbl" x="415" y="422">RLS · SQL</text>
+
+        <!-- Workers → Async -->
+        <path class="arr-grn" marker-end="url(#arr-grn)" d="M705,395 L705,560"/>
+        <text class="lbl" x="730" y="472">jobs · events</text>
+
+        <!-- BAND: DATA -->
+        <rect class="band" x="20" y="445" width="1000" height="110" rx="8"/>
+        <text class="band-t" x="36" y="467">DATA STORES — per-region Aurora + Timescale + S3 (ADR-006/007/008/015)</text>
+        <g><rect class="box-pri"  x="50"  y="480" width="225" height="60" rx="6"/><text class="t" x="162" y="505">Aurora PostgreSQL 16</text><text class="st" x="162" y="524">RLS · pgvector · PostGIS</text></g>
+        <g><rect class="box-pri"  x="295" y="480" width="225" height="60" rx="6"/><text class="t" x="407" y="505">TimescaleDB</text><text class="st" x="407" y="524">hypertable · CA · 7d chunk</text></g>
+        <g><rect class="box"      x="540" y="480" width="225" height="60" rx="6"/><text class="t" x="652" y="505">S3</text><text class="st" x="652" y="524">Parquet cold · Object Lock</text></g>
+        <g><rect class="box-warn" x="785" y="480" width="200" height="60" rx="6"/><text class="t" x="885" y="505">KMS</text><text class="st" x="885" y="524">envelope · per-tenant key</text></g>
+
+        <!-- Data → Async (events) -->
+        <path class="arr-dash" marker-end="url(#arr-gry)" d="M407,555 L407,590"/>
+        <text class="lbl" x="407" y="578">CDC · logical repl.</text>
+
+        <!-- BAND: ASYNC -->
+        <rect class="band" x="20" y="595" width="1000" height="70" rx="8"/>
+        <text class="band-t" x="36" y="617">ASYNC BACKBONE — SQS + EventBridge (ADR-005)</text>
+        <g><rect class="box-ok"   x="50"  y="628" width="225" height="30" rx="6"/><text class="t" x="162" y="649">SQS · jobs · DLQ</text></g>
+        <g><rect class="box-ok"   x="295" y="628" width="225" height="30" rx="6"/><text class="t" x="407" y="649">EventBridge bus</text></g>
+        <g><rect class="box"      x="540" y="628" width="225" height="30" rx="6"/><text class="t" x="652" y="649">Step Functions</text></g>
+        <g><rect class="box-warn" x="785" y="628" width="200" height="30" rx="6"/><text class="t" x="885" y="649">Scheduler (cron)</text></g>
+
+        <!-- Async → Device (commands) -->
+        <path class="arr" marker-end="url(#arr-blue)" d="M162,665 L162,720"/>
+        <text class="lbl" x="162" y="696">commands</text>
+
+        <!-- Device → Async (telemetry) -->
+        <path class="arr-grn" marker-end="url(#arr-grn)" d="M407,790 C407,740 407,720 407,700 L407,665"/>
+        <text class="lbl" x="470" y="696">telemetry ▲</text>
+
+        <!-- BAND: DEVICE EDGE -->
+        <rect class="band" x="20" y="700" width="1000" height="150" rx="8"/>
+        <text class="band-t" x="36" y="722">DEVICE EDGE — IoT Core MQTT + Greengrass v2 (ADR-002/003 · life-safety)</text>
+        <g><rect class="box-pri"  x="50"  y="735" width="225" height="95" rx="6"/><text class="t" x="162" y="762">IoT Core</text><text class="st" x="162" y="780">MQTT 5 · mTLS</text><text class="st" x="162" y="797">Rules → SQS/Timescale</text><text class="st" x="162" y="814">Device Defender</text></g>
+        <g><rect class="box-warn" x="295" y="735" width="225" height="95" rx="6"/><text class="t" x="407" y="762">Greengrass v2</text><text class="st" x="407" y="780">edge runtime · sole v1</text><text class="st" x="407" y="797">autonomous alarm loop</text><text class="st" x="407" y="814">Modbus · BACnet · OPC-UA</text></g>
+        <g><rect class="box"      x="540" y="735" width="225" height="95" rx="6"/><text class="t" x="652" y="762">Fleet Provisioning</text><text class="st" x="652" y="780">X.509 · ACM PCA</text><text class="st" x="652" y="797">24mo rotation v1</text><text class="st" x="652" y="814">claim cert → per-device</text></g>
+        <g><rect class="box-red"  x="785" y="735" width="200" height="95" rx="6"/><text class="t" x="885" y="762">Devices</text><text class="st" x="885" y="780">sensors · relays · gw</text><text class="st" x="885" y="797">boiler · HVAC · meter</text><text class="st" x="885" y="814">per-tenant cert</text></g>
+
+        <!-- Greengrass ↔ Devices (local bus) -->
+        <path class="arr-dash" marker-end="url(#arr-gry)" d="M520,782 L785,782"/>
+        <text class="lbl" x="650" y="775">local bus (life-safety)</text>
+
+        <!-- Workers → Notifications side (arrow out to right) -->
+        <path class="arr" marker-end="url(#arr-blue)" d="M790,332 L820,332"/>
+      </svg>
+    </div>
+
+    <div class="layer-sub">Legend</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Marker</th><th>მნიშვნელობა</th><th>გამოყენება</th></tr></thead>
+      <tbody>
+        <tr><td class="component"><span style="display:inline-block;width:24px;height:14px;background:#E3F2FD;border:1.5px solid #1565C0;border-radius:4px;vertical-align:middle;"></span> Primary</td><td class="service">critical path</td><td class="role">user traffic, data writes, API, telemetry ingestion</td></tr>
+        <tr><td class="component"><span style="display:inline-block;width:24px;height:14px;background:#FFF8E1;border:1.5px solid #E6A100;border-radius:4px;vertical-align:middle;"></span> Warn</td><td class="service">session & security</td><td class="role">Redis, KMS, Greengrass, Scheduler</td></tr>
+        <tr><td class="component"><span style="display:inline-block;width:24px;height:14px;background:#E8F5E9;border:1.5px solid #2E7D32;border-radius:4px;vertical-align:middle;"></span> Async</td><td class="service">eventual consistency</td><td class="role">SQS queues, EventBridge bus</td></tr>
+        <tr><td class="component"><span style="display:inline-block;width:24px;height:14px;background:#FDECEA;border:1.5px solid #D32F2F;border-radius:4px;vertical-align:middle;"></span> Physical</td><td class="service">hardware endpoints</td><td class="role">IoT devices — not replaceable without field ops</td></tr>
+        <tr><td class="component">▼ ▲ ► solid</td><td class="service">sync call</td><td class="role">blocking HTTP · MQTT publish/ack · SQL query</td></tr>
+        <tr><td class="component">─ ─ dashed</td><td class="service">async / cache</td><td class="role">CDC, cache read, event emit</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-note">
+      <strong>Life-safety path (ADR-003):</strong> Greengrass v2 ↔ local sensor bus ჰორიზონტალური dashed line — ეს loop მუშაობს <em>cloud-ის გარეშეც</em>. Cloud-ი მხოლოდ observer (telemetry ▲) და coordinator (commands ▼). Critical alarm cloud-მდე &lt;2s latency-ში ვერ მიაღწევს თუ → edge handles locally, cloud იღებს ACK-ს postfactum.
+    </div>
+  </section>
+
+  <!-- LAYER 21 — API DESIGN -->
+  <section class="layer" id="l21">
+    <div class="layer-header">
+      <div class="layer-num">21</div>
+      <div class="layer-title">
+        <h2>API design — როგორ უნდა იმუშაოს</h2>
+        <div class="adr">ADR-004 · NestJS + Fastify · REST + Socket.io + SSE · OpenAPI-driven contracts</div>
+      </div>
+    </div>
+
+    <div class="layer-sub">URL structure (versioned, tenant-scoped, resource-oriented)</div>
+<pre class="code"><span class="cm">// ბაზა</span>
+https://api.dmt-platform.com/v1/...
+
+<span class="cm">// ორგანიზაცია-scoped (default)</span>
+GET    /v1/orgs/<span class="kw">{orgId}</span>/devices
+GET    /v1/orgs/<span class="kw">{orgId}</span>/devices/<span class="kw">{deviceId}</span>
+POST   /v1/orgs/<span class="kw">{orgId}</span>/devices
+PATCH  /v1/orgs/<span class="kw">{orgId}</span>/devices/<span class="kw">{deviceId}</span>
+DELETE /v1/orgs/<span class="kw">{orgId}</span>/devices/<span class="kw">{deviceId}</span>
+
+<span class="cm">// resource-ქვე-collection</span>
+GET    /v1/orgs/<span class="kw">{orgId}</span>/devices/<span class="kw">{deviceId}</span>/telemetry?metric=temperature&amp;from=...&amp;to=...
+POST   /v1/orgs/<span class="kw">{orgId}</span>/devices/<span class="kw">{deviceId}</span>/commands    <span class="cm">// enqueue command</span>
+GET    /v1/orgs/<span class="kw">{orgId}</span>/alerts?status=active&amp;severity=high
+
+<span class="cm">// user-scoped (org-ის გარეშე)</span>
+GET    /v1/me                                <span class="cm">// current user profile</span>
+GET    /v1/me/orgs                           <span class="cm">// user-ის memberships</span>
+POST   /v1/me/sessions                       <span class="cm">// switch active org</span>
+
+<span class="cm">// realtime</span>
+WS     /v1/realtime                          <span class="cm">// Socket.io — rooms: org:{id}, device:{id}</span>
+SSE    /v1/events?topics=alerts,commands     <span class="cm">// server-push 1-way</span></pre>
+
+    <div class="layer-sub">Request envelope</div>
+<pre class="code"><span class="cm">// ყოველი mutation-ს მინიმუმ ამდენი header-ი სჭირდება</span>
+POST /v1/orgs/9b7a.../devices/dev_abc/commands HTTP/1.1
+<span class="kw">Authorization:</span>      Bearer eyJhbGci...                       <span class="cm">// JWT — userId + sessionId only</span>
+<span class="kw">Content-Type:</span>       application/json
+<span class="kw">X-Idempotency-Key:</span>  01HW8K5N8RX1Q2V...                      <span class="cm">// ULID — retry safe</span>
+<span class="kw">X-Request-ID:</span>       3f9a-7c21-...                           <span class="cm">// client-side trace</span>
+<span class="kw">X-Active-Org:</span>       9b7a-...                                <span class="cm">// hint; server validates against session</span>
+<span class="kw">If-Match:</span>           "W/\"v12\""                             <span class="cm">// optimistic concurrency</span>
+
+{
+  <span class="cm">"kind"</span>: <span class="cm">"relay.on"</span>,
+  <span class="cm">"payload"</span>: { <span class="cm">"channel"</span>: 2, <span class="cm">"duration_s"</span>: 300 },
+  <span class="cm">"client_ref"</span>: <span class="cm">"ui-btn-2026-04-22T16:47"</span>
+}</pre>
+
+    <div class="layer-sub">Response envelope (success + error)</div>
+<pre class="code"><span class="cm">// 200/201 success — data + meta, არასდროს top-level array</span>
+{
+  <span class="cm">"data"</span>: {
+    <span class="cm">"id"</span>: <span class="cm">"01HW8K..."</span>,
+    <span class="cm">"kind"</span>: <span class="cm">"relay.on"</span>,
+    <span class="cm">"status"</span>: <span class="cm">"queued"</span>,
+    <span class="cm">"issued_at"</span>: <span class="cm">"2026-04-22T16:47:12.391Z"</span>
+  },
+  <span class="cm">"meta"</span>: { <span class="cm">"trace_id"</span>: <span class="cm">"3f9a..."</span>, <span class="cm">"version"</span>: <span class="cm">"1.2.4"</span> }
+}
+
+<span class="cm">// 4xx/5xx error — RFC 9457 problem+json + დამატებითი ველები</span>
+HTTP/1.1 422 Unprocessable Entity
+Content-Type: application/problem+json
+
+{
+  <span class="cm">"type"</span>: <span class="cm">"https://api.dmt-platform.com/errors/device.quarantined"</span>,
+  <span class="cm">"title"</span>: <span class="cm">"Device is quarantined"</span>,
+  <span class="cm">"status"</span>: 422,
+  <span class="cm">"detail"</span>: <span class="cm">"Cannot send command to device in status=quarantined"</span>,
+  <span class="cm">"instance"</span>: <span class="cm">"/v1/orgs/9b7a.../devices/dev_abc/commands"</span>,
+  <span class="cm">"code"</span>: <span class="cm">"device.quarantined"</span>,       <span class="cm">// machine-readable (contracts registry)</span>
+  <span class="cm">"trace_id"</span>: <span class="cm">"3f9a..."</span>,
+  <span class="cm">"hint"</span>: <span class="cm">"Run Device Defender check then retry"</span>
+}</pre>
+
+    <div class="layer-sub">Auth flow (user-first identity — ADR-009/010/017)</div>
+<pre class="code"><span class="cm">[1] SIGN-IN</span>
+Client  ──POST /v1/auth/sign-in──▶  API
+                                      │ validate via Cognito
+                                      │ create session row (Redis)
+Client  ◀── 200 { user, orgs[], active_org_id, jwt, refresh_token }
+
+<span class="cm">[2] REGULAR REQUEST (session-resolved org-context)</span>
+Client  ──Bearer JWT──▶  API
+                          │ jwt.verify() → userId, sessionId
+                          │ redis.get("session:" + sessionId) → {userId, activeOrgId, roles, grants, fetched_at}
+                          │ if fetched_at &gt; now-30s → refresh from Aurora
+                          │ SET LOCAL app.tenant_id = activeOrgId
+                          │ handler executes with RLS enforced
+Client  ◀── 200 { data }
+
+<span class="cm">[3] MEMBERSHIP/ROLE CHANGED (invalidate session)</span>
+Admin    ──PATCH /v1/orgs/{id}/memberships/{uid}──▶  API
+                                                       │ UPDATE memberships
+                                                       │ EventBridge → "session.invalidate" event
+                                                       │ Redis: DEL sessions for that userId
+Next request → refetch from Aurora (stale ≤ 30s)
+
+<span class="cm">[4] ORG SWITCH (user has multiple memberships)</span>
+Client  ──POST /v1/me/sessions { active_org_id }──▶  API
+                                                       │ verify membership(userId, active_org_id)
+                                                       │ update session row
+Client  ◀── 200 { active_org_id, roles, grants }</pre>
+
+    <div class="layer-sub">Standards</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Concern</th><th>Rule</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Versioning</td><td class="service"><code>/v1/</code> in URL; breaking change → <code>/v2/</code>, both served 12mo</td><td class="role">clients upgrade on their schedule; no silent contract drift</td></tr>
+        <tr><td class="component">Idempotency</td><td class="service"><code>X-Idempotency-Key</code> required on all POST/PATCH/DELETE; server caches response 24h</td><td class="role">retry-safe by default; no duplicate device commands</td></tr>
+        <tr><td class="component">Pagination</td><td class="service">cursor-based: <code>?cursor=...&amp;limit=50</code>; response <code>meta.next_cursor</code></td><td class="role">stable under concurrent inserts; offset არ გამოგვადგება</td></tr>
+        <tr><td class="component">Sorting / filter</td><td class="service">RFC 3986 query: <code>?sort=-created_at&amp;status=active</code></td><td class="role">one convention across all list endpoints</td></tr>
+        <tr><td class="component">Rate limiting</td><td class="service">per-tenant token bucket in Redis; headers <code>X-RateLimit-*</code>; 429 on exceeded</td><td class="role">noisy-neighbor isolation</td></tr>
+        <tr><td class="component">Optimistic concurrency</td><td class="service">weak ETag on entity; <code>If-Match</code> required on PATCH; 412 on mismatch</td><td class="role">prevents lost-update in multi-user admin</td></tr>
+        <tr><td class="component">OpenAPI</td><td class="service">generated from <code>packages/contracts</code> (zod → OpenAPI 3.1); SDK auto-generated</td><td class="role">single source of truth; clients always type-safe</td></tr>
+        <tr><td class="component">Deprecation</td><td class="service">header <code>Deprecation: &lt;date&gt;</code> + <code>Sunset</code>; logged in OTel; tenant-by-tenant warning</td><td class="role">no surprise breakage on retirement</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-note">
+      <strong>Why NOT GraphQL in v1:</strong> IoT workloads dominate write-heavy telemetry + precise command paths — REST-ისა და MQTT-ის pair უფრო მარტივია observability-ში (OTel spans 1:1 endpoint-ზე). GraphQL gateway Phase 2, თუ 3rd-party SDK usage-ი ამას მოითხოვს.
+    </div>
+    <div class="layer-note" style="border-top: 1px solid #FFE082; margin-top: -1px;">
+      <strong>API = contract-first:</strong> <code>packages/contracts</code>-ში zod schema = single truth → generator აწარმოებს OpenAPI 3.1 + TS types + client SDK. Backend handler-ის signature-ი ავტომატურად typed-ია; frontend fetch-ი იგივე types-ს იყენებს. Drift impossible.
+    </div>
+  </section>
+
+  <!-- LAYER 22 — NOTIFICATIONS (SMS + EMAIL) -->
+  <section class="layer" id="l22">
+    <div class="layer-header">
+      <div class="layer-num">22</div>
+      <div class="layer-title">
+        <h2>Notifications — SMS + Email + Push</h2>
+        <div class="adr">ADR-005, 014 · alerts · event-driven · per-channel retry + DLQ</div>
+      </div>
+    </div>
+
+    <div class="layer-sub">Delivery flow (alert raised → user phone/inbox)</div>
+<pre class="code"><span class="cm">// event flows left → right; life-safety never depends on cloud delivery</span>
+
+ DEVICE                     EDGE                     CLOUD                          DELIVERY                 USER
+┌────────┐   telemetry   ┌──────────┐   MQTT     ┌────────────┐   job       ┌──────────────┐   API       ┌────────┐
+│ sensor │ ─────────────▶│Greengrass│───────────▶│ IoT Rule   │────────────▶│ Notifier     │────────────▶│ SES    │──▶ email
+│ relay  │               │   v2     │            │   engine   │             │ (NestJS      │             │ SNS    │──▶ SMS
+└────────┘               └─────┬────┘            └─────┬──────┘             │  worker)     │             │ Pinpoint│──▶ push
+                               │                        │                    │              │             └────────┘
+                               │ alarm.local            │ alert.raised       │              │
+                               │ (autonomous)           │ → SQS              │ template     │
+                               │                        │                    │ render +     │
+                               │                        │                    │ per-channel  │
+                               │                        │                    │ sign         │
+                               │                        │                    └──────┬───────┘
+                               ▼                        ▼                           │
+                         buzzer / relay             ┌────────┐                      │ retry + DLQ
+                         immediate action           │ Aurora │◀─── write trail ─────┘
+                         (cloud-independent)        │ audit  │
+                                                    │ _log   │
+                                                    └────────┘</pre>
+
+    <div class="layer-sub">Channel map</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>არხი</th><th>სერვისი</th><th>როდის</th><th>SLA-გამოყენება</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Email — transactional</td><td class="service"><strong>AWS SES</strong></td><td class="role">account events, billing, weekly digest, password reset</td><td class="role">&lt;30s; 99.9% delivery</td></tr>
+        <tr><td class="component">Email — marketing</td><td class="service"><strong>SES</strong> + separate IP pool + unsub header</td><td class="role">product updates, onboarding drip</td><td class="role">&lt;5min; CAN-SPAM compliant</td></tr>
+        <tr><td class="component">SMS — critical</td><td class="service"><strong>AWS SNS</strong> (Transactional)</td><td class="role">life-safety alerts, 2FA, on-call escalation</td><td class="role">&lt;15s; short-codes where available</td></tr>
+        <tr><td class="component">SMS — promo</td><td class="service"><strong>SNS</strong> (Promotional, Phase 2)</td><td class="role">product news (opt-in only)</td><td class="role">&lt;5min</td></tr>
+        <tr><td class="component">Push — mobile</td><td class="service"><strong>AWS Pinpoint</strong> (APNs + FCM)</td><td class="role">alerts when app backgrounded</td><td class="role">&lt;10s; silent-push ≤ 1MB</td></tr>
+        <tr><td class="component">In-app</td><td class="service">Socket.io + Aurora <code>notifications</code></td><td class="role">any event, live when user online</td><td class="role">&lt;1s; persisted 30d</td></tr>
+        <tr><td class="component">Webhook out</td><td class="service">NestJS dispatcher + HMAC-SHA256 sign</td><td class="role">tenant integrations (3rd-party CRM, on-call)</td><td class="role">retry 5× exp.; DLQ after</td></tr>
+        <tr><td class="component">Voice call</td><td class="service"><strong>Amazon Connect</strong> (Phase 2)</td><td class="role">unacknowledged P0 after 5min SMS silence</td><td class="role">call-tree escalation</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">Template system (per-tenant overrides)</div>
+<pre class="code"><span class="cm">// DB table: notification_templates — per-org override with fallback to system default</span>
+<span class="kw">CREATE TABLE</span> notification_templates (
+  id            uuid        <span class="kw">PRIMARY KEY</span>,
+  tenant_id     uuid,                               <span class="cm">-- NULL = system default</span>
+  kind          text        <span class="kw">NOT NULL</span>,            <span class="cm">-- alert.raised | billing.invoice | user.invite | …</span>
+  channel       text        <span class="kw">NOT NULL</span>,            <span class="cm">-- email | sms | push</span>
+  locale        text        <span class="kw">NOT NULL</span>,            <span class="cm">-- ka | en | ru</span>
+  subject       text,                               <span class="cm">-- email subject / sms не-applicable</span>
+  body_mjml     text,                               <span class="cm">-- MJML для email → responsive HTML</span>
+  body_text     text        <span class="kw">NOT NULL</span>,            <span class="cm">-- SMS + email fallback (plain)</span>
+  <span class="kw">UNIQUE</span> (tenant_id, kind, channel, locale)
+);
+
+<span class="cm">// rendering pipeline: Handlebars + MJML (email) → Vault-signed URL for unsubscribe</span>
+const rendered = renderTemplate({
+  kind: <span class="cm">'alert.raised'</span>,
+  channel: <span class="cm">'sms'</span>,
+  locale: user.locale,                              <span class="cm">// default 'ka'</span>
+  tenant_id: org.id,
+  vars: { device_name: <span class="cm">'ქვაბი №3'</span>, metric: <span class="cm">'temperature'</span>, value: 92.4, unit: <span class="cm">'°C'</span> }
+});
+<span class="cm">// → "⚠ ქვაბი №3 — ტემპერატურა 92.4°C (კრიტიკული). პასუხი: https://app.../a/{ulid}"</span></pre>
+
+    <div class="layer-sub">Retry & dead-letter policy</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Stage</th><th>Retry</th><th>Escalation</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Provider 5xx (SES/SNS transient)</td><td class="service">exp back-off: 1s → 2s → 4s → 8s → 16s (5×)</td><td class="role">after all fail → DLQ + P0 alert #notify</td></tr>
+        <tr><td class="component">Provider 4xx (bounce/reject)</td><td class="service">no retry; mark recipient as <code>hard_bounce</code></td><td class="role">suppressed list; admin UI surfaces</td></tr>
+        <tr><td class="component">SMS delivery failure</td><td class="service">1 retry after 10s; if still fail → email fallback (if user has verified email)</td><td class="role">life-safety: escalate to on-call after 60s silence</td></tr>
+        <tr><td class="component">Unacknowledged P0 alert</td><td class="service">cascade: in-app → push → SMS → email → voice call (Phase 2)</td><td class="role">each step +5min; ack from any stops chain</td></tr>
+        <tr><td class="component">DLQ processing</td><td class="service">CloudWatch alarm on DLQ depth &gt; 10; manual replay via admin UI</td><td class="role">human intervention; root-cause post-mortem</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-note">
+      <strong>Compliance notes:</strong>
+      SES — SPF + DKIM + DMARC strict configured per sender domain ·
+      SNS SMS — per-country regulations (Georgia: no short-code alphanumeric; fallback to long-code) ·
+      user consent recorded in <code>user_consents</code> (purpose + timestamp + version) — GDPR 7-day unsub SLA ·
+      Pinpoint — silent-push for background refresh, visible-push only with explicit opt-in.
+    </div>
+    <div class="layer-note" style="border-top: 1px solid #FFE082; margin-top: -1px;">
+      <strong>Why SES + SNS NOT SendGrid/Twilio (v1):</strong>
+      IAM integration (no extra secrets) · per-region regulatory compliance (EU data in eu-central-1) · cost 5–10× lower at our volume · deliverability comparable after domain warm-up.
+      Twilio Phase 2 <em>თუ</em> voice call-tree დასჭირდა — SNS voice coverage არა-სრულია.
+    </div>
+  </section>
+
+  <!-- LAYER 23 — RATIONALE & COMPARISON -->
+  <section class="layer" id="l23">
+    <div class="layer-header">
+      <div class="layer-num">23</div>
+      <div class="layer-title">
+        <h2>რატომ ეს არქიტექტურა — comparison & rationale</h2>
+        <div class="adr">ქართული განმარტებები · ჩვენი არჩევანი vs ალტერნატივები · მიღებული/დაკარგული</div>
+      </div>
+    </div>
+
+    <div class="layer-sub">Database — Aurora vs alternatives</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>ჩვენი არჩევანი</th><th>ალტერნატივები</th><th>რატომ ჩვენი</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component"><strong>Aurora PostgreSQL 16</strong> per-region</td>
+          <td class="service">RDS MySQL · Cloud SQL (GCP) · self-hosted Postgres · CockroachDB · PlanetScale</td>
+          <td class="role">
+            <strong>+</strong> PostgreSQL full feature set (RLS, pgvector, PostGIS, CTE, partitioning) — MySQL-ს RLS ნატურალურად არ აქვს<br>
+            <strong>+</strong> Aurora storage layer — 6× replication, &lt;1s failover, serverless v2 auto-scale<br>
+            <strong>+</strong> per-region data residency invariant (ADR-017) — Cloud SQL GCP-ზე lock-in<br>
+            <strong>−</strong> AWS lock-in (vendor risk); CockroachDB-ს multi-region stronger, მაგრამ Postgres-compat incomplete
+          </td>
+        </tr>
+        <tr>
+          <td class="component"><strong>TimescaleDB</strong> for telemetry</td>
+          <td class="service">InfluxDB · Prometheus · TimestreamDB · Clickhouse · Aurora-only</td>
+          <td class="role">
+            <strong>+</strong> SQL-based — same query engine as Aurora, single dialect for developers<br>
+            <strong>+</strong> continuous aggregates → materialized 1h/1d views, &lt;100ms dashboard<br>
+            <strong>+</strong> compression &gt;20× on telemetry (hypercore)<br>
+            <strong>−</strong> Timestream serverless ერთი ქვრივი გამოგვაცვლიდა, მაგრამ SQL-ის ქვესიმცირე არის limiting, migration-ი უფრო რთულია
+          </td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">API framework — NestJS vs alternatives</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>ჩვენი არჩევანი</th><th>ალტერნატივები</th><th>რატომ ჩვენი</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component"><strong>NestJS 11 + Fastify</strong></td>
+          <td class="service">Express · Koa · FastAPI (Python) · Spring Boot · Go Fiber/Gin</td>
+          <td class="role">
+            <strong>+</strong> DI container + module graph — ცხადი layering, testable<br>
+            <strong>+</strong> TypeScript native → <code>packages/contracts</code>-სთან zero-cost bridge<br>
+            <strong>+</strong> Fastify runtime = 2× Express throughput<br>
+            <strong>+</strong> WebSocket / Microservices / SSE — all built-in, no glue<br>
+            <strong>−</strong> verbose vs FastAPI; Python team-ისთვის ramp-up<br>
+            <em>Python Flask EOL (ADR-004): legacy codebase maintenance &gt; migration cost</em>
+          </td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">Device protocol — MQTT vs alternatives</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>ჩვენი არჩევანი</th><th>ალტერნატივები</th><th>რატომ ჩვენი</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component"><strong>MQTT 5 over TLS</strong> (AWS IoT Core)</td>
+          <td class="service">HTTP polling · gRPC streaming · CoAP · AMQP · custom TCP</td>
+          <td class="role">
+            <strong>+</strong> pub/sub-model — 1 device → N subscribers zero-cost<br>
+            <strong>+</strong> QoS 1 built-in — at-least-once delivery with ACK<br>
+            <strong>+</strong> retained topics — last-known-state ყოველ reconnect-ზე<br>
+            <strong>+</strong> 10× lower bandwidth vs HTTP (binary frame, persistent TCP)<br>
+            <strong>+</strong> IoT Core-ს native integration (Rules, Defender, Fleet Prov.)<br>
+            <strong>−</strong> firewall-ის უკან NAT-ი ხანდახან problematic; mitigation: WebSocket MQTT over 443
+          </td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">Edge runtime — Greengrass v2 vs alternatives</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>ჩვენი არჩევანი</th><th>ალტერნატივები</th><th>რატომ ჩვენი</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component"><strong>AWS Greengrass v2</strong> (sole v1)</td>
+          <td class="service">custom Rust/Go agent · Azure IoT Edge · KubeEdge · no edge (cloud-only)</td>
+          <td class="role">
+            <strong>+</strong> managed runtime → OTA, certificate rotation, telemetry buffering free<br>
+            <strong>+</strong> component model — deploy a lambda as edge function<br>
+            <strong>+</strong> life-safety autonomy → cloud outage = BMS continues (ADR-003)<br>
+            <strong>+</strong> local Lambda execution — Python/Node logic stays at edge<br>
+            <strong>−</strong> AWS lock-in (parallel runtime Phase 2 only after 6mo proof)<br>
+            <em>Cloud-only უპირატესობა არ არის: life-safety-ის responsibility device-ზეა, არა cloud-ში</em>
+          </td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">Realtime transport — Socket.io vs alternatives</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>ჩვენი არჩევანი</th><th>ალტერნატივები</th><th>რატომ ჩვენი</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component"><strong>Socket.io via NestJS Gateway</strong></td>
+          <td class="service">AWS AppSync · Pusher · Ably · raw WebSocket · SSE-only · long-poll</td>
+          <td class="role">
+            <strong>+</strong> fallback ladder (WS → long-poll → JSONP) — 100% client compat<br>
+            <strong>+</strong> rooms / namespaces / ack-able emits out-of-box<br>
+            <strong>+</strong> same runtime as API — no separate service<br>
+            <strong>+</strong> &lt;5k concurrent/node easily (Redis adapter for scale-out)<br>
+            <strong>−</strong> AppSync უფრო scale-ს უძლებს, მაგრამ GraphQL-ის საჭიროება v1-ში არ არის<br>
+            <em>Revise trigger: &gt;5k concurrent subscribers/node → AppSync migration</em>
+          </td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">Monorepo & CI — Turborepo vs alternatives</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>ჩვენი არჩევანი</th><th>ალტერნატივები</th><th>რატომ ჩვენი</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component"><strong>Turborepo</strong> + pnpm</td>
+          <td class="service">Nx · Lerna · polyrepo · Bazel · Rush</td>
+          <td class="role">
+            <strong>+</strong> remote cache → CI 3–5× ჯერ სწრაფი<br>
+            <strong>+</strong> zero-config starting point; incremental adoption<br>
+            <strong>+</strong> Vercel-integrated (team-ის deploy cadence)<br>
+            <strong>−</strong> Nx-ს უკეთესი code-generator + enforced module boundaries — Phase 2 trigger: team &gt;10 devs
+          </td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">Notifications — SES/SNS vs alternatives</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>ჩვენი არჩევანი</th><th>ალტერნატივები</th><th>რატომ ჩვენი</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component"><strong>AWS SES (email)</strong> + <strong>SNS (SMS)</strong> + <strong>Pinpoint (push)</strong></td>
+          <td class="service">SendGrid · Postmark · Twilio · Mailgun · Resend</td>
+          <td class="role">
+            <strong>+</strong> IAM integration — no separate API keys to rotate<br>
+            <strong>+</strong> per-region data residency maintained (eu-central-1 stays EU)<br>
+            <strong>+</strong> cost: ~5× lower at our volume (1M emails/mo = $100 vs $500)<br>
+            <strong>+</strong> deliverability comparable after 2-week domain warm-up<br>
+            <strong>−</strong> Twilio SMS coverage უკეთესი emerging markets-ში<br>
+            <em>Revise trigger: &gt;1M SMS/month OR expansion to &gt;20 countries → Twilio evaluation</em>
+          </td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">Identity — Cognito vs alternatives</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>ჩვენი არჩევანი</th><th>ალტერნატივები</th><th>რატომ ჩვენი</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component"><strong>Cognito User Pools</strong> (v1) → <strong>WorkOS</strong> (Phase 2 for enterprise SSO)</td>
+          <td class="service">Auth0 · Clerk · Firebase Auth · self-hosted Keycloak · Okta</td>
+          <td class="role">
+            <strong>+</strong> AWS-native — no cross-cloud hop; IAM integration for lambda/API<br>
+            <strong>+</strong> free tier generous (50k MAU); cost scales sub-linearly<br>
+            <strong>+</strong> MFA, hosted UI, federated sign-in built-in<br>
+            <strong>−</strong> UI customization limited — WorkOS better for enterprise<br>
+            <strong>−</strong> Clerk developer UX უკეთესია, მაგრამ vendor lock + cost scale-ით<br>
+            <em>user-first identity (ADR-009/010) applies regardless of IdP — internal schema is the truth</em>
+          </td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-note">
+      <strong>პრინციპი:</strong> ყოველ არჩევანზე გვაქვს წერილობითი <em>revise trigger</em> — ობიექტური metric (volume, cost, latency, team size), რომლითაც უნდა გადავხედოთ ტექნოლოგიას. ეს ხელს უშლის "sunk cost" bias-ს — ADR-ი lock-ია მხოლოდ მანამდე, სანამ trigger condition არ დადგება.
+    </div>
+    <div class="layer-note" style="border-top: 1px solid #FFE082; margin-top: -1px;">
+      <strong>არჩევნის ფილოსოფია:</strong> <em>boring tech</em> — მაქსიმუმი 2 "ახალი/უცხო" არჩევანი ერთ ეპოქაში. ამ v1-ში ეს არის <strong>pgvector + Greengrass v2</strong> — ყველა დანარჩენი (Aurora, NestJS, Socket.io, Turborepo, SES/SNS, Terraform) ინდუსტრიის stable default-ია. Novelty budget დაცულია.
+    </div>
+  </section>
+
+  <!-- LAYER 24 — ROLE & PURPOSE (QA) -->
+  <section class="layer" id="l24">
+    <div class="layer-header">
+      <div class="layer-num">24</div>
+      <div class="layer-title">
+        <h2>როლი და საჭიროება — თითოეული კომპონენტი დეტალურად</h2>
+        <div class="adr">ქართული განმარტება რატომ არის საჭირო · რა მოხდება ამის გარეშე · რას ცვლის სისტემის ქცევაში</div>
+      </div>
+    </div>
+
+    <div class="layer-sub">§24.1 — მონაცემთა ფენა (Data layer)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>როლი</th><th>რატომ საჭიროა (დეტალურად)</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component"><strong>Aurora PostgreSQL 16</strong></td>
+          <td class="service">სისტემის <strong>მთავარი ტრანზაქციული ბაზა</strong> — აქ ინახება მომხმარებლები, ორგანიზაციები, მოწყობილობების რეესტრი, ბრძანებები, შეტყობინებები</td>
+          <td class="role">
+            ეს არის "source of truth" ყველა ოპერაციისთვის, რომელიც <strong>ACID-ს საჭიროებს</strong> (ფინანსური ტრანზაქციები, როლის შეცვლა, membership grants).
+            Aurora-ს <em>6-ჯერ რეპლიცირებული storage layer</em>-ი უზრუნველყოფს, რომ ერთი კვანძის დაცემისას &lt;1 წამში ფერიოვერი მოხდება — BMS-ის ოპერატორი <em>ამას ვერც შეამჩნევს</em>.
+            per-region instance უზრუნველყოფს, რომ ევროპელი tenant-ის მონაცემი <em>არასდროს გავა ევროპიდან</em> (GDPR, რეგულაცია).
+            <br><br>
+            <strong>რა მოხდება ამის გარეშე:</strong> single-region Postgres-ი = downtime failover-ზე 5-10 წუთი, მონაცემთა რეზიდენციის დარღვევა GDPR-ის ჯარიმა €20M-მდე ან წლიური ბრუნვის 4%.
+          </td>
+        </tr>
+        <tr>
+          <td class="component"><strong>TimescaleDB</strong></td>
+          <td class="service"><strong>ტელემეტრიის სპეციალიზებული ბაზა</strong> — სენსორების მონაცემები (ტემპერატურა, წნევა, ვოლტაჟი) დროის მიხედვით ორგანიზებული</td>
+          <td class="role">
+            ჩვეულებრივი Postgres-ი ვერ გაუმკლავდება წამში 10,000+ ჩანაწერის ჩაწერას ერთ ცხრილში — ხანმოკლე დროში ცხრილი გადიდდება ასეულ გიგაბაიტებამდე და <code>SELECT ... WHERE time &gt; now() - '1h'</code> მოიტანს წუთებს.
+            TimescaleDB <em>ავტომატურად აქცევს ცხრილს hypertable-ად</em> — ყოველი 7 დღის მონაცემი ცალკე chunk-ია, ძველი chunks არ ტვირთავენ ქეშს.
+            <em>Continuous aggregates</em> — 1-საათიანი საშუალოები ავტომატურად ქეშდება, dashboard-ი &lt;100ms-ში იტვირთება მილიონ წერტილზეც.
+            <em>Compression</em> — ძველი მონაცემი 20-ჯერ იკუმშება (20GB → 1GB).
+            <br><br>
+            <strong>რა მოხდება ამის გარეშე:</strong> Postgres-ში 6 თვის მონაცემი შეაგროვებს 500GB-ს, dashboard 30 წამში იტვირთება, ოპერატორი წყვეტს სისტემის გამოყენებას.
+          </td>
+        </tr>
+        <tr>
+          <td class="component"><strong>Redis (ElastiCache)</strong></td>
+          <td class="service"><strong>სესიის ქეში</strong> — active org-context, როლები, permissions, 30 წამიანი TTL</td>
+          <td class="role">
+            JWT-ში <em>არ ვდებთ</em> org-context-ს (ADR-017), რადგან: თუ მომხმარებლისთვის როლი შეიცვალა ან membership გაუუქმდა, <em>JWT-ში ჩადებული stale როლი</em> 1 საათი იმოქმედებდა — უსაფრთხოების დარღვევა.
+            Redis-ში inkidental ყოველ request-ზე ვითხოვთ უფრო ახლო truth-ს: 30 წამზე ძველი cache → Aurora-დან refresh.
+            როცა admin ცვლის role-ს → EventBridge ივენტით Redis session immediately მიინდება, <em>შემდეგივე request-ი</em> ახალ როლით მუშაობს.
+            <br><br>
+            <strong>რა მოხდება ამის გარეშე:</strong> revoked ოპერატორი 1 საათამდე კვლავ იღებს dashboard-ს. Compliance breach SOC 2 კონტროლის CC6.3-ში.
+          </td>
+        </tr>
+        <tr>
+          <td class="component"><strong>S3 (Object Lock)</strong></td>
+          <td class="service"><strong>"ცივი" მონაცემების საცავი</strong> — ძველი ტელემეტრია Parquet-ში, audit artifacts, 3D assets, PDF ანგარიშები</td>
+          <td class="role">
+            ცხელი მონაცემი (24 საათი) Aurora/Timescale-შია, ცივი — S3-ში. <strong>Intelligent-Tiering</strong> ავტომატურად გადაანაცვლებს იმ ფაილს, რომელიც 30 დღე არ გამოყენებულა, infrequent-access tier-ზე — ხარჯი 40%-ით მცირდება.
+            <strong>Object Lock</strong> მოდე = ფაილი მექანიკურადაც ვერ წაიშლება მითითებულ ვადამდე. ეს regulated tenant-ებისთვის სავალდებულოა (ფინანსური მონაცემი 7 წელიწადი უცვლელი უნდა იყოს).
+            <br><br>
+            <strong>რა მოხდება ამის გარეშე:</strong> 100TB ტელემეტრიის შენახვა Aurora-ში = თვეში $20,000; S3 Glacier-ში იგივე = $100. Compliance audit ვერ ჩატარდება, თუ არ შეგვიძლია immutable evidence-ის დადასტურება.
+          </td>
+        </tr>
+        <tr>
+          <td class="component"><strong>KMS (envelope encryption)</strong></td>
+          <td class="service"><strong>გასაღების მენეჯმენტი</strong> — ყოველი tenant-ის მონაცემი ცალკე გასაღებით იშიფრება</td>
+          <td class="role">
+            "At-rest encryption"-ი ადვილია: AWS ავტომატურად იცავს diskebs-ი. მაგრამ <em>ერთი default გასაღები ყველა tenant-ისთვის</em> ნიშნავს: insider threat ან compromised IAM role → ყველა tenant-ის monarch-წაკითხვა.
+            <strong>Per-tenant CMK</strong> = თუ იპოვება tenant A-ს გასაღები, tenant B უსაფრთხოდ რჩება. <em>BYOK</em> (bring-your-own-key) Phase 2-ისთვისაა — regulated tenant-ი თავისი გასაღებით გეტყვის "მხოლოდ ეს KMS გასაღები შეგიძლია გამოიყენო ჩემი მონაცემისთვის".
+            <br><br>
+            <strong>რა მოხდება ამის გარეშე:</strong> ERP tenant-ის ფინანსური მონაცემი გაჟონოს → ჩვენი სხვა 500 tenant-იც compromised ითვლება. Enterprise არ ყიდულობს.
+          </td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">§24.2 — ქსელი და API (Network & API layer)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>როლი</th><th>რატომ საჭიროა (დეტალურად)</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component"><strong>CloudFront + WAF + ACM</strong></td>
+          <td class="service"><strong>ყველა request-ის პირველი წერტილი</strong> — CDN, DDoS დაცვა, TLS terminator</td>
+          <td class="role">
+            CloudFront-ი არის ხიდი მომხმარებელსა და origin API-ს შორის. 200+ edge location-ზე სტატიკური assets-ი დაქეშილია — გვერდი იტვირთება &lt;500ms ნებისმიერი კონტინენტიდან.
+            <strong>WAF</strong> (Web Application Firewall) იცავს OWASP Top 10 შეტევებისგან: SQL injection, XSS, credential stuffing. თითოეული თავდასხმა <em>მანამდე</em> იჭრება, სანამ API-მდე მიაღწევს.
+            <strong>ACM</strong> (AWS Certificate Manager) ავტომატურად აახლებს TLS სერტიფიკატებს — ხელით არასდროს ვაკეთებთ <code>certbot renew</code>.
+            <br><br>
+            <strong>რა მოხდება ამის გარეშე:</strong> L7 DDoS შეტევა 10Gbps-ზე = API პაცინული. Expired TLS = ბრაუზერი აჩვენებს "Not secure" და tenant-ი კარგავს ნდობას.
+          </td>
+        </tr>
+        <tr>
+          <td class="component"><strong>NestJS HTTP API (Fastify)</strong></td>
+          <td class="service"><strong>ცენტრალური ბიზნეს ლოგიკა</strong> — CRUD, commands, auth, billing, integration endpoints</td>
+          <td class="role">
+            ერთი API = ერთი ადგილი testing-ისთვის, monitoring-ისთვის, version-ინგისთვის. <em>Python Flask legacy-ს ვდეპრეცირებთ</em> (ADR-004), რადგან:
+            <em>1)</em> TypeScript-ი backend-ში იგივე typing-ს იძლევა frontend-ისთვის — contract-ი ვერანაირად ვერ დადრიფთდება.
+            <em>2)</em> Fastify 2-ჯერ სწრაფია Express-ზე request/sec-ში.
+            <em>3)</em> NestJS-ის DI container ნიშნავს: unit test-ი dependency mock-ის გარეშე მიუღებელია — ავტომატურად ენფორსდება არქიტექტურული ჰიგიენა.
+            <br><br>
+            <strong>რა მოხდება ამის გარეშე:</strong> 3 სხვადასხვა API (Flask, NestJS, Lambda) → 3-ჯერ მეტი code duplication, auth bug-ი ერთ-ერთში უჩუმრად იცოცხლებს თვეები.
+          </td>
+        </tr>
+        <tr>
+          <td class="component"><strong>Socket.io Gateway</strong></td>
+          <td class="service"><strong>Real-time კავშირი</strong> — dashboard-ის ცოცხალი განახლება, live device status, notifications</td>
+          <td class="role">
+            HTTP polling (ყოველ 5 წამში <code>GET /alerts</code>) — <em>90% request-ები უფუნქციოა</em> (ახალი მონაცემი არ არის). 1000 tenant × 10 ოპერატორი × 5-წამიანი polling = 2,000 req/sec მუდმივი ტვირთი <em>სიცარიელეზე</em>.
+            WebSocket-ი პერსისტენტული კავშირია — <em>მხოლოდ მაშინ</em> იხარჯება, როცა ახალი მონაცემია. 20× ბანდვიტი, 50× ნაკლები API ტვირთი.
+            Socket.io-ს <strong>fallback ladder</strong> — თუ WS დაბლოკილია (corporate firewall), ავტომატურად გადადის long-polling-ზე. კლიენტის 100% თავსებადობა.
+            <br><br>
+            <strong>რა მოხდება ამის გარეშე:</strong> ოპერატორი ხედავს alarm-ს 10 წამის დაგვიანებით — critical BMS-ში ეს შეიძლება ტექნიკური ავარიის განსხვავება იყოს.
+          </td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">§24.3 — Device edge (მოწყობილობის ფენა)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>კომპონენტი</th><th>როლი</th><th>რატომ საჭიროა (დეტალურად)</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component"><strong>IoT Core (MQTT)</strong></td>
+          <td class="service"><strong>მოწყობილობების ცენტრალური "საფოსტო სადგური"</strong> — ყველა device აქ აწვება და აქედან იღებს ბრძანებებს</td>
+          <td class="role">
+            Pub/Sub მოდელი ნიშნავს: როცა ქვაბი #3-დან ახალი ტემპერატურის მონაცემი მოდის, ის მიდის <em>ერთდროულად</em> dashboard-ზე, analytics-ზე, alarm rule-ზე — ყოველ subscriber-ზე. HTTP-ში ამდენი fan-out 3× API call-ს საჭიროებდა.
+            <strong>mTLS</strong> (mutual TLS) — <em>ორივე</em> მხარე ამოწმებს ერთმანეთს სერტიფიკატით. ქვაბი #3-ს აქვს unique cert, რომელიც ACM PCA-ს გამოუშვია. თუ ქურდმა მოიპარა device, სერტიფიკატი ჩვენ შეგვიძლია revoke-ვქნათ — 10 წამში device დაბლოკილია.
+            <strong>Retained topics</strong> — ახალი subscriber (მაგ. re-connected mobile app) მაშინვე იღებს last-known-state-ს, არ უწევს წუთის ლოდინი შემდეგი მონაცემისთვის.
+            <br><br>
+            <strong>რა მოხდება ამის გარეშე:</strong> HTTP long-polling 10,000 device-ზე = 10,000 persistent connection API-თან, $$$$ cost, ბაზრიდან გასვლის საფრთხე.
+          </td>
+        </tr>
+        <tr>
+          <td class="component"><strong>Greengrass v2 (edge runtime)</strong></td>
+          <td class="service"><strong>ადგილობრივი "გონება"</strong> — მოწყობილობის მხარეზე ხდება გადაწყვეტილების მიღება, როცა cloud მიუწვდომელია</td>
+          <td class="role">
+            BMS-ში არის <em>life-safety</em> scenario-ები — მაგ. წყლის ტემპერატურა აიწია 95°C-ზე, boiler unit-ი უნდა გამოირთოს 3 წამში, <strong>თორემ აფეთქდება</strong>.
+            Cloud-ზე დაყრდნობა ასეთ მომენტში არ შეიძლება: internet connectivity შეიძლება წყდებოდეს, AWS outage მოხდეს, კავშირი 10 წამი დაიკარგოს.
+            Greengrass v2 თვითონ ქვაბის გვერდით ქარვია ჩადგმული — <em>rules-ი აქვე სრულდება</em>, cloud-ის გარეშე.
+            Cloud-ი ხდება <em>observer</em> (ტელემეტრია ვკრიბავ post-factum) და <em>coordinator</em> (კონფიგურაციას ვყიდი device-ებზე), მაგრამ <strong>არასდროს</strong> critical path-ზე.
+            <br><br>
+            <strong>რა მოხდება ამის გარეშე:</strong> AWS us-east-1 outage → 10,000 boiler-ი უკონტროლოდ → ქონებრივი ზიანი, შესაძლო სასიცოცხლო. UL 60730-ის ცენტრალური მოთხოვნა.
+          </td>
+        </tr>
+        <tr>
+          <td class="component"><strong>Fleet Provisioning (ACM PCA)</strong></td>
+          <td class="service"><strong>ქარხნული "claim" სისტემა</strong> — ახალი device ეწოდება, ავტომატურად იღებს per-device სერტიფიკატს</td>
+          <td class="role">
+            Zero-touch enrollment: ქარხანა device-ს ასხამს ერთ "claim" სერტიფიკატს (ყველა მათ შორის), device ჩართვისას ამ claim-ით მიდის IoT Core-ზე, <em>იცვლის</em> თავის უნიკალურ per-device სერტიფიკატზე.
+            ფილდ ოპერატორს არ უწევს device-ების სერიული რიგრიგობით კონფიგურაცია — მაშინს-მოვაგროვდრ-ვდინ.
+            სერტიფიკატი 24 თვეში ვადა ამოუდის, ავტომატურად rotate-ს IoT Core აკეთებს. v1-ში 24 თვე (conservative), Phase 2-ში → 12 თვე (6 თვის stage-proof შემდეგ).
+            <br><br>
+            <strong>რა მოხდება ამის გარეშე:</strong> ხელით provisioning device-ზე = 5 წუთი × 10,000 device = 833 კაცი-საათი. Cost = $$$$, tenant-ი ვერ scale-ავს.
+          </td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-note">
+      <strong>ძირითადი პრინციპი:</strong> ყოველ არქიტექტურულ კომპონენტზე <em>ორი კითხვა</em>: (1) რა როლს ასრულებს? (2) რა ხდება ამის გარეშე? — თუ მეორე პასუხში "არაფერი", კომპონენტი არ გვჭირდება. თუ პასუხი "ხდება ქონებრივი/ადამიანური ზარალი" — ეს <em>critical path</em>-ია და extra redundancy ღირს.
+    </div>
+  </section>
+
+  <!-- LAYER 25 — HARDWARE REQUIREMENTS & CERTIFICATIONS -->
+  <section class="layer" id="l25">
+    <div class="layer-header">
+      <div class="layer-num">25</div>
+      <div class="layer-title">
+        <h2>Hardware requirements · UL / IEC certifications</h2>
+        <div class="adr">სავალდებულო device metadata · safety standards · cybersecurity compliance</div>
+      </div>
+    </div>
+
+    <div class="layer-sub">§25.1 — სავალდებულო device metadata (onboarding-ისთვის)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>ველი</th><th>ტიპი</th><th>მაგალითი</th><th>რატომ სავალდებულო</th></tr></thead>
+      <tbody>
+        <tr><td class="component"><strong><code>device_uid</code></strong></td><td class="service">string · UUID ან MAC-based</td><td class="role"><code>DMT-BMS-2026-4C1A2F8E</code></td><td class="role">globally unique identifier — cert-ის CN-თან shared, duplicate-ის შემთხვევაში onboarding fail</td></tr>
+        <tr><td class="component"><strong><code>manufacturer</code></strong></td><td class="service">string</td><td class="role"><code>DMT Industrial Ltd</code></td><td class="role">vendor traceability; recall-ის შემთხვევაში affected devices-ის იდენტიფიკაცია</td></tr>
+        <tr><td class="component"><strong><code>model</code></strong></td><td class="service">string</td><td class="role"><code>BMS-HD-512</code></td><td class="role">firmware compatibility matrix; OTA-ი ხდება per-model</td></tr>
+        <tr><td class="component"><strong><code>hardware_rev</code></strong></td><td class="service">string · semver</td><td class="role"><code>2.1.0</code></td><td class="role">HW-specific firmware gates (rev 2.1+ მხოლოდ უახლესი firmware-ს იღებს)</td></tr>
+        <tr><td class="component"><strong><code>firmware_version</code></strong></td><td class="service">string · semver</td><td class="role"><code>1.4.7</code></td><td class="role">OTA target; CVE patch compliance check; signed firmware verification</td></tr>
+        <tr><td class="component"><strong><code>firmware_signature</code></strong></td><td class="service">RSA-2048 / Ed25519 signature</td><td class="role"><code>308a0201...</code></td><td class="role">UL 2900 · firmware tampering prevention · boot-time verify</td></tr>
+        <tr><td class="component"><strong><code>cert_thumbprint</code></strong></td><td class="service">SHA-256 fingerprint</td><td class="role"><code>a4:51:...:3f</code></td><td class="role">X.509 device identity; ACM PCA-ით გაცემული; mTLS-ის საფუძველი</td></tr>
+        <tr><td class="component"><strong><code>secure_element_id</code></strong></td><td class="service">string (TPM/ATECC608 serial)</td><td class="role"><code>ATECC608B-0x1234</code></td><td class="role">tamper-resistant key storage; UL 2900-2-2 required for control systems</td></tr>
+        <tr><td class="component"><strong><code>serial_number</code></strong></td><td class="service">string · alphanumeric</td><td class="role"><code>DMT-2026-04-000847</code></td><td class="role">warranty tracking; physical asset correlation</td></tr>
+        <tr><td class="component"><strong><code>production_date</code></strong></td><td class="service">ISO 8601 date</td><td class="role"><code>2026-03-15</code></td><td class="role">MTBF ანალიზი; recall batch identification</td></tr>
+        <tr><td class="component"><strong><code>certification_marks</code></strong></td><td class="service">array of strings</td><td class="role"><code>["UL 916", "CE", "FCC Part 15"]</code></td><td class="role">regulatory compliance declaration; tenant-ის trust signal</td></tr>
+        <tr><td class="component"><strong><code>region_compliance</code></strong></td><td class="service">array of region codes</td><td class="role"><code>["US", "EU", "GE"]</code></td><td class="role">მოწყობილობის ფუნქციური თავისებურება per region (voltage, frequency, RF band)</td></tr>
+        <tr><td class="component"><strong><code>boot_mode</code></strong></td><td class="service">enum</td><td class="role"><code>secure_boot · verified</code></td><td class="role">UL 2900 · attestation; უსაფრთხო boot-ის დასტური ნოვრიდა</td></tr>
+        <tr><td class="component"><strong><code>tls_version_min</code></strong></td><td class="service">string</td><td class="role"><code>TLS 1.2</code></td><td class="role">IEC 62443-4-2 SL2 · deprecated TLS 1.0/1.1 rejected</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">§25.2 — CREATE TABLE — device registry (enriched)</div>
+<pre class="code"><span class="cm">-- v1.4: full certification & safety metadata per device</span>
+<span class="kw">CREATE TABLE</span> devices (
+  id                  uuid        <span class="kw">PRIMARY KEY</span>,
+  tenant_id           uuid        <span class="kw">NOT NULL</span>,               <span class="cm">-- RLS სივრცე</span>
+  device_uid          text        <span class="kw">NOT NULL UNIQUE</span>,        <span class="cm">-- globally unique identifier</span>
+  manufacturer        text        <span class="kw">NOT NULL</span>,               <span class="cm">-- ქარხნის სახელი</span>
+  model               text        <span class="kw">NOT NULL</span>,               <span class="cm">-- მოდელი</span>
+  hardware_rev        text        <span class="kw">NOT NULL</span>,               <span class="cm">-- HW ვერსია (semver)</span>
+  firmware_version    text        <span class="kw">NOT NULL</span>,               <span class="cm">-- FW ვერსია</span>
+  firmware_signature  bytea       <span class="kw">NOT NULL</span>,               <span class="cm">-- Ed25519 signature</span>
+  cert_thumbprint     text        <span class="kw">NOT NULL UNIQUE</span>,        <span class="cm">-- X.509 SHA-256</span>
+  secure_element_id   text,                                   <span class="cm">-- TPM/ATECC (optional v1)</span>
+  serial_number       text        <span class="kw">NOT NULL</span>,               <span class="cm">-- ქარხნული serial</span>
+  production_date     date        <span class="kw">NOT NULL</span>,
+  certification_marks text[]      <span class="kw">NOT NULL DEFAULT</span> <span class="cm">'{}'</span>,   <span class="cm">-- UL 916, CE, FCC, …</span>
+  region_compliance   text[]      <span class="kw">NOT NULL DEFAULT</span> <span class="cm">'{}'</span>,   <span class="cm">-- US, EU, GE, …</span>
+  boot_mode           text        <span class="kw">NOT NULL</span>,               <span class="cm">-- secure_boot | legacy</span>
+  tls_version_min     text        <span class="kw">NOT NULL DEFAULT</span> <span class="cm">'TLS1.2'</span>,
+  kind                text        <span class="kw">NOT NULL</span>,               <span class="cm">-- bms | meter | relay | gw</span>
+  site_id             uuid,
+  status              text        <span class="kw">NOT NULL</span>,               <span class="cm">-- active | quarantined | retired</span>
+  last_seen_at        timestamptz,
+  created_at          timestamptz <span class="kw">NOT NULL DEFAULT</span> now(),
+  <span class="kw">UNIQUE</span> (tenant_id, serial_number),
+  <span class="kw">CHECK</span> (boot_mode <span class="kw">IN</span> (<span class="cm">'secure_boot'</span>, <span class="cm">'legacy'</span>)),
+  <span class="kw">CHECK</span> (tls_version_min <span class="kw">IN</span> (<span class="cm">'TLS1.2'</span>, <span class="cm">'TLS1.3'</span>))
+);
+
+<span class="kw">ALTER TABLE</span> devices <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="kw">CREATE POLICY</span> devices_tenant <span class="kw">ON</span> devices
+  <span class="kw">USING</span> (tenant_id = current_setting(<span class="cm">'app.tenant_id'</span>)::uuid);</pre>
+
+    <div class="layer-sub">§25.3 — UL / IEC certification requirements</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>სტანდარტი</th><th>ვრცელდება</th><th>რას მოითხოვს</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component"><strong>UL 916</strong></td>
+          <td class="service">Energy Management Equipment</td>
+          <td class="role">BMS controllers-ის ელექტრო-უსაფრთხოება · isolation tests · overvoltage protection · enclosure rating IP54+</td>
+        </tr>
+        <tr>
+          <td class="component"><strong>UL 60730-1/-2</strong></td>
+          <td class="service">Automatic electrical controls</td>
+          <td class="role">Relay/actuator safety · software class B (may cause hazard) ან C (may cause severe hazard) · failure mode analysis · watchdog timer</td>
+        </tr>
+        <tr>
+          <td class="component"><strong>UL 2900-1</strong></td>
+          <td class="service">IoT Cybersecurity Baseline</td>
+          <td class="role">Penetration test · known vulnerability scan · secure communication (TLS 1.2+) · authentication · firmware signing · CVE disclosure process</td>
+        </tr>
+        <tr>
+          <td class="component"><strong>UL 2900-2-2</strong></td>
+          <td class="service">Industrial Control Systems</td>
+          <td class="role">Additional: secure element requirement · role-based access · audit logging on device · fail-safe state · tamper evidence</td>
+        </tr>
+        <tr>
+          <td class="component"><strong>IEC 61508</strong></td>
+          <td class="service">Functional Safety (SIL 1–4)</td>
+          <td class="role">BMS life-safety → SIL 2 · PFH &lt; 10⁻⁶ · hardware fault tolerance · systematic capability · proof test interval</td>
+        </tr>
+        <tr>
+          <td class="component"><strong>IEC 62443-4-1</strong></td>
+          <td class="service">Product Development (security-by-design)</td>
+          <td class="role">Secure SDLC · threat modeling per product · secure coding guidelines · security patch management · defense-in-depth</td>
+        </tr>
+        <tr>
+          <td class="component"><strong>IEC 62443-4-2 SL2</strong></td>
+          <td class="service">Component Security Level 2</td>
+          <td class="role">Identity · authentication (mTLS) · data confidentiality · integrity · resource availability · resist intentional attack with moderate resources</td>
+        </tr>
+        <tr>
+          <td class="component"><strong>CE Marking (EU)</strong></td>
+          <td class="service">Low Voltage Directive 2014/35/EU · EMC 2014/30/EU · RED 2014/53/EU</td>
+          <td class="role">Self-declaration + technical file · harmonized standards compliance · CE mark on enclosure + DoC</td>
+        </tr>
+        <tr>
+          <td class="component"><strong>FCC Part 15 (US)</strong></td>
+          <td class="service">RF emissions unintentional/intentional radiator</td>
+          <td class="role">EMI limits · FCC ID on enclosure · ID label · SDoC ან full authorization depending on class</td>
+        </tr>
+        <tr>
+          <td class="component"><strong>ISO/IEC 27001</strong></td>
+          <td class="service">Information Security Management (org-level)</td>
+          <td class="role">Not device-level, but platform-level — risk assessment · access controls · incident response · supplier security · continuous improvement</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">§25.4 — Device onboarding — certification check code</div>
+<pre class="code"><span class="cm">// NestJS onboarding handler — compliance check-ი მოთხოვნილია რეგისტრაციისას</span>
+@Post(<span class="cm">'/v1/orgs/:orgId/devices/register'</span>)
+<span class="kw">async</span> register(@Body() dto: DeviceRegistrationDto) {
+
+  <span class="cm">// 1. სავალდებულო ველების ვალიდაცია (zod schema)</span>
+  <span class="kw">const</span> v = deviceRegistrationSchema.parse(dto);
+
+  <span class="cm">// 2. Firmware signature verification (Ed25519 public key per-manufacturer)</span>
+  <span class="kw">if</span> (!verifyFirmwareSignature(v.firmware_version, v.firmware_signature, v.manufacturer)) {
+    <span class="kw">throw new</span> UnprocessableEntityException({
+      code: <span class="cm">'firmware.signature.invalid'</span>,
+      detail: <span class="cm">'Firmware signature does not match manufacturer public key'</span>
+    });
+  }
+
+  <span class="cm">// 3. UL/IEC compliance check — tier-based</span>
+  <span class="kw">const</span> required = ulRequirementsForTier(org.tier);   <span class="cm">// enterprise → UL 2900-2-2 sold</span>
+  <span class="kw">const</span> missing = required.filter(c =&gt; !v.certification_marks.includes(c));
+  <span class="kw">if</span> (missing.length &gt; 0) {
+    <span class="kw">throw new</span> UnprocessableEntityException({
+      code: <span class="cm">'device.certification.missing'</span>,
+      detail: <span class="cm">`Missing required certifications: ${missing.join(', ')}`</span>,
+      hint: <span class="cm">`Tier '${org.tier}' requires: ${required.join(', ')}`</span>
+    });
+  }
+
+  <span class="cm">// 4. CVE scan against firmware version (nvd.nist.gov API)</span>
+  <span class="kw">const</span> cves = <span class="kw">await</span> cveScanner.scan(v.manufacturer, v.model, v.firmware_version);
+  <span class="kw">const</span> critical = cves.filter(c =&gt; c.severity === <span class="cm">'CRITICAL'</span>);
+  <span class="kw">if</span> (critical.length &gt; 0) {
+    <span class="kw">throw new</span> UnprocessableEntityException({
+      code: <span class="cm">'device.firmware.cve'</span>,
+      detail: <span class="cm">`Firmware has ${critical.length} CRITICAL CVEs`</span>,
+      hint: <span class="cm">'Update firmware before registration'</span>,
+      cves: critical.map(c =&gt; c.id)
+    });
+  }
+
+  <span class="cm">// 5. Secure boot attestation (TPM/ATECC signed measurement)</span>
+  <span class="kw">if</span> (v.boot_mode === <span class="cm">'secure_boot'</span> &amp;&amp; !<span class="kw">await</span> verifySecureBootAttestation(v)) {
+    <span class="kw">throw new</span> UnprocessableEntityException({ code: <span class="cm">'device.boot.attestation.failed'</span> });
+  }
+
+  <span class="cm">// 6. Persist + emit event</span>
+  <span class="kw">const</span> device = <span class="kw">await</span> devices.create({ ...v, tenant_id: org.id, status: <span class="cm">'active'</span> });
+  eventBus.emit(<span class="cm">'device.registered'</span>, { device_id: device.id, tenant_id: org.id });
+  auditLog.append(<span class="cm">'device.registered'</span>, { actor: req.user.id, entity: device.id, payload: v });
+
+  <span class="kw">return</span> { data: device };
+}</pre>
+
+    <div class="layer-note">
+      <strong>Certification tier matrix:</strong>
+      <code>free</code> → basic (TLS 1.2 · unique cert) ·
+      <code>pro</code> → UL 2900-1 · IEC 62443-4-2 SL1 ·
+      <code>enterprise</code> → UL 2900-2-2 · IEC 62443-4-2 SL2 · IEC 61508 SIL 2 for life-safety devices ·
+      <code>regulated</code> → + FIPS 140-2/-3 crypto · + SOC 2 Type II on platform · + CSA Star level 2.
+    </div>
+    <div class="layer-note" style="border-top: 1px solid #FFE082; margin-top: -1px;">
+      <strong>Why strict onboarding:</strong> ერთი non-compliant device in fleet = entire tenant-ის certification-ის lose. regulated tenant-ი ვერ გააბარებს SOC 2 / ISO 27001 audit-ს, თუ ჩვენი platform-ზე registered devices-ს compliance claim-ი არ აქვთ. თავიდანვე fail-fast &gt; წინ field ოპერაცია გავაკეთო და retrospectively ვცდი.
+    </div>
+  </section>
+
+  <!-- LAYER 26 — SELF-LEARNING BUG & ANOMALY DETECTION -->
+  <section class="layer" id="l26">
+    <div class="layer-header">
+      <div class="layer-num">26</div>
+      <div class="layer-title">
+        <h2>Self-learning bug & anomaly detection infrastructure</h2>
+        <div class="adr">Auto-detect · auto-classify · auto-train · human-in-loop for labels</div>
+      </div>
+    </div>
+
+    <div class="layer-sub">§26.1 — სამი პარალელური scan stream</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Stream</th><th>რას ასკანერებს</th><th>ტექნოლოგია</th><th>რა პოულობს</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component"><strong>Device telemetry anomalies</strong></td>
+          <td class="service">სენსორების მონაცემები — ტემპერატურა, წნევა, ვოლტაჟი, flow</td>
+          <td class="role">Isolation Forest + Prophet (seasonal) + per-device rolling z-score</td>
+          <td class="role">Sensor drift · ტექნიკური ავარიის წინამდგომი სიგნალები · cyber attack (suspicious pattern)</td>
+        </tr>
+        <tr>
+          <td class="component"><strong>Application bugs</strong></td>
+          <td class="service">API error logs, stack traces, Sentry events</td>
+          <td class="role">Sentry auto-grouping + OpenAI embedding cluster + BERT fine-tuned on backlog</td>
+          <td class="role">New bug pattern · regression · regex match with known CVEs · correlated with recent deploy</td>
+        </tr>
+        <tr>
+          <td class="component"><strong>Performance regressions</strong></td>
+          <td class="service">OTel traces, CloudWatch metrics, RUM</td>
+          <td class="role">CloudWatch Anomaly Detector + per-endpoint baseline + SLO burn-rate</td>
+          <td class="role">p95 latency drift · throughput dip · cache hit ratio drop · DB slow query emergence</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">§26.2 — Self-learning pipeline</div>
+<pre class="code"><span class="cm">// ყოველი stream-ის ციკლი — nightly retrain + real-time inference</span>
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  DATA COLLECT       →  FEATURE STORE  →  TRAIN (nightly)  →  DEPLOY MODEL   │
+│                                                                             │
+│  telemetry.raw      →  Timescale CA   →  Isolation Forest →  SageMaker      │
+│  (24h hot)              (features     →  + Prophet seas.  →  endpoint       │
+│                          per-tenant)  →  per-device model →  (per tenant)   │
+│                                                                             │
+│  app.logs           →  OpenSearch     →  embedding cluster →  Pinecone      │
+│  (Sentry/CloudWatch)    vector index  →  + BERT classifier →  model registry│
+│                                                                             │
+│  traces             →  X-Ray/OTel     →  baseline stats    →  CloudWatch    │
+│  (p50/p95/p99)          → CloudWatch  →  Anomaly Detector →  alarm config   │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                    │
+                                    ▼
+                     ┌──────────────────────────────┐
+                     │  REAL-TIME INFERENCE         │
+                     │  incoming event → score      │
+                     │  &gt; threshold → open incident │
+                     └──────────┬───────────────────┘
+                                │
+                                ▼
+                     ┌──────────────────────────────┐
+                     │  INCIDENT QUEUE              │
+                     │  Severity · confidence       │
+                     │  Related traces · logs       │
+                     │  Deploy correlation          │
+                     │  Similar past incidents      │
+                     └──────────┬───────────────────┘
+                                │
+                                ▼
+                     ┌──────────────────────────────┐
+                     │  HUMAN-IN-LOOP               │
+                     │  Operator: TP / FP / dismiss │
+                     │  → label feedback            │
+                     │  → nightly retrain           │
+                     └──────────────────────────────┘</pre>
+
+    <div class="layer-sub">§26.3 — Static & dynamic security scanning (CI/CD)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Tool</th><th>ეტაპი</th><th>რას პოულობს</th></tr></thead>
+      <tbody>
+        <tr><td class="component"><strong>Semgrep</strong></td><td class="service">pre-commit + CI</td><td class="role">OWASP Top 10 patterns · custom tenant-scoping rules · <code>tenant_id</code> filter missing</td></tr>
+        <tr><td class="component"><strong>Snyk Open Source</strong></td><td class="service">CI (block on critical)</td><td class="role">npm/pip dependencies CVE · license violations · transitive vulns</td></tr>
+        <tr><td class="component"><strong>Snyk Code</strong></td><td class="service">CI · PR comment</td><td class="role">SAST — hardcoded secrets, unsafe eval, SQL injection</td></tr>
+        <tr><td class="component"><strong>truffleHog</strong></td><td class="service">pre-commit + CI</td><td class="role">API keys, AWS creds, JWT secrets in git history</td></tr>
+        <tr><td class="component"><strong>OWASP ZAP</strong></td><td class="service">nightly in stage</td><td class="role">DAST — SQL injection, XSS, auth bypass, CORS misconfig · per endpoint from OpenAPI</td></tr>
+        <tr><td class="component"><strong>AWS Inspector</strong></td><td class="service">continuous in prod</td><td class="role">ECR image vulnerabilities · EC2 OS CVEs · Lambda deps</td></tr>
+        <tr><td class="component"><strong>Chaos Mesh</strong></td><td class="service">weekly in stage</td><td class="role">Network partition, latency spike, pod kill, disk pressure · SLO burn observed</td></tr>
+        <tr><td class="component"><strong>Playwright regression</strong></td><td class="service">per-PR smoke + nightly full</td><td class="role">UI breakages, flaky tests auto-quarantined · visual diff</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">§26.4 — AI code review agent (PR reviewer)</div>
+<pre class="code"><span class="cm">// GitHub Actions integration — ყოველ PR-ზე Claude code-reviewer subagent</span>
+<span class="kw">name:</span> AI Code Review
+<span class="kw">on:</span> pull_request
+
+<span class="kw">jobs:</span>
+  claude-review:
+    <span class="kw">runs-on:</span> ubuntu-latest
+    <span class="kw">steps:</span>
+      - uses: actions/checkout@v4
+      - uses: anthropic-labs/claude-code-action@v1
+        <span class="kw">with:</span>
+          anthropic-api-key: ${{ secrets.CLAUDE_API_KEY }}
+          prompt: |
+            ✓ security: SQL injection, missing RLS, hardcoded secrets
+            ✓ tenant-scoping: every DB query must have tenant_id filter or RLS
+            ✓ error handling: user-input validation, no silent catches
+            ✓ performance: N+1 queries, missing indexes, unbounded loops
+            ✓ spec drift: new endpoint → contracts/ update required
+            ✓ telemetry: new module → OTel span?
+            comment inline on issues; don't approve automatically
+
+  <span class="cm"># ASSERTIONS (human-in-loop):</span>
+  <span class="cm"># - critical issues flagged → must be addressed or explicitly dismissed</span>
+  <span class="cm"># - false positives labeled → feed into prompt tuning weekly</span>
+  <span class="cm"># - accepted reviews logged → audit trail</span></pre>
+
+    <div class="layer-note">
+      <strong>Feedback loop (weekly):</strong> ყოველ პარასკევს platform SRE-ი გადახედავს past week's anomaly decisions — TP rate, FP rate, missed incidents. Labels ფიდავენ SageMaker training job-ს შემდეგი კვირაში. <em>Model drift დეტექტდება</em>: თუ FP rate &gt; 15% 2 კვირის განმავლობაში → model rollback + investigation.
+    </div>
+    <div class="layer-note" style="border-top: 1px solid #FFE082; margin-top: -1px;">
+      <strong>Why self-learning (not static rules alone):</strong>
+      BMS-ში ქარხანა B-ს boiler-ის "ნორმა" განსხვავდება ქარხანა A-სგან; static threshold ან ბევრ FP-ს გიქმნის (ოპერატორი alert fatigue-ში ჩავარდება, დაიწყებს ignore-ს), ან ბევრ FN-ს (რეალური ავარია გამოტოვებს). Per-device ML baseline აქრობს ორივე პრობლემას — ყოველი device-ი თავის profile-ზე მუშაობს.
+    </div>
+  </section>
+
+  <!-- LAYER 27 — EXTERNAL DEVICE INTEGRATION API -->
+  <section class="layer" id="l27">
+    <div class="layer-header">
+      <div class="layer-num">27</div>
+      <div class="layer-title">
+        <h2>External device integration — 3rd-party connection API</h2>
+        <div class="adr">Fleet Provisioning · device SDK · MQTT-as-a-service · developer portal</div>
+      </div>
+    </div>
+
+    <div class="layer-sub">§27.1 — რას გააკეთებს 3rd-party integrator (high-level)</div>
+<pre class="code">┌────────────────────────────────────────────────────────────────────────┐
+│  3rd-PARTY FLOW                                                        │
+│                                                                        │
+│  1. DEVELOPER PORTAL sign-up (developers.dmt-platform.com)             │
+│     → create org · get API credentials · read docs                     │
+│                                                                        │
+│  2. DEVICE TEMPLATE create                                             │
+│     POST /v1/orgs/{id}/device-templates                                │
+│     { kind, payload_schema (zod), command_schema, allowed_metrics }    │
+│                                                                        │
+│  3. CLAIM CERT download (batch of 1000 pre-provisioning certs)         │
+│     POST /v1/orgs/{id}/claim-certs (returns zip of N certs)            │
+│     → factory firmware burn-ში ჩადება                                  │
+│                                                                        │
+│  4. DEVICE FIRMWARE (customer-written, linked to our SDK)              │
+│     #include &lt;dmt_sdk.h&gt;   // C for embedded                          │
+│     dmt_client_connect(claim_cert_path);                               │
+│     dmt_publish_telemetry("temperature", 22.4, "°C");                  │
+│     dmt_on_command(handle_command);                                    │
+│                                                                        │
+│  5. FIRST BOOT → claim → unique cert                                   │
+│     Device uses claim cert → IoT Core Fleet Provisioning →             │
+│     per-device X.509 cert issued → claim cert discarded                │
+│                                                                        │
+│  6. ONGOING OPERATION                                                  │
+│     MQTT publish/subscribe via our topic convention                    │
+│     OTA firmware via IoT Jobs                                          │
+│     Data flows into tenant's Aurora + Timescale + dashboards           │
+└────────────────────────────────────────────────────────────────────────┘</pre>
+
+    <div class="layer-sub">§27.2 — Developer-facing API endpoints</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Endpoint</th><th>Purpose</th><th>Auth</th></tr></thead>
+      <tbody>
+        <tr><td class="component"><code>POST /v1/orgs/{id}/device-templates</code></td><td class="service">define device kind, metric schema, command schema</td><td class="role">API key (integrator role)</td></tr>
+        <tr><td class="component"><code>POST /v1/orgs/{id}/claim-certs</code></td><td class="service">bulk issue claim certs (100–10,000 at a time)</td><td class="role">API key + MFA challenge</td></tr>
+        <tr><td class="component"><code>GET  /v1/orgs/{id}/devices</code></td><td class="service">list registered devices (paginated)</td><td class="role">API key (read scope)</td></tr>
+        <tr><td class="component"><code>GET  /v1/orgs/{id}/devices/{id}/telemetry</code></td><td class="service">query telemetry (time range, metric filter)</td><td class="role">API key (read scope) + rate limited</td></tr>
+        <tr><td class="component"><code>POST /v1/orgs/{id}/devices/{id}/commands</code></td><td class="service">enqueue command to device</td><td class="role">API key (write scope) + idempotency key</td></tr>
+        <tr><td class="component"><code>POST /v1/orgs/{id}/firmware/upload</code></td><td class="service">upload signed firmware binary + manifest</td><td class="role">API key (admin scope) + artifact sign verify</td></tr>
+        <tr><td class="component"><code>POST /v1/orgs/{id}/firmware/deploy</code></td><td class="service">stage OTA rollout (canary → 10% → 100%)</td><td class="role">API key (admin scope) + explicit stage gate</td></tr>
+        <tr><td class="component"><code>POST /v1/orgs/{id}/webhooks</code></td><td class="service">register webhook URL for events (device.online, alert.raised)</td><td class="role">API key; HMAC secret generated server-side</td></tr>
+        <tr><td class="component"><code>GET  /v1/orgs/{id}/audit-log</code></td><td class="service">query audit trail (read-only)</td><td class="role">API key (admin scope)</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">§27.3 — Device SDK (C / Python / Node / Arduino)</div>
+<pre class="code"><span class="cm">// C SDK — ESP32/STM32 firmware-ისთვის (packages/sdk-c)</span>
+#include <span class="cm">&lt;dmt_sdk.h&gt;</span>
+
+<span class="kw">int</span> main() {
+    <span class="cm">// 1. Claim cert ქარხანაში flash-ში burn-ულია</span>
+    dmt_config_t config = {
+        .claim_cert_pem = <span class="cm">"/spiffs/claim.pem"</span>,
+        .claim_key_pem  = <span class="cm">"/spiffs/claim.key"</span>,
+        .endpoint       = <span class="cm">"ingest.dmt-platform.com"</span>,
+        .device_uid     = get_hw_uid(),           <span class="cm">// ESP32 eFuse</span>
+        .firmware_ver   = <span class="cm">"1.4.7"</span>
+    };
+
+    <span class="cm">// 2. Auto-provision on first boot (claim → per-device cert)</span>
+    <span class="kw">if</span> (dmt_client_init(&amp;config) != DMT_OK) {
+        ESP_LOGE(<span class="cm">"dmt"</span>, <span class="cm">"provisioning failed"</span>);
+        <span class="kw">return</span> -1;
+    }
+
+    <span class="cm">// 3. Subscribe to commands</span>
+    dmt_on_command(<span class="cm">"relay.on"</span>, handle_relay_on);
+    dmt_on_command(<span class="cm">"setpoint.update"</span>, handle_setpoint);
+
+    <span class="cm">// 4. Telemetry loop (publish every second)</span>
+    <span class="kw">while</span> (1) {
+        <span class="kw">float</span> temp = read_sensor();
+        dmt_publish_telemetry(<span class="cm">"temperature"</span>, temp, <span class="cm">"°C"</span>);
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+<span class="cm"># Python SDK — Raspberry Pi / Linux gateway</span>
+<span class="kw">from</span> dmt_sdk <span class="kw">import</span> Client
+
+client = Client.from_claim_cert(<span class="cm">"./claim.pem"</span>, <span class="cm">"./claim.key"</span>)
+client.connect()
+
+@client.command_handler(<span class="cm">"valve.close"</span>)
+<span class="kw">def</span> close_valve(payload: dict) -&gt; dict:
+    <span class="cm"># local business logic</span>
+    <span class="kw">return</span> {<span class="cm">"ok"</span>: <span class="kw">True</span>, <span class="cm">"closed_at"</span>: time.time()}
+
+<span class="kw">while True</span>:
+    client.publish_telemetry(<span class="cm">"pressure"</span>, read_pressure(), <span class="cm">"bar"</span>)
+    time.sleep(1)</pre>
+
+    <div class="layer-sub">§27.4 — Rate limits, quotas, and pricing tiers (per-integration)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Tier</th><th>Device quota</th><th>Telemetry rate</th><th>API rate limit</th><th>SLA</th></tr></thead>
+      <tbody>
+        <tr><td class="component"><strong>Free</strong></td><td class="service">10 devices</td><td class="role">1 msg/sec per device</td><td class="role">60 req/min</td><td class="role">best-effort</td></tr>
+        <tr><td class="component"><strong>Starter</strong></td><td class="service">100 devices</td><td class="role">10 msg/sec per device</td><td class="role">600 req/min</td><td class="role">99.0% uptime</td></tr>
+        <tr><td class="component"><strong>Professional</strong></td><td class="service">10,000 devices</td><td class="role">100 msg/sec per device</td><td class="role">6,000 req/min</td><td class="role">99.9% · &lt;30min response</td></tr>
+        <tr><td class="component"><strong>Enterprise</strong></td><td class="service">custom (100k+ devices)</td><td class="role">negotiated</td><td class="role">custom</td><td class="role">99.95% · &lt;15min · dedicated SA</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">§27.5 — Sandbox environment</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Feature</th><th>Sandbox</th><th>Production</th></tr></thead>
+      <tbody>
+        <tr><td class="component">URL</td><td class="service"><code>sandbox.dmt-platform.com</code></td><td class="role"><code>api.dmt-platform.com</code></td></tr>
+        <tr><td class="component">Data</td><td class="service">Isolated; reset every 7d</td><td class="role">persistent</td></tr>
+        <tr><td class="component">Billing</td><td class="service">free · unlimited</td><td class="role">metered per ledger</td></tr>
+        <tr><td class="component">Device simulator</td><td class="service">built-in (web UI to emit telemetry)</td><td class="role">real devices only</td></tr>
+        <tr><td class="component">SES/SNS</td><td class="service">mocked (shown in console)</td><td class="role">real email/SMS</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-note">
+      <strong>Integrator onboarding checklist</strong> (მიიღება developer portal-ში):
+      <strong>1.</strong> sign-up + org created ·
+      <strong>2.</strong> API key issued (starter scope only) ·
+      <strong>3.</strong> device template defined (zod schema validated) ·
+      <strong>4.</strong> sandbox device simulator connected → first telemetry visible in dashboard ·
+      <strong>5.</strong> OpenAPI client generated · Postman collection downloaded ·
+      <strong>6.</strong> claim certs issued for factory (after commercial agreement) ·
+      <strong>7.</strong> production scope granted after successful sandbox run.
+    </div>
+    <div class="layer-note" style="border-top: 1px solid #FFE082; margin-top: -1px;">
+      <strong>Revenue model:</strong> usage_events ledger-ი, რომელიც <em>Layer 14</em>-ში აღწერილია, <strong>იგივე ინფრასტრუქტურაა</strong> 3rd-party-სთვისაც. ყოველი integrator-ის tenant გამოიყურება ჩვენი platform-ზე ზუსტად ისე, როგორც ჩვენი პირდაპირი კლიენტი — RLS isolation, KMS per-tenant key, per-region residency. <em>ერთი არქიტექტურა, ორი მოდელი: direct SaaS + API platform</em>.
+    </div>
+  </section>
+
+  <!-- LAYER 28 — TIMEZONE-AWARE AUTOMATION SCHEDULING -->
+  <section class="layer" id="l28">
+    <div class="layer-header">
+      <div class="layer-num">28</div>
+      <div class="layer-title">
+        <h2>Automation scheduling — timezone-aware (IANA · DST-safe)</h2>
+        <div class="adr">NEW · per-tenant + per-user timezone · UTC storage · local-time schedule</div>
+      </div>
+    </div>
+
+    <div class="layer-sub">§28.1 — პრობლემა ("9 საათზე ანგარიში" რას ნიშნავს?)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>სცენარი</th><th>არასწორი (UTC-only)</th><th>სწორი (tz-aware)</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component">Tbilisi tenant-ი: "daily report at 09:00"</td>
+          <td class="service">9:00 UTC → Tbilisi-ს ოპერატორი იღებს 13:00 ლოკალურად</td>
+          <td class="role">09:00 Asia/Tbilisi (IANA) → server converts to 05:00 UTC · reports prior 24h ends at 21:00 UTC</td>
+        </tr>
+        <tr>
+          <td class="component">"Quiet hours 22:00–08:00" SMS მწვდი</td>
+          <td class="service">fixed 22:00 UTC → Georgia-ში 02:00, უკვე ძილშია</td>
+          <td class="role">22:00 user's tz → DST-aware, worker-ი schedule-ს განაახლებს ყოველ tz-change-ზე</td>
+        </tr>
+        <tr>
+          <td class="component">Business-hour alerts (P2, non-emergency)</td>
+          <td class="service">alerts fire anytime → oncall burnout</td>
+          <td class="role">suppress outside 09:00–18:00 tenant-local; queue for next business open</td>
+        </tr>
+        <tr>
+          <td class="component">Monthly billing cycle</td>
+          <td class="service">"1 числу месяца 00:00 UTC" → Europe tenant სათავო 01:00, USA 19:00 (previous day)</td>
+          <td class="role">end-of-period tenant-local; invoice date = tenant-local date</td>
+        </tr>
+        <tr>
+          <td class="component">DST transition (ბოლო კვ Oct / March)</td>
+          <td class="service">"03:30" schedule → DST forward day → executes twice ან gets skipped</td>
+          <td class="role">IANA tz database handles automatically: "non-existent time → next valid"; "ambiguous time → first occurrence"</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">§28.2 — DB schema additions</div>
+<pre class="code"><span class="cm">-- organization default (fallback)</span>
+<span class="kw">ALTER TABLE</span> organizations
+  <span class="kw">ADD COLUMN</span> default_timezone text <span class="kw">NOT NULL DEFAULT</span> <span class="cm">'UTC'</span>      <span class="cm">-- IANA, e.g. 'Asia/Tbilisi'</span>
+  <span class="kw">CHECK</span> (default_timezone <span class="kw">IN</span> (<span class="kw">SELECT</span> name <span class="kw">FROM</span> pg_timezone_names));
+
+<span class="cm">-- user preference (overrides org)</span>
+<span class="kw">ALTER TABLE</span> users
+  <span class="kw">ADD COLUMN</span> timezone text                                              <span class="cm">-- NULL = use org default</span>
+  <span class="kw">CHECK</span> (timezone <span class="kw">IS NULL OR</span> timezone <span class="kw">IN</span> (<span class="kw">SELECT</span> name <span class="kw">FROM</span> pg_timezone_names));
+
+<span class="cm">-- automation definitions</span>
+<span class="kw">CREATE TABLE</span> automation_rules (
+  id               uuid        <span class="kw">PRIMARY KEY</span>,
+  tenant_id        uuid        <span class="kw">NOT NULL</span>,
+  name             text        <span class="kw">NOT NULL</span>,             <span class="cm">-- "Daily BMS health report"</span>
+  kind             text        <span class="kw">NOT NULL</span>,             <span class="cm">-- report | alert | batch | cleanup</span>
+  schedule_cron    text        <span class="kw">NOT NULL</span>,             <span class="cm">-- "0 9 * * MON-FRI"</span>
+  schedule_tz      text        <span class="kw">NOT NULL</span>,             <span class="cm">-- IANA: 'Asia/Tbilisi'</span>
+  quiet_hours      int4range,                            <span class="cm">-- [22,8) local hours; NULL = no quiet</span>
+  action_payload   jsonb       <span class="kw">NOT NULL</span>,             <span class="cm">-- what to execute</span>
+  next_fire_at_utc timestamptz <span class="kw">NOT NULL</span>,             <span class="cm">-- precomputed; worker reads this</span>
+  last_fired_at    timestamptz,
+  status           text        <span class="kw">NOT NULL DEFAULT</span> <span class="cm">'active'</span>, <span class="cm">-- active | paused | failed</span>
+  created_by       uuid        <span class="kw">REFERENCES</span> users(id),
+  created_at       timestamptz <span class="kw">NOT NULL DEFAULT</span> now(),
+  <span class="kw">CHECK</span> (schedule_tz <span class="kw">IN</span> (<span class="kw">SELECT</span> name <span class="kw">FROM</span> pg_timezone_names))
+);
+
+<span class="kw">CREATE INDEX</span> ON automation_rules (next_fire_at_utc) <span class="kw">WHERE</span> status = <span class="cm">'active'</span>;
+<span class="kw">ALTER TABLE</span> automation_rules <span class="kw">ENABLE ROW LEVEL SECURITY</span>;
+<span class="kw">CREATE POLICY</span> automation_tenant <span class="kw">ON</span> automation_rules
+  <span class="kw">USING</span> (tenant_id = current_setting(<span class="cm">'app.tenant_id'</span>)::uuid);
+
+<span class="cm">-- notification delivery log (quiet-hours suppression audit)</span>
+<span class="kw">CREATE TABLE</span> notification_deliveries (
+  id               ulid        <span class="kw">PRIMARY KEY</span>,
+  tenant_id        uuid        <span class="kw">NOT NULL</span>,
+  user_id          uuid        <span class="kw">NOT NULL</span>,
+  channel          text        <span class="kw">NOT NULL</span>,             <span class="cm">-- email | sms | push | in-app</span>
+  kind             text        <span class="kw">NOT NULL</span>,
+  scheduled_utc    timestamptz <span class="kw">NOT NULL</span>,             <span class="cm">-- when notifier tried to send</span>
+  delivered_utc    timestamptz,                           <span class="cm">-- NULL if suppressed</span>
+  suppressed_reason text                                  <span class="cm">-- 'quiet_hours' | 'opt_out' | 'bounced'</span>
+);</pre>
+
+    <div class="layer-sub">§28.3 — Scheduling worker (computing next_fire_at in UTC)</div>
+<pre class="code"><span class="cm">// NestJS scheduler worker — runs every minute, picks up next batch</span>
+<span class="kw">import</span> { CronExpressionParser } <span class="kw">from</span> <span class="cm">'cron-parser'</span>;
+<span class="kw">import</span> { zonedTimeToUtc, utcToZonedTime } <span class="kw">from</span> <span class="cm">'date-fns-tz'</span>;
+
+@Injectable()
+<span class="kw">export class</span> AutomationScheduler {
+
+  @Cron(<span class="cm">'* * * * *'</span>)   <span class="cm">// every minute, look at due rules</span>
+  <span class="kw">async</span> tick() {
+    <span class="kw">const</span> now = <span class="kw">new</span> Date();
+    <span class="kw">const</span> due = <span class="kw">await</span> this.db.automationRules.findMany({
+      <span class="kw">where</span>: { status: <span class="cm">'active'</span>, next_fire_at_utc: { lte: now } },
+      limit: 500
+    });
+
+    <span class="kw">for</span> (<span class="kw">const</span> rule <span class="kw">of</span> due) {
+      <span class="kw">try</span> {
+        <span class="cm">// 1. dispatch to worker queue (respects quiet_hours, see below)</span>
+        <span class="kw">await</span> this.queue.send(<span class="cm">'automation.execute'</span>, {
+          rule_id: rule.id,
+          tenant_id: rule.tenant_id,
+          fired_at_utc: now.toISOString()
+        });
+
+        <span class="cm">// 2. compute NEXT fire — IANA-aware, handles DST</span>
+        <span class="kw">const</span> nextUtc = computeNextFire(rule.schedule_cron, rule.schedule_tz, now);
+        <span class="kw">await</span> this.db.automationRules.update(rule.id, {
+          last_fired_at: now,
+          next_fire_at_utc: nextUtc
+        });
+      } <span class="kw">catch</span> (err) {
+        this.otel.recordError(err, { rule_id: rule.id });
+        <span class="kw">await</span> this.db.automationRules.update(rule.id, { status: <span class="cm">'failed'</span> });
+      }
+    }
+  }
+}
+
+<span class="kw">function</span> computeNextFire(cron: string, tz: string, from: Date): Date {
+  <span class="cm">// cron-parser აცნობიერებს IANA tz-ს → IANA ბაზა თვითონ აგვარებს DST-ს</span>
+  <span class="kw">const</span> iter = CronExpressionParser.parse(cron, {
+    currentDate: from,
+    tz: tz                          <span class="cm">// e.g. 'Asia/Tbilisi'</span>
+  });
+  <span class="kw">return</span> iter.next().toDate();      <span class="cm">// returns UTC Date</span>
+}
+
+<span class="cm">// Quiet hours check — executed inside worker before delivery</span>
+<span class="kw">function</span> isInQuietHours(userTz: string, quietRange: [number, number] | null): boolean {
+  <span class="kw">if</span> (!quietRange) <span class="kw">return false</span>;
+  <span class="kw">const</span> localNow = utcToZonedTime(<span class="kw">new</span> Date(), userTz);
+  <span class="kw">const</span> localHour = localNow.getHours();
+  <span class="kw">const</span> [start, end] = quietRange;
+  <span class="kw">return</span> start &lt; end
+    ? localHour &gt;= start &amp;&amp; localHour &lt; end
+    : localHour &gt;= start || localHour &lt; end;    <span class="cm">// wrap midnight (22-8)</span>
+}</pre>
+
+    <div class="layer-sub">§28.4 — EventBridge Scheduler vs in-app cron (trade-off)</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>მიდგომა</th><th>+</th><th>−</th><th>როდის</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="component"><strong>EventBridge Scheduler</strong> (AWS-native, tz-aware)</td>
+          <td class="service">native IANA tz support; serverless; DST handled by AWS</td>
+          <td class="role">1000 rules/account limit; cross-account setup complex; debugging opaque</td>
+          <td class="role">&lt; 1000 global rules; cross-tenant aggregate jobs</td>
+        </tr>
+        <tr>
+          <td class="component"><strong>DB-backed in-app scheduler</strong> (chosen v1)</td>
+          <td class="service">unlimited rules; per-tenant isolated; testable; visible in admin UI</td>
+          <td class="role">worker must be up (Fargate service); precompute logic ours to maintain</td>
+          <td class="role">per-tenant automation rules; 100k+ rules; user-editable schedules</td>
+        </tr>
+        <tr>
+          <td class="component"><strong>Hybrid</strong> (v1 default)</td>
+          <td class="service">EventBridge for platform-wide jobs (billing cycle, backups); in-app for tenant-owned rules</td>
+          <td class="role">two systems to monitor</td>
+          <td class="role">v1 pattern — platform ops + tenant automations separated</td>
+        </tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-sub">§28.5 — UI display convention</div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>სადაც ჩანს</th><th>ფორმატი</th><th>რატომ</th></tr></thead>
+      <tbody>
+        <tr><td class="component">Timestamps in tables / logs</td><td class="service">tenant-local tz, ISO: <code>2026-04-22 16:47 (+04 Tbilisi)</code></td><td class="role">default = current user's tz; tooltip shows UTC</td></tr>
+        <tr><td class="component">Schedule editor</td><td class="service">user picks IANA tz from dropdown (default: their own); cron expression in local time</td><td class="role">no offset math for user</td></tr>
+        <tr><td class="component">Audit log export</td><td class="service">dual column: UTC + tenant-local</td><td class="role">forensics = UTC; reading = local</td></tr>
+        <tr><td class="component">API response</td><td class="service">ISO 8601 with Z suffix (UTC); client converts to display tz</td><td class="role">contract invariant; no server-side tz leak</td></tr>
+        <tr><td class="component">SMS/Email templates</td><td class="service">rendered in recipient's tz; "Alert raised 14:32 local"</td><td class="role">recipient-friendly; audit entry keeps UTC</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="layer-note">
+      <strong>Hard rules:</strong>
+      <em>1)</em> DB stores only UTC (<code>timestamptz</code>) — never local time ·
+      <em>2)</em> tz-ს ვიყენებთ IANA string-ებს ("Asia/Tbilisi"), <strong>არასდროს</strong> fixed offset ("+04:00") — DST breaks ·
+      <em>3)</em> pg_timezone_names CHECK constraint ავტომატურად იცავს typo-სგან ·
+      <em>4)</em> IANA ბაზის update → deploy გააქვს worker-ის image-ს 2 თვეში ერთხელ.
+    </div>
+    <div class="layer-note" style="border-top: 1px solid #FFE082; margin-top: -1px;">
+      <strong>რა მოხდება ამის გარეშე:</strong>
+      <em>1)</em> DST switch-ზე automation ან orphan-ს ქმნის (03:30 არ არსებობდა) ან ორჯერ ერთსელ გაეშვება ·
+      <em>2)</em> Tbilisi tenant-ი იღებს daily report-ს 13:00-ზე, მიჩნევს bug-ად, churn-ში მიდის ·
+      <em>3)</em> Quiet hours 22:00 UTC = Georgia-ს ნორმა 02:00 → ღამით SMS aim-ავს, user-ი ვარდება ·
+      <em>4)</em> GDPR DSAR request (30d რეგულირებული response) — UTC-ით ითვლება, local-ით კი user ელოდება → compliance breach.
+    </div>
+  </section>
+
+  <!-- INVARIANTS -->
+  <div class="invariants">
+    <h3>Architectural invariants (ADR-ებიდან + v1.2 რევიზიები + v1.3 governance)</h3>
+    <ul>
+      <li><strong>per-region Aurora</strong> — tenant row არასდროს ტოვებს home region-ს</li>
+      <li><strong>RLS ყველა tenant-scoped table-ზე</strong> — pooled isolation default</li>
+      <li><strong>user-first identity</strong> — user ≠ org citizen by default; visibility მხოლოდ explicit grant-ით</li>
+      <li><strong>org-context never in JWT</strong> — session-resolved server-side, &lt;30s stale window</li>
+      <li><strong>life-safety edge-ზე</strong> (ADR-003) — cloud/AI არასდროს critical path-ში</li>
+      <li><strong>single edge runtime v1</strong> — Greengrass v2 only; no parallel fallback</li>
+      <li><strong>NestJS sole API platform</strong> — Python Flask EOL</li>
+      <li><strong>scene graph = schema not DB v1</strong> — separate cluster only after CPU &gt;5%</li>
+      <li><strong>billing = ledger not tags</strong> — <code>usage_events</code> append-only source of truth</li>
+      <li><strong>hash chain მხოლოდ regulated evidence path-ებზე</strong> (ADR-022) — not every table</li>
+      <li><strong>tenant-scoping review nightly</strong> (ADR-025) — zero cross-tenant reads assertion = release gate</li>
+      <li><strong>audit snapshot monthly</strong> (ADR-025) — signed PDF + JSON bundle as SOC 2 / ISO 27001 evidence</li>
+      <li><strong>ADR index = source of truth</strong> — no architectural decision exists outside <code>docs/adr/</code> + registry UI</li>
+    </ul>
+  </div>
+
+  <!-- PHASE 2 PARK -->
+  <div class="phase2">
+    <h3>🅿 Deferred to Phase 2 (explicit parking lot)</h3>
+    <ol>
+      <li><strong>Aurora Global Database</strong> — v1: DMS regional replication for catalogs</li>
+      <li><strong>OpenSearch</strong> — v1: Postgres FTS</li>
+      <li><strong>Separate scene-graph Postgres cluster</strong> — v1: <code>twin</code> schema on tenant Aurora</li>
+      <li><strong>Separate feature-store Postgres cluster</strong> — v1: Timescale CA + Redis</li>
+      <li><strong>Rust/Go fallback edge agent</strong> — v1: Greengrass v2 only</li>
+      <li><strong>12-month cert rotation</strong> — v1: 24mo; revisit after 6mo stage proof</li>
+      <li><strong>WorkOS enterprise SSO</strong> — v1: Cognito only</li>
+      <li><strong>React Native mobile</strong> — Phase 2 for offline CMMS</li>
+      <li><strong>CMMS parts/offline/AI/AR</strong> — year-2</li>
+      <li><strong>BYOK customer keys</strong> — v1: regional CMK</li>
+    </ol>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="summary-final">
+    <h3>Summary — სისტემას ქმნის 28 layer (✶ = v1.2 revised · ✚ = v1.3 new)</h3>
+    <div class="summary-grid">
+      <div class="summary-item"><b>1.</b> Cloud foundation — AWS Organizations + Control Tower + SSO + KMS</div>
+      <div class="summary-item"><b>2.</b> Networking — VPC + CloudFront + WAF + ALB + Route 53</div>
+      <div class="summary-item"><b>3.</b> Compute — ECS Fargate + NestJS + Lambda (minimal)</div>
+      <div class="summary-item"><b>4.</b> Async — SQS + EventBridge + ElastiCache</div>
+      <div class="summary-item revised"><b>5. ✶</b> Data (v1) — Aurora per-region + TimescaleDB + S3 + PostGIS + pgvector <em>(Global DB & OpenSearch deferred)</em></div>
+      <div class="summary-item revised"><b>6. ✶</b> Identity — Cognito + user-first + <em>session-resolved org-context</em> + RLS</div>
+      <div class="summary-item revised"><b>7. ✶</b> Device edge — IoT Core + Fleet Provisioning + <em>Greengrass v2 sole</em></div>
+      <div class="summary-item revised"><b>8. ✶</b> AI/ML — Bedrock + Claude + <em>Timescale CA + Redis features (no sep DB)</em></div>
+      <div class="summary-item revised"><b>9. ✶</b> Digital Twin — <em>Aurora <code>twin</code> schema</em> + glTF + Three.js</div>
+      <div class="summary-item"><b>10.</b> App surfaces — Next.js + KAYA + Socket.io + ECharts + MUI DataGrid</div>
+      <div class="summary-item revised"><b>11. ✶</b> Observability — OTel + CloudWatch + <em>usage-ledger cost attribution</em></div>
+      <div class="summary-item"><b>12.</b> Security — GuardDuty + Security Hub + Macie + audit hash chain</div>
+      <div class="summary-item"><b>13.</b> CI/CD — GitHub Actions + Terraform + Turborepo + LaunchDarkly</div>
+      <div class="summary-item revised"><b>14. ✶</b> External + Billing — SES/SNS + <em>Stripe fed by usage ledger</em> + Statuspage.io</div>
+      <div class="summary-item"><b>15.</b> Current platform snapshot — iot.dmt.ge topology + migration map (GCP→AWS)</div>
+      <div class="summary-item"><b>16.</b> DB schemas — organizations / users / memberships / devices / commands / telemetry / audit_log (ქართული კომენტარებით)</div>
+      <div class="summary-item"><b>17.</b> Code organization — Turborepo monorepo + trunk-based + contracts registry</div>
+      <div class="summary-item"><b>18.</b> Protocols — MQTT / HTTPS / Socket.io / SSE / SQS / EventBridge + payload envelope</div>
+      <div class="summary-item revised"><b>19. ✚</b> Operator console & governance — <em>Monitoring</em> (System health / Web Vitals / Rate limits / CSP / Audit log) + <em>Reports</em> (Audit snapshot, Tenant-scoping review) + <em>Decisions</em> (ADR index)</div>
+      <div class="summary-item"><b>20.</b> System diagram — 6-band SVG node tree (Clients → Edge → API → Data → Async → Device) + life-safety bypass</div>
+      <div class="summary-item"><b>21.</b> API design — versioned <code>/v1/</code> REST + Socket.io + SSE · problem+json errors · session-resolved auth · contract-first</div>
+      <div class="summary-item"><b>22.</b> Notifications — SES (email) + SNS (SMS) + Pinpoint (push) · per-tenant templates · cascading P0 escalation</div>
+      <div class="summary-item"><b>23.</b> Rationale — Aurora/NestJS/MQTT/Greengrass/Socket.io/Turborepo/SES-SNS/Cognito vs alternatives + <em>revise triggers</em></div>
+      <div class="summary-item"><b>24.</b> როლი და საჭიროება (ქართ.) — data/network/edge თითო კომპონენტის detailed განმარტება "რა ხდება ამის გარეშე"</div>
+      <div class="summary-item"><b>25.</b> Hardware requirements — 13 სავალდებულო device field · UL 916/60730/2900 · IEC 61508/62443 · per-tier certification matrix</div>
+      <div class="summary-item"><b>26.</b> Self-learning bug/anomaly detection — 3 streams (device/app/perf) · nightly retrain · 7 static+dynamic scanners · AI PR reviewer</div>
+      <div class="summary-item"><b>27.</b> External integration API — claim certs · SDK (C/Python/Node) · developer portal · 4-tier quotas · sandbox</div>
+      <div class="summary-item"><b>28.</b> Scheduling · GMT/tz — IANA per-tenant + per-user tz · DB-backed scheduler · EventBridge hybrid · DST-safe · quiet-hours per user-local</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    IoT BMS SaaS Blueprint v1.3 · 2026-04-22 · post-Codex review + operator console · 22 ADR + 5 revisions + 3 new (23–25) · 28 layers · KAYA design tokens
+  </div>
+
+</div>
+</body>
+</html>

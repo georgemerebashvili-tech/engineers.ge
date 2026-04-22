@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tenant-scoping review — DMT IoT BMS</title>
+<style>
+:root {
+  --primary: #1565C0;
+  --primary-dark: #0D47A1;
+  --primary-light: #E3F2FD;
+  --surface: #FFFFFF;
+  --surface-alt: #F7F9FC;
+  --border: #E1E7EF;
+  --border-strong: #C9D3E0;
+  --text: #1A2332;
+  --text-muted: #5A6B80;
+  --text-dim: #8A98AC;
+  --success: #2E7D32;
+  --success-bg: #E8F5E9;
+  --warning: #E6A100;
+  --warning-bg: #FFF8E1;
+  --danger: #D32F2F;
+  --danger-bg: #FDECEA;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font: 13px/1.55 'Noto Sans Georgian', 'Inter', -apple-system, sans-serif;
+  color: var(--text);
+  background: var(--surface-alt);
+}
+.page { max-width: 1120px; margin: 0 auto; padding: 32px 28px 80px; }
+.hero {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: #fff;
+  padding: 32px 36px;
+  border-radius: var(--radius-md);
+  margin-bottom: 24px;
+}
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.01em; }
+.hero .sub { font-size: 13px; opacity: 0.9; margin-bottom: 14px; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 999px; font-size: 11px; }
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 22px;
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border);
+}
+.section-num {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--primary); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 13px; font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0;
+}
+.section-header h2 { font-size: 15px; font-weight: 700; color: var(--text); }
+.section-header .caption { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+.section-body { padding: 0; }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+thead th {
+  text-align: left; padding: 10px 16px;
+  background: var(--surface-alt); color: var(--text-muted);
+  font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.3px;
+  border-bottom: 1px solid var(--border);
+}
+tbody td { padding: 10px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: var(--surface-alt); }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 10.5px; font-weight: 600; font-family: 'JetBrains Mono', monospace;
+  white-space: nowrap;
+}
+.badge.ok { background: var(--success-bg); color: var(--success); border: 1px solid #9DDCBA; }
+.badge.warn { background: var(--warning-bg); color: #8D6E00; border: 1px solid #FFD54F; }
+.badge.fail { background: var(--danger-bg); color: var(--danger); border: 1px solid #F4B7B0; }
+code { font-family: 'JetBrains Mono', monospace; background: var(--primary-light); color: var(--primary-dark); padding: 1px 6px; border-radius: 3px; font-size: 11.5px; }
+.note {
+  padding: 12px 22px; background: var(--warning-bg); border-top: 1px solid #FFE082;
+  font-size: 11.5px; color: #8D6E00;
+}
+.note strong { color: #8D6E00; }
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 16px; }
+.kpi {
+  background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.kpi-label { font-size: 10.5px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; font-weight: 600; }
+.kpi-value { font-size: 22px; font-weight: 700; color: var(--text); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+.kpi-value.ok { color: var(--success); }
+.kpi-value.warn { color: var(--warning); }
+.kpi-value.fail { color: var(--danger); }
+.footer { text-align: center; padding: 28px 0 0; color: var(--text-dim); font-size: 11.5px; }
+ul.checklist { list-style: none; padding: 14px 22px; }
+ul.checklist li { padding: 6px 0 6px 22px; position: relative; font-size: 12.5px; border-bottom: 1px dashed var(--border); }
+ul.checklist li:last-child { border-bottom: none; }
+ul.checklist li.ok::before { content: '✓'; position: absolute; left: 0; color: var(--success); font-weight: 700; }
+ul.checklist li.warn::before { content: '⚠'; position: absolute; left: 0; color: var(--warning); font-weight: 700; }
+ul.checklist li.fail::before { content: '✗'; position: absolute; left: 0; color: var(--danger); font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hero">
+    <h1>Tenant-scoping review</h1>
+    <div class="sub">RLS enforcement audit · cross-tenant read detection · visibility grant ledger</div>
+    <div class="hero-meta">
+      <span class="pill"><strong>Run:</strong> 2026-04-22 22:00 UTC</span>
+      <span class="pill"><strong>Environment:</strong> staging (full) + production (scan-only)</span>
+      <span class="pill"><strong>Type:</strong> automated nightly</span>
+      <span class="pill"><strong>ADR:</strong> ADR-025</span>
+    </div>
+  </div>
+
+  <!-- KPI summary -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <div>
+        <h2>Executive summary</h2>
+        <div class="caption">overall posture · pass/fail gates</div>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">RLS coverage</div><div class="kpi-value ok">100%</div></div>
+      <div class="kpi"><div class="kpi-label">Cross-tenant reads</div><div class="kpi-value ok">0</div></div>
+      <div class="kpi"><div class="kpi-label">Expired grants</div><div class="kpi-value warn">3</div></div>
+      <div class="kpi"><div class="kpi-label">Release gate</div><div class="kpi-value ok">PASS</div></div>
+    </div>
+  </div>
+
+  <!-- §2 RLS coverage -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <div>
+        <h2>RLS policy coverage — tenant-scoped tables</h2>
+        <div class="caption">every table with <code>tenant_id</code> must have ENABLE ROW LEVEL SECURITY + policy</div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>ცხრილი</th><th>RLS enabled</th><th>Policy</th><th>Current_setting()</th><th>სტატუსი</th></tr></thead>
+      <tbody>
+        <tr><td><code>organizations</code></td><td>✓</td><td><code>organizations_self</code></td><td>n/a — root tenant</td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td><code>memberships</code></td><td>✓</td><td><code>memberships_tenant</code></td><td><code>app.tenant_id</code></td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td><code>devices</code></td><td>✓</td><td><code>devices_tenant</code></td><td><code>app.tenant_id</code></td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td><code>commands</code></td><td>✓</td><td><code>commands_tenant</code></td><td><code>app.tenant_id</code></td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td><code>telemetry</code> (Timescale)</td><td>✓</td><td><code>telemetry_tenant</code></td><td><code>app.tenant_id</code></td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td><code>alerts</code></td><td>✓</td><td><code>alerts_tenant</code></td><td><code>app.tenant_id</code></td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td><code>audit_log</code></td><td>✓</td><td><code>audit_tenant</code></td><td><code>app.tenant_id</code></td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td><code>usage_events</code></td><td>✓</td><td><code>usage_tenant</code></td><td><code>app.tenant_id</code></td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td><code>automation_rules</code></td><td>✓</td><td><code>automation_tenant</code></td><td><code>app.tenant_id</code></td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td><code>notification_templates</code></td><td>✓</td><td><code>notif_tenant</code></td><td><code>app.tenant_id</code></td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td><code>notification_deliveries</code></td><td>✓</td><td><code>delivery_tenant</code></td><td><code>app.tenant_id</code></td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td><code>visibility_grants</code></td><td>✓</td><td><code>grants_tenant</code></td><td><code>app.tenant_id</code></td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td><code>allowlist_entries</code></td><td>✓</td><td><code>allowlist_tenant</code></td><td><code>app.tenant_id</code></td><td><span class="badge ok">PASS</span></td></tr>
+      </tbody>
+    </table>
+    <div class="note"><strong>Scan method:</strong> <code>pg_policies</code> INFORMATION_SCHEMA cross-referenced with every table containing a <code>tenant_id</code> column. New table without RLS = CI block.</div>
+  </div>
+
+  <!-- §3 Cross-tenant read assertion -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <div>
+        <h2>Cross-tenant read assertion (integration test)</h2>
+        <div class="caption">nightly in stage — 2 fixtures (A, B) · assert A-as-user sees 0 rows from B</div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Test</th><th>Fixture</th><th>ბრძანება</th><th>Expected</th><th>Got</th><th>სტატუსი</th></tr></thead>
+      <tbody>
+        <tr><td>device read</td><td>user(A) → devices</td><td><code>SELECT COUNT(*) FROM devices</code></td><td>only A-tenant rows (127)</td><td>127 (all A)</td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td>telemetry read</td><td>user(A) → telemetry</td><td><code>SELECT COUNT(*) FROM telemetry WHERE time &gt; now()-'1h'</code></td><td>only A</td><td>A rows only</td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td>membership read</td><td>user(A) → memberships</td><td><code>SELECT COUNT(*) FROM memberships</code></td><td>only A-org memberships</td><td>match</td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td>audit_log read</td><td>user(A) → audit_log</td><td><code>SELECT COUNT(*) FROM audit_log</code></td><td>only A</td><td>match</td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td>service role bypass attempt</td><td>admin → with <code>SET LOCAL app.tenant_id = B</code></td><td>as A; switch tenant</td><td>only B rows</td><td>only B</td><td><span class="badge ok">PASS</span></td></tr>
+        <tr><td>raw JDBC without SET LOCAL</td><td>pooled conn</td><td>no tenant_id set</td><td>RLS denies all</td><td>0 rows / permission denied</td><td><span class="badge ok">PASS</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- §4 Visibility grants audit -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <div>
+        <h2>Visibility grants audit</h2>
+        <div class="caption">user-first identity — expired/revoked/inconsistent</div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Check</th><th>Result</th><th>Action</th></tr></thead>
+      <tbody>
+        <tr><td>Total active grants</td><td>487</td><td>—</td></tr>
+        <tr><td>Expired grants still referenced by queries</td><td><span class="badge warn">3</span></td><td>open ticket; cleanup scheduled</td></tr>
+        <tr><td>Grants without parent membership</td><td>0</td><td>—</td></tr>
+        <tr><td>Grants to deleted users</td><td>0</td><td>—</td></tr>
+        <tr><td>Grants referencing deleted organizations</td><td>0</td><td>—</td></tr>
+        <tr><td>Grants with allowlist bypass attempts last 24h</td><td>0</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <div class="note">
+      <strong>Expired grants detail (3):</strong>
+      <code>grant_id: 01HW7A…</code> — user ops-team@contoso.ge (org X, expired 2026-04-20, 2 days stale) ·
+      <code>grant_id: 01HW7B…</code> — user temp@acme.co (org Y, expired 2026-04-18) ·
+      <code>grant_id: 01HW7C…</code> — user contractor@dmt.ge (org Z, expired 2026-04-19).
+      All 3 still returning rows in <code>memberships</code> queries during stale window; cleanup worker scheduled for 2026-04-23 02:00 UTC.
+    </div>
+  </div>
+
+  <!-- §5 Query scan -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <div>
+        <h2>Production query scan — missing <code>tenant_id</code> filters</h2>
+        <div class="caption">pg_stat_statements hot queries · auto-flag queries on tenant-scoped tables without RLS fallback</div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Query shape</th><th>Calls/24h</th><th>Has tenant_id filter</th><th>RLS effective</th><th>სტატუსი</th></tr></thead>
+      <tbody>
+        <tr><td><code>SELECT ... FROM devices WHERE tenant_id = $1 AND status = $2</code></td><td>184,392</td><td>✓</td><td>✓</td><td><span class="badge ok">SAFE</span></td></tr>
+        <tr><td><code>SELECT ... FROM telemetry WHERE device_id = $1 AND time &gt; $2</code></td><td>2,847,119</td><td>indirect via RLS</td><td>✓ SET LOCAL app.tenant_id</td><td><span class="badge ok">SAFE</span></td></tr>
+        <tr><td><code>SELECT ... FROM alerts WHERE status = 'active'</code></td><td>47,203</td><td>indirect via RLS</td><td>✓ SET LOCAL app.tenant_id</td><td><span class="badge ok">SAFE</span></td></tr>
+        <tr><td><code>UPDATE memberships SET role = $1 WHERE user_id = $2</code></td><td>412</td><td>✗ missing</td><td>✓ via policy USING</td><td><span class="badge ok">SAFE — RLS denies cross-tenant</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- §6 Action items -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <div>
+        <h2>Action items</h2>
+        <div class="caption">follow-up ticket queue · priorities</div>
+      </div>
+    </div>
+    <ul class="checklist">
+      <li class="warn"><strong>P1</strong> — Expired visibility grants cleanup (3) → worker 2026-04-23 02:00 UTC (auto-scheduled).</li>
+      <li class="ok"><strong>P3</strong> — RLS coverage invariant holds across all 13 tenant-scoped tables. No new table added without RLS since last scan.</li>
+      <li class="ok"><strong>P3</strong> — Cross-tenant read test suite expanded by 2 scenarios (service role bypass, raw JDBC without SET LOCAL).</li>
+      <li class="ok"><strong>info</strong> — Session org-context stale window measured p95 = 14s (&lt;30s invariant).</li>
+      <li class="ok"><strong>info</strong> — Zero allowlist bypass attempts recorded last 24h.</li>
+    </ul>
+  </div>
+
+  <div class="footer">
+    Tenant-scoping review · generated by <code>@dmt/tenant-scoping-runner</code> · ADR-025 · <strong>PASS</strong> — ready for deployment gate
+  </div>
+
+</div>
+</body>
+</html>

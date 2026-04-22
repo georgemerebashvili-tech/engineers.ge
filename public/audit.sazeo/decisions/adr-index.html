@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ADR index — DMT IoT BMS v1.3</title>
+<style>
+:root {
+  --primary: #1565C0;
+  --primary-dark: #0D47A1;
+  --primary-light: #E3F2FD;
+  --surface: #FFFFFF;
+  --surface-alt: #F7F9FC;
+  --border: #E1E7EF;
+  --text: #1A2332;
+  --text-muted: #5A6B80;
+  --text-dim: #8A98AC;
+  --success: #2E7D32;
+  --success-bg: #E8F5E9;
+  --warning: #E6A100;
+  --warning-bg: #FFF8E1;
+  --revised-bg: #FFF4E5;
+  --revised: #C05010;
+  --superseded-bg: #EEEEEE;
+  --superseded: #757575;
+  --new: #388E3C;
+  --new-bg: #E8F5E9;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font: 13px/1.55 'Noto Sans Georgian', 'Inter', -apple-system, sans-serif;
+  color: var(--text); background: var(--surface-alt);
+}
+.page { max-width: 1120px; margin: 0 auto; padding: 32px 28px 80px; }
+.hero {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: #fff; padding: 32px 36px; border-radius: var(--radius-md); margin-bottom: 20px;
+}
+.hero h1 { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
+.hero .sub { font-size: 13px; opacity: 0.9; margin-bottom: 14px; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 8px; }
+.pill { background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 999px; font-size: 11px; }
+
+.filters {
+  display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 20px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+.filter-btn {
+  padding: 5px 11px; border-radius: 999px; border: 1px solid var(--border);
+  background: var(--surface); font-size: 11.5px; font-weight: 600; color: var(--text-muted);
+  cursor: pointer; transition: all 120ms;
+  font-family: 'JetBrains Mono', monospace;
+}
+.filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+.filter-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+.adr-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.adr {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md);
+  padding: 16px 20px; transition: border-color 120ms, transform 120ms;
+}
+.adr:hover { border-color: var(--primary); }
+.adr-head { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+.adr-id {
+  font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 700;
+  color: var(--primary); background: var(--primary-light); padding: 2px 8px; border-radius: 4px;
+  flex-shrink: 0;
+}
+.adr-title { font-size: 14px; font-weight: 700; color: var(--text); flex: 1; min-width: 200px; }
+.badge {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 10.5px; font-weight: 600; font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase; letter-spacing: 0.4px;
+}
+.badge.locked { background: var(--success-bg); color: var(--success); border: 1px solid #9DDCBA; }
+.badge.revised { background: var(--revised-bg); color: var(--revised); border: 1px solid #E8C080; }
+.badge.superseded { background: var(--superseded-bg); color: var(--superseded); border: 1px solid #BDBDBD; text-decoration: line-through; }
+.badge.new { background: var(--new-bg); color: var(--new); border: 1px solid #9DDCBA; }
+
+.adr-meta {
+  display: flex; flex-wrap: wrap; gap: 12px; margin-top: 4px;
+  font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace;
+}
+.adr-body { font-size: 12.5px; color: var(--text); margin-top: 8px; }
+.adr-body code { background: var(--surface-alt); color: var(--primary-dark); padding: 1px 6px; border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+.adr-layers {
+  margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border);
+  font-size: 11px; color: var(--text-dim); font-family: 'JetBrains Mono', monospace;
+}
+.adr-layers a { color: var(--primary); text-decoration: none; }
+.adr-layers a:hover { text-decoration: underline; }
+
+.footer { text-align: center; padding: 28px 0 0; color: var(--text-dim); font-size: 11.5px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hero">
+    <h1>ADR index — DMT IoT BMS Platform</h1>
+    <div class="sub">Architectural Decision Records · v1.3 (22 locked + 3 new = 25 total)</div>
+    <div class="hero-meta">
+      <span class="pill"><strong>Last updated:</strong> 2026-04-22</span>
+      <span class="pill"><strong>Locked:</strong> 22</span>
+      <span class="pill"><strong>Revised (v1.2):</strong> 5</span>
+      <span class="pill"><strong>New (v1.3):</strong> 3</span>
+      <span class="pill"><strong>Superseded:</strong> 0</span>
+    </div>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">ყველა (25)</button>
+    <button class="filter-btn" data-filter="locked">locked (22)</button>
+    <button class="filter-btn" data-filter="revised">revised (5)</button>
+    <button class="filter-btn" data-filter="new">new v1.3 (3)</button>
+    <button class="filter-btn" data-filter="security">security</button>
+    <button class="filter-btn" data-filter="data">data</button>
+    <button class="filter-btn" data-filter="edge">edge</button>
+    <button class="filter-btn" data-filter="identity">identity</button>
+    <button class="filter-btn" data-filter="billing">billing</button>
+  </div>
+
+  <div class="adr-list">
+
+    <div class="adr" data-tags="locked data">
+      <div class="adr-head">
+        <span class="adr-id">ADR-001</span>
+        <span class="adr-title">AWS-first cloud foundation</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: infrastructure</span><span>Author: codex</span><span>Date: 2026-03-18</span></div>
+      <div class="adr-body">AWS Organizations + Control Tower + SSO + KMS. Per-region account separation. GCP/Azure ruled out for v1 — IoT Core integration + cost at scale.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l1">Layer 1</a> · <a href="../iot-bms-blueprint.html#l15">Layer 15 (migration)</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked edge">
+      <div class="adr-head">
+        <span class="adr-id">ADR-002</span>
+        <span class="adr-title">AWS IoT Core for device ingress</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: edge</span><span>Author: codex</span><span>Date: 2026-03-18</span></div>
+      <div class="adr-body">MQTT 5 broker. Fleet Provisioning + ACM PCA for certificates. Policy-based per-tenant topic isolation.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l7">Layer 7</a> · <a href="../iot-bms-blueprint.html#l25">Layer 25 (hardware)</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked edge revised">
+      <div class="adr-head">
+        <span class="adr-id">ADR-003</span>
+        <span class="adr-title">Greengrass v2 — life-safety bypass</span>
+        <span class="badge locked">Locked</span>
+        <span class="badge revised">Revised (v1.2)</span>
+      </div>
+      <div class="adr-meta"><span>Area: edge · safety</span><span>Author: codex</span><span>Revised: 2026-04-22</span></div>
+      <div class="adr-body">Edge runtime autonomous for alarms/critical commands. Cloud outage ≠ BMS outage. v1.2: single runtime only, no parallel fallback (deferred to Phase 2 after 6mo proof).</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l7">Layer 7</a> · <a href="../iot-bms-blueprint.html#l22">Layer 22 (notifications)</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked revised">
+      <div class="adr-head">
+        <span class="adr-id">ADR-004</span>
+        <span class="adr-title">NestJS sole API platform</span>
+        <span class="badge locked">Locked</span>
+        <span class="badge revised">Revised (v1.2)</span>
+      </div>
+      <div class="adr-meta"><span>Area: API</span><span>Author: codex</span><span>Revised: 2026-04-22</span></div>
+      <div class="adr-body">Python Flask EOL. Single TypeScript API platform. Fastify runtime. v1.2: hard cutover — no dual-API.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l3">Layer 3</a> · <a href="../iot-bms-blueprint.html#l21">Layer 21 (API design)</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked">
+      <div class="adr-head">
+        <span class="adr-id">ADR-005</span>
+        <span class="adr-title">SQS + EventBridge for async backbone</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: async</span><span>Author: codex</span><span>Date: 2026-03-18</span></div>
+      <div class="adr-body">SQS for point-to-point jobs, EventBridge for fan-out domain events. Redis for hot cache only, not durable queue.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l4">Layer 4</a> · <a href="../iot-bms-blueprint.html#l28">Layer 28 (scheduling)</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked data">
+      <div class="adr-head">
+        <span class="adr-id">ADR-006</span>
+        <span class="adr-title">Aurora PostgreSQL per-region</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: data</span><span>Author: codex</span><span>Date: 2026-03-18</span></div>
+      <div class="adr-body">PostgreSQL 16 on Aurora. Per-region cluster for data residency. RLS default-on.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l5">Layer 5</a> · <a href="../iot-bms-blueprint.html#l16">Layer 16 (DB schemas)</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked data">
+      <div class="adr-head">
+        <span class="adr-id">ADR-007</span>
+        <span class="adr-title">TimescaleDB for telemetry</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: data · telemetry</span><span>Author: codex</span><span>Date: 2026-03-18</span></div>
+      <div class="adr-body">Hypertable partitioned by time (7d chunks). Continuous aggregates for dashboards. Compression &gt;20× on cold data.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l5">Layer 5</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked data">
+      <div class="adr-head">
+        <span class="adr-id">ADR-008</span>
+        <span class="adr-title">Continuous aggregates — dashboards &lt;100ms</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: data · AI/ML</span><span>Author: codex</span><span>Date: 2026-03-18</span></div>
+      <div class="adr-body">1h/1d telemetry averages pre-computed. AI feature store reads from CA + Redis, not separate DB.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l5">Layer 5</a> · <a href="../iot-bms-blueprint.html#l8">Layer 8 (AI/ML)</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked identity">
+      <div class="adr-head">
+        <span class="adr-id">ADR-009</span>
+        <span class="adr-title">User-first identity (user ≠ org citizen)</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: identity</span><span>Author: codex</span><span>Date: 2026-03-18</span></div>
+      <div class="adr-body">Users exist independently; organizations are joined via <code>memberships</code>. Multi-org support from day 1.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l6">Layer 6</a> · <a href="../iot-bms-blueprint.html#l16">Layer 16</a> · superseded piece by ADR-023</div>
+    </div>
+
+    <div class="adr" data-tags="locked identity">
+      <div class="adr-head">
+        <span class="adr-id">ADR-010</span>
+        <span class="adr-title">Explicit visibility grants (no implicit membership)</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: identity · security</span><span>Author: codex</span><span>Date: 2026-03-18</span></div>
+      <div class="adr-body">Cross-org data access requires explicit grant; default = invisible. Grants expire; grants-to-deleted-users auto-revoked.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l6">Layer 6</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked">
+      <div class="adr-head">
+        <span class="adr-id">ADR-011</span>
+        <span class="adr-title">Bedrock + Claude for AI/ML</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: AI/ML</span><span>Author: codex</span><span>Date: 2026-03-20</span></div>
+      <div class="adr-body">AWS Bedrock + Claude for LLM features. Per-tenant fine-tune via Bedrock Custom Models (Phase 2). No cross-tenant data in training.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l8">Layer 8</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked">
+      <div class="adr-head">
+        <span class="adr-id">ADR-012</span>
+        <span class="adr-title">Digital Twin schema (not separate DB v1)</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: twin · data</span><span>Author: codex</span><span>Date: 2026-03-20</span></div>
+      <div class="adr-body"><code>twin</code> schema in tenant Aurora. Separate cluster only when scene CPU &gt;5%. No TwinMaker — self-hosted scene graph.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l9">Layer 9</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked">
+      <div class="adr-head">
+        <span class="adr-id">ADR-013</span>
+        <span class="adr-title">Three.js + glTF for twin rendering</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: twin · UI</span><span>Author: codex</span><span>Date: 2026-03-20</span></div>
+      <div class="adr-body">Three.js client-side. glTF as scene exchange format. Server computes diffs, client renders. No Unity/Unreal — web-native.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l9">Layer 9</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked data revised">
+      <div class="adr-head">
+        <span class="adr-id">ADR-014</span>
+        <span class="adr-title">Feature store = Timescale CA + Redis (not separate DB)</span>
+        <span class="badge locked">Locked</span>
+        <span class="badge revised">Revised (v1.2)</span>
+      </div>
+      <div class="adr-meta"><span>Area: AI/ML · data</span><span>Author: codex</span><span>Revised: 2026-04-22</span></div>
+      <div class="adr-body">Reuse existing stores. Separate Postgres feature store deferred to Phase 2 (cross-asset-class features only).</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l8">Layer 8</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked billing">
+      <div class="adr-head">
+        <span class="adr-id">ADR-015</span>
+        <span class="adr-title">Gap_ratio exclusion for usage billing</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: billing · data</span><span>Author: codex</span><span>Date: 2026-03-22</span></div>
+      <div class="adr-body">Device with <code>gap_ratio &gt; 0.1</code> that hour excluded from billing. Prevents ghost-billing on disconnected devices. Superseded by ADR-024 for aggregation source.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l14">Layer 14</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked">
+      <div class="adr-head">
+        <span class="adr-id">ADR-016</span>
+        <span class="adr-title">Conservative cert rotation (24mo v1)</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: edge · security</span><span>Author: codex</span><span>Date: 2026-03-22</span></div>
+      <div class="adr-body">Device X.509 certs rotate every 24 months. 12-month rotation moved to Phase 2 after 6-month stage proof (field ops pain without automation).</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l7">Layer 7</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked identity revised">
+      <div class="adr-head">
+        <span class="adr-id">ADR-017</span>
+        <span class="adr-title">Session-resolved org-context (JWT minimal)</span>
+        <span class="badge locked">Locked</span>
+        <span class="badge revised">Revised (v1.2)</span>
+      </div>
+      <div class="adr-meta"><span>Area: identity · security</span><span>Author: codex</span><span>Revised: 2026-04-22</span></div>
+      <div class="adr-body">JWT carries only <code>userId + sessionId</code>. Active org + roles + grants resolved from Redis session per request (30s TTL). Stale-permission window &lt; 30s. Superseded by ADR-023 for implementation detail.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l6">Layer 6</a> · <a href="../iot-bms-blueprint.html#l21">Layer 21</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked data">
+      <div class="adr-head">
+        <span class="adr-id">ADR-018</span>
+        <span class="adr-title">pgvector on Aurora (no separate vector DB)</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: AI/ML · data</span><span>Author: codex</span><span>Date: 2026-03-22</span></div>
+      <div class="adr-body">RAG embeddings in Aurora via pgvector. Pinecone/Weaviate deferred Phase 2. Same DB = same RLS, same backups.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l5">Layer 5</a> · <a href="../iot-bms-blueprint.html#l8">Layer 8</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked security">
+      <div class="adr-head">
+        <span class="adr-id">ADR-019</span>
+        <span class="adr-title">GuardDuty + Security Hub + Macie</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: security</span><span>Author: codex</span><span>Date: 2026-03-22</span></div>
+      <div class="adr-body">Native AWS security services. Macie for PII scan on S3. Security Hub aggregates across accounts.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l12">Layer 12</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked security">
+      <div class="adr-head">
+        <span class="adr-id">ADR-020</span>
+        <span class="adr-title">SOC 2 Type II + ISO 27001 as compliance targets</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: compliance</span><span>Author: codex</span><span>Date: 2026-03-25</span></div>
+      <div class="adr-body">SOC 2 Type II audit year-1. ISO 27001 certification year-2. IEC 62443-4-2 SL2 for OT deployments.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l12">Layer 12</a> · <a href="../iot-bms-blueprint.html#l25">Layer 25</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked data">
+      <div class="adr-head">
+        <span class="adr-id">ADR-021</span>
+        <span class="adr-title">Per-region Aurora + DMS regional replication for catalogs</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: data · regions</span><span>Author: codex</span><span>Date: 2026-03-25</span></div>
+      <div class="adr-body">Aurora Global Database too expensive for v1. DMS handles catalog replication. Tenant rows never leave home region.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l1">Layer 1</a> · <a href="../iot-bms-blueprint.html#l5">Layer 5</a></div>
+    </div>
+
+    <div class="adr" data-tags="locked security">
+      <div class="adr-head">
+        <span class="adr-id">ADR-022</span>
+        <span class="adr-title">Hash chain only on regulated evidence paths</span>
+        <span class="badge locked">Locked</span>
+      </div>
+      <div class="adr-meta"><span>Area: security · audit</span><span>Author: codex</span><span>Date: 2026-03-25</span></div>
+      <div class="adr-body">Not every table gets hash chain. <code>audit_log</code> + <code>usage_events</code> only. Regulated tenant paths anchored to S3 Object Lock.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l12">Layer 12</a> · <a href="../iot-bms-blueprint.html#l16">Layer 16</a></div>
+    </div>
+
+    <div class="adr" data-tags="new identity">
+      <div class="adr-head">
+        <span class="adr-id">ADR-023</span>
+        <span class="adr-title">Session-resolved org-context implementation</span>
+        <span class="badge new">New (v1.3)</span>
+      </div>
+      <div class="adr-meta"><span>Area: identity · session</span><span>Author: codex</span><span>Date: 2026-04-22</span></div>
+      <div class="adr-body">Supersedes JWT-embedded org-context piece of ADR-009. Redis <code>session:{sessionId}</code> → <code>{userId, activeOrgId, roles, grants, fetched_at}</code>. Event-driven invalidation on role/membership change.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l6">Layer 6</a> · <a href="../iot-bms-blueprint.html#l21">Layer 21</a></div>
+    </div>
+
+    <div class="adr" data-tags="new billing">
+      <div class="adr-head">
+        <span class="adr-id">ADR-024</span>
+        <span class="adr-title">Usage-ledger-based billing</span>
+        <span class="badge new">New (v1.3)</span>
+      </div>
+      <div class="adr-meta"><span>Area: billing</span><span>Author: codex</span><span>Date: 2026-04-22</span></div>
+      <div class="adr-body">Supersedes Timescale→Stripe piece of ADR-015. Append-only <code>usage_events</code> ledger as billing source of truth. Daily batch → Stripe meter events. Disputes resolved by replaying ledger.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l14">Layer 14</a></div>
+    </div>
+
+    <div class="adr" data-tags="new security">
+      <div class="adr-head">
+        <span class="adr-id">ADR-025</span>
+        <span class="adr-title">Compliance reports as first-class surfaces</span>
+        <span class="badge new">New (v1.3)</span>
+      </div>
+      <div class="adr-meta"><span>Area: compliance · UI</span><span>Author: codex</span><span>Date: 2026-04-22</span></div>
+      <div class="adr-body">Audit snapshot + Tenant-scoping review as first-class surfaces in Operator Console (Layer 19). Monthly batch + on-demand generation; signed PDF + JSON bundle for SOC 2 / ISO 27001 evidence.</div>
+      <div class="adr-layers">→ <a href="../iot-bms-blueprint.html#l19">Layer 19</a> · <a href="./../reports/audit-snapshot.html">Audit snapshot</a> · <a href="./../reports/tenant-scoping.html">Tenant-scoping review</a></div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    ADR registry · 25 decisions · <strong>22 locked + 3 new (v1.3)</strong> · <code>docs/adr/*.md</code> source of truth · <a href="../iot-bms-blueprint.html">← back to blueprint</a>
+  </div>
+
+</div>
+
+<script>
+  const btns = document.querySelectorAll('.filter-btn');
+  const adrs = document.querySelectorAll('.adr');
+  btns.forEach(b => b.addEventListener('click', () => {
+    btns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    const f = b.dataset.filter;
+    adrs.forEach(a => {
+      const tags = (a.dataset.tags || '').split(' ');
+      a.style.display = (f === 'all' || tags.includes(f)) ? 'block' : 'none';
+    });
+  }));
+</script>
+</body>
+</html>
