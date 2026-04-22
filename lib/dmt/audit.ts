@@ -15,7 +15,9 @@ export type DmtAuditAction =
   | 'password.reset.complete'
   | 'page.view'
   | 'fb_webhook.reveal'
-  | 'fb_webhook.reveal_failed';
+  | 'fb_webhook.reveal_failed'
+  | 'fb_webhook.update'
+  | 'fb_webhook.update_failed';
 
 export type DmtAuditEntity = 'dmt_user' | 'session' | 'system' | 'page' | 'secret';
 

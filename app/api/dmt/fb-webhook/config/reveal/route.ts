@@ -7,6 +7,7 @@ import {
 } from '@/lib/dmt/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
 import {logDmtAudit} from '@/lib/dmt/audit';
+import {getFbWebhookSettings} from '@/lib/dmt/fb-settings';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -106,9 +107,10 @@ export async function POST(req: Request) {
     actor_role: me.role
   });
 
+  const settings = await getFbWebhookSettings();
   return NextResponse.json({
-    verifyToken: process.env.FB_VERIFY_TOKEN ?? null,
-    appSecret: process.env.FB_APP_SECRET ?? null,
-    pageToken: process.env.FB_PAGE_ACCESS_TOKEN ?? null
+    verifyToken: settings.verifyToken,
+    appSecret: settings.appSecret,
+    pageToken: settings.pageAccessToken
   });
 }

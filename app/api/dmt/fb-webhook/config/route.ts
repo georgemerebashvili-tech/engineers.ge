@@ -1,12 +1,11 @@
 import {NextResponse} from 'next/server';
 import {getCurrentDmtUser, isPrivilegedRole} from '@/lib/dmt/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
+import {getFbWebhookSettings} from '@/lib/dmt/fb-settings';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Masked webhook status. Real values are only served by
-// /api/dmt/fb-webhook/config/reveal after re-entering the admin password.
 function mask(v?: string | null) {
   if (!v) return null;
   if (v.length <= 8) return '••••';
@@ -21,9 +20,8 @@ export async function GET(req: Request) {
 
   const origin = new URL(req.url).origin;
   const callbackUrl = `${origin}/api/dmt/fb-webhook`;
-  const verifyToken = process.env.FB_VERIFY_TOKEN ?? null;
-  const appSecret = process.env.FB_APP_SECRET ?? null;
-  const pageToken = process.env.FB_PAGE_ACCESS_TOKEN ?? null;
+  const {verifyToken, appSecret, pageAccessToken, updatedAt} =
+    await getFbWebhookSettings();
 
   let leadCount = 0;
   let latestLeadAt: string | null = null;
@@ -47,11 +45,12 @@ export async function GET(req: Request) {
     verifyTokenSet: !!verifyToken,
     appSecretMask: mask(appSecret),
     appSecretSet: !!appSecret,
-    pageTokenMask: mask(pageToken),
-    pageTokenSet: !!pageToken,
+    pageTokenMask: mask(pageAccessToken),
+    pageTokenSet: !!pageAccessToken,
     ready: !!(verifyToken && appSecret),
     leadCount,
     latestLeadAt,
-    graphVersion: 'v20.0'
+    graphVersion: 'v20.0',
+    settingsUpdatedAt: updatedAt
   });
 }

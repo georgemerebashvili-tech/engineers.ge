@@ -1,21 +1,15 @@
 import {NextResponse} from 'next/server';
 import crypto from 'node:crypto';
 import {supabaseAdmin} from '@/lib/supabase/admin';
+import {getFbWebhookSettings} from '@/lib/dmt/fb-settings';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 // Meta Lead Ads webhook.
 //
-// Setup (Meta for Developers):
-//   1. App → Webhooks → Page → Subscribe with:
-//        Callback URL  = https://engineers.ge/api/dmt/fb-webhook
-//        Verify Token  = process.env.FB_VERIFY_TOKEN
-//        Fields        = leadgen
-//   2. After verification, subscribe each Page to the app's leadgen field.
-//   3. Set FB_PAGE_ACCESS_TOKEN (long-lived Page token) so we can fetch
-//      individual leads via Graph API (the webhook only sends leadgen_id).
-//   4. Set FB_APP_SECRET so we can verify X-Hub-Signature-256 on POSTs.
+// Secrets are stored in dmt_fb_webhook_settings (DB); env vars remain a fallback.
+// Admins edit the values at /dmt/leads/facebook/setup (password-gated).
 
 const GRAPH_VERSION = 'v20.0';
 
@@ -32,7 +26,7 @@ export async function GET(req: Request) {
   const mode = url.searchParams.get('hub.mode');
   const token = url.searchParams.get('hub.verify_token');
   const challenge = url.searchParams.get('hub.challenge');
-  const expected = process.env.FB_VERIFY_TOKEN;
+  const {verifyToken: expected} = await getFbWebhookSettings();
 
   if (!expected) {
     return NextResponse.json(
@@ -50,8 +44,7 @@ export async function GET(req: Request) {
 
 // POST — lead delivery.
 export async function POST(req: Request) {
-  const appSecret = process.env.FB_APP_SECRET;
-  const pageToken = process.env.FB_PAGE_ACCESS_TOKEN;
+  const {appSecret, pageAccessToken: pageToken} = await getFbWebhookSettings();
 
   if (!appSecret) {
     return NextResponse.json(
