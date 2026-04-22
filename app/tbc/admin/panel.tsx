@@ -549,7 +549,7 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
         </div>
       </div>
 
-      <main className="mx-auto max-w-7xl p-6">
+      <main className="mx-auto w-full max-w-[1600px] p-6">
         {tab === 'users' && (
           <div className="space-y-6">
             {/* Create user card */}
@@ -697,7 +697,7 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                           </td>
                           <td className="px-4 py-2.5 text-right">
                             <div className="inline-flex items-center justify-end gap-1 text-xs">
-                              {u.role === 'user' && (
+                              {u.role === 'user' ? (
                                 <>
                                   <AccessPill
                                     label="ფილიალები"
@@ -711,30 +711,70 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                                     onClick={() => openCompanyAccess(u)}
                                     title="კომპანიებზე წვდომა"
                                   />
-                                  <span className="mx-0.5 h-5 w-px bg-slate-200" aria-hidden />
                                 </>
-                              )}
-                              {u.email && !u.is_static && (
-                                <button
-                                  onClick={() => regenerateUserPassword(u)}
-                                  className="rounded border border-[#0071CE]/30 bg-[#E6F2FB] px-2.5 py-1 font-semibold text-[#0071CE] hover:bg-[#0071CE] hover:text-white"
-                                  title="ახალი 4-სიმბოლოიანი პაროლი ელფოსტაზე"
+                              ) : (
+                                <span
+                                  className="inline-flex items-center rounded border border-dashed border-slate-200 px-2 py-1 text-[11px] text-slate-400"
+                                  title="ადმინებს ყოველთვის აქვთ სრული წვდომა"
                                 >
-                                  ახალი პაროლი
-                                </button>
+                                  ყველა წვდომა (ადმინი)
+                                </span>
                               )}
-                              {u.email && (
-                                <button
-                                  onClick={() => sendResetEmail(u)}
-                                  className="rounded border border-slate-200 bg-white px-2.5 py-1 text-slate-700 hover:bg-slate-50"
-                                  title="reset ბმული ელფოსტაზე"
+
+                              <span className="mx-1 h-5 w-px bg-slate-200" aria-hidden />
+
+                              {u.is_static ? (
+                                <span
+                                  className="inline-flex items-center rounded border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700"
+                                  title="სტატიკური ადმინი — პაროლი env-ში"
                                 >
-                                  reset ბმული
-                                </button>
-                              )}
-                              {!u.is_static && (
+                                  env-ით იმართება
+                                </span>
+                              ) : (
                                 <>
-                                  <span className="mx-0.5 h-5 w-px bg-slate-200" aria-hidden />
+                                  <button
+                                    onClick={() =>
+                                      u.email
+                                        ? regenerateUserPassword(u)
+                                        : flashToast('ჯერ დააყენე ელფოსტა')
+                                    }
+                                    disabled={!u.email}
+                                    className={
+                                      u.email
+                                        ? 'rounded border border-[#0071CE]/30 bg-[#E6F2FB] px-2.5 py-1 font-semibold text-[#0071CE] hover:bg-[#0071CE] hover:text-white'
+                                        : 'cursor-not-allowed rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-400 opacity-60'
+                                    }
+                                    title={
+                                      u.email
+                                        ? 'ახალი 4-სიმბოლოიანი პაროლი ელფოსტაზე'
+                                        : 'ელფოსტა არ არის — ჯერ დაამატე'
+                                    }
+                                  >
+                                    ახალი პაროლი
+                                  </button>
+                                  <button
+                                    onClick={() =>
+                                      u.email
+                                        ? sendResetEmail(u)
+                                        : flashToast('ჯერ დააყენე ელფოსტა')
+                                    }
+                                    disabled={!u.email}
+                                    className={
+                                      u.email
+                                        ? 'rounded border border-slate-200 bg-white px-2.5 py-1 text-slate-700 hover:bg-slate-50'
+                                        : 'cursor-not-allowed rounded border border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-400 opacity-60'
+                                    }
+                                    title={
+                                      u.email
+                                        ? 'reset ბმული ელფოსტაზე'
+                                        : 'ელფოსტა არ არის — ჯერ დაამატე'
+                                    }
+                                  >
+                                    reset ბმული
+                                  </button>
+
+                                  <span className="mx-1 h-5 w-px bg-slate-200" aria-hidden />
+
                                   <button
                                     onClick={() =>
                                       patchUser(
