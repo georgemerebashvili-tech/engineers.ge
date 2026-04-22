@@ -285,7 +285,7 @@ export default function AuditSazeoPage() {
               src={iframeSrc}
               title={active.label}
               style={{width: '100%', height: '100%', border: 0, display: 'block', background: '#fff'}}
-              sandbox="allow-same-origin allow-popups"
+              sandbox="allow-same-origin allow-scripts allow-popups"
             />
           ) : (
             <div style={{padding: 40, color: 'var(--text-3)', textAlign: 'center', fontSize: 13}}>
