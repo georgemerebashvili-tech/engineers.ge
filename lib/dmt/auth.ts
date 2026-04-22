@@ -9,6 +9,15 @@ const COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 
 export type DmtRole = 'owner' | 'admin' | 'member' | 'viewer';
 export type DmtStatus = 'active' | 'invited' | 'suspended';
+export const DMT_MANUAL_LEADS_TAB_COLORS = ['blue', 'navy', 'green', 'orange', 'gray'] as const;
+export type DmtManualLeadsTabColor = (typeof DMT_MANUAL_LEADS_TAB_COLORS)[number];
+export type DmtUserSettings = {
+  manualLeadsTabColor: DmtManualLeadsTabColor;
+};
+
+const DEFAULT_DMT_USER_SETTINGS: DmtUserSettings = {
+  manualLeadsTabColor: 'blue'
+};
 
 export type DmtUser = {
   id: string;
@@ -18,7 +27,48 @@ export type DmtUser = {
   status: DmtStatus;
   last_login_at: string | null;
   created_at: string;
+  settings: DmtUserSettings;
 };
+
+function normalizeDmtUserSettings(raw: unknown): DmtUserSettings {
+  const source =
+    raw && typeof raw === 'object' && !Array.isArray(raw)
+      ? (raw as Record<string, unknown>)
+      : {};
+  const tabColor = source.manualLeadsTabColor;
+  return {
+    manualLeadsTabColor:
+      typeof tabColor === 'string' &&
+      DMT_MANUAL_LEADS_TAB_COLORS.includes(tabColor as DmtManualLeadsTabColor)
+        ? (tabColor as DmtManualLeadsTabColor)
+        : DEFAULT_DMT_USER_SETTINGS.manualLeadsTabColor
+  };
+}
+
+function mapDmtUser(
+  data: {
+    id: string;
+    email: string;
+    name: string;
+    role: DmtRole;
+    status: DmtStatus;
+    last_login_at: string | null;
+    created_at: string;
+    settings?: unknown;
+  } | null
+): DmtUser | null {
+  if (!data) return null;
+  return {
+    id: data.id,
+    email: data.email,
+    name: data.name,
+    role: data.role,
+    status: data.status,
+    last_login_at: data.last_login_at,
+    created_at: data.created_at,
+    settings: normalizeDmtUserSettings(data.settings)
+  };
+}
 
 function secret() {
   const s = process.env.AUTH_SECRET;
@@ -84,12 +134,12 @@ export async function getCurrentDmtUser(): Promise<DmtUser | null> {
   if (!session) return null;
   const {data, error} = await supabaseAdmin()
     .from('dmt_users')
-    .select('id,email,name,role,status,last_login_at,created_at')
+    .select('id,email,name,role,status,last_login_at,created_at,settings')
     .eq('id', session.userId)
     .maybeSingle();
   if (error || !data) return null;
   if (data.status === 'suspended') return null;
-  return data as DmtUser;
+  return mapDmtUser(data as Parameters<typeof mapDmtUser>[0]);
 }
 
 export async function createDmtUser(input: {
@@ -124,13 +174,14 @@ export async function createDmtUser(input: {
       name: input.name.trim(),
       role: input.role ?? 'member',
       status: 'active',
-      invited_by: input.invited_by ?? null
+      invited_by: input.invited_by ?? null,
+      settings: DEFAULT_DMT_USER_SETTINGS
     })
-    .select('id,email,name,role,status,last_login_at,created_at')
+    .select('id,email,name,role,status,last_login_at,created_at,settings')
     .single();
 
   if (error || !data) return {error: error?.message ?? 'failed to create user'};
-  return {user: data as DmtUser};
+  return {user: mapDmtUser(data as Parameters<typeof mapDmtUser>[0]) ?? undefined};
 }
 
 export async function authenticateDmt(
@@ -140,7 +191,7 @@ export async function authenticateDmt(
   const sb = supabaseAdmin();
   const {data, error} = await sb
     .from('dmt_users')
-    .select('id,email,name,role,status,password_hash,last_login_at,created_at')
+    .select('id,email,name,role,status,password_hash,last_login_at,created_at,settings')
     .ilike('email', email.trim())
     .maybeSingle();
   if (error || !data) return {error: 'email ან პაროლი არასწორია'};
@@ -154,17 +205,20 @@ export async function authenticateDmt(
     .update({last_login_at: new Date().toISOString()})
     .eq('id', data.id);
 
-  const {password_hash: _p, ...rest} = data;
-  return {user: rest as DmtUser};
+  const rest = {...data};
+  delete rest.password_hash;
+  return {user: mapDmtUser(rest as Parameters<typeof mapDmtUser>[0]) ?? undefined};
 }
 
 export async function listDmtUsers(): Promise<DmtUser[]> {
   const {data, error} = await supabaseAdmin()
     .from('dmt_users')
-    .select('id,email,name,role,status,last_login_at,created_at')
+    .select('id,email,name,role,status,last_login_at,created_at,settings')
     .order('created_at', {ascending: false});
   if (error || !data) return [];
-  return data as DmtUser[];
+  return (data as Parameters<typeof mapDmtUser>[0][])
+    .map((row) => mapDmtUser(row))
+    .filter((row): row is DmtUser => row !== null);
 }
 
 export async function updateDmtUser(
@@ -178,6 +232,31 @@ export async function updateDmtUser(
 export async function deleteDmtUser(id: string) {
   const {error} = await supabaseAdmin().from('dmt_users').delete().eq('id', id);
   if (error) throw error;
+}
+
+export async function updateDmtUserSettings(
+  id: string,
+  patch: Partial<DmtUserSettings>
+): Promise<DmtUserSettings> {
+  const sb = supabaseAdmin();
+  const {data, error} = await sb
+    .from('dmt_users')
+    .select('settings')
+    .eq('id', id)
+    .maybeSingle();
+  if (error || !data) throw error ?? new Error('user_not_found');
+
+  const next = normalizeDmtUserSettings({
+    ...normalizeDmtUserSettings(data.settings),
+    ...patch
+  });
+
+  const {error: updateError} = await sb
+    .from('dmt_users')
+    .update({settings: next})
+    .eq('id', id);
+  if (updateError) throw updateError;
+  return next;
 }
 
 export function isPrivilegedRole(r: DmtRole) {

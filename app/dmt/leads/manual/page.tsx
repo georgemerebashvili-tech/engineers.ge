@@ -24,7 +24,9 @@ import {
   Palette,
   Columns3,
   Download,
-  GripVertical
+  GripVertical,
+  Check,
+  LoaderCircle
 } from 'lucide-react';
 import {
   COLOR_STYLES,
@@ -36,8 +38,25 @@ import {
   type VarSet
 } from '@/lib/dmt/variables';
 
-type Status = 'ახალი' | 'მოლაპარაკების პროცესი' | 'შეთავაზება გაცემული' | 'დახურული-მოგება' | 'დახურული-დაკარგვა';
-type Role = 'End user' | 'Consultant' | 'Contractor' | 'Designer' | 'Supplier';
+type Status =
+  | 'ახალი'
+  | 'მოლაპარაკების პროცესი'
+  | 'შეთავაზება გაცემული'
+  | 'დახურული-მოგება'
+  | 'დახურული-დაკარგვა';
+type LeadRole = 'End user' | 'Consultant' | 'Contractor' | 'Designer' | 'Supplier';
+type DmtPortalRole = 'owner' | 'admin' | 'member' | 'viewer';
+type ManualLeadTabColor = 'blue' | 'navy' | 'green' | 'orange' | 'gray';
+
+type ManualLeadUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: DmtPortalRole;
+  settings: {
+    manualLeadsTabColor: ManualLeadTabColor;
+  };
+};
 
 type Row = {
   id: string;
@@ -46,7 +65,7 @@ type Row = {
   phone: string;
   contract: number | null;
   status: Status;
-  role: Role | '';
+  role: LeadRole | '';
   owner: string;
   period: string;
   editedBy: string;
@@ -69,6 +88,50 @@ const STATUS_META: Record<Status, {color: string; bg: string; border: string}> =
   'დახურული-მოგება':        {color: 'var(--grn)',    bg: 'var(--grn-lt)',  border: 'var(--grn-bd)'},
   'დახურული-დაკარგვა':      {color: 'var(--red)',    bg: 'var(--red-lt)',  border: '#f0b8b4'}
 };
+
+const TAB_COLOR_STYLES: Record<
+  ManualLeadTabColor,
+  {color: string; bg: string; border: string; ring: string}
+> = {
+  blue: {
+    color: 'var(--blue)',
+    bg: 'var(--blue-lt)',
+    border: 'var(--blue-bd)',
+    ring: 'var(--blue)'
+  },
+  navy: {
+    color: 'var(--navy)',
+    bg: 'var(--sur-2)',
+    border: 'var(--bdr-2)',
+    ring: 'var(--navy)'
+  },
+  green: {
+    color: 'var(--grn)',
+    bg: 'var(--grn-lt)',
+    border: 'var(--grn-bd)',
+    ring: 'var(--grn)'
+  },
+  orange: {
+    color: 'var(--ora)',
+    bg: 'var(--ora-lt)',
+    border: 'var(--ora-bd)',
+    ring: 'var(--ora)'
+  },
+  gray: {
+    color: 'var(--text-2)',
+    bg: 'var(--sur-2)',
+    border: 'var(--bdr)',
+    ring: 'var(--text-2)'
+  }
+};
+
+const TAB_COLOR_OPTIONS: {id: ManualLeadTabColor; label: string}[] = [
+  {id: 'blue', label: 'ლურჯი'},
+  {id: 'navy', label: 'მუქი ლურჯი'},
+  {id: 'green', label: 'მწვანე'},
+  {id: 'orange', label: 'ნარინჯისფერი'},
+  {id: 'gray', label: 'ნეიტრალური'}
+];
 
 const STORE_KEY = 'dmt_manual_leads_v2';
 const EXTRA_COLS_KEY = 'dmt_manual_extra_cols_v1';
@@ -99,7 +162,7 @@ type BaseColDef = {
   icon: React.ComponentType<{size?: number; className?: string; strokeWidth?: number}>;
   width: number;
   align?: 'right';
-  kind?: 'text' | 'number' | 'status' | 'role' | 'date' | 'author';
+  kind?: 'text' | 'number' | 'status' | 'role' | 'owner' | 'date' | 'author';
 };
 
 const COLS: BaseColDef[] = [
@@ -109,7 +172,7 @@ const COLS: BaseColDef[] = [
   {key: 'contract', label: 'კონტრ. ღირებ.', icon: DollarSign, width: 120, align: 'right', kind: 'number'},
   {key: 'status',   label: 'სტატუსი',      icon: Star,      width: 180, kind: 'status'},
   {key: 'role',     label: 'როლი',         icon: Shuffle,   width: 120, kind: 'role'},
-  {key: 'owner',    label: 'პრ. მენ.',     icon: UserCog,   width: 110},
+  {key: 'owner',    label: 'პრ. მენ.',     icon: UserCog,   width: 140, kind: 'owner'},
   {key: 'period',   label: 'პერიოდი',      icon: Calendar,  width: 100},
   {key: 'editedBy', label: 'ბოლო რედაქტ.', icon: UserRound, width: 140, kind: 'author'},
   {key: 'editedAt', label: 'ბოლო დრო',     icon: Clock,     width: 150, kind: 'date'},
@@ -136,10 +199,34 @@ function buildOrderedCols(extra: ExtraCol[], order: string[]): OrderedCol[] {
   return out;
 }
 
+function normalizeOwnerName(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function findUserByOwnerName(users: ManualLeadUser[], owner: string) {
+  const target = normalizeOwnerName(owner);
+  if (!target) return null;
+  return users.find((user) => normalizeOwnerName(user.name || user.email) === target) ?? null;
+}
+
+function displayActorLabel(user: ManualLeadUser | null) {
+  if (!user) return 'მე';
+  const name = user.name.trim();
+  if (name) return name;
+  return user.email.split('@')[0] || user.email || 'მე';
+}
+
 export default function ManualLeadsPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [hydrated, setHydrated] = useState(false);
   const [q, setQ] = useState('');
+  const [users, setUsers] = useState<ManualLeadUser[]>([]);
+  const [me, setMe] = useState<ManualLeadUser | null>(null);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState('');
+  const [ownerFilter, setOwnerFilter] = useState<'all' | string>('all');
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [savingColor, setSavingColor] = useState<ManualLeadTabColor | null>(null);
   const [collapsed, setCollapsed] = useState<Record<Status, boolean>>({} as Record<Status, boolean>);
   const [extraCols, setExtraCols] = useState<ExtraCol[]>([]);
   const [extraVals, setExtraVals] = useState<ExtraVals>({});
@@ -182,6 +269,37 @@ export default function ManualLeadsPage() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadUsers() {
+      setUsersLoading(true);
+      try {
+        const res = await fetch('/api/dmt/leads/manual/users', {cache: 'no-store'});
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          if (!cancelled) setUsersError(data.error || 'users_load_failed');
+          return;
+        }
+        if (cancelled) return;
+        setUsers(data.users || []);
+        setMe(data.me || null);
+        setUsersError('');
+      } catch (error) {
+        if (!cancelled) {
+          setUsersError(error instanceof Error ? error.message : 'users_load_failed');
+        }
+      } finally {
+        if (!cancelled) setUsersLoading(false);
+      }
+    }
+
+    loadUsers();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!hydrated) return;
     try {
       localStorage.setItem(STORE_KEY, JSON.stringify(rows));
@@ -193,7 +311,14 @@ export default function ManualLeadsPage() {
     } catch {}
   }, [rows, extraCols, extraVals, colWidths, colOrder, statusOrder, hydrated]);
 
+  useEffect(() => {
+    if (ownerFilter === 'all') return;
+    if (users.some((user) => user.id === ownerFilter)) return;
+    setOwnerFilter('all');
+  }, [ownerFilter, users]);
+
   const widthOf = (key: string, fallback: number) => colWidths[key] ?? fallback;
+  const actorLabel = displayActorLabel(me);
 
   const startResize = (key: string, startWidth: number) => (e: React.MouseEvent) => {
     e.preventDefault();
@@ -229,7 +354,8 @@ export default function ManualLeadsPage() {
     setExtraVals((prev) => {
       const next: ExtraVals = {};
       for (const [rid, m] of Object.entries(prev)) {
-        const {[key]: _removed, ...rest} = m;
+        const rest = {...m};
+        delete rest[key];
         next[rid] = rest;
       }
       return next;
@@ -262,13 +388,29 @@ export default function ManualLeadsPage() {
     setColOrder(current);
   };
 
+  const activeOwnerUser = ownerFilter === 'all' ? null : users.find((user) => user.id === ownerFilter) ?? null;
+
+  const ownerCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const user of users) counts[user.id] = 0;
+    for (const row of rows) {
+      const user = findUserByOwnerName(users, row.owner);
+      if (user) counts[user.id] = (counts[user.id] || 0) + 1;
+    }
+    return counts;
+  }, [rows, users]);
+
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
-    if (!t) return rows;
-    return rows.filter((r) =>
-      Object.values(r).some((v) => String(v ?? '').toLowerCase().includes(t))
-    );
-  }, [rows, q]);
+    return rows.filter((r) => {
+      const activeOwnerName = activeOwnerUser?.name || activeOwnerUser?.email || '';
+      if (activeOwnerName && normalizeOwnerName(r.owner) !== normalizeOwnerName(activeOwnerName)) {
+        return false;
+      }
+      if (!t) return true;
+      return Object.values(r).some((v) => String(v ?? '').toLowerCase().includes(t));
+    });
+  }, [activeOwnerUser, rows, q]);
 
   const grouped = useMemo(() => {
     const g: Record<Status, Row[]> = {
@@ -289,7 +431,7 @@ export default function ManualLeadsPage() {
           ? {
               ...r,
               ...patch,
-              editedBy: 'Giorgi merebash',
+              editedBy: actorLabel,
               editedAt: new Date().toLocaleString('en-GB').replace(',', '')
             }
           : r
@@ -297,8 +439,43 @@ export default function ManualLeadsPage() {
     );
   };
 
+  const saveMyTabColor = async (nextColor: ManualLeadTabColor) => {
+    if (!me || savingColor) return;
+    setSavingColor(nextColor);
+    try {
+      const res = await fetch('/api/dmt/leads/manual/users', {
+        method: 'PATCH',
+        headers: {'content-type': 'application/json'},
+        body: JSON.stringify({manualLeadsTabColor: nextColor})
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.settings) {
+        setUsersError(data.error || 'settings_update_failed');
+        return;
+      }
+      setUsers((prev) =>
+        prev.map((user) =>
+          user.id === me.id ? {...user, settings: data.settings} : user
+        )
+      );
+      setMe((prev) => (prev ? {...prev, settings: data.settings} : prev));
+      setUsersError('');
+      setShowColorPicker(false);
+    } catch (error) {
+      setUsersError(error instanceof Error ? error.message : 'settings_update_failed');
+    } finally {
+      setSavingColor(null);
+    }
+  };
+
   const addRow = (status: Status) => {
     const id = 'r' + Date.now();
+    const ownerName =
+      activeOwnerUser?.name ||
+      activeOwnerUser?.email ||
+      me?.name ||
+      me?.email ||
+      '';
     setRows((prev) => [
       ...prev,
       {
@@ -309,11 +486,11 @@ export default function ManualLeadsPage() {
         contract: null,
         status,
         role: '',
-        owner: '',
+        owner: ownerName,
         period: '',
-        editedBy: 'Giorgi merebash',
+        editedBy: actorLabel,
         editedAt: new Date().toLocaleString('en-GB').replace(',', ''),
-        createdBy: 'Giorgi merebash'
+        createdBy: actorLabel
       }
     ]);
     setCollapsed((prev) => ({...prev, [status]: false}));
@@ -386,6 +563,131 @@ export default function ManualLeadsPage() {
       }
     >
       <div className="px-6 py-5 md:px-8">
+        {usersError && (
+          <div className="mb-4 rounded-[10px] border border-red bg-red-lt px-3 py-2 text-[12px] text-red">
+            {usersError === 'unauthorized'
+              ? 'სესია დასრულდა. თავიდან შედი DMT-ში.'
+              : `მომხმარებლების ჩატვირთვა ვერ მოხერხდა: ${usersError}`}
+          </div>
+        )}
+
+        <div className="mb-4 rounded-[10px] border border-bdr bg-sur">
+          <div className="flex flex-wrap items-center gap-2 px-3 py-3">
+            <div className="mr-1 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-text-3">
+              USER TABS
+            </div>
+            <button
+              type="button"
+              onClick={() => setOwnerFilter('all')}
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors ${
+                ownerFilter === 'all'
+                  ? 'border-blue-bd bg-blue-lt text-blue'
+                  : 'border-bdr bg-sur-2 text-text-2 hover:border-bdr-2 hover:text-navy'
+              }`}
+            >
+              <span>ყველა</span>
+              <span className="font-mono text-[10px]">{rows.length}</span>
+            </button>
+
+            {usersLoading ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-bdr bg-sur-2 px-3 py-1.5 font-mono text-[10.5px] text-text-3">
+                <LoaderCircle size={12} className="animate-spin" /> იტვირთება მომხმარებლები
+              </span>
+            ) : (
+              users.map((user) => {
+                const style = TAB_COLOR_STYLES[user.settings.manualLeadsTabColor];
+                const isActive = ownerFilter === user.id;
+                const isMe = user.id === me?.id;
+                return (
+                  <div key={user.id} className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setOwnerFilter(user.id)}
+                      className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors hover:border-bdr-2"
+                      style={
+                        isActive
+                          ? {
+                              color: style.color,
+                              background: style.bg,
+                              borderColor: style.border,
+                              boxShadow: `inset 0 -2px 0 ${style.ring}`
+                            }
+                          : undefined
+                      }
+                      title={user.email}
+                    >
+                      <span
+                        className="inline-flex h-2 w-2 rounded-full"
+                        style={{background: style.ring}}
+                      />
+                      <span>{user.name || user.email}</span>
+                      <span className="font-mono text-[10px] text-text-3">
+                        {ownerCounts[user.id] ?? 0}
+                      </span>
+                    </button>
+                    {isMe && (
+                      <button
+                        type="button"
+                        onClick={() => setShowColorPicker((value) => !value)}
+                        className={`inline-flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${
+                          showColorPicker
+                            ? 'border-blue-bd bg-blue-lt text-blue'
+                            : 'border-bdr bg-sur-2 text-text-3 hover:border-blue hover:text-blue'
+                        }`}
+                        title="ჩემი ტაბის ფერი"
+                      >
+                        <Palette size={13} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {showColorPicker && me && (
+            <div className="flex flex-wrap items-center gap-2 border-t border-bdr bg-sur-2 px-3 py-2.5">
+              <span className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-text-3">
+                ჩემი ტაბის ფერი
+              </span>
+              {TAB_COLOR_OPTIONS.map((option) => {
+                const style = TAB_COLOR_STYLES[option.id];
+                const selected = me.settings.manualLeadsTabColor === option.id;
+                const busy = savingColor === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    disabled={savingColor !== null}
+                    onClick={() => saveMyTabColor(option.id)}
+                    className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+                    style={{
+                      color: style.color,
+                      background: style.bg,
+                      borderColor: style.border
+                    }}
+                  >
+                    {busy ? (
+                      <LoaderCircle size={12} className="animate-spin" />
+                    ) : selected ? (
+                      <Check size={12} />
+                    ) : (
+                      <span
+                        className="inline-flex h-2 w-2 rounded-full"
+                        style={{background: style.ring}}
+                      />
+                    )}
+                    {option.label}
+                  </button>
+                );
+              })}
+              <span className="text-[11px] text-text-3">
+                შენახვის შემდეგ ეს ფერი ყველასთან გამოჩნდება.
+              </span>
+            </div>
+          )}
+        </div>
+
         <div className="mb-4 grid gap-3 md:grid-cols-4">
           <StatCard label="სულ ჩანაწერი" value={String(filtered.length)} />
           <StatCard label="მოლაპარ. პროცესში" value={String(grouped['მოლაპარაკების პროცესი'].length)} accent="pur" />
@@ -616,7 +918,7 @@ export default function ManualLeadsPage() {
                         </div>
                         {orderedCols.map((c) =>
                           c.src === 'base'
-                            ? renderCell(c.base, r, update)
+                            ? renderCell(c.base, r, update, users)
                             : renderExtraCell(
                                 c.extra,
                                 extraVals[r.id]?.[c.extra.key] ?? '',
@@ -674,7 +976,7 @@ export default function ManualLeadsPage() {
         </div>
 
         <div className="mt-4 rounded-[10px] border border-bdr bg-sur-2 p-3 text-[11.5px] leading-relaxed text-text-2">
-          <b>💡 ცოცხალი grid:</b> უჯრედი სადაც text-ია — click-ი + რედაქტირება. Status / როლი — dropdown. <b>სვეტის ზომა:</b> header-ის მარჯვენა კიდეზე drag · ორმაგი click → მინიმუმი (~10 სიმბ.). <b>თანმიმდევრობა:</b> header-ი აიღე და გადაათრიე სხვა column-ზე → გადაადგილდება. ცვლილებები ავტომატურად ინახება localStorage-ში.
+          <b>💡 ცოცხალი grid:</b> უჯრედი სადაც text-ია — click-ი + რედაქტირება. Status / როლი / პრ. მენეჯერი — dropdown. <b>სვეტის ზომა:</b> header-ის მარჯვენა კიდეზე drag · ორმაგი click → მინიმუმი (~10 სიმბ.). <b>თანმიმდევრობა:</b> header-ი აიღე და გადაათრიე სხვა column-ზე → გადაადგილდება. Grid-ის მონაცემები ისევ localStorage-შია, ხოლო user tab ფერები DMT მომხმარებლის ნასტროიკებში ინახება.
         </div>
       </div>
     </DmtPageShell>
@@ -684,7 +986,8 @@ export default function ManualLeadsPage() {
 function renderCell(
   c: (typeof COLS)[number],
   r: Row,
-  update: (id: string, patch: Partial<Row>) => void
+  update: (id: string, patch: Partial<Row>) => void,
+  users: ManualLeadUser[]
 ) {
   const align = c.align === 'right' ? 'text-right' : '';
   const v = r[c.key];
@@ -713,7 +1016,7 @@ function renderCell(
       <select
         key={c.key}
         value={r.role}
-        onChange={(e) => update(r.id, {role: e.target.value as Role | ''})}
+        onChange={(e) => update(r.id, {role: e.target.value as LeadRole | ''})}
         className="mx-2 my-1.5 cursor-pointer appearance-none rounded-md border border-bdr bg-sur-2 px-2 py-0.5 text-[10.5px] font-semibold text-text-2 hover:border-bdr-2 focus:outline-none"
       >
         <option value="">—</option>
@@ -722,6 +1025,55 @@ function renderCell(
         <option value="Contractor">Contractor</option>
         <option value="Designer">Designer</option>
         <option value="Supplier">Supplier</option>
+      </select>
+    );
+  }
+
+  if (c.kind === 'owner') {
+    if (users.length === 0) {
+      return (
+        <input
+          key={c.key}
+          type="text"
+          value={String(v ?? '')}
+          onChange={(e) => update(r.id, {[c.key]: e.target.value} as Partial<Row>)}
+          className="w-full border-0 bg-transparent px-3 py-2 text-[12px] text-text focus:bg-sur focus:outline-none focus:ring-1 focus:ring-blue"
+          placeholder="—"
+        />
+      );
+    }
+
+    const owner = String(v ?? '');
+    const ownerUser = findUserByOwnerName(users, owner);
+    const ownerStyle = ownerUser
+      ? TAB_COLOR_STYLES[ownerUser.settings.manualLeadsTabColor]
+      : TAB_COLOR_STYLES.gray;
+    const options = users
+      .map((user) => ({id: user.id, label: user.name.trim() || user.email}))
+      .filter((user) => user.label.trim());
+    const hasUnknownOwner =
+      owner.trim() &&
+      !options.some((user) => normalizeOwnerName(user.label) === normalizeOwnerName(owner));
+
+    return (
+      <select
+        key={c.key}
+        value={owner}
+        onChange={(e) => update(r.id, {owner: e.target.value})}
+        className="mx-2 my-1.5 cursor-pointer appearance-none rounded-full border px-2 py-0.5 text-[10.5px] font-semibold focus:outline-none"
+        style={{
+          color: ownerStyle.color,
+          background: ownerStyle.bg,
+          borderColor: ownerStyle.border
+        }}
+      >
+        <option value="">—</option>
+        {hasUnknownOwner && <option value={owner}>{owner}</option>}
+        {options.map((user) => (
+          <option key={user.id} value={user.label}>
+            {user.label}
+          </option>
+        ))}
       </select>
     );
   }

@@ -33,6 +33,44 @@ import {
 const PIN_KEY = 'dmt_sidebar_pinned';
 const OPEN_KEY = 'dmt_sidebar_open_keys';
 
+// nav-item-key → localStorage key for count (undefined = server-side)
+const LS_COUNT_KEYS: Record<string, string> = {
+  leads:         'dmt_leads_v1',
+  announcements: 'dmt_announcements_v1',
+  inspections:   'dmt_inspections_v1',
+};
+
+type LiveCounts = Record<string, number>;
+
+function useLiveCounts(): LiveCounts {
+  const [counts, setCounts] = useState<LiveCounts>({});
+
+  useEffect(() => {
+    const next: LiveCounts = {};
+    for (const [navKey, lsKey] of Object.entries(LS_COUNT_KEYS)) {
+      try {
+        const raw = localStorage.getItem(lsKey);
+        const arr = raw ? JSON.parse(raw) : [];
+        next[navKey] = Array.isArray(arr) ? arr.length : 0;
+      } catch {
+        next[navKey] = 0;
+      }
+    }
+    setCounts(next);
+
+    fetch('/api/dmt/counts')
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (d && typeof d.fbLeads === 'number') {
+          setCounts((prev) => ({...prev, 'leads-fb': d.fbLeads}));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  return counts;
+}
+
 type NavChild = {
   key: string;
   label: string;
@@ -73,18 +111,17 @@ const SECTIONS: NavSection[] = [
         label: '1 · ლიდები',
         href: '/dmt/leads',
         icon: Users,
-        badge: '47',
         children: [
           {key: 'leads-overview', label: 'Pipeline · მიმოხილვა', href: '/dmt/leads', icon: TrendingUp},
-          {key: 'leads-fb', label: 'Facebook ლიდები', href: '/dmt/leads/facebook', icon: Facebook, badge: '18'},
+          {key: 'leads-fb', label: 'Facebook ლიდები', href: '/dmt/leads/facebook', icon: Facebook},
           {key: 'leads-fb-analytics', label: 'FB ანალიტიკა', href: '/dmt/leads/facebook/analytics', icon: BarChart3},
           {key: 'leads-manual', label: 'ყველა ლიდი · grid', href: '/dmt/leads/manual', icon: Table2},
           {key: 'leads-negotiations', label: 'მოლაპარაკებები', href: '/dmt/leads?stage=negotiating', icon: Handshake}
         ]
       },
-      {key: 'inspections', label: '2 · ინსპექტირება', href: '/dmt/inspections', icon: ClipboardCheck, badge: '6'},
+      {key: 'inspections', label: '2 · ინსპექტირება', href: '/dmt/inspections', icon: ClipboardCheck},
       {key: 'invoices', label: '3 · ინვოისები', href: '/dmt/invoices', icon: FileText},
-      {key: 'announcements', label: 'განცხადებები', href: '/dmt/announcements', icon: Megaphone, badge: '12'},
+      {key: 'announcements', label: 'განცხადებები', href: '/dmt/announcements', icon: Megaphone},
       {
         key: 'inventory',
         label: 'ინვენტარიზაცია',
@@ -167,6 +204,11 @@ export function DmtSidebar({user}: {user?: SidebarUser} = {}) {
   const role = user?.role || 'member';
   const isPrivileged = role === 'owner' || role === 'admin';
   const isOwner = role === 'owner';
+  const liveCounts = useLiveCounts();
+  const badgeFor = (key: string) => {
+    const n = liveCounts[key];
+    return n !== undefined && n > 0 ? String(n) : undefined;
+  };
   const canSee = (req?: 'owner' | 'admin+') => {
     if (!req) return true;
     if (req === 'owner') return isOwner;
@@ -290,9 +332,9 @@ export function DmtSidebar({user}: {user?: SidebarUser} = {}) {
                       >
                         {item.label}
                       </span>
-                      {item.badge && expanded && (
+                      {badgeFor(item.key) && expanded && (
                         <span className="shrink-0 rounded-full bg-sur-2 px-1.5 py-[1px] font-mono text-[9.5px] font-semibold text-text-3 group-hover:bg-white">
-                          {item.badge}
+                          {badgeFor(item.key)}
                         </span>
                       )}
                       {hasChildren && expanded && (
@@ -349,9 +391,9 @@ export function DmtSidebar({user}: {user?: SidebarUser} = {}) {
                                     />
                                   )}
                                   <span className="flex-1 truncate">{c.label}</span>
-                                  {c.badge && (
+                                  {badgeFor(c.key) && (
                                     <span className="rounded-full bg-sur-2 px-1.5 py-[1px] font-mono text-[9px] font-semibold text-text-3">
-                                      {c.badge}
+                                      {badgeFor(c.key)}
                                     </span>
                                   )}
                                 </Link>

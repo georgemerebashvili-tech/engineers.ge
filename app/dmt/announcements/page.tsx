@@ -1,11 +1,8 @@
 'use client';
 
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {
-  Megaphone,
   Plus,
-  Printer,
-  Download,
   ExternalLink,
   MoreVertical,
   Archive,
@@ -23,13 +20,14 @@ import {
   CheckCircle2,
   AlertCircle,
   PauseCircle,
-  XCircle
+  XCircle,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
-import {DmtPageShell} from '@/components/dmt/page-shell';
 import {ResizableTable} from '@/components/dmt/resizable-table';
 
 type RecordStatus = 'new' | 'in-process' | 'finished' | 'tem-stopped' | 'canceled';
-type TabKey = 'records' | 'analytics' | 'autotasks' | 'threats' | 'archive';
+type TabKey = 'records' | 'analytics' | 'autotasks' | 'threats';
 
 type Confirmation = {
   id: string;
@@ -92,8 +90,7 @@ const TABS: {key: TabKey; label: string; icon: typeof ClipboardList}[] = [
   {key: 'records',   label: 'მომსახურების ჩანაწერები', icon: ClipboardList},
   {key: 'analytics', label: 'სერვისის ჩანაწერების ანალიტიკა', icon: Activity},
   {key: 'autotasks', label: 'ავტოტასკები', icon: Clock},
-  {key: 'threats',   label: 'საფრთხეები და საფრთხოებები', icon: ShieldAlert},
-  {key: 'archive',   label: 'მომსახურების ჩანაწერების არქივი', icon: Archive}
+  {key: 'threats',   label: 'საფრთხეები და საფრთხოებები', icon: ShieldAlert}
 ];
 
 const STORE_KEY = 'dmt_announcements_v1';
@@ -287,9 +284,8 @@ export default function AnnouncementsPage() {
 
   const visible = useMemo(() => {
     const t = q.trim().toLowerCase();
-    const inArchive = tab === 'archive';
     return rows.filter((r) => {
-      if (inArchive !== r.archived) return false;
+      if (r.archived) return false;
       if (t) {
         const hit = [String(r.code), r.title, r.description, r.attendantName, r.creatorName, r.updaterName, r.status]
           .some((v) => String(v).toLowerCase().includes(t));
@@ -304,7 +300,7 @@ export default function AnnouncementsPage() {
       }
       return true;
     });
-  }, [rows, q, tab, filterCol, filterOp, filterVal]);
+  }, [rows, q, filterCol, filterOp, filterVal]);
 
   const counts = useMemo(() => {
     const acc: Record<RecordStatus, number> = {
@@ -356,66 +352,39 @@ export default function AnnouncementsPage() {
     if (active?.id === id) setActive(null);
   };
 
-  const exportCsv = () => {
-    const header = ['code', 'title', 'status', 'attendant', 'creator', 'updater', 'created', 'updated'].join(',');
-    const lines = visible.map((r) =>
-      [r.code, r.title, r.status, r.attendantName, r.creatorName, r.updaterName, r.createdAt, r.updatedAt]
-        .map((v) => `"${String(v).replace(/"/g, '""')}"`)
-        .join(',')
-    );
-    const csv = [header, ...lines].join('\n');
-    const url = URL.createObjectURL(new Blob([csv], {type: 'text/csv;charset=utf-8;'}));
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'announcements.csv';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
-    <DmtPageShell
-      kicker="OPERATIONS · SERVICE RECORDS"
-      title="განცხადებები"
-      subtitle="მომსახურების ჩანაწერები, ავტოტასკები, საფრთხეები და არქივი — ერთიანი pipeline."
-      searchPlaceholder="ძიება კოდი / სათაური / აღწერა / პასუხისმგებელი…"
-      onQueryChange={setQ}
-      actions={
-        <>
-          <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 rounded-md border border-bdr bg-sur-2 px-3 py-1.5 text-[12px] font-semibold text-text-2 hover:border-blue hover:text-blue">
-            <Printer size={14} /> ბეჭდვა
-          </button>
-          <button onClick={exportCsv} className="inline-flex items-center gap-1.5 rounded-md border border-bdr bg-sur-2 px-3 py-1.5 text-[12px] font-semibold text-text-2 hover:border-blue hover:text-blue">
-            <Download size={14} /> CSV
-          </button>
-          <button onClick={addNew} className="inline-flex items-center gap-1.5 rounded-md border border-blue bg-blue px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-navy-2">
+    <div className="flex h-screen flex-col overflow-hidden">
+      <header className="flex-shrink-0 border-b border-bdr bg-sur px-6 md:px-8">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-0">
+            {TABS.map((t) => {
+              const Icon = t.icon;
+              const isActive = tab === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-3 text-[12.5px] font-semibold transition-colors ${
+                    isActive
+                      ? 'border-blue text-blue'
+                      : 'border-transparent text-text-2 hover:text-navy'
+                  }`}
+                >
+                  <Icon size={13} strokeWidth={1.8} />
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+          <button
+            onClick={addNew}
+            className="inline-flex items-center gap-1.5 rounded-md border border-blue bg-blue px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-navy-2"
+          >
             <Plus size={14} /> ახალი ჩანაწერი
           </button>
-        </>
-      }
-    >
-      <div className="px-6 py-5 md:px-8">
-        {/* Tab row */}
-        <div className="mb-4 flex flex-wrap items-center gap-0 border-b border-bdr">
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            const active = tab === t.key;
-            return (
-              <button
-                key={t.key}
-                onClick={() => setTab(t.key)}
-                className={`-mb-px inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-[12.5px] font-semibold transition-colors ${
-                  active
-                    ? 'border-blue text-blue'
-                    : 'border-transparent text-text-2 hover:text-navy'
-                }`}
-              >
-                <Icon size={13} strokeWidth={1.8} />
-                {t.label}
-              </button>
-            );
-          })}
         </div>
-
+      </header>
+      <div className="flex-1 overflow-auto px-6 py-5 md:px-8">
         {tab === 'records' && (
           <RecordsView
             rows={visible}
@@ -427,6 +396,8 @@ export default function AnnouncementsPage() {
             archiveRow={archiveRow}
             rowMenu={rowMenu}
             setRowMenu={setRowMenu}
+            q={q}
+            setQ={setQ}
             filterCat={filterCat}
             filterSub={filterSub}
             filterCol={filterCol}
@@ -439,36 +410,11 @@ export default function AnnouncementsPage() {
             setFilterVal={setFilterVal}
           />
         )}
-
         {tab === 'analytics' && <AnalyticsView rows={rows} />}
         {tab === 'autotasks' && <AutotasksView />}
-        {tab === 'threats' && <ThreatsView />}
-        {tab === 'archive' && (
-          <RecordsView
-            rows={visible}
-            counts={counts}
-            active={active}
-            setActive={setActive}
-            update={update}
-            removeRow={removeRow}
-            archiveRow={(id) => update(id, {archived: false})}
-            archiveLabel="ამოღება არქივიდან"
-            rowMenu={rowMenu}
-            setRowMenu={setRowMenu}
-            filterCat={filterCat}
-            filterSub={filterSub}
-            filterCol={filterCol}
-            filterOp={filterOp}
-            filterVal={filterVal}
-            setFilterCat={setFilterCat}
-            setFilterSub={setFilterSub}
-            setFilterCol={setFilterCol}
-            setFilterOp={setFilterOp}
-            setFilterVal={setFilterVal}
-          />
-        )}
+        {tab === 'threats' && <ThreatsView rows={rows} />}
       </div>
-    </DmtPageShell>
+    </div>
   );
 }
 
@@ -483,29 +429,30 @@ function RecordsView(props: {
   archiveLabel?: string;
   rowMenu: string | null;
   setRowMenu: (id: string | null) => void;
+  q: string;
+  setQ: (v: string) => void;
   filterCat: string; filterSub: string; filterCol: string; filterOp: string; filterVal: string;
   setFilterCat: (v: string) => void; setFilterSub: (v: string) => void;
   setFilterCol: (v: string) => void; setFilterOp: (v: string) => void; setFilterVal: (v: string) => void;
 }) {
   const {rows, counts, active, setActive, update, removeRow, archiveRow, archiveLabel = 'Archive', rowMenu, setRowMenu} = props;
+  const [panelExpanded, setPanelExpanded] = useState(false);
+  useEffect(() => {
+    if (!active) setPanelExpanded(false);
+  }, [active]);
   return (
     <>
-      {/* Legend */}
-      <div className="mb-3 flex flex-wrap items-center gap-3 text-[11.5px]">
-        {LEGEND.map((l) => (
-          <div key={l.status} className="inline-flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-sm" style={{background: l.dot}} />
-            <span className="text-text-2">{l.label}</span>
-            <span className="font-mono text-[10px] text-text-3">({counts[l.status] ?? 0})</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-[10px] border border-bdr bg-sur p-3">
+      {/* Toolbar: search + legend + filters */}
+      <div className="mb-3 flex flex-wrap items-center gap-3 rounded-[10px] border border-bdr bg-sur p-3">
+        <input
+          value={props.q}
+          onChange={(e) => props.setQ(e.target.value)}
+          placeholder="ძიება კოდი / სათაური / აღწერა / პასუხისმგებელი…"
+          className="h-8 min-w-[240px] flex-1 rounded-md border border-bdr bg-sur-2 px-3 text-[12px] focus:border-blue focus:outline-none"
+        />
         <Select value={props.filterCat} onChange={props.setFilterCat} options={['ყველა', 'MEP', 'Civil', 'Facade']} />
         <Select value={props.filterSub} onChange={props.setFilterSub} options={['ყველა', 'ხელშეკრულება', 'გეგმ. შემოვლა', 'ავარია']} />
-        <span className="ml-2 font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-text-3">Filter</span>
+        <span className="font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-text-3">Filter</span>
         <Select value={props.filterCol} onChange={props.setFilterCol} options={['Column', 'title', 'description', 'attendantName', 'creatorName', 'status']} />
         <Select value={props.filterOp} onChange={props.setFilterOp} options={['Contains', 'Equals', 'StartsWith']} label="Operator" />
         <input
@@ -514,11 +461,20 @@ function RecordsView(props: {
           placeholder="Value"
           className="h-8 rounded-md border border-bdr bg-sur-2 px-2 text-[12px] focus:border-blue focus:outline-none"
         />
+        <div className="ml-auto flex flex-wrap items-center gap-3 text-[11.5px]">
+          {LEGEND.map((l) => (
+            <div key={l.status} className="inline-flex items-center gap-1.5">
+              <span className="h-3 w-3 rounded-sm" style={{background: l.dot}} />
+              <span className="text-text-2">{l.label}</span>
+              <span className="font-mono text-[10px] text-text-3">({counts[l.status] ?? 0})</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Table + detail */}
-      <div className={`grid gap-4 ${active ? 'md:grid-cols-[1fr_420px]' : 'md:grid-cols-1'}`}>
-        <div className="overflow-hidden rounded-[10px] border border-bdr bg-sur">
+      <div className={`grid gap-4 ${active ? (panelExpanded ? 'md:grid-cols-1' : 'md:grid-cols-[1fr_420px]') : 'md:grid-cols-1'}`}>
+        <div className={`overflow-hidden rounded-[10px] border border-bdr bg-sur ${active && panelExpanded ? 'hidden' : ''}`}>
           <ResizableTable storageKey="dmt-announcements" className="overflow-x-auto">
             <table className="w-full text-[12.5px]">
               <thead>
@@ -638,9 +594,11 @@ function RecordsView(props: {
         </div>
 
         {active && (
-          <aside className="sticky top-0 self-start max-h-[calc(100vh-140px)] overflow-y-auto rounded-[10px] border border-bdr bg-sur p-4">
+          <aside className={`sticky top-0 self-start overflow-y-auto rounded-[10px] border border-bdr bg-sur p-4 transition-[max-height,width] duration-200 ${panelExpanded ? 'max-h-[calc(100vh-120px)]' : 'max-h-[calc(100vh-140px)]'}`}>
             <DetailPanel
               record={active}
+              expanded={panelExpanded}
+              onToggleExpand={() => setPanelExpanded((v) => !v)}
               onUpdate={(patch) => update(active.id, patch)}
               onClose={() => setActive(null)}
             />
@@ -653,10 +611,14 @@ function RecordsView(props: {
 
 function DetailPanel({
   record,
+  expanded,
+  onToggleExpand,
   onUpdate,
   onClose
 }: {
   record: ServiceRecord;
+  expanded: boolean;
+  onToggleExpand: () => void;
   onUpdate: (patch: Partial<ServiceRecord>) => void;
   onClose: () => void;
 }) {
@@ -701,16 +663,25 @@ function DetailPanel({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
           <div className="font-mono text-[9.5px] font-bold uppercase tracking-[0.08em] text-text-3">
             ID {record.code} · {shortDate(record.createdAt)}
           </div>
           <div className="mt-0.5 text-[14px] font-bold text-navy truncate">{record.title}</div>
         </div>
-        <button onClick={onClose} className="rounded p-1 text-text-3 hover:bg-sur-2 hover:text-navy" title="დახურვა">
-          <XCircle size={16} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onToggleExpand}
+            title={expanded ? 'შემცირება' : 'გადიდება'}
+            className="inline-flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-bdr bg-sur-2/60 text-text-3 opacity-50 transition-all duration-150 hover:border-blue hover:bg-sur-2 hover:text-blue hover:opacity-100"
+          >
+            {expanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+          </button>
+          <button onClick={onClose} className="rounded p-1 text-text-3 hover:bg-sur-2 hover:text-navy" title="დახურვა">
+            <XCircle size={16} />
+          </button>
+        </div>
       </div>
 
       {/* ჩანაწერი */}
@@ -1021,70 +992,237 @@ function AnalyticsView({rows}: {rows: ServiceRecord[]}) {
     for (const r of rows) if (!r.archived) acc[r.status]++;
     return acc;
   }, [rows]);
-  const total = Object.values(byStatus).reduce((a, b) => a + b, 0);
+  const active = Object.values(byStatus).reduce((a, b) => a + b, 0);
+  const archivedCount = rows.filter((r) => r.archived).length;
+  const statuses = Object.keys(STATUS_META) as RecordStatus[];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <div className="rounded-[10px] border border-bdr bg-sur p-4">
-        <div className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-text-3">სტატუსის მიხედვით</div>
-        <div className="space-y-2">
-          {(Object.keys(STATUS_META) as RecordStatus[]).map((s) => {
-            const n = byStatus[s];
-            const pct = total > 0 ? Math.round((n / total) * 100) : 0;
+    <div className="overflow-hidden rounded-[10px] border border-bdr bg-sur">
+      <table className="w-full text-[12.5px]">
+        <thead>
+          <tr className="border-b border-bdr bg-sur-2 text-left font-mono text-[10px] uppercase tracking-[0.06em] text-text-3">
+            <th className="w-1.5 px-0 py-2.5"></th>
+            <th className="px-3 py-2.5">სტატუსი</th>
+            <th className="px-3 py-2.5 text-right">აქტიური</th>
+            <th className="px-3 py-2.5 text-right">პროცენტი</th>
+            <th className="px-3 py-2.5 w-[40%]">ვიზუალი</th>
+          </tr>
+        </thead>
+        <tbody>
+          {statuses.map((s) => {
             const meta = STATUS_META[s];
+            const StIcon = meta.icon;
+            const n = byStatus[s];
+            const pct = active > 0 ? Math.round((n / active) * 100) : 0;
             return (
-              <div key={s} className="text-[11.5px]">
-                <div className="mb-1 flex items-center justify-between">
-                  <span className="font-semibold text-text-2">{meta.label}</span>
-                  <span className="font-mono text-text-3">{n} · {pct}%</span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-sur-2">
-                  <div className="h-full rounded-full" style={{width: pct + '%', background: meta.color}} />
-                </div>
-              </div>
+              <tr key={s} className="border-b border-bdr last:border-b-0 hover:bg-sur-2">
+                <td className="p-0" style={{background: meta.color, width: 6}}></td>
+                <td className="px-3 py-2.5">
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold"
+                    style={{color: meta.color, background: meta.bg, borderColor: meta.border}}
+                  >
+                    <StIcon size={10} strokeWidth={2} />
+                    {meta.label}
+                  </span>
+                </td>
+                <td className="px-3 py-2.5 text-right font-mono text-[12px] font-semibold text-navy">{n}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-[11px] text-text-2">{pct}%</td>
+                <td className="px-3 py-2.5">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-sur-2">
+                    <div className="h-full rounded-full" style={{width: pct + '%', background: meta.color}} />
+                  </div>
+                </td>
+              </tr>
             );
           })}
-        </div>
-      </div>
-
-      <div className="rounded-[10px] border border-bdr bg-sur p-4">
-        <div className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-text-3">სულ აქტიური</div>
-        <div className="font-mono text-[36px] font-bold text-navy">{total}</div>
-        <div className="mt-2 text-[12px] text-text-2">
-          არქივში <span className="font-semibold text-navy">{rows.filter((r) => r.archived).length}</span> · მთლიანი ისტორია: {rows.length}
-        </div>
-        <div className="mt-4 rounded-md border border-dashed border-bdr p-3 text-[11.5px] text-text-3">
-          დამატებითი ანალიტიკა (trend, heatmap, SLA) — მალე.
-        </div>
-      </div>
+          <tr className="border-t border-bdr bg-sur-2 font-semibold">
+            <td className="p-0"></td>
+            <td className="px-3 py-2.5 text-text">სულ აქტიური</td>
+            <td className="px-3 py-2.5 text-right font-mono text-navy">{active}</td>
+            <td className="px-3 py-2.5 text-right font-mono text-text-2">100%</td>
+            <td className="px-3 py-2.5 text-[11.5px] text-text-3">
+              არქივში {archivedCount} · ისტორია {rows.length}
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }
+
+type Autotask = {
+  id: string;
+  name: string;
+  category: string;
+  schedule: string;
+  lastRun: string;
+  nextRun: string;
+  owner: string;
+  status: 'active' | 'paused' | 'draft';
+};
+
+const AUTOTASKS: Autotask[] = [
+  {id: 'at-1', name: 'გეგმიური შემოვლა — MEP',     category: 'MEP',    schedule: 'კვარტალურად', lastRun: '2026-01-15', nextRun: '2026-04-15', owner: 'ვაშო კილაძე',    status: 'active'},
+  {id: 'at-2', name: 'სერვისი — HVAC ფილტრი',       category: 'HVAC',   schedule: '6 თვე',       lastRun: '2025-10-20', nextRun: '2026-04-20', owner: 'თემო მერება...', status: 'active'},
+  {id: 'at-3', name: 'ლიმიტერების გადაანგ.',        category: 'Civil',  schedule: 'წელიწადში',   lastRun: '2025-06-01', nextRun: '2026-06-01', owner: 'davit bailashvili', status: 'active'},
+  {id: 'at-4', name: 'ფასადის ინსპექტირება',        category: 'Facade', schedule: '2 წელი',      lastRun: '2024-05-10', nextRun: '2026-05-10', owner: 'ვაშო კილაძე',    status: 'paused'},
+  {id: 'at-5', name: 'ჩილერის პროფილაქტიკა',        category: 'HVAC',   schedule: '3 თვე',       lastRun: '2026-01-29', nextRun: '2026-04-29', owner: 'თემო მერება...', status: 'active'},
+  {id: 'at-6', name: 'საცეცხლე აღჭურვილობა',        category: 'Safety', schedule: 'წელიწადში',   lastRun: '',           nextRun: '',           owner: '—',              status: 'draft'}
+];
+
+const AT_STATUS: Record<Autotask['status'], {label: string; color: string; bg: string; border: string}> = {
+  active: {label: 'Active',  color: '#15803d', bg: '#dcfce7', border: '#86efac'},
+  paused: {label: 'Paused',  color: '#a16207', bg: '#fef9c3', border: '#fde68a'},
+  draft:  {label: 'Draft',   color: '#475569', bg: '#e2e8f0', border: '#cbd5e1'}
+};
 
 function AutotasksView() {
   return (
-    <div className="rounded-[10px] border border-bdr bg-sur p-6">
-      <div className="mb-2 flex items-center gap-2 text-navy">
-        <Clock size={18} />
-        <div className="font-semibold text-[14px]">ავტოტასკები</div>
-      </div>
-      <p className="text-[12px] text-text-2">
-        რეკურენტული ჩანაწერების შაბლონი (გეგმ. შემოვლა ყოველ კვარტალში, სერვისი ყოველ 6 თვეში და ა.შ.). კონფიგურაცია — მალე.
-      </p>
+    <div className="overflow-hidden rounded-[10px] border border-bdr bg-sur">
+      <table className="w-full text-[12.5px]">
+        <thead>
+          <tr className="border-b border-bdr bg-sur-2 text-left font-mono text-[10px] uppercase tracking-[0.06em] text-text-3">
+            <th className="px-3 py-2.5">სახელი</th>
+            <th className="px-3 py-2.5">კატეგორია</th>
+            <th className="px-3 py-2.5">ინტერვალი</th>
+            <th className="px-3 py-2.5">ბოლო გაშვება</th>
+            <th className="px-3 py-2.5">შემდეგი</th>
+            <th className="px-3 py-2.5">მფლობელი</th>
+            <th className="px-3 py-2.5">სტატუსი</th>
+          </tr>
+        </thead>
+        <tbody>
+          {AUTOTASKS.map((t) => {
+            const st = AT_STATUS[t.status];
+            return (
+              <tr key={t.id} className="border-b border-bdr last:border-b-0 hover:bg-sur-2">
+                <td className="px-3 py-2.5 text-text">{t.name}</td>
+                <td className="px-3 py-2.5 text-text-2">{t.category}</td>
+                <td className="px-3 py-2.5 text-text-2">{t.schedule}</td>
+                <td className="px-3 py-2.5 font-mono text-[10.5px] text-text-2">{t.lastRun || '—'}</td>
+                <td className="px-3 py-2.5 font-mono text-[10.5px] text-text-2">{t.nextRun || '—'}</td>
+                <td className="px-3 py-2.5 text-text-2">{t.owner}</td>
+                <td className="px-3 py-2.5">
+                  <span
+                    className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10.5px] font-semibold"
+                    style={{color: st.color, background: st.bg, borderColor: st.border}}
+                  >
+                    {st.label}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-function ThreatsView() {
+function ThreatsView({rows}: {rows: ServiceRecord[]}) {
+  const threats = useMemo(() => {
+    const now = Date.now();
+    const DAY = 24 * 60 * 60 * 1000;
+    const parseDue = (s: string): number | null => {
+      if (!s) return null;
+      const m = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(s);
+      if (m) return new Date(`${m[3]}-${m[2]}-${m[1]}`).getTime();
+      const t = new Date(s).getTime();
+      return Number.isNaN(t) ? null : t;
+    };
+    return rows
+      .filter((r) => !r.archived)
+      .map((r) => {
+        const created = new Date(r.createdAt).getTime();
+        const openDays = Number.isNaN(created) ? 0 : Math.floor((now - created) / DAY);
+        const due = parseDue(r.dueDate);
+        const overdueDays = due !== null ? Math.floor((now - due) / DAY) : null;
+        const isOpen = r.status === 'new' || r.status === 'in-process' || r.status === 'tem-stopped';
+        const risk: 'high' | 'med' | 'low' | null =
+          isOpen && (overdueDays !== null && overdueDays > 0) ? 'high' :
+          isOpen && openDays >= 30 ? 'high' :
+          isOpen && openDays >= 14 ? 'med' :
+          isOpen ? 'low' : null;
+        return {r, openDays, overdueDays, risk};
+      })
+      .filter((x) => x.risk !== null)
+      .sort((a, b) => {
+        const rank = {high: 0, med: 1, low: 2} as const;
+        return rank[a.risk!] - rank[b.risk!] || b.openDays - a.openDays;
+      });
+  }, [rows]);
+
+  const RISK: Record<'high' | 'med' | 'low', {label: string; color: string; bg: string; border: string}> = {
+    high: {label: 'High',   color: '#b91c1c', bg: '#fee2e2', border: '#f0b8b4'},
+    med:  {label: 'Medium', color: '#c2410c', bg: '#ffedd5', border: '#fed7aa'},
+    low:  {label: 'Low',    color: '#a16207', bg: '#fef9c3', border: '#fde68a'}
+  };
+
   return (
-    <div className="rounded-[10px] border border-bdr bg-sur p-6">
-      <div className="mb-2 flex items-center gap-2 text-red">
-        <ShieldAlert size={18} />
-        <div className="font-semibold text-[14px]">საფრთხეები და საფრთხოებები</div>
-      </div>
-      <p className="text-[12px] text-text-2">
-        მოიხსნება ჩანაწერებიდან, რომელთა სტატუსი ღიაა 30+ დღე ან დროული ვადა ამოწურულია. მალე.
-      </p>
+    <div className="overflow-hidden rounded-[10px] border border-bdr bg-sur">
+      <table className="w-full text-[12.5px]">
+        <thead>
+          <tr className="border-b border-bdr bg-sur-2 text-left font-mono text-[10px] uppercase tracking-[0.06em] text-text-3">
+            <th className="w-1.5 px-0 py-2.5"></th>
+            <th className="px-3 py-2.5">ID</th>
+            <th className="px-3 py-2.5">სათაური</th>
+            <th className="px-3 py-2.5">სტატუსი</th>
+            <th className="px-3 py-2.5 text-right">ღია დღე</th>
+            <th className="px-3 py-2.5">დროული ვადა</th>
+            <th className="px-3 py-2.5 text-right">ვადაგადაც.</th>
+            <th className="px-3 py-2.5">რისკი</th>
+            <th className="px-3 py-2.5">პასუხისმგებელი</th>
+          </tr>
+        </thead>
+        <tbody>
+          {threats.length === 0 && (
+            <tr>
+              <td colSpan={9} className="px-4 py-10 text-center text-text-3">
+                საფრთხე ამჟამად არ ფიქსირდება
+              </td>
+            </tr>
+          )}
+          {threats.map(({r, openDays, overdueDays, risk}) => {
+            const st = STATUS_META[r.status];
+            const StIcon = st.icon;
+            const rk = RISK[risk!];
+            return (
+              <tr key={r.id} className="border-b border-bdr last:border-b-0 hover:bg-sur-2">
+                <td className="p-0" style={{background: rk.color, width: 6}}></td>
+                <td className="px-3 py-2.5 font-mono text-[11px] font-semibold text-navy">{r.code}</td>
+                <td className="px-3 py-2.5 text-text max-w-[260px]">
+                  <div className="truncate" title={r.title}>{r.title}</div>
+                </td>
+                <td className="px-3 py-2.5">
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold"
+                    style={{color: st.color, background: st.bg, borderColor: st.border}}
+                  >
+                    <StIcon size={10} strokeWidth={2} />
+                    {st.label}
+                  </span>
+                </td>
+                <td className="px-3 py-2.5 text-right font-mono text-[11px] text-text-2">{openDays}</td>
+                <td className="px-3 py-2.5 font-mono text-[10.5px] text-text-2">{r.dueDate || '—'}</td>
+                <td className="px-3 py-2.5 text-right font-mono text-[11px]" style={{color: overdueDays !== null && overdueDays > 0 ? '#b91c1c' : '#94a3b8'}}>
+                  {overdueDays === null ? '—' : overdueDays > 0 ? `+${overdueDays}` : overdueDays}
+                </td>
+                <td className="px-3 py-2.5">
+                  <span
+                    className="inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10.5px] font-semibold"
+                    style={{color: rk.color, background: rk.bg, borderColor: rk.border}}
+                  >
+                    <ShieldAlert size={10} strokeWidth={2} />
+                    {rk.label}
+                  </span>
+                </td>
+                <td className="px-3 py-2.5 text-text-2">{r.attendantName || '—'}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

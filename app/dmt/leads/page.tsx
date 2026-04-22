@@ -13,7 +13,8 @@ import {
   Search,
   GripVertical,
   Eraser,
-  UserRound
+  UserRound,
+  ArrowUpRight
 } from 'lucide-react';
 import {
   DEFAULT_COLUMN_ORDER,
@@ -62,6 +63,14 @@ export default function LeadsPage() {
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
   const [filterPopover, setFilterPopover] = useState<keyof Lead | null>(null);
   const [resizingKey, setResizingKey] = useState<string | null>(null);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+
+  const scrollToLead = (id: string) => {
+    const el = document.querySelector(`[data-lead-row="${id}"]`);
+    if (el) el.scrollIntoView({behavior: 'smooth', block: 'center'});
+    setHighlightedId(id);
+    setTimeout(() => setHighlightedId(null), 1500);
+  };
 
   useEffect(() => {
     setRows(loadLeads());
@@ -398,7 +407,8 @@ export default function LeadsPage() {
                 filtered.map((r) => (
                   <div
                     key={r.id}
-                    className="group grid border-b border-bdr/70 last:border-b-0 text-[12px] hover:bg-sur-2"
+                    data-lead-row={r.id}
+                    className={`group grid border-b border-bdr/70 last:border-b-0 text-[12px] transition-colors hover:bg-sur-2 ${highlightedId === r.id ? 'bg-blue-lt/70' : ''}`}
                     style={{gridTemplateColumns: gridTemplate}}
                   >
                     {orderedCols.map((c) =>
@@ -440,6 +450,7 @@ export default function LeadsPage() {
           <HistoryPanel
             entries={audit}
             onClose={() => setShowHistory(false)}
+            onScrollToLead={scrollToLead}
           />
         )}
       </div>
@@ -525,27 +536,21 @@ function renderCell(
 
   if (c.kind === 'number') {
     return (
-      <input
+      <EditableNumberCell
         key={c.key as string}
-        type="number"
-        value={typeof v === 'number' ? v : ''}
-        onChange={(e) =>
-          onChange(c.key, e.target.value === '' ? 0 : Number(e.target.value))
-        }
-        className={`w-full border-0 bg-transparent px-3 py-2 font-mono text-[11.5px] text-navy ${align} focus:bg-sur focus:outline-none focus:ring-1 focus:ring-blue`}
-        placeholder="0"
+        col={c}
+        value={typeof v === 'number' ? v : 0}
+        onChange={onChange}
       />
     );
   }
 
   return (
-    <input
+    <EditableTextCell
       key={c.key as string}
-      type={c.kind === 'email' ? 'email' : c.kind === 'phone' ? 'tel' : 'text'}
+      col={c}
       value={String(v ?? '')}
-      onChange={(e) => onChange(c.key, e.target.value)}
-      className={`w-full border-0 bg-transparent px-3 py-2 text-[12px] text-text ${align} focus:bg-sur focus:outline-none focus:ring-1 focus:ring-blue`}
-      placeholder="—"
+      onChange={onChange}
     />
   );
 }
@@ -724,10 +729,12 @@ function FilterPopover({
 // ─── History (audit) panel ──────────────────────────────────────────────────
 function HistoryPanel({
   entries,
-  onClose
+  onClose,
+  onScrollToLead
 }: {
   entries: LeadAuditEntry[];
   onClose: () => void;
+  onScrollToLead: (id: string) => void;
 }) {
   const [filterCol, setFilterCol] = useState('');
   const [filterAct, setFilterAct] = useState('');
@@ -785,14 +792,14 @@ function HistoryPanel({
             ლოგი ცარიელია
           </div>
         ) : (
-          filtered.map((e) => <AuditRow key={e.id} entry={e} />)
+          filtered.map((e) => <AuditRow key={e.id} entry={e} onScrollToLead={onScrollToLead} />)
         )}
       </div>
     </aside>
   );
 }
 
-function AuditRow({entry}: {entry: LeadAuditEntry}) {
+function AuditRow({entry, onScrollToLead}: {entry: LeadAuditEntry; onScrollToLead: (id: string) => void}) {
   const actionStyle =
     entry.action === 'create'
       ? {bg: 'var(--grn-lt)', color: 'var(--grn)', border: 'var(--grn-bd)'}
@@ -818,7 +825,14 @@ function AuditRow({entry}: {entry: LeadAuditEntry}) {
         <User size={10} className="text-text-3" />
         <span className="font-semibold">{entry.by}</span>
         <span className="text-text-3">·</span>
-        <span className="font-mono text-[10.5px] text-navy">{entry.leadId}</span>
+        <button
+          onClick={() => onScrollToLead(entry.leadId)}
+          className="inline-flex items-center gap-0.5 rounded px-1 py-0.5 font-mono text-[10.5px] text-navy hover:bg-blue-lt hover:text-blue"
+          title="ლიდზე გადასვლა"
+        >
+          {entry.leadId}
+          <ArrowUpRight size={10} className="shrink-0" />
+        </button>
         {entry.leadLabel !== entry.leadId && (
           <span className="truncate text-text-3">· {entry.leadLabel}</span>
         )}
@@ -862,6 +876,81 @@ function StatCard({
         {value}
       </div>
     </div>
+  );
+}
+
+// ─── Blur-commit cell components ─────────────────────────────────────────────
+// Audit fires only when user leaves the field (blur) or presses Enter,
+// not on every keystroke.
+
+function EditableTextCell({col, value, onChange}: {
+  col: LeadColumn;
+  value: string;
+  onChange: (key: keyof Lead, value: unknown) => void;
+}) {
+  const [local, setLocal] = useState(value);
+  useEffect(() => { setLocal(value); }, [value]);
+
+  const commit = (cur: string) => {
+    if (cur !== value) onChange(col.key, cur);
+  };
+
+  return (
+    <input
+      type={col.kind === 'email' ? 'email' : col.kind === 'phone' ? 'tel' : 'text'}
+      value={local}
+      onChange={(e) => setLocal(e.target.value)}
+      onBlur={(e) => commit(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          const v = (e.target as HTMLInputElement).value;
+          commit(v);
+          (e.target as HTMLInputElement).blur();
+        }
+        if (e.key === 'Escape') {
+          setLocal(value);
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      className="w-full border-0 bg-transparent px-3 py-2 text-[12px] text-text focus:bg-sur focus:outline-none focus:ring-1 focus:ring-blue"
+      placeholder="—"
+    />
+  );
+}
+
+function EditableNumberCell({col, value, onChange}: {
+  col: LeadColumn;
+  value: number;
+  onChange: (key: keyof Lead, value: unknown) => void;
+}) {
+  const [local, setLocal] = useState(value === 0 ? '' : String(value));
+  useEffect(() => { setLocal(value === 0 ? '' : String(value)); }, [value]);
+
+  const commit = (raw: string) => {
+    const n = raw === '' ? 0 : Number(raw);
+    if (!Number.isNaN(n) && n !== value) onChange(col.key, n);
+  };
+
+  return (
+    <input
+      type="number"
+      value={local}
+      onChange={(e) => setLocal(e.target.value)}
+      onBlur={(e) => commit(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          const v = (e.target as HTMLInputElement).value;
+          commit(v);
+          (e.target as HTMLInputElement).blur();
+        }
+        if (e.key === 'Escape') {
+          setLocal(value === 0 ? '' : String(value));
+          (e.target as HTMLInputElement).blur();
+        }
+      }}
+      className="w-full border-0 bg-transparent px-3 py-2 font-mono text-[11.5px] text-navy text-right focus:bg-sur focus:outline-none focus:ring-1 focus:ring-blue"
+      placeholder="0"
+    />
   );
 }
 

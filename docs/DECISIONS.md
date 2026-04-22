@@ -4,6 +4,17 @@
 
 ---
 
+## 2026-04-22 — DMT per-user UI preferences live in `dmt_users.settings`
+`/dmt/leads/manual`-ისთვის tab color აღარ ინახება browser-only state-ში. თითო
+DMT მომხმარებელს აქვს persisted `settings` JSONB `dmt_users`-ზე, სადაც ახლა
+ინახება `manualLeadsTabColor`.
+
+მიზეზი:
+- ფერი უნდა დარჩეს მომხმარებლის ანგარიშზე მიბმული და არა კონკრეტულ ბრაუზერზე.
+- იგივე preference ყველა collaborator-ს უნდა ჩანდეს, როცა `/dmt/leads/manual` იხსნება.
+- MVP-სთვის ცალკე profile/settings table ზედმეტი იყო; მცირე UI preferences ერთ
+JSONB ველში უფრო იოლია და არ არღვევს არსებულ auth მოდელს.
+
 ## 2026-04-18 — Ventilation simulations suite (3 phases)
 იხ. [`PLAN-ventilation-suite.md`](./PLAN-ventilation-suite.md).
 - **Phase 1** — 4 standalone სიმულატორი (stair, elevator, parking, corridor) + shared `_physics-engine.js` + rules page.

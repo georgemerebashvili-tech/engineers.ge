@@ -618,7 +618,7 @@ table.vt input:focus,table.vt select:focus{border-color:var(--blue);box-shadow:0
 table.vt tbody td.fn-cell select{flex:1;min-width:0}
 
 /* column widths defined on th */
-table.vt th.c26{width:26px} table.vt th.c36{width:36px} table.vt th.c40{width:40px} table.vt th.c44{width:44px} table.vt th.c48{width:48px}
+table.vt th.c26{width:26px} table.vt th.c32{width:32px;min-width:28px} table.vt th.c36{width:36px} table.vt th.c40{width:40px} table.vt th.c44{width:44px} table.vt th.c48{width:48px}
 table.vt th.c52{width:52px} table.vt th.c56{width:56px} table.vt th.c60{width:60px}
 table.vt th.c70{width:70px} table.vt th.c72{width:72px} table.vt th.c76{width:76px} table.vt th.c80{width:80px}
 table.vt th.c90{width:90px} table.vt th.c110{width:110px} table.vt th.c160{width:160px}
@@ -1977,6 +1977,8 @@ function switchTab(n){
   if(n!==0&&bldP&&!document.getElementById('bld-nav-pin')?.classList.contains('active')) bldP.classList.remove('open');
   if(n===0) { try{ bldRender(); }catch(e){} }
   if(n===1) { try{ recalcSeptic(); }catch(e){} }
+  if(n===2) { try{ buildMaterialsBOQ(); }catch(e){} }
+  if(n===3) { try{ buildCatalog(); }catch(e){} }
 }
 
 // ══ SEPTIC CALC (СП 30.13330 §8) ══
@@ -1986,8 +1988,7 @@ function recalcSeptic(){
   const t=parseFloat(document.getElementById('sp_t')?.value)||1;
   const ch=parseInt(document.getElementById('sp_ch')?.value)||2;
   const Qd=(U*q)/1000; // m³/day
-  const V=Qd*t*(ch>=3?1.35:ch===2?1.15:1.0); // volume with treatment factor
-  // approximate L:W:H ≈ 2:1:1.2
+  const V=Qd*t*(ch>=3?1.35:ch===2?1.15:1.0);
   const W=Math.pow(V/(2*1.2),1/2);
   const L=2*W, H=1.2;
   const set=(id,v)=>{const el=document.getElementById(id); if(el) el.textContent=v;};
@@ -1996,16 +1997,198 @@ function recalcSeptic(){
   set('sp_L',L.toFixed(2));
   set('sp_W',W.toFixed(2));
   set('sp_H',H.toFixed(2));
+  // ── pull Tab 0 fixture totals ──
+  updateSewerSummary();
 }
 
-// ══ CATALOG FILTER (stub) ══
+function updateSewerSummary(){
+  const el=document.getElementById('sewer-summary');
+  if(!el) return;
+  if(!state.floors||!state.floors.length){
+    el.innerHTML='ჯერ სათავსოები დამატებული არ არის Tab 0-ში · დაამატეთ სართული/ოთახი + სანტექნიკური ხელსაწყოები';
+    return;
+  }
+  // aggregate fixture counts + flows
+  const totFix={};
+  FIXTURE_DEFS.forEach(d=>totFix[d.key]=0);
+  let totalRooms=0, totalFloors=state.floors.length;
+  let sumQc=0,sumQh=0,sumQs=0;
+  state.floors.forEach(fl=>fl.rooms.forEach(r=>{
+    totalRooms++;
+    const f=r.fixtures||{};
+    FIXTURE_DEFS.forEach(d=>totFix[d.key]+=(f[d.key]||0));
+    sumQc+=r.q_cold||0; sumQh+=r.q_hot||0; sumQs+=r.q_sewage||0;
+  }));
+  const totalFixCount=Object.values(totFix).reduce((a,b)=>a+b,0);
+  // max single fixture q₀ (for qₛ = qₜₒₜ + q₀_max)
+  const q0max=Math.max(...FIXTURE_DEFS.filter(d=>totFix[d.key]>0).map(d=>d.qs),0);
+  const qs_sp=sumQs+q0max; // simplified SP 30.13330 §8.3
+
+  const fixRows=FIXTURE_DEFS.filter(d=>totFix[d.key]>0).map(d=>{
+    const n=totFix[d.key];
+    return `<tr>
+      <td style="padding:3px 8px">${d.icon} ${d.ka}</td>
+      <td style="padding:3px 8px;text-align:center;font-family:var(--mono);font-weight:700">${n}</td>
+      <td style="padding:3px 8px;text-align:center;font-family:var(--mono);color:var(--grn)">${(d.qs*n).toFixed(3)}</td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML=`
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;font-size:10px">
+    <span style="color:var(--text3)">🏢 <b style="color:var(--navy)">${totalFloors}</b> სართ.</span>
+    <span style="color:var(--text3)">🚪 <b style="color:var(--navy)">${totalRooms}</b> სათ.</span>
+    <span style="color:var(--text3)">🔧 <b style="color:var(--navy)">${totalFixCount}</b> ხელს.</span>
+  </div>
+  ${fixRows?`<table style="width:100%;border-collapse:collapse;font-size:10px;margin-bottom:8px">
+    <thead><tr style="background:var(--sur)">
+      <th style="padding:3px 8px;text-align:left;border:1px solid var(--bdr);font-size:9px">ხელსაწყო</th>
+      <th style="padding:3px 8px;border:1px solid var(--bdr);font-size:9px">სულ</th>
+      <th style="padding:3px 8px;border:1px solid var(--bdr);color:var(--grn);font-size:9px">∑ q კანლ. l/s</th>
+    </tr></thead>
+    <tbody style="background:#fff">${fixRows}</tbody>
+    <tfoot><tr style="background:var(--navy);color:#fff">
+      <td colspan="2" style="padding:4px 8px;font-weight:700">∑ qₜₒₜ კანალ.</td>
+      <td style="padding:4px 8px;text-align:center;font-family:var(--mono);font-weight:700">${sumQs.toFixed(3)} l/s</td>
+    </tr></tfoot>
+  </table>`:''}
+  <div style="padding:8px 10px;background:var(--blue-lt);border:1px solid var(--blue-bd);border-radius:5px;font-family:var(--mono);font-size:10px;display:flex;flex-wrap:wrap;gap:12px">
+    <span>💧 qc = <b style="color:var(--blue)">${sumQc.toFixed(3)}</b> l/s</span>
+    <span>♨ qh = <b style="color:var(--ora)">${sumQh.toFixed(3)}</b> l/s</span>
+    <span>⬇ qₜₒₜ = <b style="color:var(--grn)">${sumQs.toFixed(3)}</b> l/s</span>
+    <span style="color:var(--navy)">qₛ = qₜₒₜ + q₀ᵐᵃˣ = <b>${qs_sp.toFixed(3)}</b> l/s</span>
+  </div>`;
+  // auto-fill sp_users from total people
+  const totalPeople=state.floors.reduce((s,fl)=>s+fl.rooms.reduce((a,r)=>a+(r.people||0),0),0);
+  const spU=document.getElementById('sp_users');
+  if(spU&&totalPeople>0&&spU.dataset.manual!=='1') spU.value=totalPeople;
+}
+
+function buildMaterialsBOQ(){
+  const tbody=document.getElementById('mat-tbody');
+  if(!tbody) return;
+  if(!state.floors||!state.floors.length){
+    tbody.innerHTML='<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--text3)">ცარიელია — ცხრილი შეივსება Tab 0-ის ხელსაწყოებიდან</td></tr>';
+    return;
+  }
+  const totFix={};
+  FIXTURE_DEFS.forEach(d=>totFix[d.key]=0);
+  let sumQc=0,sumQh=0,sumQs=0;
+  state.floors.forEach(fl=>fl.rooms.forEach(r=>{
+    const f=r.fixtures||{};
+    FIXTURE_DEFS.forEach(d=>totFix[d.key]+=(f[d.key]||0));
+    sumQc+=r.q_cold||0;sumQh+=r.q_hot||0;sumQs+=r.q_sewage||0;
+  }));
+  // pipe sizing (simplified)
+  function pipeSizeWS(q){return q<0.5?'Ø20':q<1.0?'Ø25':q<2.0?'Ø32':q<4.0?'Ø40':'Ø50';}
+  function pipeSizeSew(q){return q<0.5?'Ø50':q<1.5?'Ø75':'Ø110';}
+  const rows=[];
+  let n=1;
+  const addRow=(cat,name,unit,qty,note='')=>{
+    rows.push(`<tr style="background:${n%2===0?'var(--sur2)':'#fff'}">
+      <td style="padding:6px 10px;border:1px solid var(--bdr);font-family:var(--mono);font-size:10px;color:var(--text3)">${n++}</td>
+      <td style="padding:6px 10px;border:1px solid var(--bdr);font-size:10px;color:var(--text3)">${cat}</td>
+      <td style="padding:6px 10px;border:1px solid var(--bdr);font-weight:600;color:var(--navy)">${name}</td>
+      <td style="padding:6px 10px;border:1px solid var(--bdr);text-align:center;font-family:var(--mono)">${unit}</td>
+      <td style="padding:6px 10px;border:1px solid var(--bdr);text-align:center;font-family:var(--mono);font-weight:700;color:var(--blue)">${qty}</td>
+      <td style="padding:6px 10px;border:1px solid var(--bdr);font-size:10px;color:var(--text3)">${note}</td>
+    </tr>`);
+  };
+  // ── Water supply pipes (PPR PN20) ──
+  const qcPipe=pipeSizeWS(sumQc);
+  const qhPipe=pipeSizeWS(sumQh);
+  addRow('💧 PPR PN20',`ცივი წყლის მილი PPR ${qcPipe}`,'მ','—',`q=${sumQc.toFixed(3)} l/s → ${qcPipe}`);
+  addRow('♨ PPR PN20',`ცხელი წყლის მილი PPR ${qhPipe}`,'მ','—',`q=${sumQh.toFixed(3)} l/s → ${qhPipe}`);
+  // ── Sewage pipes (PVC) ──
+  addRow('⬇ PVC',`საკანალ. მილი PVC ${pipeSizeSew(sumQs)}`,'მ','—',`qₛ=${sumQs.toFixed(3)} l/s`);
+  addRow('⬇ PVC','საკანალ. გამყვანი Ø110','მ','—','ვერტიკ. სადინარი / გასავლელი');
+  // ── Fixtures ──
+  FIXTURE_DEFS.forEach(d=>{
+    const cnt=totFix[d.key];
+    if(!cnt) return;
+    addRow('🔧 ხელსაწყო',`${d.icon} ${d.en} (${d.ka})`,'ც',cnt,'СП 30.13330 ცხრ.А.1');
+  });
+  // ── Fittings estimate (~3 per fixture) ──
+  const totalFix=Object.values(totFix).reduce((a,b)=>a+b,0);
+  if(totalFix>0){
+    addRow('🔩 ფიტინგი','PPR/PEX ტე, კოჭი, მოლოგი (შეფასება)','ც',totalFix*3,'≈3 ფიტ./ხელს.');
+    addRow('🚿 ონკანი','ონკ./შემრ. კომპლექტი','ც',
+      (totFix.shower||0)+(totFix.bath||0)+(totFix.sink||0)+(totFix.kitchen||0)+(totFix.bidet||0),
+      'შხაპი+აბ+ხელს+სამზ+ბიდე');
+  }
+  tbody.innerHTML=rows.join('');
+}
+
+// ══ PRODUCT CATALOG ══
+const CAT_PRODUCTS = [
+  // Geberit — toilet systems
+  {brand:'Geberit',cat:'🚽 ინსტ. სისტ.',name:'Duofix Basic 112cm UP320',model:'111.153.00.1',price:'580₾',note:'ქ.ბ. შიდა ჩამდ. + ჩარჩო'},
+  {brand:'Geberit',cat:'🚽 ინსტ. სისტ.',name:'Duofix Sigma 112cm UP320',model:'111.362.00.5',price:'720₾',note:'პრემ. კომბ. UpFlush'},
+  {brand:'Geberit',cat:'🚽 ღილაკი',name:'Sigma01 ქრ. ბზინვ.',model:'115.770.21.5',price:'95₾',note:'2-კლ. გამ. ქრ.'},
+  {brand:'Geberit',cat:'🚽 ღილაკი',name:'Sigma20 თეთრი/ქრომი',model:'115.882.KH.1',price:'145₾',note:'ეკო-flush'},
+  {brand:'Geberit',cat:'🚿 შხაპი',name:'CleanLine20 Drain 70cm',model:'154.456.00.1',price:'210₾',note:'ხაზოვანი'},
+  {brand:'Geberit',cat:'🚿 შხაპი',name:'CleanLine60 Drain 90cm',model:'154.462.00.1',price:'310₾',note:'ბრჯ. ჩამჭ.'},
+  {brand:'Geberit',cat:'⬇ კანლ.',name:'Silent-db20 Ø110 L3m',model:'393.305.14.1',price:'85₾',note:'ხმაჩახ. PVC'},
+  {brand:'Geberit',cat:'⬇ კანლ.',name:'Silent-db20 Ø50 L3m',model:'393.305.14.2',price:'42₾',note:'ხმაჩახ. PVC'},
+  // Grohe — faucets
+  {brand:'Grohe',cat:'🚰 ონკ./შემრ.',name:'Eurosmart Basin Mixer',model:'23372002',price:'185₾',note:'ქრ. Ø35 კარტ.'},
+  {brand:'Grohe',cat:'🚰 ონკ./შემრ.',name:'BauLoop Basin Mixer',model:'23762001',price:'135₾',note:'ეკ. ლაიტ.'},
+  {brand:'Grohe',cat:'🚿 შხ. სისტ.',name:'Euphoria 260 Shower System',model:'26075000',price:'520₾',note:'შხ.+ხელ.+შტ.'},
+  {brand:'Grohe',cat:'🚿 შხ. სისტ.',name:'Tempesta 100 Bar Mixer',model:'34381001',price:'280₾',note:'ბარ. შემრ. 2ფ.'},
+  {brand:'Grohe',cat:'🍽 სამზ.',name:'Minta Kitchen Mixer',model:'32168DC0',price:'245₾',note:'pull-out DC'},
+  {brand:'Grohe',cat:'🍽 სამზ.',name:'BauEdge Kitchen Mono',model:'31367000',price:'115₾',note:'მაგ. ქრ.'},
+  // Hansgrohe — showers & faucets
+  {brand:'Hansgrohe',cat:'🚰 ონკ./შემრ.',name:'Metris 110 Basin Mixer',model:'31080000',price:'210₾',note:'Ø35 კარტ. ქრ.'},
+  {brand:'Hansgrohe',cat:'🚰 ონკ./შემრ.',name:'Logis 70 Basin Mixer',model:'71070000',price:'155₾',note:'ეკ. ეფ.'},
+  {brand:'Hansgrohe',cat:'🚿 შხ. სისტ.',name:'Crometta Vario 100 Shower',model:'26827400',price:'85₾',note:'3 ფ. თავი'},
+  {brand:'Hansgrohe',cat:'🚿 შხ. სისტ.',name:'Rainfinity 250 1jet',model:'26232000',price:'320₾',note:'ჭ. ჩ.'},
+  {brand:'Hansgrohe',cat:'🍽 სამზ.',name:'Talis M54 Kitchen Mixer',model:'72803000',price:'265₾',note:'pull-out ქრ.'},
+  // Rehau — PPR pipes
+  {brand:'Rehau',cat:'💧 PPR მილი',name:'RAUTITAN pink Ø16 50m',model:'11360811050',price:'125₾',note:'PEX-a ცივ/ცხ. ±10 bar'},
+  {brand:'Rehau',cat:'💧 PPR მილი',name:'RAUTITAN pink Ø20 50m',model:'11360821050',price:'165₾',note:'PEX-a'},
+  {brand:'Rehau',cat:'💧 PPR მილი',name:'RAUTITAN pink Ø25 25m',model:'11360831025',price:'135₾',note:'PEX-a მაგ.'},
+  {brand:'Rehau',cat:'💧 PPR ფიტ.',name:'RAUTITAN T-Piece Ø16',model:'11360001',price:'8₾',note:'ლათ. ჩ.'},
+  {brand:'Rehau',cat:'💧 PPR ფიტ.',name:'RAUTITAN Elbow 90° Ø16',model:'11360011',price:'6₾',note:'ლათ. ჩ.'},
+  {brand:'Rehau',cat:'💧 PPR ფიტ.',name:'RAUTITAN Coupling Ø20',model:'11360021',price:'9₾',note:'ლათ. კ.'},
+  // Uponor — PEX + manifolds
+  {brand:'Uponor',cat:'💧 PPR მილი',name:'Uni Pipe PLUS Ø16x2 50m',model:'1008820',price:'185₾',note:'MLCP ალ.'},
+  {brand:'Uponor',cat:'💧 PPR მილი',name:'Uni Pipe PLUS Ø20x2.25 50m',model:'1008823',price:'240₾',note:'MLCP ალ.'},
+  {brand:'Uponor',cat:'💧 კოლ.',name:'Vario S Manifold 4-circuit',model:'1088095',price:'145₾',note:'ბეჯ. 4 ძ.'},
+  {brand:'Uponor',cat:'💧 კოლ.',name:'Vario S Manifold 6-circuit',model:'1088097',price:'195₾',note:'ბეჯ. 6 ძ.'},
+];
+
+function buildCatalog(){
+  const grid=document.getElementById('cat-grid');
+  const countEl=document.getElementById('cat-count');
+  if(!grid) return;
+  const cards=CAT_PRODUCTS.map(p=>`
+    <div data-cat-item style="background:#fff;border:1px solid var(--bdr);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:4px;box-shadow:var(--shadow)">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+        <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;background:var(--navy);color:#fff">${p.brand}</span>
+        <span style="font-size:9px;color:var(--text3);background:var(--sur2);padding:2px 6px;border-radius:8px">${p.cat}</span>
+      </div>
+      <div style="font-size:11.5px;font-weight:700;color:var(--navy);line-height:1.3">${p.name}</div>
+      <div style="font-family:var(--mono);font-size:9px;color:var(--text3)">${p.model}</div>
+      <div style="font-size:10px;color:var(--text2);margin-top:2px">${p.note}</div>
+      <div style="margin-top:auto;padding-top:8px;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--blue)">${p.price}</span>
+      </div>
+    </div>`).join('');
+  grid.innerHTML=cards;
+  if(countEl) countEl.textContent=CAT_PRODUCTS.length+' პროდ.';
+}
+
 function catFilter(){
   const q=(document.getElementById('cat-search')?.value||'').toLowerCase();
   const grid=document.getElementById('cat-grid'); if(!grid) return;
+  let vis=0;
   grid.querySelectorAll('[data-cat-item]').forEach(el=>{
     const txt=(el.textContent||'').toLowerCase();
-    el.style.display = !q||txt.includes(q) ? '' : 'none';
+    const show=!q||txt.includes(q);
+    el.style.display = show ? '' : 'none';
+    if(show) vis++;
   });
+  const c=document.getElementById('cat-count');
+  if(c) c.textContent=vis+' პროდ.';
 }
 
 // Compatibility no-ops for removed heat-loss / equipment / thermal handlers.
@@ -6438,6 +6621,19 @@ const WP_PRESETS = [
   {type:'equip',  icon:'⚙',  name_ka:'დანადგარი',      supply:null},
 ];
 
+/* ══ FIXTURE DEFS — СП 30.13330.2020 Таблица А.1 ══ */
+const FIXTURE_DEFS = [
+  {key:'wc',      icon:'🚽', ka:'უნიტ.', en:'WC',          qc:0.1,  qh:0,    qs:0.1 },
+  {key:'shower',  icon:'🚿', ka:'შხაპი', en:'Shower',      qc:0.09, qh:0.09, qs:0.09},
+  {key:'bath',    icon:'🛁', ka:'აბაზ.', en:'Bath',        qc:0.25, qh:0.25, qs:0.32},
+  {key:'sink',    icon:'🚰', ka:'ხელს.', en:'Washbasin',   qc:0.09, qh:0.09, qs:0.09},
+  {key:'kitchen', icon:'🍽', ka:'სამზ.', en:'Kitchen s.',  qc:0.1,  qh:0.1,  qs:0.12},
+  {key:'washer',  icon:'🧺', ka:'სარ.მ.',en:'Washer',      qc:0.25, qh:0,    qs:0.25},
+  {key:'dishw',   icon:'🫧', ka:'ჭ.მ.',  en:'Dishwasher',  qc:0.2,  qh:0.2,  qs:0.2 },
+  {key:'bidet',   icon:'🪠', ka:'ბიდე',  en:'Bidet',       qc:0.08, qh:0.08, qs:0.08},
+  {key:'drain',   icon:'🚱', ka:'კანალ.',en:'Floor drain',  qc:0.3,  qh:0,    qs:0.3 },
+];
+
 /* ══ STATE ══ */
 let _uid=1; const uid=()=>'u'+(++_uid);
 const state={std:'ashrae',floors:[], customRooms:[]};
@@ -6483,18 +6679,17 @@ function makeVent(func_id){
   };
 }
 
-function makeRoom(func_id='office'){
+function makeRoom(func_id='bathroom'){
   const rt=getRoomType(func_id);
   return {
-    id:uid(), room_no:'', name:rt.ka, func_id,
-    area:25, height:3.0, people:5,
-    tw:rt.tw, dtw:rt.dtw,
-    rhw:rt.rhw, drhw:rt.drhw,
-    ts:rt.ts, dts:rt.dts,
-    rhs:rt.rhs, drhs:rt.drhs,
+    id:uid(), room_no:'', name:rt?rt.ka:'სათავსო', func_id,
+    area:20, height:3.0, people:4,
+    fixtures:{wc:0,shower:0,bath:0,sink:0,kitchen:0,washer:0,dishw:0,bidet:0,drain:0},
+    q_cold:0, q_hot:0, q_sewage:0,
+    water_open:false,
+    vent:{rate_pPers:0,rate_pArea:0,rate_unit:'m3h',wet_points:[]},
     q_supply:0, q_exhaust:0, pressure_pa:0,
-    vent_open:false,
-    vent:makeVent(func_id)
+    tw:22, dtw:2, rhw:50, drhw:10, ts:25, dts:2, rhs:55, drhs:10,
   };
 }
 
@@ -6547,14 +6742,27 @@ function calcVent(room){
   room.q_exhaust=Math.round(wpExhaust);
 }
 
+/* ══ WATER CALCULATION — СП 30.13330.2020 §5 ══ */
+function calcWater(room){
+  const f=room.fixtures||{};
+  let qc=0,qh=0,qs=0;
+  FIXTURE_DEFS.forEach(d=>{
+    const n=+(f[d.key]||0);
+    qc+=d.qc*n; qh+=d.qh*n; qs+=d.qs*n;
+  });
+  room.q_cold   = Math.round(qc*1000)/1000;
+  room.q_hot    = Math.round(qh*1000)/1000;
+  room.q_sewage = Math.round(qs*1000)/1000;
+}
+
 /* ══ CRUD ══ */
 function addFloor(){
   const n=state.floors.length+1;
   const prevMark=state.floors.length>0?parseFloat(state.floors[state.floors.length-1].mark||0):0;
   const autoMark=(prevMark+(state.floors.length===0?0:3.0)).toFixed(3);
   const fl={id:uid(),name:'სართული '+n,mark:'+'+autoMark,open:true,rooms:[]};
-  fl.rooms.push(makeRoom('office'));
-  calcVent(fl.rooms[0]);
+  fl.rooms.push(makeRoom('bathroom'));
+  calcWater(fl.rooms[0]);
   state.floors.push(fl);
   bldRender();
   pushToHistory('სართ. დამ.');
@@ -6575,8 +6783,8 @@ function toggleFloor(fid){
 }
 function bldAddRoom(fid){
   const fl=state.floors.find(f=>f.id===fid);if(!fl)return;
-  const defaultId=state.std==='myconf'&&state.customRooms.length?state.customRooms[0].id:'office';
-  const r=makeRoom(defaultId); calcVent(r);
+  const defaultId=state.std==='myconf'&&state.customRooms.length?state.customRooms[0].id:'bathroom';
+  const r=makeRoom(defaultId); calcWater(r);
   const last=fl.rooms[fl.rooms.length-1];
   if(last&&last.room_no){const n=parseInt(last.room_no);if(!isNaN(n))r.room_no=String(n+1);}
   fl.rooms.push(r);bldRender();
@@ -6627,10 +6835,6 @@ function setFloorEdit(fid, on){
 function setRoomField(fid,rid,field,val){
   const r=getRoom(fid,rid);if(!r)return;
   r[field]=val;
-  if(field==='area'||field==='people'){
-    calcVent(r);
-    refreshPanelQ(fid,rid);
-  }
   refreshMainRow(fid,rid);
   refreshFloorSummary(fid);
   refreshGlobalStats();
@@ -6669,9 +6873,9 @@ function onFuncChange(fid,rid,func_id){
     r._origin_func=func_id;
   }
   const rowEl=document.getElementById('vrow_'+rid);
-  const panEl=document.getElementById('vpanel_'+rid);
+  const panEl=document.getElementById('wpanel_'+rid);
   if(rowEl){const tmp=document.createElement('tbody');tmp.innerHTML=buildRow(getFloor(fid),r,getFloor(fid).rooms.indexOf(r));rowEl.replaceWith(tmp.firstChild);}
-  if(panEl){const tmp=document.createElement('tbody');tmp.innerHTML=buildPanelRow(getFloor(fid),r);panEl.replaceWith(tmp.firstChild);}
+  if(panEl){const tmp=document.createElement('tbody');tmp.innerHTML=buildPanelRow(getFloor(fid),r);const nr=tmp.firstChild;if(r.water_open&&nr)nr.classList.add('open');panEl.replaceWith(nr);}
   refreshFloorSummary(fid);refreshGlobalStats();
 }
 
@@ -6852,59 +7056,53 @@ function togglePanel(fid,rid){
 /* ══ DOM REFRESH (partial) ══ */
 function refreshMainRow(fid,rid){
   const r=getRoom(fid,rid);if(!r)return;
-  const qs=document.querySelector('[data-qs="'+rid+'"]');
-  const qe=document.querySelector('[data-qe="'+rid+'"]');
-  const qpp=document.querySelector('[data-qpp="'+rid+'"]');
-  if(qs)qs.textContent=r.q_supply;
-  if(qe)qe.textContent=r.q_exhaust;
-  if(qpp)qpp.textContent=r.people>0?Math.round(r.q_supply/r.people):'—';
-  const pb=document.querySelector('[data-pb="'+rid+'"]');
-  if(pb)pb.innerHTML=prBadgeHtml(r);
+  const qcEl=document.querySelector('[data-qc="'+rid+'"]');
+  const qhEl=document.querySelector('[data-qh="'+rid+'"]');
+  const qsEl=document.querySelector('[data-qsw="'+rid+'"]');
+  if(qcEl)qcEl.textContent=(r.q_cold||0).toFixed(3);
+  if(qhEl)qhEl.textContent=(r.q_hot||0).toFixed(3);
+  if(qsEl)qsEl.textContent=(r.q_sewage||0).toFixed(3);
   const eb=document.getElementById('expbtn_'+rid);
   if(eb){
-    const v=r.vent; const hasWp=v.wet_points&&v.wet_points.length>0;
-    eb.style.cssText=r.vent_open
+    const f=r.fixtures||{};const hasFix=FIXTURE_DEFS.some(d=>(f[d.key]||0)>0);
+    eb.style.cssText=r.water_open
       ?'border-color:var(--blue);color:var(--blue);background:var(--blue-lt)'
-      :hasWp?'border-color:var(--grn);color:var(--grn);background:var(--grn-lt)'
+      :hasFix?'border-color:var(--grn);color:var(--grn);background:var(--grn-lt)'
       :'border-color:#c8b840;color:#7a6a08;background:#fefce8';
   }
 }
 function refreshPanel(fid,rid){
-  const panEl=document.getElementById('vpanel_'+rid);
+  const panEl=document.getElementById('wpanel_'+rid);
   if(!panEl)return;
   const r=getRoom(fid,rid);if(!r)return;
-  const isOpen=r.vent_open;
-  const fl=getFloor(fid);
-  const tmp=document.createElement('tbody');
-  tmp.innerHTML=buildPanelRow(fl,r);
-  const newRow=tmp.firstChild;
-  if(isOpen)newRow.classList.add('open');
-  panEl.replaceWith(newRow);
+  const inner=panEl.querySelector('.panel-inner');
+  if(inner)inner.innerHTML=buildWaterPanelInner(r);
 }
 function refreshFloorSummary(fid){
   const fl=getFloor(fid);if(!fl)return;
   const ta=fl.rooms.reduce((s,r)=>s+(r.area||0),0);
   const tp=fl.rooms.reduce((s,r)=>s+(r.people||0),0);
-  const tqs=fl.rooms.reduce((s,r)=>s+(r.q_supply||0),0);
-  const tqe=fl.rooms.reduce((s,r)=>s+(r.q_exhaust||0),0);
+  const tc=fl.rooms.reduce((s,r)=>s+(r.q_cold||0),0);
+  const th=fl.rooms.reduce((s,r)=>s+(r.q_hot||0),0);
+  const ts=fl.rooms.reduce((s,r)=>s+(r.q_sewage||0),0);
   const qa=document.querySelector('[data-fla="'+fid+'"]');const qp=document.querySelector('[data-flp="'+fid+'"]');
   if(qa)qa.textContent=ta.toFixed(0)+' m²';if(qp)qp.textContent=tp+' კაცი';
   const sa=document.querySelector('[data-sa="'+fid+'"]');const sp=document.querySelector('[data-sp="'+fid+'"]');
-  const ss=document.querySelector('[data-ss="'+fid+'"]');const se=document.querySelector('[data-se="'+fid+'"]');
+  const sc=document.querySelector('[data-sc="'+fid+'"]');const sh=document.querySelector('[data-sh="'+fid+'"]');const sw=document.querySelector('[data-sw="'+fid+'"]');
   if(sa)sa.textContent=ta.toFixed(1);if(sp)sp.textContent=tp;
-  if(ss)ss.textContent=tqs;if(se)se.textContent=tqe;
+  if(sc)sc.textContent=tc.toFixed(3);if(sh)sh.textContent=th.toFixed(3);if(sw)sw.textContent=ts.toFixed(3);
   const fa=document.querySelector('[data-foot-a="'+fid+'"]');const fp=document.querySelector('[data-foot-p="'+fid+'"]');
-  const fs=document.querySelector('[data-foot-s="'+fid+'"]');const fe=document.querySelector('[data-foot-e="'+fid+'"]');
+  const fc=document.querySelector('[data-foot-c="'+fid+'"]');const fh=document.querySelector('[data-foot-h="'+fid+'"]');const fw=document.querySelector('[data-foot-w="'+fid+'"]');
   if(fa)fa.textContent=ta.toFixed(0);if(fp)fp.textContent=tp;
-  if(fs)fs.textContent=tqs;if(fe)fe.textContent=tqe;
+  if(fc)fc.textContent=tc.toFixed(3);if(fh)fh.textContent=th.toFixed(3);if(fw)fw.textContent=ts.toFixed(3);
 }
 function refreshGlobalStats(){
-  let tf=state.floors.length,tr=0,ta=0,tp=0,tqs=0,tqe=0;
+  let tf=state.floors.length,tr=0,ta=0,tp=0,tqc=0,tqh=0,tqsw=0;
   state.floors.forEach(fl=>{
     tr+=fl.rooms.length;
-    fl.rooms.forEach(r=>{ta+=r.area||0;tp+=r.people||0;tqs+=r.q_supply||0;tqe+=r.q_exhaust||0;});
+    fl.rooms.forEach(r=>{ta+=r.area||0;tp+=r.people||0;tqc+=r.q_cold||0;tqh+=r.q_hot||0;tqsw+=r.q_sewage||0;});
   });
-  const m={gf:tf,gr:tr,ga:ta.toFixed(0),gp:tp,gqs:tqs,gqe:tqe};
+  const m={gf:tf,gr:tr,ga:ta.toFixed(0),gp:tp,gqc:tqc.toFixed(3),gqh:tqh.toFixed(3),gqsw:tqsw.toFixed(3)};
   Object.entries(m).forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.textContent=v;});
 }
 
@@ -6940,62 +7138,124 @@ function buildRow(fl, r, idx){
   const fid=fl.id,rid=r.id;
   const rt=getRoomType(r.func_id);
 
-  const ni=(field,val,step,min='',max='')=>
-    `<input type="number" value="${val}" step="${step}"${min!==''?' min="'+min+'"':''}${max!==''?' max="'+max+'"':''} oninput="setRoomField('${fid}','${rid}','${field}',+this.value)">`;
-  const tpm=(field,val)=>
-    `<input type="number" value="${val}" step="0.5" oninput="setRoomField('${fid}','${rid}','${field}',+this.value)">`;
-  const dpm=(field,val)=>
-    `<input type="number" value="${val}" min="0" max="30" step="0.5" style="border-color:var(--bdr2);background:var(--sur2);color:var(--text3)" oninput="setRoomField('${fid}','${rid}','${field}',+this.value)">`;
+  const ni=(field,val,step,min='')=>
+    `<input type="number" value="${val}" step="${step}"${min!==''?' min="'+min+'"':''} oninput="setRoomField('${fid}','${rid}','${field}',+this.value)">`;
+  const nif=(fkey,val)=>
+    `<input type="number" value="${val}" min="0" step="1" style="width:28px;min-width:0;text-align:center;padding:1px 2px;font-family:var(--mono);font-size:11px;font-weight:600;background:#fff;border:1.5px solid var(--bdr);border-radius:3px;outline:none" oninput="setFixture('${fid}','${rid}','${fkey}',+this.value)">`;
 
-  const vol=((r.area||0)*(r.height||0)).toFixed(1);
-  const dqBadge=prBadgeHtml(r);
-  const dq=r.q_supply-r.q_exhaust;
-  const dqSign=dq>5?'+':dq<-5?'-':'±0';
-
-  const v=r.vent;
-  const hasWp=v.wet_points&&v.wet_points.length>0;
-  const expStyle=r.vent_open
+  const f=r.fixtures||{};
+  const hasFix=FIXTURE_DEFS.some(d=>(f[d.key]||0)>0);
+  const expStyle=r.water_open
     ?'border-color:var(--blue);color:var(--blue);background:var(--blue-lt)'
-    :hasWp
+    :hasFix
       ?'border-color:var(--grn);color:var(--grn);background:var(--grn-lt)'
       :'border-color:#c8b840;color:#7a6a08;background:#fefce8';
 
   const isCustom=rt&&rt.isCustom;
-  const isMyCfg=state.std==='myconf';
-  const stdLabel=isMyCfg?'⚙ ჩ.კ.':(STD[state.std]?.short||state.std.toUpperCase());
-  const badgeLabel=isCustom||isMyCfg?`⚙ ${rt?rt.ka:'?'}`:(`${stdLabel}: ${rt?rt.en:'—'}`);
-  const badgeColCls=isCustom||isMyCfg?'fb-neu':colClass(rt?rt.col:'neu');
+  const badgeLabel=rt?rt.ka:'—';
+  const badgeColCls=isCustom?'fb-neu':colClass(rt?rt.col:'neu');
 
   return `<tr id="vrow_${rid}">
-  <td class="del"><button id="expbtn_${rid}" class="btn-exp" style="${expStyle}" onclick="togglePanel('${fid}','${rid}')" title="ვენტ. დეტ.">▶</button></td>
+  <td class="del"><button id="expbtn_${rid}" class="btn-exp" style="${expStyle}" onclick="toggleWaterPanel('${fid}','${rid}')" title="წყლ. დეტ.">▶</button></td>
   <td class="ro" style="text-align:center;font-size:10px;width:26px">${idx+1}</td>
   <td style="padding:2px 2px"><input type="text" value="${esc(r.room_no)}" placeholder="101" oninput="setRoomField('${fid}','${rid}','room_no',this.value)"></td>
   <td style="padding:2px 2px"><input type="text" value="${esc(r.name)}" oninput="setRoomField('${fid}','${rid}','name',this.value)"></td>
   <td class="fn-cell">
     <select onchange="onFuncChange('${fid}','${rid}',this.value)">${funcOpts(r.func_id)}</select>
     <span class="fn-badge ${badgeColCls}">${badgeLabel}</span>
-    ${(isCustom||isMyCfg)?`<span style="font-size:8px;font-weight:700;padding:1px 5px;border-radius:8px;background:#fff3e0;color:#b35a00;border:1px solid #e8c080;margin-left:2px">ხელ.</span>`:''}
   </td>
   <td>${ni('area',r.area,0.5,0)}</td>
   <td>${ni('height',r.height,0.1,0)}</td>
-  <td class="ro">${vol}</td>
   <td>${ni('people',r.people,1,0)}</td>
-  <td class="ro-s" data-qs="${rid}">${r.q_supply}</td>
-  <td class="ro-e" data-qe="${rid}">${r.q_exhaust}</td>
-  <td style="padding:2px 3px">
-    <div class="prc">
-      <div data-pb="${rid}">${dqBadge}</div>
-      <input type="number" value="${r.pressure_pa}" step="1"
-        style="width:40px;min-width:0;text-align:right;padding:2px 3px;font-family:var(--mono);font-size:12px;font-weight:600;background:#fff;border:1.5px solid var(--bdr);border-radius:4px;outline:none"
-        oninput="setRoomField('${fid}','${rid}','pressure_pa',+this.value)">
-    </div>
-  </td>
-  <td style="padding:2px 2px">${tpm('tw',r.tw)}</td>
-  <td style="padding:2px 2px">${tpm('rhw',r.rhw)}</td>
-  <td style="padding:2px 2px">${tpm('ts',r.ts)}</td>
-  <td style="padding:2px 2px">${tpm('rhs',r.rhs)}</td>
+  ${FIXTURE_DEFS.map(d=>`<td style="padding:1px 1px">${nif(d.key,f[d.key]||0)}</td>`).join('')}
+  <td class="ro" style="color:var(--blue);font-family:var(--mono);font-size:11px;font-weight:700" data-qc="${rid}">${(r.q_cold||0).toFixed(3)}</td>
+  <td class="ro" style="color:var(--ora);font-family:var(--mono);font-size:11px;font-weight:700" data-qh="${rid}">${(r.q_hot||0).toFixed(3)}</td>
+  <td class="ro" style="color:var(--grn);font-family:var(--mono);font-size:11px;font-weight:700" data-qsw="${rid}">${(r.q_sewage||0).toFixed(3)}</td>
   <td class="del"><button class="btn-dr" onclick="delRoom('${fid}','${rid}')">×</button></td>
 </tr>`;
+}
+/* ══ FIXTURE HELPERS ══ */
+function setFixture(fid,rid,key,val){
+  const r=getRoom(fid,rid);if(!r)return;
+  if(!r.fixtures) r.fixtures={wc:0,shower:0,bath:0,sink:0,kitchen:0,washer:0,dishw:0,bidet:0,drain:0};
+  r.fixtures[key]=val;
+  calcWater(r);
+  const qcEl=document.querySelector(`[data-qc="${rid}"]`);
+  const qhEl=document.querySelector(`[data-qh="${rid}"]`);
+  const qsEl=document.querySelector(`[data-qsw="${rid}"]`);
+  if(qcEl) qcEl.textContent=(r.q_cold||0).toFixed(3);
+  if(qhEl) qhEl.textContent=(r.q_hot||0).toFixed(3);
+  if(qsEl) qsEl.textContent=(r.q_sewage||0).toFixed(3);
+  const fl=getFloor(fid);if(!fl)return;
+  const tc=fl.rooms.reduce((s,x)=>s+(x.q_cold||0),0);
+  const th=fl.rooms.reduce((s,x)=>s+(x.q_hot||0),0);
+  const ts=fl.rooms.reduce((s,x)=>s+(x.q_sewage||0),0);
+  ['sc','sh','sw'].forEach((k,i)=>{const el=document.querySelector(`[data-${k}="${fid}"]`);if(el)el.textContent=[tc,th,ts][i].toFixed(3);});
+  ['c','h','w'].forEach((k,i)=>{const el=document.querySelector(`[data-foot-${k}="${fid}"]`);if(el)el.textContent=[tc,th,ts][i].toFixed(3);});
+  let gtc=0,gth=0,gts=0;
+  state.floors.forEach(f2=>f2.rooms.forEach(x=>{gtc+=x.q_cold||0;gth+=x.q_hot||0;gts+=x.q_sewage||0;}));
+  const gc=document.getElementById('gqc');const gh=document.getElementById('gqh');const gsw=document.getElementById('gqsw');
+  if(gc)gc.textContent=gtc.toFixed(3);if(gh)gh.textContent=gth.toFixed(3);if(gsw)gsw.textContent=gts.toFixed(3);
+  if(r.water_open){const wp=document.getElementById('wpanel_'+rid);if(wp){const inner=wp.querySelector('.panel-inner');if(inner)inner.innerHTML=buildWaterPanelInner(r);}}
+  try{updateSewerSummary();}catch(e){}
+  try{buildMaterialsBOQ();}catch(e){}
+  pushToHistory('ხელს. ცვლ.');
+}
+
+function toggleWaterPanel(fid,rid){
+  const r=getRoom(fid,rid);if(!r)return;
+  r.water_open=!r.water_open;
+  const panel=document.getElementById('wpanel_'+rid);
+  if(panel)panel.classList.toggle('open',r.water_open);
+  const btn=document.getElementById('expbtn_'+rid);
+  if(btn){
+    const f=r.fixtures||{};const hasFix=FIXTURE_DEFS.some(d=>(f[d.key]||0)>0);
+    btn.style.cssText=r.water_open
+      ?'border-color:var(--blue);color:var(--blue);background:var(--blue-lt)'
+      :hasFix?'border-color:var(--grn);color:var(--grn);background:var(--grn-lt)'
+      :'border-color:#c8b840;color:#7a6a08;background:#fefce8';
+  }
+  if(r.water_open){const wp=document.getElementById('wpanel_'+rid);if(wp){const inner=wp.querySelector('.panel-inner');if(inner)inner.innerHTML=buildWaterPanelInner(r);}}
+}
+
+function buildWaterPanelInner(r){
+  const f=r.fixtures||{};
+  const rows=FIXTURE_DEFS.filter(d=>(f[d.key]||0)>0).map(d=>{
+    const n=f[d.key]||0;
+    return `<tr>
+      <td style="padding:4px 8px">${d.icon} ${d.ka}</td>
+      <td style="padding:4px 8px;text-align:center;font-family:var(--mono);font-weight:700">${n}</td>
+      <td style="padding:4px 8px;text-align:center;font-family:var(--mono);color:var(--blue)">${d.qc}</td>
+      <td style="padding:4px 8px;text-align:center;font-family:var(--mono);color:var(--ora)">${d.qh||'—'}</td>
+      <td style="padding:4px 8px;text-align:center;font-family:var(--mono);color:var(--grn)">${d.qs}</td>
+      <td style="padding:4px 8px;text-align:center;font-family:var(--mono);font-weight:600;color:var(--blue)">${(d.qc*n).toFixed(3)}</td>
+      <td style="padding:4px 8px;text-align:center;font-family:var(--mono);font-weight:600;color:var(--ora)">${d.qh?(d.qh*n).toFixed(3):'—'}</td>
+      <td style="padding:4px 8px;text-align:center;font-family:var(--mono);font-weight:600;color:var(--grn)">${(d.qs*n).toFixed(3)}</td>
+    </tr>`;
+  }).join('');
+  if(!rows) return '<div style="padding:12px;color:var(--text3);font-size:11px">სანტ. ხელსაწყო არ არის. ცხრილში შეიყვანეთ რაოდ.</div>';
+  return `<table style="width:100%;border-collapse:collapse;font-size:11px">
+    <thead><tr style="background:var(--sur2)">
+      <th style="padding:4px 8px;text-align:left;border:1px solid var(--bdr)">ხელსაწყო</th>
+      <th style="padding:4px 8px;border:1px solid var(--bdr)">რაოდ.</th>
+      <th style="padding:4px 8px;border:1px solid var(--bdr);color:var(--blue)">q₀ ცივ l/s</th>
+      <th style="padding:4px 8px;border:1px solid var(--bdr);color:var(--ora)">q₀ ცხ l/s</th>
+      <th style="padding:4px 8px;border:1px solid var(--bdr);color:var(--grn)">q₀ კნლ l/s</th>
+      <th style="padding:4px 8px;border:1px solid var(--bdr);color:var(--blue)">∑ ცივ l/s</th>
+      <th style="padding:4px 8px;border:1px solid var(--bdr);color:var(--ora)">∑ ცხ l/s</th>
+      <th style="padding:4px 8px;border:1px solid var(--bdr);color:var(--grn)">∑ კნლ l/s</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr style="background:var(--navy);color:#fff">
+      <td colspan="5" style="padding:5px 8px;font-weight:700;text-align:left">∑ სულ სათავსო</td>
+      <td style="padding:5px 8px;text-align:center;font-family:var(--mono);font-weight:700">${(r.q_cold||0).toFixed(3)}</td>
+      <td style="padding:5px 8px;text-align:center;font-family:var(--mono);font-weight:700">${(r.q_hot||0).toFixed(3)}</td>
+      <td style="padding:5px 8px;text-align:center;font-family:var(--mono);font-weight:700">${(r.q_sewage||0).toFixed(3)}</td>
+    </tr></tfoot>
+  </table>
+  <div style="margin-top:6px;font-size:9px;color:var(--text3);padding:4px 8px">
+    СП 30.13330.2020 ცხრ.А.1 — q₀: ერთეულის ნომინ. ხარჯი. Tab 1 ავტ. ითვლება ამ მონ.-ებიდან.
+  </div>`;
 }
 
 /* ══ BUILD SUB-PANEL ROW ══ */
@@ -7054,105 +7314,11 @@ function buildPanelRow(fl, r){
   // add wp dropdown
   const wpPresetOpts=WP_PRESETS.map(p=>`<option value="${p.type}">${p.icon} ${p.name_ka}</option>`).join('');
 
-  return `<tr id="vpanel_${rid}" class="vt-panel${r.vent_open?' open':''}">
-  <td colspan="18">
+  return `<tr id="wpanel_${rid}" class="vt-panel${r.water_open?' open':''}">
+  <td colspan="21">
   <div class="panel-wrap">
   <div class="panel-inner">
-
-    <!-- SECTION: SUPPLY / FRESH AIR -->
-    <div class="panel-section">
-      <div class="panel-section-title" style="display:flex;align-items:center;gap:8px">
-        <span>📥</span> სუფთა ჰაერი — Supply &nbsp;<span style="font-weight:400;opacity:.7">${std==='ashrae'?'ASHRAE 62.1-2022 ცხრ. 6-1':'ГОСТ 30494 / СП 60'}</span>
-        ${r._origin?`
-        <button onclick="resetAll('${fid}','${rid}')" title="ყველა მნიშვნელობის აღდგენა" style="margin-left:auto;background:none;border:1.5px solid var(--bdr2);color:var(--text3);padding:2px 8px;border-radius:12px;font-size:9px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .12s" onmouseover="this.style.borderColor='var(--blue)';this.style.color='var(--blue)'" onmouseout="this.style.borderColor='var(--bdr2)';this.style.color='var(--text3)'">↺ Reset All</button>
-        <button onclick="onFuncChange('${fid}','${rid}','${r._origin_func}')" title="ტიპის reset" style="background:none;border:1.5px solid var(--bdr2);color:var(--text3);padding:2px 8px;border-radius:12px;font-size:9px;font-weight:700;cursor:pointer;transition:all .12s" onmouseover="this.style.borderColor='var(--ora)';this.style.color='var(--ora)'" onmouseout="this.style.borderColor='var(--bdr2)';this.style.color='var(--text3)'">↺ Origin</button>
-        `:''}
-      </div>
-
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--text2);margin-bottom:8px">
-        <span style="color:var(--text3);font-size:9px;font-weight:700">Rp</span>
-        <input type="number" value="${v.rate_pPers}" step="0.1" min="0"
-          style="width:44px;font-family:var(--mono);font-size:11px;font-weight:600;background:#fff;border:1.5px solid var(--bdr2);border-radius:4px;padding:2px 4px;outline:none;text-align:center;color:var(--blue)"
-          oninput="setVentField('${fid}','${rid}','rate_pPers',+this.value)">
-        ${r._origin?`<button onclick="resetField('${fid}','${rid}','rp')" title="Rp reset" style="background:none;border:none;color:var(--text3);font-size:10px;cursor:pointer;padding:0 1px" onmouseover="this.style.color='var(--blue)'" onmouseout="this.style.color='var(--text3)'">↺</button>`:''}
-        <span style="color:var(--text3);font-size:9px">${unit}/კ × <span data-pn="${rid}">${r.people}</span> = <b style="color:var(--blue)"><span data-pfp="${rid}">${qFreshPerPers.toFixed(0)}</span></b> m³/h</span>
-        <span style="color:var(--bdr2);padding:0 2px">|</span>
-        <span style="color:var(--text3);font-size:9px;font-weight:700">Ra</span>
-        <input type="number" value="${v.rate_pArea}" step="0.05" min="0"
-          style="width:44px;font-family:var(--mono);font-size:11px;font-weight:600;background:#fff;border:1.5px solid var(--bdr2);border-radius:4px;padding:2px 4px;outline:none;text-align:center;color:var(--blue)"
-          oninput="setVentField('${fid}','${rid}','rate_pArea',+this.value)">
-        ${r._origin?`<button onclick="resetField('${fid}','${rid}','ra')" title="Ra reset" style="background:none;border:none;color:var(--text3);font-size:10px;cursor:pointer;padding:0 1px" onmouseover="this.style.color='var(--blue)'" onmouseout="this.style.color='var(--text3)'">↺</button>`:''}
-        <span style="color:var(--text3);font-size:9px">${unit}/m² × <span data-pa="${rid}">${r.area}</span> = <b style="color:var(--blue)"><span data-pfa="${rid}">${qFreshPerArea.toFixed(0)}</span></b> m³/h</span>
-      </div>
-
-      <div class="q-result">
-        <span class="q-label">Q მოდინება</span>
-        <span class="q-value" data-pqs="${rid}">${qSup}</span>
-        <span class="q-unit">m³/h</span>
-      </div>
-    </div>
-
-    <!-- SECTION: EXHAUST -->
-    <div class="panel-section">
-      <div class="panel-section-title"><span>📤</span> გაწოვა — Exhaust / სველი წ. + დანადგ.</div>
-      
-      ${wpRows.length>0?`<table class="wpt">
-        <thead><tr>
-          <th class="left">ტიპი / სახელი</th>
-          <th>ნორმ.</th>
-          <th>რაოდ.</th>
-          <th>მოდ. m³/h</th>
-          <th>გაწ. m³/h</th>
-          <th style="width:22px"></th>
-        </tr></thead>
-        <tbody>${wpRows}</tbody>
-      </table>`:'<div style="font-size:10px;color:var(--text3);padding:6px 0">ჯერ არ დამატებია</div>'}
-
-      <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">
-        <select id="wp_sel_${rid}" style="font-family:var(--sans);font-size:10px;padding:3px 6px;border:1.5px solid var(--bdr2);border-radius:5px;background:#fff;cursor:pointer;outline:none">
-          ${wpPresetOpts}
-        </select>
-        <button class="btn-add-wp" onclick="addWetPoint('${fid}','${rid}',document.getElementById('wp_sel_${rid}').value)">
-          ＋ დამატება
-        </button>
-      </div>
-
-      <div class="q-result exhaust" style="margin-top:10px">
-        <span class="q-label">Q გაწოვა</span>
-        <span class="q-value" data-pqe="${rid}">${qExh}</span>
-        <span class="q-unit">m³/h</span>
-      </div>
-    </div>
-
-    <!-- SECTION: BALANCE BAR -->
-    <div class="panel-section full">
-      <div class="balance-bar">
-        <div class="bal-block">
-          <span class="bal-lbl">Q მოდ.</span>
-          <span class="bal-val s" data-pbqs="${rid}">${qSup}</span>
-          <span class="rate-unit">m³/h</span>
-        </div>
-        <span style="color:var(--text3);font-weight:700">−</span>
-        <div class="bal-block">
-          <span class="bal-lbl">Q გაწ.</span>
-          <span class="bal-val e" data-pbqe="${rid}">${qExh}</span>
-          <span class="rate-unit">m³/h</span>
-        </div>
-        <span style="color:var(--text3);font-weight:700">=</span>
-        <div class="bal-block">
-          <span class="bal-lbl">ΔQ</span>
-          <span class="bal-val ${dqCls}" data-pbdq="${rid}">${dqStr}</span>
-          <span class="rate-unit">m³/h</span>
-        </div>
-        <div style="margin-left:10px" data-pbbadge="${rid}">${balanceBadgeHtml(r)}</div>
-        <div class="bal-pa-wrap">
-          <span class="bal-pa-lbl">სპეც. წნევა:</span>
-          <input class="bal-pa-inp" type="number" value="${r.pressure_pa}" step="1" placeholder="0" oninput="setRoomField('${fid}','${rid}','pressure_pa',+this.value)">
-          <span class="rate-unit">Pa</span>
-        </div>
-      </div>
-    </div>
-
+  \${buildWaterPanelInner(r)}
   </div><!-- /panel-inner -->
   </div><!-- /panel-wrap -->
   </td>
@@ -7214,29 +7380,32 @@ function buildFloor(fl){
             <th class="vgn" colspan="1"></th>
             <th class="vgn" colspan="1">#</th>
             <th class="vgn" colspan="3">🏷 საიდენტ.</th>
-            <th class="vgn" colspan="4">📐 განზომ.</th>
-            <th class="vgg" colspan="3">🌬 ვენტ. m³/h</th>
-            <th class="vgh" colspan="2">❄ ზამთარი</th>
-            <th class="vgc" colspan="2">☀ ზაფხული</th>
-            <th class="vgn" colspan="2"></th>
+            <th class="vgn" colspan="3">📐 განზომ.</th>
+            <th class="vgp" colspan="9">🚿 სანტ. ხელსაწყოები — СП 30.13330 ცხრ.А.1</th>
+            <th class="vgc" colspan="3">💧 წყლის დებიტი l/s</th>
+            <th class="vgn" colspan="1"></th>
           </tr>
           <tr class="vsh">
             <th class="c26">▶</th>
             <th class="c26">#</th>
             <th class="c52">ოთ. №</th>
             <th class="c110">დასახელება</th>
-            <th class="c160">ფუნქცია / სტ. კლ.</th>
+            <th class="c160">ფუნქცია / სთ.</th>
             <th class="c44">ფართი<br>m²</th>
             <th class="c36">სიმ.<br>m</th>
-            <th class="c40">V<br>m³</th>
             <th class="c36">ხალხი</th>
-            <th class="c44">Q მოდ.<br>m³/h</th>
-            <th class="c44">Q გაწ.<br>m³/h</th>
-            <th class="c56">წნ.<br>Pa</th>
-            <th class="c36">T°C<br>❄</th>
-            <th class="c36">φ%<br>❄</th>
-            <th class="c36">T°C<br>☀</th>
-            <th class="c36">φ%<br>☀</th>
+            <th class="c32" title="WC / უნიტაზი">🚽<br>WC</th>
+            <th class="c32" title="შხაპი">🚿<br>შხ</th>
+            <th class="c32" title="აბაზანა">🛁<br>აბ</th>
+            <th class="c32" title="ხელსაბანი">🚰<br>ხლ</th>
+            <th class="c32" title="სამზ. ნიჟარა">🍽<br>სმ</th>
+            <th class="c32" title="სარეცხი მანქ.">🧺<br>სრ</th>
+            <th class="c32" title="ჭურჭ. მანქ.">🫧<br>ჭმ</th>
+            <th class="c32" title="ბიდე">🪠<br>ბდ</th>
+            <th class="c32" title="კანალ. ონკ.">🚱<br>კნ</th>
+            <th class="c44">♻ ცივ.<br>l/s</th>
+            <th class="c44">♨ ცხ.<br>l/s</th>
+            <th class="c44">⬇ კნლ.<br>l/s</th>
             <th class="c26">×</th>
           </tr>
         </thead>
@@ -7245,22 +7414,25 @@ function buildFloor(fl){
           <tr class="vt-sum">
             <td colspan="5" style="text-align:left;padding-left:10px">∑ სართული:</td>
             <td class="s-o" data-sa="${fid}">${ta.toFixed(1)}</td>
-            <td></td><td></td>
-            <td class="s-o" data-sp="${fid}">${tp}</td>
-            <td class="s-s" data-ss="${fid}">${tqs}</td>
-            <td class="s-e" data-se="${fid}">${tqe}</td>
-            <td colspan="6"></td>
+            <td></td>
+            <td class="s-p" data-sp="${fid}">${tp}</td>
+            <td colspan="9"></td>
+            <td class="s-s" style="color:var(--blue)" data-sc="${fid}">${fl.rooms.reduce((s,r)=>s+(r.q_cold||0),0).toFixed(3)}</td>
+            <td class="s-e" style="color:var(--ora)" data-sh="${fid}">${fl.rooms.reduce((s,r)=>s+(r.q_hot||0),0).toFixed(3)}</td>
+            <td class="s-o" style="color:var(--grn)" data-sw="${fid}">${fl.rooms.reduce((s,r)=>s+(r.q_sewage||0),0).toFixed(3)}</td>
+            <td></td>
           </tr>
         </tbody>
       </table>
     </div>
     <div class="fc-foot">
-      <button class="btn-add-room" onclick="bldAddRoom('${fid}')">＋ ოთახის დამატება</button>
+      <button class="btn-add-room" onclick="bldAddRoom('${fid}')">＋ სათავსოს დამ.</button>
       <div class="foot-stats">
-        <span>ფართი: <b style="color:var(--ora)" data-foot-a="${fid}">${ta.toFixed(0)}</b> m²</span>
+        <span>ფართი: <b style="color:var(--navy)" data-foot-a="${fid}">${ta.toFixed(0)}</b> m²</span>
         <span>ხალხი: <b style="color:var(--grn)" data-foot-p="${fid}">${tp}</b></span>
-        <span>📥 <b style="color:var(--blue)" data-foot-s="${fid}">${tqs}</b> m³/h</span>
-        <span>📤 <b style="color:var(--ora)" data-foot-e="${fid}">${tqe}</b> m³/h</span>
+        <span>💧 <b style="color:var(--blue)" data-foot-c="${fid}">${fl.rooms.reduce((s,r)=>s+(r.q_cold||0),0).toFixed(3)}</b> l/s</span>
+        <span>♨ <b style="color:var(--ora)" data-foot-h="${fid}">${fl.rooms.reduce((s,r)=>s+(r.q_hot||0),0).toFixed(3)}</b> l/s</span>
+        <span>⬇ <b style="color:var(--grn)" data-foot-w="${fid}">${fl.rooms.reduce((s,r)=>s+(r.q_sewage||0),0).toFixed(3)}</b> l/s</span>
       </div>
     </div>
   </div>
@@ -7280,18 +7452,19 @@ function bldRender(){
   const mycBtn=document.getElementById('btn-myconf');
   if(mycBtn) mycBtn.className='std-btn'+(std==='myconf'?' act-ashrae':'');
 
-  let tf=state.floors.length,tr=0,ta=0,tp=0,tqs=0,tqe=0;
+  let tf=state.floors.length,tr=0,ta=0,tp=0,tqc=0,tqh=0,tqsw=0;
   state.floors.forEach(fl=>{
     tr+=fl.rooms.length;
-    fl.rooms.forEach(r=>{ta+=r.area||0;tp+=r.people||0;tqs+=r.q_supply||0;tqe+=r.q_exhaust||0;});
+    fl.rooms.forEach(r=>{ta+=r.area||0;tp+=r.people||0;tqc+=r.q_cold||0;tqh+=r.q_hot||0;tqsw+=r.q_sewage||0;});
   });
   document.getElementById('vs-stats').innerHTML=`
     <div class="vs-st"><span class="vs-sl">სართ.</span><span class="vs-sv" id="gf">${tf}</span></div>
     <div class="vs-st"><span class="vs-sl">სათავსო</span><span class="vs-sv" id="gr">${tr}</span></div>
     <div class="vs-st"><span class="vs-sl">სულ ფართი</span><span class="vs-sv" id="ga">${ta.toFixed(0)}</span><span class="vs-su">m²</span></div>
     <div class="vs-st"><span class="vs-sl">სულ ხალხი</span><span class="vs-sv" id="gp">${tp}</span><span class="vs-su">კაცი</span></div>
-    <div class="vs-st"><span class="vs-sl">📥 სულ მოდ.</span><span class="vs-sv" style="color:var(--blue)" id="gqs">${tqs}</span><span class="vs-su">m³/h</span></div>
-    <div class="vs-st"><span class="vs-sl">📤 სულ გაწ.</span><span class="vs-sv" style="color:var(--ora)" id="gqe">${tqe}</span><span class="vs-su">m³/h</span></div>
+    <div class="vs-st"><span class="vs-sl">💧 ცივი</span><span class="vs-sv" style="color:var(--blue)" id="gqc">${tqc.toFixed(3)}</span><span class="vs-su">l/s</span></div>
+    <div class="vs-st"><span class="vs-sl">♨ ცხელი</span><span class="vs-sv" style="color:var(--ora)" id="gqh">${tqh.toFixed(3)}</span><span class="vs-su">l/s</span></div>
+    <div class="vs-st"><span class="vs-sl">⬇ კანალ.</span><span class="vs-sv" style="color:var(--grn)" id="gqsw">${tqsw.toFixed(3)}</span><span class="vs-su">l/s</span></div>
   `;
 
   const sd = std==='myconf'
