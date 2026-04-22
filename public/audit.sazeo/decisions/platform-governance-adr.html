@@ -170,6 +170,8 @@ pre .p  { color: var(--purple); font-weight: 600; }
       <div><a href="#s3"><span>03</span>Personal user settings — პირადი ნასტროიკა</a></div>
       <div><a href="#s4"><span>04</span>GDPR Right-to-Erasure — მომხმარებლის ამოშლა</a></div>
       <div><a href="#s5"><span>05</span>Observability &amp; Traceability — ყველაფრის ტრეკინგი</a></div>
+      <div><a href="#s6"><span>06</span>Token management — API & device token კვოტა</a></div>
+      <div><a href="#s7"><span>07</span>საექსპლუატაციო კალკულატორი — BMS operational cost</a></div>
     </div>
   </div>
 
@@ -663,6 +665,251 @@ pre .p  { color: var(--purple); font-weight: 600; }
         CI hooks: თუ <code>src/auth/</code> ან <code>src/guards/</code>-ი შეიცვალა და commit message-ში <code>[ADR-</code> არ არის → <strong>warning</strong> (not block — devs need room). 3+ warnings = CTO review required.
       </div>
       <div class="card-note">ADR tags in commits → auto-linkage in GitHub → clickable in PR reviews</div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       S6 — TOKEN MANAGEMENT
+  ══════════════════════════════════════════════════════ -->
+  <section id="s6">
+    <h2>
+      <span class="sec-tag" style="background:var(--purple-bg);color:var(--purple)">06</span>
+      Token Management — API &amp; Device Token კვოტა
+    </h2>
+
+    <p>პლატფორმა იყენებს ტოკენებს სამი სხვადასხვა კონტექსტში. ყველა ტოკენს <strong>კვოტა, ვადა, და audit trail</strong> აქვს.</p>
+
+    <div class="three-col">
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">🔑</span><span class="card-title">Personal Access Tokens</span></div>
+        <div class="card-body">
+          User-ი ქმნის API-ს გამოსაყენებლად (CI/CD, scripts, integrations). GitHub PAT-ის ანალოგი. Scope-bound. Max 10 per user.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">📡</span><span class="card-title">Device Tokens</span></div>
+        <div class="card-body">
+          IoT მოწყობილობა ავთენტიფიკაციისთვის (MQTT / HTTP). Per-device, non-expiring default. Revocable by org_admin.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">🔗</span><span class="card-title">Integration Tokens</span></div>
+        <div class="card-body">
+          Webhook endpoint-ებისთვის ან third-party სისტემებისთვის (Zapier, custom dashboards). Per-org, scope-limited.
+        </div>
+      </div>
+    </div>
+
+    <h3>Token quota per plan</h3>
+    <div class="flow">
+      <div class="flow-title">Quota matrix</div>
+      <pre>
+  <span class="c">plan          PAT/user   device tokens   integration   rate limit</span>
+  <span class="c">─────────────────────────────────────────────────────────────────</span>
+  <span class="s">free          3          10              1             100 req/min</span>
+  <span class="w">starter       10         100             5             500 req/min</span>
+  <span class="k">professional  25         1 000           20            2 000 req/min</span>
+  <span class="t">enterprise    unlimited  unlimited        unlimited     custom SLA</span></pre>
+    </div>
+
+    <h3>Token lifecycle</h3>
+    <div class="step-list">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>შექმნა</strong> — <code>POST /me/tokens</code> → <code>{name, scope[], expiresInDays?}</code>. Token plaintext ერთხელ ბრუნდება response-ში. <strong>DB-ში hash-ი ინახება</strong> (SHA-256). მეორედ plaintext-ს ვერ ნახავ.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>გამოყენება</strong> — <code>Authorization: Bearer saz_pat_xxxxxxxxxxxxxxxx</code>. Prefix <code>saz_pat_</code> / <code>saz_dev_</code> / <code>saz_int_</code> — ტიპის იდენტიფიცირება ერთი მზერით.
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Usage tracking</strong> — ყოველ request-ზე: <code>token_usage_log(token_id, endpoint, timestamp, ip, org_id)</code>. User-ს UI-ში ეჩვენება "ბოლო 30 დღის აქტივობა".
+        </div>
+      </div>
+      <div class="step danger">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Revocation</strong> — <code>DELETE /me/tokens/:id</code>. Instant — Redis-ში revoked set. 0ms lag. GDPR erasure-ზე — ყველა PAT auto-revoke.
+        </div>
+      </div>
+    </div>
+
+    <h3>Token quota calculator — API</h3>
+    <div class="flow">
+      <div class="flow-title">GET /me/tokens/quota — real-time usage vs limit</div>
+      <pre>
+  {
+    plan: <span class="s">"professional"</span>,
+    personal_access_tokens: { used: <span class="w">7</span>,   limit: <span class="w">25</span>,    pct: <span class="w">28</span> },
+    device_tokens:          { used: <span class="w">342</span>, limit: <span class="w">1000</span>,  pct: <span class="w">34</span> },
+    integration_tokens:     { used: <span class="w">4</span>,   limit: <span class="w">20</span>,    pct: <span class="w">20</span> },
+    rate_limit: {
+      window_ms:    <span class="w">60000</span>,
+      limit:        <span class="w">2000</span>,
+      current:      <span class="w">143</span>,
+      reset_at:     <span class="s">"2026-04-23T10:01:00Z"</span>
+    },
+    <span class="c">// 80%+ → warning email to org_admin</span>
+    <span class="c">// 100% → 429 Too Many Requests</span>
+  }</pre>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:14px">
+      <div style="padding:8px 12px;font-size:10.5px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border)">api_tokens table</div>
+      <table class="schema-table">
+        <tr><th>column</th><th>type</th><th>note</th></tr>
+        <tr class="pk"><td class="col-name">id</td><td class="col-type">uuid PK</td><td class="col-note"></td></tr>
+        <tr class="fk"><td class="col-name">user_id</td><td class="col-type">uuid FK → users</td><td class="col-note">NULL for device/integration tokens</td></tr>
+        <tr class="fk"><td class="col-name">org_id</td><td class="col-type">uuid FK → organizations</td><td class="col-note">always scoped to org</td></tr>
+        <tr><td class="col-name">token_type</td><td class="col-type">enum</td><td class="col-note">personal | device | integration</td></tr>
+        <tr><td class="col-name">name</td><td class="col-type">varchar(80)</td><td class="col-note">human label ("CI deploy key")</td></tr>
+        <tr><td class="col-name">token_hash</td><td class="col-type">char(64)</td><td class="col-note">SHA-256. Plaintext ერთხელ ბრუნდება, არ ინახება.</td></tr>
+        <tr><td class="col-name">prefix</td><td class="col-type">char(8)</td><td class="col-note">saz_pat_ / saz_dev_ / saz_int_ — lookup-ისთვის</td></tr>
+        <tr><td class="col-name">scope</td><td class="col-type">text[]</td><td class="col-note">["read:devices", "write:commands"]</td></tr>
+        <tr><td class="col-name">expires_at</td><td class="col-type">timestamptz NULL</td><td class="col-note">NULL = no expiry (device tokens)</td></tr>
+        <tr><td class="col-name">last_used_at</td><td class="col-type">timestamptz NULL</td><td class="col-note">updated on each request (async)</td></tr>
+        <tr><td class="col-name">revoked_at</td><td class="col-type">timestamptz NULL</td><td class="col-note">instant effect via Redis set</td></tr>
+      </table>
+    </div>
+
+    <div class="alert warning">
+      <span class="alert-icon">⚠</span>
+      <div><strong>Secret scanning:</strong> gitleaks CI rule + GitHub secret scanning-ი configured to detect <code>saz_pat_</code>, <code>saz_dev_</code>, <code>saz_int_</code> prefixes in code. Leak detection → auto-revoke + owner notification.</div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       S7 — OPERATIONAL CALCULATOR
+  ══════════════════════════════════════════════════════ -->
+  <section id="s7">
+    <h2>
+      <span class="sec-tag" style="background:var(--teal-bg);color:var(--teal)">07</span>
+      საექსპლუატაციო კალკულატორი — BMS Operational Cost
+    </h2>
+
+    <p>BMS/IoT პლატფორმის მომხმარებელს სჭირდება <strong>რეალური ოპერაციული ხარჯების გაანგარიშება</strong> — ენერგია, ტექნიკური მომსახურება, სისტემის ROI. ეს კალკულატორი embed-ული feature-ია (არა გარე tool) — real device data-ის საფუძველზე პასუხებს იძლევა.</p>
+
+    <div class="two-col">
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">⚡</span><span class="card-title">ენერგო-კალკულატორი</span></div>
+        <div class="card-body">
+          device sensor data-ის საფუძველზე: მოხმარება kWh · ტარიფი (GEL/kWh, USD/kWh) · peak vs off-peak · baseline vs actual comparison. შედეგი: ყოველთვიური ხარჯი + savings vs. pre-BMS.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">🔧</span><span class="card-title">ტექ-მომსახურების კალკულატორი</span></div>
+        <div class="card-body">
+          device maintenance history + alert frequency-ის საფუძველზე: MTBF (Mean Time Between Failures) · annual maintenance cost · predictive maintenance savings estimate.
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><span style="font-size:18px">📈</span><span class="card-title">ROI კალკულატორი</span></div>
+        <div class="card-body">
+          BMS installation cost (user ჩაყრის) + annual savings (energy + maintenance) → payback period months · 5-year NPV · internal rate of return.
+        </div>
+      </div>
+    </div>
+
+    <h3>Input / Output contract — API</h3>
+    <div class="flow">
+      <div class="flow-title">POST /organizations/:orgId/calculator/operational</div>
+      <pre>
+  <span class="c">// Input — user ჩაყრის ან ავტო-populate-ებს device data-იდან</span>
+  {
+    period: { from: <span class="s">"2026-01-01"</span>, to: <span class="s">"2026-03-31"</span> },
+    energy: {
+      tariff_kwh_gel:   <span class="w">0.28</span>,
+      tariff_kwh_peak:  <span class="w">0.42</span>,    <span class="c">// peak hours surcharge</span>
+      baseline_kwh:     <span class="w">18500</span>,   <span class="c">// pre-BMS reference (user input)</span>
+      use_device_data:  <span class="s">true</span>     <span class="c">// pull from sensors automatically</span>
+    },
+    maintenance: {
+      service_contracts_gel: <span class="w">1200</span>,
+      emergency_calls:       <span class="w">3</span>,
+      avg_call_cost_gel:     <span class="w">450</span>
+    },
+    installation: {
+      capex_gel:     <span class="w">85000</span>,   <span class="c">// BMS installation cost</span>
+      financed:      <span class="s">false</span>
+    }
+  }
+
+  <span class="c">// Output</span>
+  {
+    energy: {
+      actual_kwh:         <span class="w">14230</span>,
+      actual_cost_gel:    <span class="w">3984</span>,
+      baseline_cost_gel:  <span class="w">5180</span>,
+      savings_gel:        <span class="w">1196</span>,
+      savings_pct:        <span class="s">"23.1%"</span>,
+      peak_reduction_pct: <span class="s">"18.4%"</span>
+    },
+    maintenance: {
+      total_cost_gel:   <span class="w">2550</span>,
+      alerts_resolved:  <span class="w">47</span>,
+      mtbf_days:        <span class="w">24.3</span>,
+      predictive_saved: <span class="w">900</span>   <span class="c">// estimated from alert-to-failure patterns</span>
+    },
+    roi: {
+      annual_savings_gel:  <span class="w">8574</span>,
+      payback_months:      <span class="w">119</span>,
+      npv_5yr_gel:         <span class="w">-42770</span>,  <span class="c">// negative = still recovering capex</span>
+      irr_pct:             <span class="s">"8.2%"</span>,
+      break_even_date:     <span class="s">"2036-03</span>"
+    },
+    <span class="c">// ready for PDF export or dashboard widget</span>
+    generated_at: <span class="s">"2026-04-23T10:00:00Z"</span>
+  }</pre>
+    </div>
+
+    <h3>პლატფორმის subscription კალკულატორი</h3>
+    <p>User-ი ადევნებს თვალყურს რამდენი ტოკენი, device, storage და API call-ი გამოიყენა — და ხედავს preview-ს: "ამ მოხმარებით შემდეგ ბილინგ პერიოდზე $X გიჯდება".</p>
+
+    <div class="flow">
+      <div class="flow-title">GET /organizations/:orgId/calculator/billing-preview</div>
+      <pre>
+  {
+    current_period: { from: <span class="s">"2026-04-01"</span>, to: <span class="s">"2026-04-23"</span> },
+    usage: {
+      devices_active:    <span class="w">342</span>,
+      api_calls_total:   <span class="w">284500</span>,
+      storage_gb:        <span class="w">12.4</span>,
+      data_points_m:     <span class="w">18.7</span>   <span class="c">// millions of sensor readings</span>
+    },
+    current_plan: <span class="s">"professional"</span>,
+    projected_cost_usd: <span class="w">289</span>,
+    overage: {
+      devices:    { excess: <span class="w">0</span>,   cost_usd: <span class="w">0</span>   },
+      api_calls:  { excess: <span class="w">0</span>,   cost_usd: <span class="w">0</span>   },
+      storage:    { excess: <span class="w">2.4</span>, cost_usd: <span class="w">4.8</span> }  <span class="c">// $2/GB overage</span>
+    },
+    recommendation: {
+      action: <span class="s">"none"</span>,  <span class="c">// or "upgrade" | "downgrade"</span>
+      reason: <span class="s">"usage within plan limits"</span>
+    }
+  }</pre>
+    </div>
+
+    <h3>Unit standardization — კალკულატორში</h3>
+    <div class="card">
+      <div class="card-head"><span class="card-id">PG-007</span><span class="card-title">Measurement units — explicit, never implicit</span><span class="badge locked">Locked</span></div>
+      <div class="card-body">
+        ყოველი numeric value კალკულატორის response-ში <strong>unit-ს ატარებს</strong>:<br><br>
+        <code>{ "value": 14230, "unit": "kWh" }</code> — არა <code>{ "kwh": 14230 }</code><br><br>
+        DB-ში raw sensor data <strong>ყოველთვის SI base unit-ში</strong> ინახება (Wh, Pa, °C, m³). Display layer-ი convert-ავს (kWh, bar, °F, L). Unit enum: <code>src/common/units.enum.ts</code>. Meta-test: ყოველ calculator endpoint-ს response-ში unit field უნდა ჰქონდეს.
+      </div>
+      <div class="card-note">→ ეს fixes audit-ის მიერ ფიქსირებულ unit implicit assumption-ს — dmt-web-app-ში kW vs kWh confusion-ი billing discrepancy-ს იწვევდა</div>
+    </div>
+
+    <div class="alert teal">
+      <span class="alert-icon">📊</span>
+      <div><strong>Export:</strong> კალკულატორის შედეგი გამოყვება PDF (pdfmake) და XLSX (exceljs) ფორმატში. Report header-ში: org სახელი, period, generated_at, version. ორგანიზაციის ლოგო — თუ uploaded.</div>
     </div>
   </section>
 
