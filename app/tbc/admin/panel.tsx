@@ -285,12 +285,6 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
     loadAll();
   }
 
-  async function resetPassword(u: TbcUser) {
-    const pw = prompt(`ახალი პაროლი ${u.username}-სთვის (min 6 სიმბოლო):`);
-    if (!pw || pw.length < 6) return;
-    await patchUser(u.id, {password: pw}, 'პაროლი შეიცვალა');
-  }
-
   async function setEmail(u: TbcUser) {
     const current = u.email || '';
     const next = prompt(`${u.username}-ის ელფოსტა:`, current);
@@ -662,9 +656,13 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                           </td>
                           <td className="px-4 py-2.5">
                             {u.email ? (
-                              <span className="font-mono text-xs text-slate-600">
+                              <button
+                                onClick={() => setEmail(u)}
+                                className="inline-flex items-center gap-1 font-mono text-xs text-slate-600 hover:text-[#0071CE]"
+                                title="ელფოსტის შეცვლა"
+                              >
                                 {u.email}
-                              </span>
+                              </button>
                             ) : (
                               <button
                                 onClick={() => setEmail(u)}
@@ -698,9 +696,9 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                             {u.last_login_at ? formatDate(u.last_login_at) : '—'}
                           </td>
                           <td className="px-4 py-2.5 text-right">
-                            <div className="inline-flex flex-col items-end gap-1 text-xs">
+                            <div className="inline-flex items-center justify-end gap-1 text-xs">
                               {u.role === 'user' && (
-                                <div className="flex gap-1">
+                                <>
                                   <AccessPill
                                     label="🏪 ფილიალები"
                                     summary={branchAccessSummary[u.id]}
@@ -713,67 +711,52 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                                     onClick={() => openCompanyAccess(u)}
                                     title="მიანიჭე წვდომა კომპანიებზე"
                                   />
-                                </div>
+                                  <span className="mx-0.5 h-5 w-px bg-slate-200" aria-hidden />
+                                </>
                               )}
-                              <div className="flex gap-1">
-                                {u.email && !u.is_static && (
-                                  <button
-                                    onClick={() => regenerateUserPassword(u)}
-                                    className="rounded border border-[#0071CE]/30 bg-[#E6F2FB] px-2 py-1 font-semibold text-[#0071CE] hover:bg-[#0071CE] hover:text-white"
-                                    title="ახალი 4-char პაროლი + email"
-                                  >
-                                    🔑 pw
-                                  </button>
-                                )}
-                                {u.email && (
-                                  <button
-                                    onClick={() => sendResetEmail(u)}
-                                    className="rounded border border-slate-200 bg-white px-2 py-1 hover:bg-slate-50"
-                                    title="reset ბმული email-ზე"
-                                  >
-                                    📧 reset
-                                  </button>
-                                )}
+                              {u.email && !u.is_static && (
                                 <button
-                                  onClick={() => setEmail(u)}
-                                  className="rounded border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50"
-                                  title="ელფოსტის შეცვლა"
+                                  onClick={() => regenerateUserPassword(u)}
+                                  className="rounded border border-[#0071CE]/30 bg-[#E6F2FB] px-2 py-1 font-semibold text-[#0071CE] hover:bg-[#0071CE] hover:text-white"
+                                  title="ახალი 4-char პაროლი + email"
                                 >
-                                  ✉
+                                  🔑 pw
                                 </button>
+                              )}
+                              {u.email && (
                                 <button
-                                  onClick={() => resetPassword(u)}
-                                  className="rounded border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50"
-                                  title="პაროლის ხელით შეცვლა"
+                                  onClick={() => sendResetEmail(u)}
+                                  className="rounded border border-slate-200 bg-white px-2 py-1 hover:bg-slate-50"
+                                  title="reset ბმული email-ზე"
                                 >
-                                  🔒
+                                  📧 reset
                                 </button>
-                                {!u.is_static && (
-                                  <>
-                                    <span className="mx-1 w-px bg-slate-200" aria-hidden />
-                                    <button
-                                      onClick={() =>
-                                        patchUser(
-                                          u.id,
-                                          {active: !u.active},
-                                          u.active ? 'გამოირთო' : 'ჩაირთო'
-                                        )
-                                      }
-                                      className="rounded border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50"
-                                      title={u.active ? 'გამორთვა' : 'ჩართვა'}
-                                    >
-                                      {u.active ? '⏸' : '▶'}
-                                    </button>
-                                    <button
-                                      onClick={() => deleteUser(u)}
-                                      className="rounded border border-red-200 bg-white px-2 py-1 text-red-600 hover:bg-red-50"
-                                      title="წაშლა"
-                                    >
-                                      ✕
-                                    </button>
-                                  </>
-                                )}
-                              </div>
+                              )}
+                              {!u.is_static && (
+                                <>
+                                  <span className="mx-0.5 h-5 w-px bg-slate-200" aria-hidden />
+                                  <button
+                                    onClick={() =>
+                                      patchUser(
+                                        u.id,
+                                        {active: !u.active},
+                                        u.active ? 'გამოირთო' : 'ჩაირთო'
+                                      )
+                                    }
+                                    className="rounded border border-slate-200 bg-white px-2 py-1 text-slate-600 hover:bg-slate-50"
+                                    title={u.active ? 'გამორთვა' : 'ჩართვა'}
+                                  >
+                                    {u.active ? '⏸' : '▶'}
+                                  </button>
+                                  <button
+                                    onClick={() => deleteUser(u)}
+                                    className="rounded border border-red-200 bg-white px-2 py-1 text-red-600 hover:bg-red-50"
+                                    title="წაშლა"
+                                  >
+                                    ✕
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>
