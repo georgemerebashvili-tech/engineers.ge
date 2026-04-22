@@ -13,6 +13,7 @@ import {
   X,
   Calculator,
   ChevronDown,
+  ChevronRight,
   FileDown,
   FileUp,
   Cable,
@@ -20,7 +21,12 @@ import {
   AlertCircle,
   Network,
   Paperclip,
-  Image as ImageIcon
+  Image as ImageIcon,
+  FolderPlus,
+  FolderOpen,
+  Folder as FolderIcon,
+  Pencil,
+  ZoomIn
 } from 'lucide-react';
 import {ResizableTable} from '@/components/dmt/resizable-table';
 import {
@@ -29,7 +35,11 @@ import {
   createProduct,
   computeBreakdown,
   cryptoRandomId,
+  loadFolders,
+  saveFolders,
+  createFolder,
   type Product,
+  type Folder as FolderType,
   type ComponentRow,
   type OverheadRow,
   type OverheadOp,
@@ -98,12 +108,18 @@ export default function ProductsCatalogPage() {
   const [q, setQ] = useState('');
   const [hydrated, setHydrated] = useState(false);
   const [trm, setTrm] = useState<TrmProduct[]>([]);
+  const [folders, setFolders] = useState<FolderType[]>([]);
+  const [sidebarWidth, setSidebarWidth] = useState(300);
+  const sidebarDragRef = useRef<{startX: number; startW: number} | null>(null);
 
   // hydrate from localStorage
   useEffect(() => {
     const list = loadProducts();
     setProducts(list);
     if (list.length > 0) setSelectedId(list[0].id);
+    setFolders(loadFolders());
+    const savedW = parseInt(localStorage.getItem('dmt_sidebar_w') || '300') || 300;
+    setSidebarWidth(Math.min(480, Math.max(180, savedW)));
     setHydrated(true);
   }, []);
 
@@ -118,6 +134,14 @@ export default function ProductsCatalogPage() {
   useEffect(() => {
     if (hydrated) saveProducts(products);
   }, [products, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) saveFolders(folders);
+  }, [folders, hydrated]);
+
+  useEffect(() => {
+    if (hydrated) localStorage.setItem('dmt_sidebar_w', String(sidebarWidth));
+  }, [sidebarWidth, hydrated]);
 
   const selected = useMemo(
     () => products.find((p) => p.id === selectedId) ?? null,
@@ -162,6 +186,54 @@ export default function ProductsCatalogPage() {
     );
   };
 
+  const onSidebarDragStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    sidebarDragRef.current = {startX: e.clientX, startW: sidebarWidth};
+    const onMove = (ev: MouseEvent) => {
+      if (!sidebarDragRef.current) return;
+      const next = Math.min(480, Math.max(180, sidebarDragRef.current.startW + ev.clientX - sidebarDragRef.current.startX));
+      setSidebarWidth(next);
+    };
+    const onUp = () => {
+      sidebarDragRef.current = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  const handleCreateFolder = () => {
+    const f = createFolder();
+    setFolders((prev) => [...prev, f]);
+  };
+
+  const handleDeleteFolder = (id: string) => {
+    if (!confirm('წავშალო საქაღალდე? პროდუქცია არ წაიშლება.')) return;
+    setFolders((prev) => prev.filter((f) => f.id !== id));
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.folderId === id ? {...p, folderId: undefined, updatedAt: new Date().toISOString()} : p
+      )
+    );
+  };
+
+  const handleRenameFolder = (id: string, name: string) => {
+    setFolders((prev) => prev.map((f) => (f.id === id ? {...f, name} : f)));
+  };
+
+  const handleToggleFolder = (id: string) => {
+    setFolders((prev) => prev.map((f) => (f.id === id ? {...f, collapsed: !f.collapsed} : f)));
+  };
+
+  const handleMoveToFolder = (productId: string, folderId: string | undefined) => {
+    setProducts((prev) =>
+      prev.map((p) =>
+        p.id === productId ? {...p, folderId, updatedAt: new Date().toISOString()} : p
+      )
+    );
+  };
+
   return (
     <div className="flex h-screen flex-col overflow-hidden">
       <header className="flex-shrink-0 border-b border-bdr bg-sur px-6 py-3 md:px-8">
@@ -188,9 +260,12 @@ export default function ProductsCatalogPage() {
       </header>
 
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* LEFT — product list */}
-        <aside className="w-[300px] shrink-0 border-r border-bdr bg-sur-2 flex flex-col overflow-hidden">
-          <div className="border-b border-bdr bg-sur px-3 py-2">
+        {/* LEFT — product list (resizable) */}
+        <aside
+          className="relative shrink-0 border-r border-bdr bg-sur-2 flex flex-col overflow-hidden"
+          style={{width: sidebarWidth}}
+        >
+          <div className="border-b border-bdr bg-sur px-3 py-2 space-y-2">
             <div className="relative">
               <Search
                 size={13}
@@ -205,9 +280,46 @@ export default function ProductsCatalogPage() {
                 className="w-full rounded-md border border-bdr bg-sur-2 pl-7 pr-2.5 py-1.5 text-[12px] text-text outline-none focus:border-blue focus:bg-sur"
               />
             </div>
+            <button
+              type="button"
+              onClick={handleCreateFolder}
+              className="inline-flex w-full items-center justify-center gap-1 rounded-md border border-bdr bg-sur-2 px-2 py-1 text-[11px] text-text-2 hover:border-blue-bd hover:bg-blue-lt hover:text-blue"
+            >
+              <FolderPlus size={12} /> ახალი საქაღალდე
+            </button>
           </div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-1.5">
-            {filtered.length === 0 ? (
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            {/* Folders first */}
+            {folders.map((folder) => (
+              <FolderGroup
+                key={folder.id}
+                folder={folder}
+                products={filtered.filter((p) => p.folderId === folder.id)}
+                selectedId={selectedId}
+                allFolders={folders}
+                onSelect={(id) => setSelectedId(id)}
+                onDeleteProduct={handleDelete}
+                onToggle={() => handleToggleFolder(folder.id)}
+                onRename={(name) => handleRenameFolder(folder.id, name)}
+                onDeleteFolder={() => handleDeleteFolder(folder.id)}
+                onMoveToFolder={handleMoveToFolder}
+                getIndex={(p) => products.findIndex((x) => x.id === p.id) + 1}
+              />
+            ))}
+            {/* Ungrouped products */}
+            {filtered.filter((p) => !p.folderId).map((p) => (
+              <ProductCard
+                key={p.id}
+                product={p}
+                index={products.findIndex((x) => x.id === p.id) + 1}
+                active={p.id === selectedId}
+                onSelect={() => setSelectedId(p.id)}
+                onDelete={() => handleDelete(p.id)}
+                folders={folders}
+                onMoveToFolder={(fId) => handleMoveToFolder(p.id, fId)}
+              />
+            ))}
+            {filtered.length === 0 && folders.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 text-center">
                 <Factory size={28} className="text-text-3 mb-2" />
                 <div className="text-[12px] text-text-3">
@@ -216,19 +328,13 @@ export default function ProductsCatalogPage() {
                     : 'ძიების შედეგი ცარიელია'}
                 </div>
               </div>
-            ) : (
-              filtered.map((p, idx) => (
-                <ProductCard
-                  key={p.id}
-                  product={p}
-                  index={products.findIndex((x) => x.id === p.id) + 1}
-                  active={p.id === selectedId}
-                  onSelect={() => setSelectedId(p.id)}
-                  onDelete={() => handleDelete(p.id)}
-                />
-              ))
             )}
           </div>
+          {/* Drag-resize handle */}
+          <div
+            className="absolute right-0 top-0 h-full w-1.5 cursor-col-resize select-none hover:bg-blue/20 active:bg-blue/40 transition-colors"
+            onMouseDown={onSidebarDragStart}
+          />
         </aside>
 
         {/* RIGHT — product detail */}
@@ -267,13 +373,17 @@ function ProductCard({
   index,
   active,
   onSelect,
-  onDelete
+  onDelete,
+  folders = [],
+  onMoveToFolder
 }: {
   product: Product;
   index: number;
   active: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  folders?: FolderType[];
+  onMoveToFolder?: (folderId: string | undefined) => void;
 }) {
   const {total} = computeBreakdown(product);
   return (
@@ -323,17 +433,23 @@ function ProductCard({
           {fmtCurrency(total)}
         </div>
       </div>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
-        className="absolute right-1 top-1 rounded-md p-1 text-text-3 opacity-0 transition-all hover:bg-red-lt hover:text-red group-hover:opacity-100"
-        aria-label="წაშლა"
-      >
-        <Trash2 size={13} />
-      </button>
+      {/* Hover action buttons */}
+      <div className="absolute right-1 top-1 flex items-center gap-0.5 opacity-0 transition-all group-hover:opacity-100">
+        {folders.length > 0 && onMoveToFolder && (
+          <FolderMoveButton product={product} folders={folders} onMove={onMoveToFolder} />
+        )}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="rounded-md p-1 text-text-3 hover:bg-red-lt hover:text-red"
+          aria-label="წაშლა"
+        >
+          <Trash2 size={13} />
+        </button>
+      </div>
     </div>
   );
 }
@@ -396,10 +512,16 @@ function ProductDetail({
             />
           </div>
         </div>
-        {/* Compact price pill always visible */}
-        <div className="shrink-0 rounded-lg border border-ora-bd bg-ora-lt px-3 py-1.5 text-right">
-          <div className="font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-text-3">გასაყიდი</div>
-          <div className="font-mono text-[16px] font-bold text-ora leading-tight">{fmtCurrency(total)}</div>
+        {/* Price badges — components subtotal + grand total */}
+        <div className="flex shrink-0 items-center gap-2">
+          <div className="rounded-lg border border-bdr bg-sur-2 px-3 py-1.5 text-right">
+            <div className="font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-text-3">კომპ.</div>
+            <div className="font-mono text-[13px] font-bold text-navy leading-tight">{fmtCurrency(subtotal)}</div>
+          </div>
+          <div className="rounded-lg border border-ora-bd bg-ora-lt px-3 py-1.5 text-right">
+            <div className="font-mono text-[9px] font-bold uppercase tracking-[0.08em] text-text-3">გასაყიდი</div>
+            <div className="font-mono text-[16px] font-bold text-ora leading-tight">{fmtCurrency(total)}</div>
+          </div>
         </div>
       </div>
 
@@ -501,6 +623,8 @@ function GeneralTab({
   onUpdate: (patch: Partial<Product>) => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const onPickImage = () => fileRef.current?.click();
 
@@ -509,36 +633,56 @@ function GeneralTab({
     if (!f) return;
     const reader = new FileReader();
     reader.onload = () => {
-      onUpdate({imageDataUrl: String(reader.result || '')});
+      setCropSrc(String(reader.result || ''));
     };
     reader.readAsDataURL(f);
     e.target.value = '';
   };
 
   return (
+    <>
     <div className="grid gap-4 md:grid-cols-3">
       <div className="md:col-span-1">
         <label className="mb-1.5 block font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-text-3">
           სურათი
         </label>
-        <div
-          className="flex h-48 w-full cursor-pointer items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-bdr bg-sur hover:border-blue-bd hover:bg-blue-lt"
-          onClick={onPickImage}
-        >
-          {product.imageDataUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
+        {product.imageDataUrl ? (
+          <div className="group relative h-48 w-full overflow-hidden rounded-[10px] border border-bdr bg-sur">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={product.imageDataUrl}
               alt={product.name}
               className="h-full w-full object-cover"
             />
-          ) : (
+            {/* Hover overlay */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/0 opacity-0 transition-all group-hover:bg-black/30 group-hover:opacity-100">
+              <button
+                type="button"
+                onClick={() => setLightboxOpen(true)}
+                className="inline-flex items-center gap-1 rounded-md bg-white/90 px-2.5 py-1.5 text-[11px] font-semibold text-navy shadow hover:bg-white"
+              >
+                <ZoomIn size={13} /> გადიდება
+              </button>
+              <button
+                type="button"
+                onClick={onPickImage}
+                className="inline-flex items-center gap-1 rounded-md bg-white/90 px-2.5 py-1.5 text-[11px] font-semibold text-navy shadow hover:bg-white"
+              >
+                <ImagePlus size={13} /> შეცვლა
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="flex h-48 w-full cursor-pointer items-center justify-center overflow-hidden rounded-[10px] border border-dashed border-bdr bg-sur hover:border-blue-bd hover:bg-blue-lt"
+            onClick={onPickImage}
+          >
             <div className="text-center text-text-3">
               <ImagePlus size={22} className="mx-auto mb-1" />
               <div className="text-[11px]">აირჩიე ფაილი</div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
         {product.imageDataUrl && (
           <button
             type="button"
@@ -616,6 +760,24 @@ function GeneralTab({
         </Field>
       </div>
     </div>
+    {cropSrc && (
+      <CropModal
+        src={cropSrc}
+        onDone={(cropped) => {
+          onUpdate({imageDataUrl: cropped});
+          setCropSrc(null);
+        }}
+        onClose={() => setCropSrc(null)}
+      />
+    )}
+    {lightboxOpen && product.imageDataUrl && (
+      <ImageLightbox
+        src={product.imageDataUrl}
+        alt={product.name}
+        onClose={() => setLightboxOpen(false)}
+      />
+    )}
+    </>
   );
 }
 
@@ -1854,6 +2016,412 @@ function UsageTab({
         მომავალ ფაზაში — ავტოლინკი DMT-ის ობიექტებზე (რომელ ობიექტზე ცხრება ეს
         პროდუქცია) და ინვენტარიზაციის SKU-ებზე.
       </div>
+    </div>
+  );
+}
+
+// ─── FolderGroup ──────────────────────────────────────────────────────────────
+
+function FolderGroup({
+  folder,
+  products,
+  selectedId,
+  allFolders,
+  onSelect,
+  onDeleteProduct,
+  onToggle,
+  onRename,
+  onDeleteFolder,
+  onMoveToFolder,
+  getIndex
+}: {
+  folder: FolderType;
+  products: Product[];
+  selectedId: string | null;
+  allFolders: FolderType[];
+  onSelect: (id: string) => void;
+  onDeleteProduct: (id: string) => void;
+  onToggle: () => void;
+  onRename: (name: string) => void;
+  onDeleteFolder: () => void;
+  onMoveToFolder: (productId: string, folderId: string | undefined) => void;
+  getIndex: (p: Product) => number;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [nameVal, setNameVal] = useState(folder.name);
+
+  const commitRename = () => {
+    const trimmed = nameVal.trim() || folder.name;
+    onRename(trimmed);
+    setNameVal(trimmed);
+    setEditing(false);
+  };
+
+  return (
+    <div className="space-y-0.5">
+      {/* Folder header */}
+      <div className="group flex items-center gap-1 rounded-md px-1.5 py-1 hover:bg-sur">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="shrink-0 text-text-3 hover:text-navy"
+        >
+          {folder.collapsed ? (
+            <ChevronRight size={13} />
+          ) : (
+            <ChevronDown size={13} />
+          )}
+        </button>
+        {folder.collapsed ? (
+          <FolderIcon size={13} className="shrink-0 text-text-3" />
+        ) : (
+          <FolderOpen size={13} className="shrink-0 text-blue" />
+        )}
+        {editing ? (
+          <input
+            autoFocus
+            value={nameVal}
+            onChange={(e) => setNameVal(e.target.value)}
+            onBlur={commitRename}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitRename();
+              if (e.key === 'Escape') { setNameVal(folder.name); setEditing(false); }
+            }}
+            className="min-w-0 flex-1 border-b border-blue bg-transparent text-[12px] font-semibold text-navy outline-none"
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <span
+            className="min-w-0 flex-1 truncate text-[12px] font-semibold text-navy cursor-pointer"
+            onDoubleClick={() => setEditing(true)}
+          >
+            {folder.name}
+          </span>
+        )}
+        <span className="shrink-0 font-mono text-[10px] text-text-3">
+          {products.length}
+        </span>
+        <button
+          type="button"
+          onClick={() => { setNameVal(folder.name); setEditing(true); }}
+          className="shrink-0 rounded p-0.5 text-text-3 opacity-0 transition-all hover:text-navy group-hover:opacity-100"
+          aria-label="სახელის შეცვლა"
+        >
+          <Pencil size={11} />
+        </button>
+        <button
+          type="button"
+          onClick={onDeleteFolder}
+          className="shrink-0 rounded p-0.5 text-text-3 opacity-0 transition-all hover:text-red group-hover:opacity-100"
+          aria-label="საქაღალდის წაშლა"
+        >
+          <Trash2 size={11} />
+        </button>
+      </div>
+      {/* Folder contents */}
+      {!folder.collapsed && (
+        <div className="ml-5 space-y-0.5">
+          {products.length === 0 ? (
+            <div className="px-2 py-2 text-[11px] italic text-text-3">
+              ცარიელია — გადაიტანე პროდუქცია
+            </div>
+          ) : (
+            products.map((p) => (
+              <ProductCard
+                key={p.id}
+                product={p}
+                index={getIndex(p)}
+                active={p.id === selectedId}
+                onSelect={() => onSelect(p.id)}
+                onDelete={() => onDeleteProduct(p.id)}
+                folders={allFolders}
+                onMoveToFolder={(fId) => onMoveToFolder(p.id, fId)}
+              />
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── FolderMoveButton ─────────────────────────────────────────────────────────
+
+function FolderMoveButton({
+  product,
+  folders,
+  onMove
+}: {
+  product: Product;
+  folders: FolderType[];
+  onMove: (folderId: string | undefined) => void;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((v) => !v);
+        }}
+        className="rounded-md p-1 text-text-3 hover:bg-sur-2 hover:text-navy"
+        aria-label="საქაღალდეში გადატანა"
+        title="საქაღალდეში გადატანა"
+      >
+        <FolderIcon size={12} />
+      </button>
+      {open && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={(e) => { e.stopPropagation(); setOpen(false); }}
+          />
+          <div className="absolute right-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-bdr bg-sur py-1 shadow-lg">
+            {product.folderId && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMove(undefined);
+                  setOpen(false);
+                }}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-[11px] text-text-2 hover:bg-sur-2"
+              >
+                <X size={11} /> საქაღალდიდან გამოტანა
+              </button>
+            )}
+            {folders.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMove(f.id);
+                  setOpen(false);
+                }}
+                className={`flex w-full items-center gap-2 px-3 py-1.5 text-[11px] hover:bg-sur-2 ${
+                  product.folderId === f.id
+                    ? 'font-semibold text-blue'
+                    : 'text-text-2'
+                }`}
+              >
+                <FolderIcon size={11} />
+                {f.name}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── CropModal ────────────────────────────────────────────────────────────────
+
+function CropModal({
+  src,
+  onDone,
+  onClose
+}: {
+  src: string;
+  onDone: (cropped: string) => void;
+  onClose: () => void;
+}) {
+  const [crop, setCrop] = useState({x: 10, y: 10, w: 80, h: 80});
+  const dragRef = useRef<{
+    type: 'move' | 'resize';
+    startX: number;
+    startY: number;
+    startCrop: typeof crop;
+  } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      if (!dragRef.current || !containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const dx = ((e.clientX - dragRef.current.startX) / rect.width) * 100;
+      const dy = ((e.clientY - dragRef.current.startY) / rect.height) * 100;
+      const sc = dragRef.current.startCrop;
+      if (dragRef.current.type === 'move') {
+        setCrop((prev) => ({
+          ...prev,
+          x: Math.min(100 - sc.w, Math.max(0, sc.x + dx)),
+          y: Math.min(100 - sc.h, Math.max(0, sc.y + dy))
+        }));
+      } else {
+        setCrop((prev) => ({
+          ...prev,
+          w: Math.min(100 - sc.x, Math.max(10, sc.w + dx)),
+          h: Math.min(100 - sc.y, Math.max(10, sc.h + dy))
+        }));
+      }
+    };
+    const onUp = () => { dragRef.current = null; };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+  }, []);
+
+  const applyCrop = () => {
+    const img = imgRef.current;
+    if (!img) return;
+    const sx = (crop.x / 100) * img.naturalWidth;
+    const sy = (crop.y / 100) * img.naturalHeight;
+    const sw = (crop.w / 100) * img.naturalWidth;
+    const sh = (crop.h / 100) * img.naturalHeight;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(sw);
+    canvas.height = Math.round(sh);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    onDone(canvas.toDataURL('image/jpeg', 0.92));
+  };
+
+  const startDrag = (e: React.MouseEvent, type: 'move' | 'resize') => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragRef.current = {type, startX: e.clientX, startY: e.clientY, startCrop: {...crop}};
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/75"
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="flex max-h-[92vh] max-w-[88vw] flex-col overflow-hidden rounded-xl border border-bdr bg-sur shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-bdr bg-sur-2 px-4 py-3">
+          <span className="text-[13px] font-semibold text-navy">
+            სურათის კადრირება
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded p-1 text-text-3 hover:bg-sur hover:text-text"
+          >
+            <X size={14} />
+          </button>
+        </div>
+        {/* Crop area */}
+        <div
+          ref={containerRef}
+          className="relative select-none overflow-hidden"
+          style={{userSelect: 'none'}}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            ref={imgRef}
+            src={src}
+            alt="crop source"
+            className="block max-h-[65vh] max-w-[80vw]"
+            style={{pointerEvents: 'none', userSelect: 'none'}}
+            draggable={false}
+          />
+          {/* Crop selection box with box-shadow overlay */}
+          <div
+            className="absolute cursor-move border-2 border-white"
+            style={{
+              left: `${crop.x}%`,
+              top: `${crop.y}%`,
+              width: `${crop.w}%`,
+              height: `${crop.h}%`,
+              boxShadow: '0 0 0 10000px rgba(0,0,0,0.5)',
+              boxSizing: 'border-box'
+            }}
+            onMouseDown={(e) => startDrag(e, 'move')}
+          >
+            {/* Corner grid lines */}
+            <div className="pointer-events-none absolute inset-0">
+              <div className="absolute left-1/3 top-0 h-full w-px bg-white/30" />
+              <div className="absolute left-2/3 top-0 h-full w-px bg-white/30" />
+              <div className="absolute left-0 top-1/3 h-px w-full bg-white/30" />
+              <div className="absolute left-0 top-2/3 h-px w-full bg-white/30" />
+            </div>
+            {/* Resize handle (bottom-right corner) */}
+            <div
+              className="absolute bottom-0 right-0 h-4 w-4 cursor-se-resize border-b-2 border-r-2 border-white"
+              onMouseDown={(e) => startDrag(e, 'resize')}
+            />
+          </div>
+        </div>
+        {/* Footer */}
+        <div className="flex items-center justify-between border-t border-bdr bg-sur-2 px-4 py-2.5">
+          <span className="text-[11px] text-text-3">
+            გადაათრიე კადრი · კუთხე = ზომა
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md border border-bdr px-3 py-1.5 text-[12px] text-text-2 hover:bg-sur-2"
+            >
+              გაუქმება
+            </button>
+            <button
+              type="button"
+              onClick={applyCrop}
+              className="rounded-md border border-blue bg-blue px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-navy-2"
+            >
+              ამოჭრა
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ImageLightbox ────────────────────────────────────────────────────────────
+
+function ImageLightbox({
+  src,
+  alt,
+  onClose
+}: {
+  src: string;
+  alt: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[300] flex cursor-zoom-out items-center justify-center bg-black/85"
+      onClick={onClose}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        className="max-h-[92vh] max-w-[92vw] rounded-lg object-contain shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+        draggable={false}
+      />
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute right-4 top-4 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+      >
+        <X size={18} />
+      </button>
     </div>
   );
 }

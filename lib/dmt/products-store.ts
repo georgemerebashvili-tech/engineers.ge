@@ -1,3 +1,9 @@
+export type Folder = {
+  id: string;
+  name: string;
+  collapsed: boolean;
+};
+
 export type ComponentRow = {
   id: string;
   name: string;
@@ -72,6 +78,7 @@ export type Product = {
   errors?: ErrorEntry[];
   wiringDiagramDataUrl?: string;
   files?: ProductFile[];
+  folderId?: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -135,6 +142,35 @@ export function cryptoRandomId() {
     return crypto.randomUUID();
   }
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+const FOLDERS_KEY = 'dmt_folders_v1';
+
+export function loadFolders(): Folder[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(FOLDERS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as Folder[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveFolders(folders: Folder[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(FOLDERS_KEY, JSON.stringify(folders));
+  } catch {}
+}
+
+export function createFolder(name?: string): Folder {
+  return {
+    id: cryptoRandomId(),
+    name: name ?? 'ახალი საქაღალდე',
+    collapsed: false
+  };
 }
 
 // Price computation — subtotal of components, then apply overhead rows in order.

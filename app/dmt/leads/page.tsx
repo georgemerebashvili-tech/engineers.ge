@@ -26,7 +26,6 @@ import {
   diffLead,
   emptyLead,
   fmtDate,
-  fmtNumber,
   getActor,
   loadAudit,
   loadColumnOrder,
@@ -287,7 +286,6 @@ export default function LeadsPage() {
   };
 
   // ─── Render ──────────────────────────────────────────────────────────────
-  const total = filtered.reduce((s, l) => s + (l.value || 0), 0);
   const won = filtered.filter((l) => l.stage === 'won').length;
   const active = filtered.filter((l) => !['won', 'lost'].includes(l.stage)).length;
 
@@ -358,11 +356,10 @@ export default function LeadsPage() {
     >
       <div className="flex h-full gap-4 px-6 py-5 md:px-8">
         <div className="min-w-0 flex-1">
-          <div className="mb-4 grid gap-3 md:grid-cols-4">
+          <div className="mb-4 grid gap-3 md:grid-cols-3">
             <StatCard label="ნაჩვენები" value={String(filtered.length)} />
             <StatCard label="აქტიური" value={String(active)} accent="blue" />
             <StatCard label="მოგებული" value={String(won)} accent="grn" />
-            <StatCard label="Pipeline" value={`₾ ${fmtNumber(total)}`} />
           </div>
 
           <div className="overflow-x-auto rounded-[10px] border border-bdr bg-sur">
