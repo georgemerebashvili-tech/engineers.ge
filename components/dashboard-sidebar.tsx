@@ -24,6 +24,7 @@ import {
   Blocks,
   Ruler,
   Building2,
+  Droplets,
   ChevronRight,
   type LucideIcon
 } from 'lucide-react';
@@ -137,6 +138,14 @@ const SECTIONS: NavSection[] = [
         children: [
           {label: 'ხმაურდამხშობი', href: '/calc/silencer', badge: 'ISO 7235', flagKey: 'calc.silencer'},
           {label: 'ხმაურდამხშობის კატალოგი', href: '/calc/silencer-kaya', flagKey: 'calc.silencer-kaya'}
+        ]
+      },
+      {
+        key: 'water-supply',
+        label: 'წყალმომარაგება',
+        icon: Droplets,
+        children: [
+          {label: 'წყალმომარაგების ანგარიში', href: '/calc/water-supply', badge: 'СП 30.13330', flagKey: 'calc.water-supply'}
         ]
       },
       {

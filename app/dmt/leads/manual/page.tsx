@@ -75,6 +75,7 @@ const EXTRA_COLS_KEY = 'dmt_manual_extra_cols_v1';
 const EXTRA_VALS_KEY = 'dmt_manual_extra_vals_v1';
 const COL_WIDTHS_KEY = 'dmt_manual_col_widths_v1';
 const COL_ORDER_KEY = 'dmt_manual_col_order_v1';
+const STATUS_ORDER_KEY = 'dmt_manual_status_order_v1';
 
 // ~10 characters at the grid font — minimum width when user dbl-clicks resize handle
 const MIN_COL_WIDTH = 90;
@@ -149,6 +150,9 @@ export default function ManualLeadsPage() {
   const [colOrder, setColOrder] = useState<string[]>([]);
   const [dragKey, setDragKey] = useState<string | null>(null);
   const [dragOverKey, setDragOverKey] = useState<string | null>(null);
+  const [statusOrder, setStatusOrder] = useState<Status[]>(STATUS_ORDER);
+  const [statusDragKey, setStatusDragKey] = useState<Status | null>(null);
+  const [statusDragOverKey, setStatusDragOverKey] = useState<Status | null>(null);
 
   useEffect(() => {
     try {
@@ -162,6 +166,16 @@ export default function ManualLeadsPage() {
       if (cw) setColWidths(JSON.parse(cw));
       const co = localStorage.getItem(COL_ORDER_KEY);
       if (co) setColOrder(JSON.parse(co));
+      const so = localStorage.getItem(STATUS_ORDER_KEY);
+      if (so) {
+        const parsed = JSON.parse(so) as Status[];
+        // Guard against stale persisted orders — must contain every status exactly once
+        const valid =
+          Array.isArray(parsed) &&
+          parsed.length === STATUS_ORDER.length &&
+          STATUS_ORDER.every((s) => parsed.includes(s));
+        if (valid) setStatusOrder(parsed);
+      }
       setVarSets(loadSets());
     } catch {}
     setHydrated(true);
@@ -175,8 +189,9 @@ export default function ManualLeadsPage() {
       localStorage.setItem(EXTRA_VALS_KEY, JSON.stringify(extraVals));
       localStorage.setItem(COL_WIDTHS_KEY, JSON.stringify(colWidths));
       localStorage.setItem(COL_ORDER_KEY, JSON.stringify(colOrder));
+      localStorage.setItem(STATUS_ORDER_KEY, JSON.stringify(statusOrder));
     } catch {}
-  }, [rows, extraCols, extraVals, colWidths, colOrder, hydrated]);
+  }, [rows, extraCols, extraVals, colWidths, colOrder, statusOrder, hydrated]);
 
   const widthOf = (key: string, fallback: number) => colWidths[key] ?? fallback;
 
@@ -506,18 +521,59 @@ export default function ManualLeadsPage() {
             )}
 
             {/* Groups */}
-            {STATUS_ORDER.map((s) => {
+            {statusOrder.map((s) => {
               const items = grouped[s];
               if (items.length === 0 && q) return null;
               const st = STATUS_META[s];
               const isCollapsed = collapsed[s];
               const groupSum = items.reduce((sm, r) => sm + (r.contract || 0), 0);
+              const isDragOver = statusDragOverKey === s && statusDragKey && statusDragKey !== s;
               return (
-                <div key={s} className="border-b border-bdr last:border-b-0">
-                  <button
+                <div
+                  key={s}
+                  className={`border-b border-bdr last:border-b-0 transition-colors ${
+                    isDragOver ? 'bg-blue-lt/60' : ''
+                  } ${statusDragKey === s ? 'opacity-50' : ''}`}
+                  onDragOver={(e) => {
+                    if (!statusDragKey) return;
+                    e.preventDefault();
+                    if (statusDragOverKey !== s) setStatusDragOverKey(s);
+                  }}
+                  onDragLeave={() => {
+                    if (statusDragOverKey === s) setStatusDragOverKey(null);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const from = statusDragKey;
+                    setStatusDragKey(null);
+                    setStatusDragOverKey(null);
+                    if (!from || from === s) return;
+                    setStatusOrder((prev) => {
+                      const next = prev.filter((x) => x !== from);
+                      const idx = next.indexOf(s);
+                      next.splice(idx, 0, from);
+                      return next;
+                    });
+                  }}
+                >
+                  <div
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.effectAllowed = 'move';
+                      e.dataTransfer.setData('text/plain', s);
+                      setStatusDragKey(s);
+                    }}
+                    onDragEnd={() => {
+                      setStatusDragKey(null);
+                      setStatusDragOverKey(null);
+                    }}
                     onClick={() => toggleGroup(s)}
-                    className="flex w-full items-center gap-2 border-b border-bdr bg-sur-2 px-3 py-2 text-left hover:bg-bdr/30"
+                    className="group flex w-full cursor-pointer items-center gap-2 border-b border-bdr bg-sur-2 px-3 py-2 text-left hover:bg-bdr/30"
                   >
+                    <GripVertical
+                      size={12}
+                      className="shrink-0 cursor-grab text-text-3 opacity-0 transition-opacity group-hover:opacity-100 active:cursor-grabbing"
+                    />
                     <ChevronDown
                       size={12}
                       className={`shrink-0 text-text-3 transition-transform ${
@@ -546,7 +602,7 @@ export default function ManualLeadsPage() {
                       </span>
                     )}
                     <div className="flex-1" />
-                  </button>
+                  </div>
 
                   {!isCollapsed &&
                     items.map((r, idx) => (

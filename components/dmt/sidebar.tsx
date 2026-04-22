@@ -277,7 +277,7 @@ export function DmtSidebar({user}: {user?: SidebarUser} = {}) {
                   const rowState =
                     activeSelf || activeChild
                       ? 'bg-blue-lt text-blue font-semibold'
-                      : 'text-text-2 hover:bg-sur-2 hover:text-navy';
+                      : 'bg-blue-lt/30 text-text-2 hover:bg-blue-lt hover:text-navy';
                   const rowInner = (
                     <>
                       <span className="flex h-5 w-5 shrink-0 items-center justify-center">

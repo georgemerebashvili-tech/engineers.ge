@@ -58,7 +58,7 @@ const DRAG_MIME_TEMPLATE = 'application/x-dmt-template';
 export default function DashboardsPage() {
   const [dashboards, setDashboards] = useState<Dashboard[]>(DEMO_DASHBOARDS);
   const [activeId, setActiveId] = useState<string>('default');
-  const [mode, setMode] = useState<Mode>('edit');
+  const [mode, setMode] = useState<Mode>('view');
   const [selectedWid, setSelectedWid] = useState<string | null>(null);
   const [templates, setTemplates] = useState<WidgetTemplate[]>([]);
   const [globalStatus, setGlobalStatus] = useState<string>('');

@@ -36,6 +36,15 @@ export const CALCULATORS: CalcMeta[] = [
     standard: 'ASHRAE 62.1'
   },
   {
+    slug: 'water-supply',
+    icon: '🚰',
+    title: 'წყალმომარაგების ანგარიში',
+    desc: 'СП 30.13330.2020 + DIN 1988-300 · სანტექნიკური ხელსაწყოები, დებიტი, საკანალიზაციო, სეპტიკი, მასალები',
+    tag: 'წყალმომარაგება',
+    standard: 'СП 30.13330.2020 · DIN 1988-300',
+    useProjects: true
+  },
+  {
     slug: 'silencer',
     icon: '🔇',
     title: 'ხმაურდამხშობი სელექშენი',

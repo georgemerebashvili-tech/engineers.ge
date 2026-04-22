@@ -17,6 +17,7 @@ const CATEGORY_BY_SLUG: Record<string, Crumb> = {
   'heat-loss': {label: 'თბოდანაკარგები', href: '/#calculators'},
   'wall-thermal': {label: 'თბოგადაცემა', href: '/#calculators'},
   'hvac': {label: 'გათბობა · კონდიცირება', href: '/#calculators'},
+  'water-supply': {label: 'წყალმომარაგება', href: '/#calculators'},
   'silencer': {label: 'ჰიდრავლიკა · აკუსტიკა', href: '/#calculators'},
   'silencer-kaya': {label: 'ჰიდრავლიკა · აკუსტიკა', href: '/#calculators'},
   'ahu-ashrae': {label: 'ვენტილაცია', href: '/#calculators'},

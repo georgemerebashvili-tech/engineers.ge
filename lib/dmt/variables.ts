@@ -139,3 +139,294 @@ export function findOption(
 export function randomId(prefix = 'id') {
   return prefix + '-' + Math.random().toString(36).slice(2, 9);
 }
+
+// ════════════════════════════════════════════════════════════════════
+// Page → Table → Column schema (configurable per-page variable system)
+// ════════════════════════════════════════════════════════════════════
+
+export type ColumnKind =
+  | 'text'
+  | 'textarea'
+  | 'number'
+  | 'currency'
+  | 'phone'
+  | 'date'
+  | 'user'
+  | 'select';
+
+export type ColumnScope = 'universal' | 'fixed';
+
+export type PageColumn = {
+  id: string;
+  label: string;
+  kind: ColumnKind;
+  /** Only for kind === 'select'. 'universal' → bind to VarSet; 'fixed' → inline options on this column */
+  scope?: ColumnScope;
+  varSetId?: string;
+  options?: VarOption[];
+  required?: boolean;
+  hint?: string;
+};
+
+export type PageTable = {
+  id: string;
+  label: string;
+  description?: string;
+  columns: PageColumn[];
+};
+
+export type PageScope = {
+  id: string;
+  label: string;
+  route: string;
+  icon?: string;
+  tables: PageTable[];
+};
+
+export const PAGES_KEY = 'dmt_page_scopes_v1';
+
+export const DEFAULT_PAGES: PageScope[] = [
+  {
+    id: 'leads-manual',
+    label: 'ლიდები · Manual Grid',
+    route: '/dmt/leads/manual',
+    icon: '📋',
+    tables: [
+      {
+        id: 'main',
+        label: 'მთავარი ცხრილი',
+        description: 'status-ჯგუფებით დაჯგუფებული ლიდები',
+        columns: [
+          {id: 'company', label: 'კომპ. დასახ.', kind: 'text'},
+          {id: 'contact', label: 'საკონტაქტო', kind: 'text'},
+          {id: 'phone', label: 'ტელეფონი', kind: 'phone'},
+          {id: 'contract', label: 'კონტრ. ღირ.', kind: 'currency'},
+          {id: 'status', label: 'სტატუსი', kind: 'select', scope: 'universal', varSetId: 'status-lead'},
+          {id: 'role', label: 'როლი', kind: 'select', scope: 'universal', varSetId: 'role'},
+          {id: 'owner', label: 'პრ. მენ.', kind: 'user'},
+          {id: 'period', label: 'პერიოდი', kind: 'date'}
+        ]
+      }
+    ]
+  },
+  {
+    id: 'leads-grid',
+    label: 'ლიდები · ყველა (Grid)',
+    route: '/dmt/leads',
+    icon: '🗂',
+    tables: [
+      {
+        id: 'main',
+        label: 'Pipeline Grid',
+        columns: [
+          {id: 'company', label: 'კომპ. დასახ.', kind: 'text'},
+          {id: 'contact', label: 'საკონტაქტო', kind: 'text'},
+          {id: 'phone', label: 'ტელეფონი', kind: 'phone'},
+          {id: 'contract', label: 'კონტრ. ღირ.', kind: 'currency'},
+          {id: 'status', label: 'სტატუსი', kind: 'select', scope: 'universal', varSetId: 'status-lead'},
+          {id: 'role', label: 'როლი', kind: 'select', scope: 'universal', varSetId: 'role'},
+          {id: 'priority', label: 'პრიორიტეტი', kind: 'select', scope: 'universal', varSetId: 'priority'}
+        ]
+      }
+    ]
+  },
+  {
+    id: 'leads-facebook',
+    label: 'ლიდები · Facebook',
+    route: '/dmt/leads/facebook',
+    icon: '📘',
+    tables: [
+      {
+        id: 'fb-leads',
+        label: 'Facebook Lead Ads',
+        columns: [
+          {id: 'leadgen_id', label: 'Leadgen ID', kind: 'text'},
+          {id: 'full_name', label: 'სახელი', kind: 'text'},
+          {id: 'phone', label: 'ტელეფონი', kind: 'phone'},
+          {id: 'email', label: 'Email', kind: 'text'},
+          {id: 'campaign_id', label: 'Campaign', kind: 'text'},
+          {id: 'lead_status', label: 'სტატუსი', kind: 'select', scope: 'fixed', options: [
+            {id: 'new', label: 'ახალი', color: 'blue'},
+            {id: 'called', label: 'დაკავშირდა', color: 'yellow'},
+            {id: 'scheduled', label: 'დაინიშნა', color: 'purple'},
+            {id: 'converted', label: 'გადავიდა', color: 'green'},
+            {id: 'lost', label: 'დაკარგული', color: 'red'}
+          ]},
+          {id: 'assigned_to', label: 'მიბმულია', kind: 'user'},
+          {id: 'received_at', label: 'მიღებული', kind: 'date'}
+        ]
+      }
+    ]
+  },
+  {
+    id: 'inspections',
+    label: 'ინსპექტირება',
+    route: '/dmt/inspections',
+    icon: '🔍',
+    tables: [
+      {
+        id: 'main',
+        label: 'ინსპექტირების სია',
+        columns: [
+          {id: 'site', label: 'ობიექტი', kind: 'text'},
+          {id: 'inspector', label: 'ინსპექტორი', kind: 'user'},
+          {id: 'date', label: 'თარიღი', kind: 'date'},
+          {id: 'status', label: 'სტატუსი', kind: 'select', scope: 'fixed', options: [
+            {id: 'planned', label: 'დაგეგმილი', color: 'blue'},
+            {id: 'in-progress', label: 'მიმდინარე', color: 'orange'},
+            {id: 'done', label: 'დასრულებული', color: 'green'},
+            {id: 'issues', label: 'პრობლემებით', color: 'red'}
+          ]},
+          {id: 'priority', label: 'პრიორიტეტი', kind: 'select', scope: 'universal', varSetId: 'priority'},
+          {id: 'notes', label: 'შენიშვნა', kind: 'textarea'}
+        ]
+      }
+    ]
+  },
+  {
+    id: 'invoices',
+    label: 'ინვოისები',
+    route: '/dmt/invoices',
+    icon: '🧾',
+    tables: [
+      {
+        id: 'main',
+        label: 'ინვოისების სია',
+        columns: [
+          {id: 'number', label: '№', kind: 'text'},
+          {id: 'client', label: 'კლიენტი', kind: 'text'},
+          {id: 'amount', label: 'თანხა', kind: 'currency'},
+          {id: 'issued_at', label: 'გაცემული', kind: 'date'},
+          {id: 'due_at', label: 'ვადა', kind: 'date'},
+          {id: 'status', label: 'სტატუსი', kind: 'select', scope: 'fixed', options: [
+            {id: 'draft', label: 'მონახაზი', color: 'gray'},
+            {id: 'sent', label: 'გაგზავნილი', color: 'blue'},
+            {id: 'paid', label: 'გადახდილი', color: 'green'},
+            {id: 'overdue', label: 'ვადაგადაცილებული', color: 'red'},
+            {id: 'cancelled', label: 'გაუქმებული', color: 'gray'}
+          ]}
+        ]
+      }
+    ]
+  },
+  {
+    id: 'announcements',
+    label: 'განცხადებები',
+    route: '/dmt/announcements',
+    icon: '📣',
+    tables: [
+      {
+        id: 'main',
+        label: 'განცხადებების სია',
+        columns: [
+          {id: 'title', label: 'სათაური', kind: 'text'},
+          {id: 'body', label: 'ტექსტი', kind: 'textarea'},
+          {id: 'priority', label: 'პრიორიტეტი', kind: 'select', scope: 'universal', varSetId: 'priority'},
+          {id: 'visibility', label: 'ხილვადობა', kind: 'select', scope: 'fixed', options: [
+            {id: 'all', label: 'ყველა', color: 'blue'},
+            {id: 'role', label: 'როლით', color: 'purple'},
+            {id: 'user', label: 'კონკრ. მომხმ.', color: 'orange'}
+          ]},
+          {id: 'published_at', label: 'გამოქვ.', kind: 'date'}
+        ]
+      }
+    ]
+  },
+  {
+    id: 'inventory-objects',
+    label: 'ინვენტარი · ობიექტები',
+    route: '/dmt/inventory/objects',
+    icon: '📦',
+    tables: [
+      {
+        id: 'main',
+        label: 'ობიექტების სია',
+        columns: [
+          {id: 'name', label: 'დასახელება', kind: 'text'},
+          {id: 'category', label: 'კატეგორია', kind: 'select', scope: 'fixed', options: [
+            {id: 'machine', label: 'მოწყობილობა', color: 'blue'},
+            {id: 'tool', label: 'ხელსაწყო', color: 'purple'},
+            {id: 'consumable', label: 'საკონსუმოს', color: 'orange'},
+            {id: 'vehicle', label: 'ტრანსპორტი', color: 'teal'}
+          ]},
+          {id: 'serial', label: 'სერიული №', kind: 'text'},
+          {id: 'location', label: 'ადგილმდ.', kind: 'text'},
+          {id: 'condition', label: 'მდგომარ.', kind: 'select', scope: 'fixed', options: [
+            {id: 'new', label: 'ახალი', color: 'green'},
+            {id: 'good', label: 'კარგი', color: 'blue'},
+            {id: 'used', label: 'მეორ.', color: 'yellow'},
+            {id: 'broken', label: 'გაფუჭებული', color: 'red'}
+          ]}
+        ]
+      }
+    ]
+  },
+  {
+    id: 'inventory-sku',
+    label: 'ინვენტარი · მარაგი · SKU',
+    route: '/dmt/inventory/sku',
+    icon: '🏷',
+    tables: [
+      {
+        id: 'main',
+        label: 'SKU სია',
+        columns: [
+          {id: 'sku', label: 'SKU', kind: 'text'},
+          {id: 'name', label: 'დასახელება', kind: 'text'},
+          {id: 'qty', label: 'რაოდ.', kind: 'number'},
+          {id: 'unit', label: 'ერთ.', kind: 'select', scope: 'fixed', options: [
+            {id: 'pcs', label: 'ცალი', color: 'gray'},
+            {id: 'box', label: 'ყუთი', color: 'blue'},
+            {id: 'm', label: 'm', color: 'teal'},
+            {id: 'kg', label: 'kg', color: 'orange'}
+          ]},
+          {id: 'unit_price', label: 'ერთ. ფასი', kind: 'currency'}
+        ]
+      }
+    ]
+  },
+  {
+    id: 'products',
+    label: 'პროდუქციის კატალოგი',
+    route: '/dmt/products',
+    icon: '🛒',
+    tables: [
+      {
+        id: 'main',
+        label: 'პროდუქცია',
+        columns: [
+          {id: 'name', label: 'დასახელება', kind: 'text'},
+          {id: 'brand', label: 'ბრენდი', kind: 'text'},
+          {id: 'model', label: 'მოდელი', kind: 'text'},
+          {id: 'category', label: 'კატეგორია', kind: 'select', scope: 'fixed', options: [
+            {id: 'hvac', label: 'HVAC', color: 'blue'},
+            {id: 'water', label: 'წყალი', color: 'teal'},
+            {id: 'electric', label: 'ელ.', color: 'yellow'},
+            {id: 'fire', label: 'ხანძ.', color: 'red'}
+          ]},
+          {id: 'price', label: 'ფასი', kind: 'currency'},
+          {id: 'stock', label: 'მარაგი', kind: 'number'}
+        ]
+      }
+    ]
+  }
+];
+
+export function loadPages(): PageScope[] {
+  if (typeof window === 'undefined') return DEFAULT_PAGES;
+  try {
+    const raw = localStorage.getItem(PAGES_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as PageScope[];
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {}
+  return DEFAULT_PAGES;
+}
+
+export function savePages(pages: PageScope[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(PAGES_KEY, JSON.stringify(pages));
+  } catch {}
+}

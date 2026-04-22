@@ -8,6 +8,35 @@
 
 ---
 
+## 🟢 audit.sazeo workspace — done (2026-04-22)
+
+Scaffold: `/audit.sazeo` live. Left sidebar → 3 groups (Blueprints / Reports / Decisions). Auth-gated (`/admin` redirect). Content rendered via iframe.
+
+შესრულებული:
+- [x] 2026-04-22 — Blueprints → IoT BMS — Infrastructure (28 layer `l1`–`l28` sub-item-ით, #anchor navigation).
+- [x] 2026-04-22 — Reports → Audit snapshot (encrypted AES-256-GCM, ასლი `sazeo_international`-დან).
+- [x] 2026-04-22 — Reports → Tenant-scoping review (6 section, 4 KPIs, RLS + cross-tenant tests).
+- [x] 2026-04-22 — Decisions → ADR index (25 ADRs, interactive filters, deep-links).
+
+გასაკეთებელი:
+- [ ] 2026-04-22 — გასარკვევი: `audit.sazeo.io` subdomain (Cloudflare) vs path (`engineers.ge/audit.sazeo`) — ამჟამად path. თუ subdomain — Cloudflare DNS + CNAME file update.
+
+---
+
+## 🟡 წყალმომარაგების კალკულატორი — follow-up work (scaffold done 2026-04-22)
+
+Scaffold: `/calc/water-supply` live, 4 ტაბი, heat-loss layout-ის მიხედვით. Sidebar entry → `წყალმომარაგება > წყალმომარაგების ანგარიში · СП 30.13330`.
+
+გასაკეთებელი:
+
+- [ ] 2026-04-22 — Tab 0 ოთახის ცხრილი: HVAC სვეტების ნაცვლად სანტექნიკური ხელსაწყოები (უნიტაზი, დუში, ხელსაბანი, ჭურჭლის სარეცხი, სარეცხი მანქანა, ბიდე, ონკანი, სანაცრე) + Q<sub>ც</sub>/Q<sub>ცხ</sub>/Q<sub>ს</sub> ერთდროულობის ფაქტორით (СП 30.13330 §5.2–5.5 + DIN 1988-300 §6.2). ცხრილი [water-supply.html](../public/calc/water-supply.html) Tab 0.
+- [ ] 2026-04-22 — Tab 1: Tab 0-ის ხელსაწყოების ჯამიდან `qₜₒₜ` + `q₀ˢ` → საკანალიზაციო დებიტი + სეპტიკის V<sub>კამერის</sub> ცოცხლად. ამჟამად მხოლოდ septic calculator მუშაობს ხელით შეყვანილ values-ზე (`recalcSeptic`).
+- [ ] 2026-04-22 — Tab 2: მასალათა BOQ (ცივი/ცხელი წყლის მილი PPR/PEX, საკანალიზაციო PVC Ø50/110, ფიტინგები, ონკანები, უნიტაზები). რაოდენობა — Tab 0-დან.
+- [ ] 2026-04-22 — Tab 3: პროდუქციის კატალოგი — Geberit, Grohe, Hansgrohe, Rehau, Uponor seed data. JSON + filter.
+- [ ] 2026-04-22 — საიდენტიფიკაციო labels/toolbar ღილაკები ("EPC", "PDF ანგარიში") ადაპტირდეს წყალმომარაგებისთვის ან გაითიშოს.
+
+---
+
 ## 🟢 DMT · Facebook Lead Ads — Analytics Dashboard (done 2026-04-21)
 
 Shipped 2026-04-21: `/dmt/leads/facebook/analytics` — live charts + KPIs reading from `public.dmt_fb_leads`. Populated by existing webhook at `/api/dmt/fb-webhook`. Sidebar entry added as sub-item under "1 · ლიდები" (BarChart3 icon).
