@@ -115,6 +115,15 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
   const [accessSaving, setAccessSaving] = useState(false);
   const [accessSummary, setAccessSummary] = useState<Record<string, {count: number; wildcard: boolean}>>({});
 
+  // branch-access modal (uses tbc_branch_permissions)
+  const [branchAccessUser, setBranchAccessUser] = useState<TbcUser | null>(null);
+  const [branchWildcard, setBranchWildcard] = useState(false);
+  const [branchIds, setBranchIds] = useState<Set<number>>(new Set());
+  const [branchAccessLoading, setBranchAccessLoading] = useState(false);
+  const [branchAccessSaving, setBranchAccessSaving] = useState(false);
+  const [branchAccessSummary, setBranchAccessSummary] = useState<Record<string, {count: number; wildcard: boolean}>>({});
+  const [branchList, setBranchList] = useState<Array<{id: number; name: string; alias: string | null; region: string | null; city: string | null}>>([]);
+
   const loadAudit = useCallback(async () => {
     const params = new URLSearchParams();
     params.set('limit', '300');
@@ -308,6 +317,83 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
     }
   }
 
+  async function openBranchAccess(u: TbcUser) {
+    setBranchAccessUser(u);
+    setBranchWildcard(false);
+    setBranchIds(new Set());
+    setBranchAccessLoading(true);
+    try {
+      // load branch list if needed
+      if (branchList.length === 0) {
+        const br = await fetch('/api/tbc/branches');
+        if (br.ok) {
+          const data = await br.json();
+          const rows = (data.branches || []) as Array<{
+            id: number;
+            name: string;
+            alias: string | null;
+            region: string | null;
+            city: string | null;
+          }>;
+          setBranchList(rows);
+        }
+      }
+      const r = await fetch(`/api/tbc/users/${u.id}/branches`);
+      if (r.ok) {
+        const b = await r.json();
+        setBranchWildcard(!!b.wildcard);
+        setBranchIds(new Set<number>((b.branchIds || []) as number[]));
+      } else {
+        flashToast('ვერ ჩაიტვირთა');
+      }
+    } finally {
+      setBranchAccessLoading(false);
+    }
+  }
+
+  async function saveBranchAccess() {
+    if (!branchAccessUser) return;
+    setBranchAccessSaving(true);
+    try {
+      const r = await fetch(`/api/tbc/users/${branchAccessUser.id}/branches`, {
+        method: 'PUT',
+        headers: {'content-type': 'application/json'},
+        body: JSON.stringify({
+          wildcard: branchWildcard,
+          branchIds: branchWildcard ? [] : Array.from(branchIds)
+        })
+      });
+      if (!r.ok) {
+        flashToast('ვერ შეინახა');
+        return;
+      }
+      const count = branchWildcard ? branchList.length : branchIds.size;
+      setBranchAccessSummary((prev) => ({
+        ...prev,
+        [branchAccessUser.id]: {count, wildcard: branchWildcard}
+      }));
+      flashToast(
+        branchWildcard
+          ? 'ყველა ფილიალის წვდომა მიანიჭა'
+          : `${count} ფილიალის წვდომა შეინახა`
+      );
+      setBranchAccessUser(null);
+    } finally {
+      setBranchAccessSaving(false);
+    }
+  }
+
+  async function changeRole(u: TbcUser) {
+    if (u.is_static) {
+      flashToast('სტატიკური ადმინი ვერ იცვლება');
+      return;
+    }
+    const next = u.role === 'admin' ? 'user' : 'admin';
+    const label = next === 'admin' ? 'admin-ად გადაიყვანო' : 'user-ად გადაიყვანო';
+    if (!confirm(`${u.username}-ს ${label}?`)) return;
+    await patchUser(u.id, {role: next}, next === 'admin' ? 'admin გახდა' : 'user გახდა');
+  }
+
   async function saveCompanyAccess() {
     if (!accessUser) return;
     setAccessSaving(true);
@@ -345,18 +431,33 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
     const results = await Promise.all(
       nonAdmin.map(async (u) => {
         try {
-          const r = await fetch(`/api/tbc/users/${u.id}/companies`);
-          if (!r.ok) return null;
-          const b = await r.json();
-          return [u.id, {count: (b.companyIds || []).length, wildcard: !!b.wildcard}] as const;
+          const [cr, br] = await Promise.all([
+            fetch(`/api/tbc/users/${u.id}/companies`),
+            fetch(`/api/tbc/users/${u.id}/branches`)
+          ]);
+          const c = cr.ok ? await cr.json() : null;
+          const b = br.ok ? await br.json() : null;
+          return [
+            u.id,
+            {
+              company: c ? {count: (c.companyIds || []).length, wildcard: !!c.wildcard} : null,
+              branch: b ? {count: (b.branchIds || []).length, wildcard: !!b.wildcard} : null
+            }
+          ] as const;
         } catch {
           return null;
         }
       })
     );
-    const map: Record<string, {count: number; wildcard: boolean}> = {};
-    for (const r of results) if (r) map[r[0]] = r[1];
-    setAccessSummary(map);
+    const cMap: Record<string, {count: number; wildcard: boolean}> = {};
+    const bMap: Record<string, {count: number; wildcard: boolean}> = {};
+    for (const r of results) {
+      if (!r) continue;
+      if (r[1].company) cMap[r[0]] = r[1].company;
+      if (r[1].branch) bMap[r[0]] = r[1].branch;
+    }
+    setAccessSummary(cMap);
+    setBranchAccessSummary(bMap);
   }, []);
 
   useEffect(() => {
@@ -625,25 +726,64 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
                                 პაროლი
                               </button>
                               {u.role === 'user' && (
+                                <>
+                                  <button
+                                    onClick={() => openBranchAccess(u)}
+                                    className="inline-flex items-center gap-1 rounded border border-[#0071CE]/30 bg-white px-2 py-1 font-semibold text-[#0071CE] hover:bg-[#E6F2FB]"
+                                    title="მიანიჭე წვდომა კონკრეტულ ფილიალებზე"
+                                  >
+                                    🏪 ფილიალები
+                                    {branchAccessSummary[u.id]?.wildcard ? (
+                                      <span className="ml-0.5 rounded bg-[#0071CE] px-1 py-0 text-[10px] font-bold text-white">
+                                        ALL
+                                      </span>
+                                    ) : branchAccessSummary[u.id]?.count ? (
+                                      <span className="ml-0.5 rounded bg-[#E6F2FB] px-1 py-0 text-[10px] font-bold">
+                                        {branchAccessSummary[u.id].count}
+                                      </span>
+                                    ) : (
+                                      <span className="ml-0.5 rounded bg-red-100 px-1 py-0 text-[10px] font-bold text-red-700">
+                                        0
+                                      </span>
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={() => openCompanyAccess(u)}
+                                    className="inline-flex items-center gap-1 rounded border border-[#0071CE]/30 bg-white px-2 py-1 font-semibold text-[#0071CE] hover:bg-[#E6F2FB]"
+                                    title="მიანიჭე წვდომა კონკრეტულ კომპანიებზე"
+                                  >
+                                    🏢 კომპანიები
+                                    {accessSummary[u.id]?.wildcard ? (
+                                      <span className="ml-0.5 rounded bg-[#0071CE] px-1 py-0 text-[10px] font-bold text-white">
+                                        ALL
+                                      </span>
+                                    ) : accessSummary[u.id]?.count ? (
+                                      <span className="ml-0.5 rounded bg-[#E6F2FB] px-1 py-0 text-[10px] font-bold">
+                                        {accessSummary[u.id].count}
+                                      </span>
+                                    ) : (
+                                      <span className="ml-0.5 rounded bg-red-100 px-1 py-0 text-[10px] font-bold text-red-700">
+                                        0
+                                      </span>
+                                    )}
+                                  </button>
+                                </>
+                              )}
+                              {!u.is_static && (
                                 <button
-                                  onClick={() => openCompanyAccess(u)}
-                                  className="inline-flex items-center gap-1 rounded border border-[#0071CE]/30 bg-white px-2 py-1 font-semibold text-[#0071CE] hover:bg-[#E6F2FB]"
-                                  title="მიანიჭე წვდომა კონკრეტულ კომპანიებზე"
+                                  onClick={() => changeRole(u)}
+                                  className={`rounded border px-2 py-1 font-semibold ${
+                                    u.role === 'admin'
+                                      ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
+                                      : 'border-[#0071CE]/30 bg-white text-[#0071CE] hover:bg-[#E6F2FB]'
+                                  }`}
+                                  title={
+                                    u.role === 'admin'
+                                      ? 'user-ად გადაიყვანე'
+                                      : 'admin-ად გადაიყვანე'
+                                  }
                                 >
-                                  🏢 კომპანიები
-                                  {accessSummary[u.id]?.wildcard ? (
-                                    <span className="ml-0.5 rounded bg-[#0071CE] px-1 py-0 text-[10px] font-bold text-white">
-                                      ALL
-                                    </span>
-                                  ) : accessSummary[u.id]?.count ? (
-                                    <span className="ml-0.5 rounded bg-[#E6F2FB] px-1 py-0 text-[10px] font-bold">
-                                      {accessSummary[u.id].count}
-                                    </span>
-                                  ) : (
-                                    <span className="ml-0.5 rounded bg-red-100 px-1 py-0 text-[10px] font-bold text-red-700">
-                                      0
-                                    </span>
-                                  )}
+                                  {u.role === 'admin' ? '↓ user' : '↑ admin'}
                                 </button>
                               )}
                               {!u.is_static && (
@@ -798,6 +938,36 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
         <TbcHelpModal
           role={session.role}
           onClose={() => setHelpOpen(false)}
+        />
+      )}
+
+      {branchAccessUser && (
+        <BranchAccessModal
+          user={branchAccessUser}
+          branches={branchList}
+          wildcard={branchWildcard}
+          selected={branchIds}
+          loading={branchAccessLoading}
+          saving={branchAccessSaving}
+          onToggleWildcard={(v) => {
+            setBranchWildcard(v);
+            if (v) setBranchIds(new Set());
+          }}
+          onToggleBranch={(id) => {
+            setBranchIds((prev) => {
+              const next = new Set(prev);
+              if (next.has(id)) next.delete(id);
+              else next.add(id);
+              return next;
+            });
+          }}
+          onSelectAll={() => setBranchIds(new Set(branchList.map((b) => b.id)))}
+          onClear={() => {
+            setBranchIds(new Set());
+            setBranchWildcard(false);
+          }}
+          onClose={() => setBranchAccessUser(null)}
+          onSave={saveBranchAccess}
         />
       )}
 
@@ -999,6 +1169,214 @@ function CompanyAccessModal({
                           </div>
                         )}
                       </div>
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        <footer className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-5 py-3">
+          <div className="text-xs text-slate-600">
+            <span className="font-semibold">{countLabel}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="rounded border border-slate-200 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+              გაუქმება
+            </button>
+            <button
+              onClick={onSave}
+              disabled={saving || loading}
+              className="rounded bg-[#0071CE] px-3 py-1.5 text-sm font-semibold text-white hover:bg-[#005ca8] disabled:opacity-50"
+            >
+              {saving ? 'ინახება…' : 'შენახვა'}
+            </button>
+          </div>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+function BranchAccessModal({
+  user,
+  branches,
+  wildcard,
+  selected,
+  loading,
+  saving,
+  onToggleWildcard,
+  onToggleBranch,
+  onSelectAll,
+  onClear,
+  onClose,
+  onSave
+}: {
+  user: TbcUser;
+  branches: Array<{id: number; name: string; alias: string | null; region: string | null; city: string | null}>;
+  wildcard: boolean;
+  selected: Set<number>;
+  loading: boolean;
+  saving: boolean;
+  onToggleWildcard: (v: boolean) => void;
+  onToggleBranch: (id: number) => void;
+  onSelectAll: () => void;
+  onClear: () => void;
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  const [q, setQ] = useState('');
+  const [regionFilter, setRegionFilter] = useState('');
+
+  const regions = Array.from(
+    new Set(branches.map((b) => b.region).filter((r): r is string => !!r))
+  ).sort();
+
+  const filtered = branches.filter((b) => {
+    if (regionFilter && b.region !== regionFilter) return false;
+    if (!q.trim()) return true;
+    const t = q.trim().toLowerCase();
+    return (
+      b.name.toLowerCase().includes(t) ||
+      (b.alias || '').toLowerCase().includes(t) ||
+      (b.city || '').toLowerCase().includes(t) ||
+      (b.region || '').toLowerCase().includes(t)
+    );
+  });
+
+  const countLabel = wildcard
+    ? 'ყველა ფილიალი'
+    : `${selected.size} / ${branches.length} არჩეული`;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={onClose}>
+      <div
+        className="flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
+          <div>
+            <div className="text-xs uppercase tracking-wide text-slate-500">
+              ფილიალების წვდომა
+            </div>
+            <div className="text-base font-bold text-slate-900">
+              {user.display_name || user.username}{' '}
+              <span className="font-mono text-sm font-normal text-slate-500">
+                ({user.username})
+              </span>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded border border-slate-200 bg-white px-2.5 py-1 text-sm text-slate-600 hover:bg-slate-50"
+          >
+            ✕
+          </button>
+        </header>
+
+        <div className="border-b border-slate-200 bg-slate-50 px-5 py-3">
+          <label className="flex cursor-pointer items-start gap-2.5">
+            <input
+              type="checkbox"
+              checked={wildcard}
+              onChange={(e) => onToggleWildcard(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[#0071CE]"
+            />
+            <div className="flex-1">
+              <div className="text-sm font-bold text-slate-900">
+                ყველა ფილიალის წვდომა (wildcard)
+              </div>
+              <div className="mt-0.5 text-xs text-slate-500">
+                მომავალში დამატებული ფილიალებიც ავტომატურად ხილული იქნება.
+              </div>
+            </div>
+          </label>
+        </div>
+
+        <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-2">
+          <input
+            type="text"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="🔍 ფილიალის ძიება…"
+            className="flex-1 rounded border border-slate-200 bg-white px-3 py-1.5 text-sm focus:border-[#0071CE] focus:outline-none"
+            disabled={wildcard}
+          />
+          {regions.length > 0 && (
+            <select
+              value={regionFilter}
+              onChange={(e) => setRegionFilter(e.target.value)}
+              disabled={wildcard}
+              className="rounded border border-slate-200 bg-white px-2 py-1.5 text-sm focus:border-[#0071CE] focus:outline-none disabled:opacity-40"
+            >
+              <option value="">ყველა რეგიონი</option>
+              {regions.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+          )}
+          <button
+            onClick={onSelectAll}
+            disabled={wildcard}
+            className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+          >
+            ყველა
+          </button>
+          <button
+            onClick={onClear}
+            disabled={wildcard && selected.size === 0}
+            className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+          >
+            გასუფთავება
+          </button>
+        </div>
+
+        <div className={`min-h-0 flex-1 overflow-y-auto ${wildcard ? 'pointer-events-none opacity-50' : ''}`}>
+          {loading ? (
+            <div className="px-5 py-10 text-center text-sm text-slate-400">იტვირთება…</div>
+          ) : filtered.length === 0 ? (
+            <div className="px-5 py-10 text-center text-sm text-slate-400">
+              {branches.length === 0 ? 'ფილიალები ჯერ არაა დამატებული' : 'ვერ მოიძებნა'}
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {filtered.map((b) => {
+                const on = selected.has(b.id);
+                return (
+                  <li key={b.id}>
+                    <label className="flex cursor-pointer items-center gap-3 px-5 py-2 hover:bg-slate-50">
+                      <input
+                        type="checkbox"
+                        checked={on || wildcard}
+                        disabled={wildcard}
+                        onChange={() => onToggleBranch(b.id)}
+                        className="h-4 w-4 accent-[#0071CE]"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          {b.alias && (
+                            <span className="shrink-0 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-slate-700">
+                              {b.alias}
+                            </span>
+                          )}
+                          <span className="truncate text-sm font-semibold text-slate-900">
+                            {b.name}
+                          </span>
+                        </div>
+                        {(b.region || b.city) && (
+                          <div className="mt-0.5 flex gap-3 text-xs text-slate-500">
+                            {b.region && <span>📍 {b.region}</span>}
+                            {b.city && <span>{b.city}</span>}
+                          </div>
+                        )}
+                      </div>
+                      <span className="shrink-0 font-mono text-[10px] text-slate-400">#{b.id}</span>
                     </label>
                   </li>
                 );
