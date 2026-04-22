@@ -40,10 +40,10 @@ export function WidgetView({widget, globalStatus}: {widget: Widget; globalStatus
   const {type, config} = widget;
 
   const rows = useMemo(() => {
-    const src = config.source ?? 'invoices';
+    const src = config.source ?? 'leads';
     let rs = loadDataSource(src);
     if (config.statusFilter) rs = rs.filter((r) => String(r.status) === config.statusFilter);
-    if (globalStatus) rs = rs.filter((r) => String(r.status) === globalStatus);
+    if (globalStatus && src === 'leads') rs = rs.filter((r) => String(r.status) === globalStatus);
     return rs;
   }, [config.source, config.statusFilter, globalStatus]);
 

@@ -73,7 +73,8 @@ const MENU_GROUPS: {id: string; title: string; items: MenuItem[]}[] = [
       {id: 'adr-index',          label: 'ADR index',                  caption: '25 decisions · v1.3',                  src: '/audit.sazeo/decisions/adr-index.html'},
       {id: 'multi-tenancy',      label: 'Multi-tenancy architecture', caption: 'self-reg · invite · service-provider',  src: '/audit.sazeo/decisions/multi-tenancy-adr.html'},
       {id: 'platform-governance',    label: 'Platform governance',        caption: 'demo · diagnostics · GDPR · tracing',         src: '/audit.sazeo/decisions/platform-governance-adr.html'},
-      {id: 'ecosystem-extensions',   label: 'Ecosystem extensions',       caption: 'monitoring · manufacturer · tax/payments',    src: '/audit.sazeo/decisions/ecosystem-extensions-adr.html'}
+      {id: 'ecosystem-extensions',   label: 'Ecosystem extensions',       caption: 'monitoring · manufacturer · tax/payments',    src: '/audit.sazeo/decisions/ecosystem-extensions-adr.html'},
+      {id: 'routing-architecture',  label: 'Routing architecture',       caption: '58 routes · 42 API · 5 guards · redirect map', src: '/audit.sazeo/decisions/routing-architecture.html'}
     ]
   }
 ];

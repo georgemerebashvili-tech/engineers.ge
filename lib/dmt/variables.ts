@@ -187,6 +187,78 @@ export const PAGES_KEY = 'dmt_page_scopes_v1';
 
 export const DEFAULT_PAGES: PageScope[] = [
   {
+    id: 'leads-manual',
+    label: 'ლიდები · Manual Grid',
+    route: '/dmt/leads/manual',
+    icon: '📋',
+    tables: [
+      {
+        id: 'main',
+        label: 'მთავარი ცხრილი',
+        description: 'status-ჯგუფებით დაჯგუფებული ლიდები',
+        columns: [
+          {id: 'company', label: 'კომპ. დასახ.', kind: 'text'},
+          {id: 'contact', label: 'საკონტაქტო', kind: 'text'},
+          {id: 'phone', label: 'ტელეფონი', kind: 'phone'},
+          {id: 'contract', label: 'კონტრ. ღირ.', kind: 'currency'},
+          {id: 'status', label: 'სტატუსი', kind: 'select', scope: 'universal', varSetId: 'status-lead'},
+          {id: 'role', label: 'როლი', kind: 'select', scope: 'universal', varSetId: 'role'},
+          {id: 'owner', label: 'პრ. მენ.', kind: 'user'},
+          {id: 'period', label: 'პერიოდი', kind: 'date'}
+        ]
+      }
+    ]
+  },
+  {
+    id: 'leads-grid',
+    label: 'ლიდები · ყველა (Grid)',
+    route: '/dmt/leads',
+    icon: '🗂',
+    tables: [
+      {
+        id: 'main',
+        label: 'Pipeline Grid',
+        columns: [
+          {id: 'company', label: 'კომპ. დასახ.', kind: 'text'},
+          {id: 'contact', label: 'საკონტაქტო', kind: 'text'},
+          {id: 'phone', label: 'ტელეფონი', kind: 'phone'},
+          {id: 'contract', label: 'კონტრ. ღირ.', kind: 'currency'},
+          {id: 'status', label: 'სტატუსი', kind: 'select', scope: 'universal', varSetId: 'status-lead'},
+          {id: 'role', label: 'როლი', kind: 'select', scope: 'universal', varSetId: 'role'},
+          {id: 'priority', label: 'პრიორიტეტი', kind: 'select', scope: 'universal', varSetId: 'priority'}
+        ]
+      }
+    ]
+  },
+  {
+    id: 'leads-facebook',
+    label: 'ლიდები · Facebook',
+    route: '/dmt/leads/facebook',
+    icon: '📘',
+    tables: [
+      {
+        id: 'fb-leads',
+        label: 'Facebook Lead Ads',
+        columns: [
+          {id: 'leadgen_id', label: 'Leadgen ID', kind: 'text'},
+          {id: 'full_name', label: 'სახელი', kind: 'text'},
+          {id: 'phone', label: 'ტელეფონი', kind: 'phone'},
+          {id: 'email', label: 'Email', kind: 'text'},
+          {id: 'campaign_id', label: 'Campaign', kind: 'text'},
+          {id: 'lead_status', label: 'სტატუსი', kind: 'select', scope: 'fixed', options: [
+            {id: 'new', label: 'ახალი', color: 'blue'},
+            {id: 'called', label: 'დაკავშირდა', color: 'yellow'},
+            {id: 'scheduled', label: 'დაინიშნა', color: 'purple'},
+            {id: 'converted', label: 'გადავიდა', color: 'green'},
+            {id: 'lost', label: 'დაკარგული', color: 'red'}
+          ]},
+          {id: 'assigned_to', label: 'მიბმულია', kind: 'user'},
+          {id: 'received_at', label: 'მიღებული', kind: 'date'}
+        ]
+      }
+    ]
+  },
+  {
     id: 'inspections',
     label: 'ინსპექტირება',
     route: '/dmt/inspections',

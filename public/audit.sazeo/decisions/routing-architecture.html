@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Routing Architecture — Sazeo Platform</title>
+<style>
+:root {
+  --primary: #1565C0;
+  --primary-dark: #0D47A1;
+  --primary-light: #E3F2FD;
+  --surface: #FFFFFF;
+  --surface-alt: #F7F9FC;
+  --border: #E1E7EF;
+  --text: #1A2332;
+  --text-muted: #5A6B80;
+  --text-dim: #8A98AC;
+  --success: #2E7D32;
+  --success-bg: #E8F5E9;
+  --warning: #E6A100;
+  --warning-bg: #FFF8E1;
+  --info: #0277BD;
+  --info-bg: #E1F5FE;
+  --error: #C62828;
+  --error-bg: #FFEBEE;
+  --purple: #6A1B9A;
+  --purple-bg: #F3E5F5;
+  --orange: #E65100;
+  --orange-bg: #FFF3E0;
+  --teal: #00695C;
+  --teal-bg: #E0F2F1;
+  --indigo: #283593;
+  --indigo-bg: #E8EAF6;
+  --brown: #4E342E;
+  --brown-bg: #EFEBE9;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font: 13px/1.6 'Noto Sans Georgian','Inter',-apple-system,sans-serif;
+  color: var(--text); background: var(--surface-alt);
+}
+.page { max-width: 1200px; margin: 0 auto; padding: 32px 28px 80px; }
+
+/* HERO */
+.hero { background: linear-gradient(135deg,#1565C0 0%,#0D47A1 100%); color:#fff; padding:32px 36px; border-radius:var(--radius-md); margin-bottom:24px; }
+.hero h1 { font-size:22px; font-weight:700; margin-bottom:6px; }
+.hero .sub { font-size:13px; opacity:.85; margin-bottom:16px; }
+.hero-meta { display:flex; flex-wrap:wrap; gap:8px; }
+.pill { background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3); padding:4px 10px; border-radius:999px; font-size:11px; }
+
+/* TOC */
+.toc { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px 20px; margin-bottom:24px; }
+.toc-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); margin-bottom:10px; }
+.toc-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:4px 24px; }
+.toc-grid a { color:var(--primary); text-decoration:none; font-size:12.5px; padding:2px 0; display:flex; gap:6px; }
+.toc-grid a span { color:var(--text-dim); font-family:monospace; font-size:11px; }
+.toc-grid a:hover { text-decoration:underline; }
+
+section { margin-bottom:36px; scroll-margin-top:16px; }
+h2 { font-size:16px; font-weight:700; padding-bottom:8px; border-bottom:2px solid var(--border); margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+h2 .sec-tag { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:2px 8px; border-radius:4px; font-family:monospace; flex-shrink:0; }
+h3 { font-size:13.5px; font-weight:700; margin:18px 0 10px; }
+p { font-size:13px; margin-bottom:10px; line-height:1.65; }
+
+/* ROUTE TREE */
+.route-tree { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:20px 24px; margin-bottom:20px; overflow-x:auto; }
+.rt-group { margin-bottom:18px; }
+.rt-group:last-child { margin-bottom:0; }
+.rt-group-title { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; padding:3px 8px; border-radius:4px; margin-bottom:10px; display:inline-flex; align-items:center; gap:6px; }
+.rt-node { display:flex; align-items:center; gap:0; margin-bottom:3px; }
+.rt-indent { display:flex; align-items:center; flex-shrink:0; }
+.rt-line { width:16px; border-bottom:1px solid var(--border); flex-shrink:0; }
+.rt-vert { width:16px; border-left:1px solid var(--border); height:20px; margin-bottom:-10px; flex-shrink:0; }
+.rt-pill {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:3px 9px; border-radius:5px; font-family:monospace; font-size:12px;
+  border:1px solid; cursor:default; white-space:nowrap;
+}
+.rt-pill .path { font-weight:700; }
+.rt-pill .lbl { font-size:10.5px; font-weight:400; opacity:.75; }
+.rt-pill .guard { font-size:9.5px; padding:1px 5px; border-radius:3px; font-weight:700; text-transform:uppercase; margin-left:4px; }
+
+/* route type colors */
+.rt-public   { background:#fff; border-color:#CFD8DC; color:#37474F; }
+.rt-public   .guard { background:#CFD8DC; color:#37474F; }
+.rt-auth     { background:var(--primary-light); border-color:#90CAF9; color:var(--primary-dark); }
+.rt-auth     .guard { background:#90CAF9; color:var(--primary-dark); }
+.rt-org      { background:var(--success-bg); border-color:#9DDCBA; color:var(--success); }
+.rt-org      .guard { background:#9DDCBA; color:var(--success); }
+.rt-admin    { background:var(--error-bg); border-color:#FFCDD2; color:var(--error); }
+.rt-admin    .guard { background:#FFCDD2; color:var(--error); }
+.rt-mfr      { background:var(--brown-bg); border-color:#BCAAA4; color:var(--brown); }
+.rt-mfr      .guard { background:#BCAAA4; color:var(--brown); }
+.rt-api      { background:var(--indigo-bg); border-color:#9FA8DA; color:var(--indigo); }
+.rt-api      .guard { background:#9FA8DA; color:var(--indigo); }
+
+/* GUARD FLOW */
+.guard-flow { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:20px 24px; margin-bottom:16px; overflow-x:auto; }
+.guard-flow pre { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:12px; line-height:1.8; }
+pre .c { color:var(--text-dim); }
+pre .k { color:var(--primary); font-weight:600; }
+pre .s { color:var(--success); font-weight:600; }
+pre .e { color:var(--error); font-weight:600; }
+pre .w { color:var(--warning); font-weight:600; }
+pre .p { color:var(--purple); font-weight:600; }
+pre .t { color:var(--teal); font-weight:600; }
+pre .i { color:var(--indigo); font-weight:600; }
+pre .b { color:var(--brown); font-weight:600; }
+
+/* FILTERS */
+.filters { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:14px; }
+.filter-btn {
+  padding:4px 12px; border-radius:999px; border:1px solid var(--border);
+  background:var(--surface); font-size:11.5px; font-weight:600; color:var(--text-muted);
+  cursor:pointer; transition:all 120ms; font-family:monospace;
+}
+.filter-btn:hover { border-color:var(--primary); color:var(--primary); }
+.filter-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+/* ROUTE TABLE */
+.rt-table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); overflow:hidden; margin-bottom:16px; }
+.rt-table { width:100%; border-collapse:collapse; font-size:12px; }
+.rt-table th {
+  background:var(--surface-alt); color:var(--text-muted); font-size:10.5px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.06em; padding:9px 12px; text-align:left;
+  border-bottom:1px solid var(--border); white-space:nowrap;
+}
+.rt-table td { padding:8px 12px; border-bottom:1px solid var(--border); vertical-align:top; }
+.rt-table tr:last-child td { border-bottom:none; }
+.rt-table tr:hover td { background:#F0F7FF; }
+.rt-table .mono { font-family:monospace; font-size:11.5px; color:var(--primary-dark); font-weight:600; }
+.rt-table .desc { font-size:12px; color:var(--text); }
+.rt-table .why { font-size:11.5px; color:var(--text-muted); }
+.badge { display:inline-block; padding:2px 7px; border-radius:4px; font-size:10px; font-weight:700; font-family:monospace; text-transform:uppercase; letter-spacing:.3px; white-space:nowrap; }
+.badge.public  { background:#CFD8DC; color:#37474F; }
+.badge.auth    { background:var(--primary-light); color:var(--primary-dark); border:1px solid #90CAF9; }
+.badge.org     { background:var(--success-bg); color:var(--success); border:1px solid #9DDCBA; }
+.badge.admin   { background:var(--error-bg); color:var(--error); border:1px solid #FFCDD2; }
+.badge.mfr     { background:var(--brown-bg); color:var(--brown); border:1px solid #BCAAA4; }
+.badge.api     { background:var(--indigo-bg); color:var(--indigo); border:1px solid #9FA8DA; }
+.badge.role    { background:var(--warning-bg); color:var(--orange); border:1px solid #FFCC80; }
+.badge.method  { background:var(--purple-bg); color:var(--purple); border:1px solid #CE93D8; }
+.rt-table .role-cell { display:flex; flex-wrap:wrap; gap:3px; }
+.no-rows { padding:32px; text-align:center; color:var(--text-dim); font-size:13px; }
+
+/* RULES */
+.rule { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px 18px; margin-bottom:10px; }
+.rule-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; font-weight:700; font-size:13px; }
+.rule-num { width:22px; height:22px; border-radius:999px; background:var(--primary); color:#fff; font-size:11px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.rule-body { font-size:12.5px; color:var(--text-muted); line-height:1.6; }
+.rule-body code { background:var(--surface-alt); color:var(--primary-dark); padding:1px 5px; border-radius:3px; font-family:monospace; font-size:11.5px; }
+.rule-body strong { color:var(--text); }
+
+.alert { padding:11px 15px; border-radius:var(--radius-sm); margin-bottom:14px; font-size:12.5px; display:flex; gap:10px; align-items:flex-start; }
+.alert-icon { flex-shrink:0; margin-top:1px; }
+.alert.info { background:var(--info-bg); border:1px solid #81C7E0; color:#014F7A; }
+.alert.warning { background:var(--warning-bg); border:1px solid #F5D06E; color:#7A4E00; }
+
+.legend { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+
+.footer { text-align:center; padding:28px 0 0; color:var(--text-dim); font-size:11.5px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HERO -->
+  <div class="hero">
+    <h1>Routing Architecture — Sazeo Platform</h1>
+    <div class="sub">Route tree · Guard decision flow · Complete navigation table with rules (who, what, why, where)</div>
+    <div class="hero-meta">
+      <span class="pill"><strong>Routes:</strong> 58 total</span>
+      <span class="pill"><strong>API endpoints:</strong> 42</span>
+      <span class="pill"><strong>Guards:</strong> 5 layers</span>
+      <span class="pill"><strong>Author:</strong> Claude (CTO) · 2026-04-23</span>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <div class="toc-title">სარჩევი</div>
+    <div class="toc-grid">
+      <a href="#s1"><span>01</span>Route tree — visual sitemap</a>
+      <a href="#s2"><span>02</span>Guard decision flow — 5 layer</a>
+      <a href="#s3"><span>03</span>Frontend routes — სრული ცხრილი</a>
+      <a href="#s4"><span>04</span>API endpoints — სრული ცხრილი</a>
+      <a href="#s5"><span>05</span>Routing rules — 12 წესი</a>
+      <a href="#s6"><span>06</span>Redirect map — სად გადადის</a>
+    </div>
+  </div>
+
+  <!-- ══════ S1: ROUTE TREE ══════ -->
+  <section id="s1">
+    <h2><span class="sec-tag" style="background:var(--primary-light);color:var(--primary)">01</span>Route Tree — Visual Sitemap</h2>
+
+    <div class="legend">
+      <span class="badge public">public</span> — auth არ სჭირდება &nbsp;
+      <span class="badge auth">auth</span> — login საჭიროა, org არ სჭირდება &nbsp;
+      <span class="badge org">org</span> — login + org context &nbsp;
+      <span class="badge admin">system_admin</span> — platform admin only &nbsp;
+      <span class="badge mfr">manufacturer</span> — manufacturer org only &nbsp;
+      <span class="badge api">api</span> — backend REST endpoint
+    </div>
+
+    <div class="route-tree">
+
+      <!-- PUBLIC -->
+      <div class="rt-group">
+        <div class="rt-group-title" style="background:#CFD8DC;color:#37474F">🌐 Public — no authentication</div>
+        <div class="rt-node"><span class="rt-pill rt-public"><span class="path">/</span><span class="lbl">Landing page</span><span class="guard">public</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-public"><span class="path">/login</span><span class="lbl">Sign in</span><span class="guard">public</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-public"><span class="path">/register</span><span class="lbl">Self-register</span><span class="guard">public</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-public"><span class="path">/forgot-password</span><span class="lbl">Password reset request</span><span class="guard">public</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-public"><span class="path">/reset-password</span><span class="lbl">Set new password (token link)</span><span class="guard">public</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-public"><span class="path">/invite/accept</span><span class="lbl">Cross-org invite accept</span><span class="guard">public</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-public"><span class="path">/status</span><span class="lbl">Platform status page</span><span class="guard">public</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-public"><span class="path">/demo</span><span class="lbl">Demo tenant preview</span><span class="guard">public</span></span></div>
+      </div>
+
+      <!-- AUTH (no org) -->
+      <div class="rt-group">
+        <div class="rt-group-title" style="background:var(--primary-light);color:var(--primary-dark)">🔐 Auth — login required, no org context</div>
+        <div class="rt-node"><span class="rt-pill rt-auth"><span class="path">/select-org</span><span class="lbl">ორგ-ის არჩევა (multi-membership)</span><span class="guard">auth</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-auth"><span class="path">/onboarding</span><span class="lbl">ახალი org შექმნა / setup wizard</span><span class="guard">auth</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-auth"><span class="path">/profile</span><span class="lbl">User profile + global settings</span><span class="guard">auth</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-auth"><span class="path">/profile/tokens</span><span class="lbl">Personal Access Tokens</span><span class="guard">auth</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-auth"><span class="path">/profile/erasure</span><span class="lbl">GDPR deletion request</span><span class="guard">auth</span></span></div>
+      </div>
+
+      <!-- ORG SCOPED -->
+      <div class="rt-group">
+        <div class="rt-group-title" style="background:var(--success-bg);color:var(--success)">🏢 Org-scoped — login + Organization header</div>
+        <div class="rt-node"><span class="rt-pill rt-org"><span class="path">/dashboard</span><span class="lbl">Main dashboard · overview</span><span class="guard">member+</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-org"><span class="path">/devices</span><span class="lbl">Device list + search/filter</span><span class="guard">member+</span></span></div>
+        <div class="rt-node" style="margin-left:32px"><span class="rt-pill rt-org"><span class="path">/devices/claim</span><span class="lbl">Claim new device by serial</span><span class="guard">member+</span></span></div>
+        <div class="rt-node" style="margin-left:32px"><span class="rt-pill rt-org"><span class="path">/devices/[id]</span><span class="lbl">Device detail · live data · history</span><span class="guard">member+</span></span></div>
+        <div class="rt-node" style="margin-left:48px"><span class="rt-pill rt-org"><span class="path">/devices/[id]/commands</span><span class="lbl">Send commands</span><span class="guard">member+</span></span></div>
+        <div class="rt-node" style="margin-left:48px"><span class="rt-pill rt-org"><span class="path">/devices/[id]/logs</span><span class="lbl">Device log history</span><span class="guard">member+</span></span></div>
+        <div class="rt-node" style="margin-left:48px"><span class="rt-pill rt-org"><span class="path">/devices/[id]/settings</span><span class="lbl">Device config · thresholds</span><span class="guard">org_admin</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-org"><span class="path">/alerts</span><span class="lbl">Active + resolved alerts</span><span class="guard">member+</span></span></div>
+        <div class="rt-node" style="margin-left:32px"><span class="rt-pill rt-org"><span class="path">/alerts/[id]</span><span class="lbl">Alert detail · timeline · actions</span><span class="guard">member+</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-org"><span class="path">/reports</span><span class="lbl">Reports list</span><span class="guard">member+</span></span></div>
+        <div class="rt-node" style="margin-left:32px"><span class="rt-pill rt-org"><span class="path">/reports/new</span><span class="lbl">Create report</span><span class="guard">member+</span></span></div>
+        <div class="rt-node" style="margin-left:32px"><span class="rt-pill rt-org"><span class="path">/reports/[id]</span><span class="lbl">View report · export PDF/XLSX</span><span class="guard">member+</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-org"><span class="path">/calculator</span><span class="lbl">Operational cost calculator</span><span class="guard">member+</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-org"><span class="path">/settings</span><span class="lbl">Org settings hub</span><span class="guard">org_admin</span></span></div>
+        <div class="rt-node" style="margin-left:32px"><span class="rt-pill rt-org"><span class="path">/settings/members</span><span class="lbl">Member list · invite user</span><span class="guard">org_admin</span></span></div>
+        <div class="rt-node" style="margin-left:32px"><span class="rt-pill rt-org"><span class="path">/settings/invites</span><span class="lbl">Cross-org invite management</span><span class="guard">org_admin</span></span></div>
+        <div class="rt-node" style="margin-left:32px"><span class="rt-pill rt-org"><span class="path">/settings/grants</span><span class="lbl">Active cross-org grants · revoke</span><span class="guard">org_admin</span></span></div>
+        <div class="rt-node" style="margin-left:32px"><span class="rt-pill rt-org"><span class="path">/settings/billing</span><span class="lbl">Plan · invoices · payment method</span><span class="guard">billing_admin</span></span></div>
+        <div class="rt-node" style="margin-left:32px"><span class="rt-pill rt-org"><span class="path">/settings/tokens</span><span class="lbl">Org-level integration tokens</span><span class="guard">org_admin</span></span></div>
+        <div class="rt-node" style="margin-left:32px"><span class="rt-pill rt-org"><span class="path">/settings/notifications</span><span class="lbl">Alert notification rules</span><span class="guard">org_admin</span></span></div>
+        <div class="rt-node" style="margin-left:32px"><span class="rt-pill rt-org"><span class="path">/settings/audit-log</span><span class="lbl">Org audit log (own actions)</span><span class="guard">org_admin</span></span></div>
+      </div>
+
+      <!-- ADMIN -->
+      <div class="rt-group">
+        <div class="rt-group-title" style="background:var(--error-bg);color:var(--error)">🔴 System Admin — platform_operator only</div>
+        <div class="rt-node"><span class="rt-pill rt-admin"><span class="path">/admin</span><span class="lbl">Operator console · live overview</span><span class="guard">system_admin</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-admin"><span class="path">/admin/organizations</span><span class="lbl">All orgs · approve · suspend</span><span class="guard">system_admin</span></span></div>
+        <div class="rt-node" style="margin-left:32px"><span class="rt-pill rt-admin"><span class="path">/admin/organizations/[id]</span><span class="lbl">Org detail · members · billing</span><span class="guard">system_admin</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-admin"><span class="path">/admin/health</span><span class="lbl">System health dashboard</span><span class="guard">system_admin</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-admin"><span class="path">/admin/monitoring</span><span class="lbl">Web Vitals · Rate limits · CSP</span><span class="guard">system_admin</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-admin"><span class="path">/admin/audit-log</span><span class="lbl">Platform-wide audit log</span><span class="guard">system_admin</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-admin"><span class="path">/admin/billing</span><span class="lbl">Revenue · overdue · invoices</span><span class="guard">system_admin</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-admin"><span class="path">/admin/users</span><span class="lbl">All users · search · erasure</span><span class="guard">system_admin</span></span></div>
+      </div>
+
+      <!-- MANUFACTURER -->
+      <div class="rt-group">
+        <div class="rt-group-title" style="background:var(--brown-bg);color:var(--brown)">🏭 Manufacturer Portal — org_type=manufacturer</div>
+        <div class="rt-node"><span class="rt-pill rt-mfr"><span class="path">/manufacturer</span><span class="lbl">Fleet overview · dashboard</span><span class="guard">mfr_member</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-mfr"><span class="path">/manufacturer/models</span><span class="lbl">Device model registry</span><span class="guard">mfr_member</span></span></div>
+        <div class="rt-node" style="margin-left:32px"><span class="rt-pill rt-mfr"><span class="path">/manufacturer/models/new</span><span class="lbl">Add device model + specs</span><span class="guard">mfr_admin</span></span></div>
+        <div class="rt-node" style="margin-left:32px"><span class="rt-pill rt-mfr"><span class="path">/manufacturer/models/[id]</span><span class="lbl">Model detail · firmware · certs</span><span class="guard">mfr_member</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-mfr"><span class="path">/manufacturer/devices</span><span class="lbl">Registered serials · claimed vs unclaimed</span><span class="guard">mfr_member</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-mfr"><span class="path">/manufacturer/analytics</span><span class="lbl">Fleet stats · firmware dist · errors</span><span class="guard">mfr_member</span></span></div>
+        <div class="rt-node" style="margin-left:16px"><span class="rt-pill rt-mfr"><span class="path">/manufacturer/notifications</span><span class="lbl">Notification rule builder</span><span class="guard">mfr_admin</span></span></div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════ S2: GUARD FLOW ══════ -->
+  <section id="s2">
+    <h2><span class="sec-tag" style="background:var(--purple-bg);color:var(--purple)">02</span>Guard Decision Flow — 5 Layer</h2>
+
+    <div class="guard-flow">
+      <pre>
+  <span class="c">Request შემოდის</span>
+         │
+         ▼
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │ <span class="k">Layer 1 — Rate Limit (Redis)</span>                                        │
+  │   global IP limit  →  <span class="e">429</span>   org quota limit  →  <span class="e">429</span>                   │
+  └─────────────────────────────────────────────────────────────────────┘
+         │ OK
+         ▼
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │ <span class="k">Layer 2 — Authentication</span>                                            │
+  │                                                                     │
+  │   route @Public?  ──────────────────────────────────── <span class="s">→ PROCEED</span>   │
+  │         │ no                                                        │
+  │   JWT present?   no  ──────────────────────────────── <span class="e">→ 401</span>        │
+  │         │ yes                                                       │
+  │   Firebase verify JWT                                               │
+  │         │ invalid  ──────────────────────────────────── <span class="e">→ 401</span>       │
+  │         │ valid → user_id extracted                                 │
+  │   user.status = active?  no  ──────────────────────── <span class="e">→ 403</span>        │
+  └─────────────────────────────────────────────────────────────────────┘
+         │ OK — user identified
+         ▼
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │ <span class="k">Layer 3 — Organization Context</span>                                      │
+  │                                                                     │
+  │   @NoOrg route (profile, select-org)?  ─────────────── <span class="s">→ PROCEED</span>   │
+  │         │ no                                                        │
+  │   Organization header present?  no  ───────────────── <span class="e">→ 400</span>        │
+  │         │ yes → normalizeOrgHeader()                               │
+  │   Array / malformed?  ──────────────────────────────── <span class="e">→ 400</span>        │
+  │         │ valid string                                              │
+  │   user is member of org?  ──── no ──────────────────── <span class="e">→ 404</span>        │
+  │   OR active cross-tenant grant?                                     │
+  │         │ yes → orgContext injected                                │
+  └─────────────────────────────────────────────────────────────────────┘
+         │ OK — org context valid
+         ▼
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │ <span class="k">Layer 4 — Role / Scope</span>                                              │
+  │                                                                     │
+  │   @RequireScope() declared?  no  ──────────────────── <span class="e">CI FAIL</span>       │
+  │         │ yes — scope list checked                                  │
+  │   Direct member?   →  check org_membership.role ≥ required         │
+  │   Cross-tenant?    →  check org_access_grant.scope contains req    │
+  │   System admin?    →  <span class="s">always pass</span>                                   │
+  │   role/scope insufficient  ────────────────────────── <span class="e">→ 403</span>        │
+  └─────────────────────────────────────────────────────────────────────┘
+         │ OK
+         ▼
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │ <span class="k">Layer 5 — Resource Tenancy</span>                                          │
+  │                                                                     │
+  │   every DB query:  .where({ id, organizationId: ctx.orgId })       │
+  │   result empty?  ───────────────────────────────────── <span class="e">→ 404</span>        │
+  │         │ found                                                     │
+  │   <span class="s">→ PROCEED to controller</span>                                           │
+  └─────────────────────────────────────────────────────────────────────┘</pre>
+    </div>
+
+    <div class="alert info">
+      <span class="alert-icon">ℹ</span>
+      <div><strong>404, არა 403 tenant mismatch-ზე.</strong> Layer 3 და Layer 5 ორივე 404-ს ბრუნებს — resource-ის არსებობის გამჟღავნება = information leak. Attacker ვერ მიხვდება "exists but forbidden" vs "doesn't exist".</div>
+    </div>
+  </section>
+
+  <!-- ══════ S3: FRONTEND ROUTE TABLE ══════ -->
+  <section id="s3">
+    <h2><span class="sec-tag" style="background:var(--success-bg);color:var(--success)">03</span>Frontend Routes — სრული ცხრილი</h2>
+
+    <div class="filters" id="fe-filters">
+      <button class="filter-btn active" data-filter="all">ყველა</button>
+      <button class="filter-btn" data-filter="public">public</button>
+      <button class="filter-btn" data-filter="auth">auth</button>
+      <button class="filter-btn" data-filter="org">org</button>
+      <button class="filter-btn" data-filter="admin">admin</button>
+      <button class="filter-btn" data-filter="mfr">manufacturer</button>
+    </div>
+
+    <div class="rt-table-wrap">
+      <table class="rt-table" id="fe-table">
+        <thead>
+          <tr>
+            <th>Route</th>
+            <th>Guard</th>
+            <th>Min Role</th>
+            <th>გვერდი / ეკრანი</th>
+            <th>Primary Action</th>
+            <th>სად მიდის / რას აკეთებს</th>
+            <th>რატომ ასე</th>
+          </tr>
+        </thead>
+        <tbody id="fe-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════ S4: API TABLE ══════ -->
+  <section id="s4">
+    <h2><span class="sec-tag" style="background:var(--indigo-bg);color:var(--indigo)">04</span>API Endpoints — სრული ცხრილი</h2>
+
+    <div class="filters" id="api-filters">
+      <button class="filter-btn active" data-filter="all">ყველა</button>
+      <button class="filter-btn" data-filter="public">public</button>
+      <button class="filter-btn" data-filter="auth">auth</button>
+      <button class="filter-btn" data-filter="org">org</button>
+      <button class="filter-btn" data-filter="admin">admin</button>
+      <button class="filter-btn" data-filter="mfr">manufacturer</button>
+    </div>
+
+    <div class="rt-table-wrap">
+      <table class="rt-table" id="api-table">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Endpoint</th>
+            <th>Guard</th>
+            <th>Scope</th>
+            <th>რას აკეთებს</th>
+            <th>Request body</th>
+            <th>Response</th>
+          </tr>
+        </thead>
+        <tbody id="api-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════ S5: ROUTING RULES ══════ -->
+  <section id="s5">
+    <h2><span class="sec-tag" style="background:var(--warning-bg);color:var(--orange)">05</span>Routing Rules — 12 წესი</h2>
+
+    <div class="rule"><div class="rule-head"><span class="rule-num">1</span>Public route = @Public() decorator — explicit whitelist</div><div class="rule-body">Next.js middleware და NestJS guard ყველა route-ს auth-required-ად მიიჩნევს default-ად. <strong>Public-ი მხოლოდ @Public() annotation-ით გახდება.</strong> "forget to protect" bug = impossible by default.</div></div>
+
+    <div class="rule"><div class="rule-head"><span class="rule-num">2</span>Org header = required for all org-scoped routes</div><div class="rule-body"><code>Organization: &lt;org-uuid&gt;</code> header missing → <code>400 Bad Request</code>. Frontend-ი Zustand store-ში ინახავს activeOrgId-ს და ყოველ request-ზე header-ში გზავნის. <code>normalizeOrgHeader()</code> — array reject, whitespace trim.</div></div>
+
+    <div class="rule"><div class="rule-head"><span class="rule-num">3</span>Cross-tenant context = same guard, different resolution</div><div class="rule-body">User Org B-ის member-ია, Org A-ს resource-ს ითხოვს. Guard Layer 3: member? no → active grant? yes → pass + scope injection. DB query Layer 5: <code>.where({ id, organizationId: 'org_a' })</code> — same query shape. Transparency: cross-tenant request-ი audit log-ში ჩაიწერება <code>via_grant_id</code>-ით.</div></div>
+
+    <div class="rule"><div class="rule-head"><span class="rule-num">4</span>Role hierarchy: org_admin ⊃ billing_admin ⊃ member ⊃ viewer</div><div class="rule-body"><code>org_admin</code> includes all lower permissions. <code>billing_admin</code> — billing only, cannot manage members. <code>member</code> — read+write devices, alerts, reports. <code>viewer</code> — read only. Guard compares ordinal values: <code>userRoleOrdinal >= requiredRoleOrdinal</code>.</div></div>
+
+    <div class="rule"><div class="rule-head"><span class="rule-num">5</span>System admin bypasses org guard entirely</div><div class="rule-body">user.role = <code>system_admin</code> → Layer 3 passes without membership check. But system admin still sends Organization header for context — otherwise audit log has no org attribution. System admin actions tagged <code>actor_type: platform_operator</code> in audit_log.</div></div>
+
+    <div class="rule"><div class="rule-head"><span class="rule-num">6</span>@RequireScope() non-empty — CI enforced</div><div class="rule-body">Jest meta-test scans <code>src/**/*.controller.ts</code>: every <code>@Get/@Post/@Patch/@Delete</code> method must have <code>@RequireScope([...])</code> with non-empty array. Empty scope → CI fail. Ceiling: 0 violations. No exception without written CTO sign-off.</div></div>
+
+    <div class="rule"><div class="rule-head"><span class="rule-num">7</span>Manufacturer portal — dedicated guard, not role</div><div class="rule-body">Manufacturer routes use <code>ManufacturerGuard</code> — checks <code>org.org_type === 'manufacturer'</code> + membership. Regular client org member cannot access <code>/manufacturer/*</code> even if URL is known. Separate guard = explicit, not a permission level check.</div></div>
+
+    <div class="rule"><div class="rule-head"><span class="rule-num">8</span>404 for all tenancy failures, never 403</div><div class="rule-body">Resource belongs to different org? → 404. Cross-tenant request without grant? → 404. Grant revoked? → 404. <strong>Exception:</strong> scope insufficient on existing cross-tenant grant → 403 (user knows they have partial access, scope mismatch is not a secret). Documented in meta-test assertions.</div></div>
+
+    <div class="rule"><div class="rule-head"><span class="rule-num">9</span>Suspended org → read-only access</div><div class="rule-body"><code>org.status = suspended</code> → OrgStatusInterceptor injects <code>readOnly: true</code> into request context. All mutation endpoints (<code>POST/PATCH/DELETE</code>) return <code>402 Payment Required</code> with <code>{ code: 'ORG_SUSPENDED', paymentUrl: '...' }</code>. GET endpoints pass normally — data must remain accessible.</div></div>
+
+    <div class="rule"><div class="rule-head"><span class="rule-num">10</span>Rate limit headers on every response</div><div class="rule-body">Every authenticated response: <code>X-RateLimit-Limit: 2000</code>, <code>X-RateLimit-Remaining: 1857</code>, <code>X-RateLimit-Reset: 1714823460</code>. Frontend reads these and shows quota warning in UI when <code>Remaining &lt; 10%</code>. On <code>429</code>: show retry countdown timer.</div></div>
+
+    <div class="rule"><div class="rule-head"><span class="rule-num">11</span>Frontend route guard — Next.js middleware</div><div class="rule-body">Middleware runs at edge (Vercel). Checks: <code>sessionCookie</code> present → decode → <code>user.status</code> → <code>activeOrgId</code>. Unauthenticated → <code>redirect /login?returnUrl=...</code>. No org selected → <code>redirect /select-org</code>. System admin accessing non-admin route → allowed (no block). Middleware does NOT hit DB — cookie-only, fast.</div></div>
+
+    <div class="rule"><div class="rule-head"><span class="rule-num">12</span>Deep link preservation — returnUrl</div><div class="rule-body">User visits <code>/devices/abc123</code> without session → redirected to <code>/login?returnUrl=%2Fdevices%2Fabc123</code>. After successful login → <code>router.push(returnUrl)</code>. Sanitized: returnUrl must start with <code>/</code>, no external domains, no <code>javascript:</code>. Prevents open redirect attacks.</div></div>
+
+  </section>
+
+  <!-- ══════ S6: REDIRECT MAP ══════ -->
+  <section id="s6">
+    <h2><span class="sec-tag" style="background:var(--teal-bg);color:var(--teal)">06</span>Redirect Map — სად გადადის</h2>
+
+    <div class="guard-flow">
+      <pre>
+  <span class="c">Trigger სიტუაცია                        →  Destination</span>
+  <span class="c">────────────────────────────────────────────────────────────────</span>
+  Login success, 1 org membership        →  <span class="s">/dashboard</span>        (org auto-selected)
+  Login success, 2+ org memberships     →  <span class="s">/select-org</span>
+  Login success, 0 org memberships      →  <span class="s">/onboarding</span>       (create first org)
+  Login success, system_admin            →  <span class="s">/admin</span>
+  Login success, manufacturer only       →  <span class="s">/manufacturer</span>
+
+  Visit protected route, no session      →  <span class="w">/login?returnUrl=...</span>
+  Visit protected route, no org          →  <span class="w">/select-org</span>
+  Visit /login when already logged in    →  <span class="s">/dashboard</span>        (or default org)
+  Visit /register when logged in         →  <span class="s">/dashboard</span>
+
+  org.status = suspended                 →  <span class="w">/settings/billing</span>  (mutation blocked)
+  org.status = terminated                →  <span class="e">/account-terminated</span>
+  user.status = pending_verification     →  <span class="w">/verify-email</span>
+
+  Token expired (JWT 401)                →  <span class="w">/login?session=expired</span>
+  <span class="i">Firebase refresh success               →  current page reload (silent)</span>
+
+  <code>DELETE /me/erasure-request</code> cancel      →  <span class="s">/profile</span>
+  Erasure complete (webhook)             →  <span class="e">logout + /erasure-confirmed</span>
+
+  Invite accept success (logged in)      →  <span class="s">/settings/grants</span>
+  Invite accept success (not logged in)  →  <span class="w">/register?inviteCode=...</span>
+  Invite accept — wrong org user         →  <span class="e">/invite/error?reason=wrong_org</span>
+  Invite expired / invalid               →  <span class="e">/invite/error?reason=expired</span>
+
+  <code>POST /organizations</code> success            →  <span class="s">/onboarding/devices</span>  (setup wizard step 2)
+  Org approval pending                   →  <span class="w">/onboarding/pending</span>
+  Org approved (webhook)                 →  <span class="s">/dashboard</span>            (email + redirect)
+
+  404 from API                           →  <span class="e">show inline error</span>     (no full redirect)
+  500 from API                           →  <span class="e">show error banner</span>     (no full redirect)
+  Network offline                        →  <span class="w">offline banner</span>        (no redirect)</pre>
+    </div>
+  </section>
+
+  <div class="footer">routing-architecture.html · Sazeo Platform · CTO: Claude (Anthropic) · 2026-04-23</div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// Frontend route data
+// ════════════════════════════════════════════════════════
+const FE_ROUTES = [
+  // PUBLIC
+  {g:'public', path:'/', role:'—', name:'Landing page', action:'Login / Register ღილაკები', target:'/login · /register', why:'Entry point — converts visitors to users'},
+  {g:'public', path:'/login', role:'—', name:'Sign in', action:'Email+password submit', target:'/dashboard ან /select-org', why:'Firebase JWT + session cookie'},
+  {g:'public', path:'/register', role:'—', name:'Self-registration', action:'Form submit → POST /auth/register', target:'/verify-email', why:'Email verify before org creation'},
+  {g:'public', path:'/forgot-password', role:'—', name:'Password reset request', action:'Email input → Firebase send reset', target:'/login (confirm msg)', why:'Firebase Auth flow — no custom logic'},
+  {g:'public', path:'/reset-password', role:'—', name:'Set new password', action:'Token in URL → new password submit', target:'/login', why:'Firebase resetPassword(token, newPass)'},
+  {g:'public', path:'/invite/accept', role:'—', name:'Cross-org invite', action:'Token input → POST /invites/accept', target:'/settings/grants ან /register', why:'Unauthenticated accept სიცხრეა'},
+  {g:'public', path:'/status', role:'—', name:'Platform status', action:'GET /health/summary (public)', target:'—', why:'Transparency — users see incidents without login'},
+  {g:'public', path:'/demo', role:'—', name:'Demo tenant', action:'Hardcoded demo session auto-login', target:'/dashboard (demo org)', why:'Sales demo without credentials'},
+  // AUTH
+  {g:'auth', path:'/select-org', role:'authenticated', name:'Org selector', action:'Click org card', target:'/dashboard (selected org)', why:'Cookie-ში activeOrgId set + redirect'},
+  {g:'auth', path:'/onboarding', role:'authenticated', name:'Org setup wizard', action:'POST /organizations', target:'/onboarding/devices', why:'First-run experience — guided setup'},
+  {g:'auth', path:'/profile', role:'authenticated', name:'User profile + prefs', action:'PATCH /me/preferences', target:'same page (saved)', why:'Global settings: timezone, locale, theme'},
+  {g:'auth', path:'/profile/tokens', role:'authenticated', name:'Personal Access Tokens', action:'POST /me/tokens → copy plaintext once', target:'same page', why:'Plaintext shown once — never again'},
+  {g:'auth', path:'/profile/erasure', role:'authenticated', name:'GDPR erasure request', action:'POST /me/erasure-request → email confirm', target:'/profile (pending state)', why:'7-day cooldown before execution'},
+  // ORG
+  {g:'org', path:'/dashboard', role:'member+', name:'Main dashboard', action:'Widget clicks → drill-down pages', target:'/devices · /alerts · /reports', why:'Central hub — KPIs per org'},
+  {g:'org', path:'/devices', role:'member+', name:'Device list', action:'Row click / search / filter', target:'/devices/[id]', why:'Main data browser'},
+  {g:'org', path:'/devices/claim', role:'member+', name:'Claim device', action:'Serial input → POST /devices/claim', target:'/devices/[id]', why:'Link device to org via manufacturer registry'},
+  {g:'org', path:'/devices/[id]', role:'member+', name:'Device detail', action:'Live metrics · history chart · Commands button', target:'/devices/[id]/commands', why:'Primary device view'},
+  {g:'org', path:'/devices/[id]/commands', role:'member+', name:'Send commands', action:'POST /devices/:id/commands', target:'same page (command log)', why:'MQTT command dispatch'},
+  {g:'org', path:'/devices/[id]/logs', role:'member+', name:'Device logs', action:'Scroll / export', target:'CSV/XLSX download', why:'Audit + debugging'},
+  {g:'org', path:'/devices/[id]/settings', role:'org_admin', name:'Device config', action:'PATCH /devices/:id', target:'same page', why:'Threshold + naming — admin only to prevent accidental changes'},
+  {g:'org', path:'/alerts', role:'member+', name:'Alerts list', action:'Row click · Resolve button', target:'/alerts/[id] · POST /alerts/:id/resolve', why:'Operational hub'},
+  {g:'org', path:'/alerts/[id]', role:'member+', name:'Alert detail', action:'Timeline · Assign · Resolve · Escalate', target:'PATCH /alerts/:id', why:'Full alert lifecycle'},
+  {g:'org', path:'/reports', role:'member+', name:'Reports list', action:'Row click · New report button', target:'/reports/[id] · /reports/new', why:'Report browser'},
+  {g:'org', path:'/reports/new', role:'member+', name:'Create report', action:'Config form → POST /reports → PDF/XLSX', target:'/reports/[id]', why:'On-demand generation'},
+  {g:'org', path:'/reports/[id]', role:'member+', name:'View report', action:'Export PDF / Export XLSX buttons', target:'Signed S3 URL download', why:'Pre-generated or on-demand'},
+  {g:'org', path:'/calculator', role:'member+', name:'Operational calculator', action:'POST /organizations/:id/calculator/operational', target:'Results panel + export', why:'Energy · maintenance · ROI on real data'},
+  {g:'org', path:'/settings/members', role:'org_admin', name:'Member management', action:'Invite user (email) · Change role · Remove', target:'POST/PATCH/DELETE /organizations/:id/members', why:'Org admin manages own team'},
+  {g:'org', path:'/settings/invites', role:'org_admin', name:'Cross-org invites', action:'Generate invite token · Copy · Revoke', target:'POST/DELETE /organizations/:id/invites', why:'Controlled external access'},
+  {g:'org', path:'/settings/grants', role:'org_admin', name:'Active grants', action:'View active · Revoke button', target:'DELETE /organizations/:id/grants/:gid', why:'Instant revoke of cross-org access'},
+  {g:'org', path:'/settings/billing', role:'billing_admin', name:'Billing', action:'Change plan · Update payment · Download invoice PDF', target:'Stripe portal / /admin/billing', why:'Separation of billing from admin duties'},
+  {g:'org', path:'/settings/tokens', role:'org_admin', name:'Integration tokens', action:'Create · Copy · Revoke', target:'POST/DELETE /organizations/:id/tokens', why:'Webhook + third-party access'},
+  {g:'org', path:'/settings/audit-log', role:'org_admin', name:'Org audit log', action:'Search · Filter · Export', target:'GET /organizations/:id/audit-log', why:'Org admin sees own team actions (not cross-org system actions)'},
+  // ADMIN
+  {g:'admin', path:'/admin', role:'system_admin', name:'Operator console', action:'Live metric widgets · Alert badge', target:'/admin/health · /admin/organizations', why:'CTO / ops daily starting point'},
+  {g:'admin', path:'/admin/organizations', role:'system_admin', name:'All orgs', action:'Approve · Suspend · Terminate', target:'PATCH /admin/organizations/:id/status', why:'Platform governance — org lifecycle'},
+  {g:'admin', path:'/admin/health', role:'system_admin', name:'System health', action:'Service status · Alert silence', target:'GET /admin/health/summary', why:'Incident response — live view'},
+  {g:'admin', path:'/admin/monitoring', role:'system_admin', name:'Monitoring', action:'Web Vitals · Rate limit graph · CSP violations', target:'GET /admin/telemetry/*', why:'Performance + security observability'},
+  {g:'admin', path:'/admin/audit-log', role:'system_admin', name:'Platform audit log', action:'Search actor · action · resource · date range', target:'GET /admin/audit-log', why:'Cross-org security investigation'},
+  {g:'admin', path:'/admin/billing', role:'system_admin', name:'Revenue dashboard', action:'Mark paid · Suspend overdue · Export', target:'PATCH /admin/invoices/:id', why:'Financial operations'},
+  {g:'admin', path:'/admin/users', role:'system_admin', name:'All users', action:'Search · View erasure requests · Execute', target:'GET /admin/users / PATCH /admin/erasure/:id', why:'GDPR compliance — platform-level control'},
+  // MANUFACTURER
+  {g:'mfr', path:'/manufacturer', role:'mfr_member', name:'Fleet overview', action:'Stat cards · Error spike alert', target:'/manufacturer/analytics · /manufacturer/devices', why:'Manufacturer daily starting point'},
+  {g:'mfr', path:'/manufacturer/models', role:'mfr_member', name:'Device model registry', action:'Row click · Add model button', target:'/manufacturer/models/[id] · /new', why:'Product catalog management'},
+  {g:'mfr', path:'/manufacturer/devices', role:'mfr_member', name:'Serial registry', action:'Upload CSV · Search serial · Export unclaimed', target:'POST /manufacturer/devices/batch-register', why:'Fleet tracking by serial number'},
+  {g:'mfr', path:'/manufacturer/analytics', role:'mfr_member', name:'Fleet analytics', action:'Firmware filter · Date range · Export', target:'GET /manufacturer/analytics', why:'Product quality monitoring'},
+  {g:'mfr', path:'/manufacturer/notifications', role:'mfr_admin', name:'Notification rules', action:'Add rule · Enable/Disable · Test fire', target:'POST/PATCH /manufacturer/notification-rules', why:'Event-driven manufacturer alerts'},
+];
+
+// ════════════════════════════════════════════════════════
+// API endpoint data
+// ════════════════════════════════════════════════════════
+const API_ROUTES = [
+  // AUTH
+  {g:'public',m:'POST',  ep:'/auth/register',               scope:'—',              desc:'User + org creation start', req:'email, password, name', res:'userId, status'},
+  {g:'public',m:'POST',  ep:'/auth/login',                  scope:'—',              desc:'Firebase sign-in (handled client-side, session cookie set server-side)', req:'idToken', res:'sessionCookie'},
+  {g:'public',m:'POST',  ep:'/auth/logout',                 scope:'—',              desc:'Clear session cookie', req:'—', res:'200'},
+  {g:'public',m:'GET',   ep:'/health',                      scope:'—',              desc:'Shallow health check', req:'—', res:'200 ok'},
+  {g:'public',m:'GET',   ep:'/health/deep',                 scope:'X-Internal-Token', desc:'Full service health', req:'—', res:'status per service'},
+  {g:'public',m:'POST',  ep:'/invites/accept',              scope:'—',              desc:'Accept cross-org invite (can be pre-login)', req:'inviteCode, orgId?', res:'grantId'},
+  // AUTH (no org)
+  {g:'auth',  m:'GET',   ep:'/me',                          scope:'read:profile',   desc:'Current user + memberships', req:'—', res:'user, memberships[]'},
+  {g:'auth',  m:'PATCH', ep:'/me/preferences',              scope:'write:profile',  desc:'Update global user prefs (timezone, theme, locale)', req:'timezone?, theme?, locale?', res:'preferences'},
+  {g:'auth',  m:'GET',   ep:'/me/tokens',                   scope:'read:tokens',    desc:'List personal access tokens (no plaintext)', req:'—', res:'tokens[] (hash hidden)'},
+  {g:'auth',  m:'POST',  ep:'/me/tokens',                   scope:'write:tokens',   desc:'Create PAT — plaintext returned once', req:'name, scope[], expiresInDays?', res:'token (plaintext!), id'},
+  {g:'auth',  m:'DELETE',ep:'/me/tokens/:id',               scope:'write:tokens',   desc:'Revoke PAT instantly (Redis set)', req:'—', res:'204'},
+  {g:'auth',  m:'POST',  ep:'/me/erasure-request',          scope:'write:profile',  desc:'Start GDPR erasure (7-day cooldown)', req:'—', res:'erasureId, cooldownEnds'},
+  {g:'auth',  m:'DELETE',ep:'/me/erasure-request',          scope:'write:profile',  desc:'Cancel erasure during cooldown', req:'—', res:'204'},
+  // ORG
+  {g:'org',   m:'GET',   ep:'/organizations/:id',           scope:'read:org',       desc:'Org profile + plan', req:'—', res:'org, plan, memberCount'},
+  {g:'org',   m:'PATCH', ep:'/organizations/:id',           scope:'write:org',      desc:'Update org name/country', req:'name?, countryCode?', res:'org'},
+  {g:'org',   m:'GET',   ep:'/organizations/:id/members',   scope:'read:members',   desc:'Member list + roles', req:'—', res:'members[]'},
+  {g:'org',   m:'POST',  ep:'/organizations/:id/members',   scope:'write:members',  desc:'Invite user by email', req:'email, role', res:'inviteId'},
+  {g:'org',   m:'PATCH', ep:'/organizations/:id/members/:uid',scope:'write:members',desc:'Change member role', req:'role', res:'membership'},
+  {g:'org',   m:'DELETE',ep:'/organizations/:id/members/:uid',scope:'write:members',desc:'Remove member', req:'—', res:'204'},
+  {g:'org',   m:'POST',  ep:'/organizations/:id/invites',   scope:'write:invites',  desc:'Generate cross-org invite token', req:'scope[], label?, expiresInDays?', res:'inviteCode, expiresAt'},
+  {g:'org',   m:'GET',   ep:'/organizations/:id/grants',    scope:'read:grants',    desc:'Active cross-org grants', req:'—', res:'grants[]'},
+  {g:'org',   m:'DELETE',ep:'/organizations/:id/grants/:gid',scope:'write:grants',  desc:'Revoke cross-org grant instantly', req:'—', res:'204'},
+  {g:'org',   m:'GET',   ep:'/devices',                     scope:'read:devices',   desc:'Device list (paginated, filtered)', req:'page, limit, status?, model?', res:'devices[], total'},
+  {g:'org',   m:'POST',  ep:'/devices/claim',               scope:'write:devices',  desc:'Claim device by serial number', req:'serial', res:'device'},
+  {g:'org',   m:'GET',   ep:'/devices/:id',                 scope:'read:devices',   desc:'Device detail + latest metrics', req:'—', res:'device, metrics'},
+  {g:'org',   m:'POST',  ep:'/devices/:id/commands',        scope:'write:commands', desc:'Send command via MQTT', req:'command, params?', res:'commandId, status'},
+  {g:'org',   m:'GET',   ep:'/alerts',                      scope:'read:alerts',    desc:'Alerts list (active/resolved)', req:'status?, severity?, page', res:'alerts[], total'},
+  {g:'org',   m:'PATCH', ep:'/alerts/:id',                  scope:'write:alerts',   desc:'Resolve / assign / acknowledge', req:'status?, assigneeId?', res:'alert'},
+  {g:'org',   m:'GET',   ep:'/reports',                     scope:'read:reports',   desc:'Report list', req:'page, limit', res:'reports[]'},
+  {g:'org',   m:'POST',  ep:'/reports',                     scope:'write:reports',  desc:'Generate report (async job)', req:'period, type, format', res:'reportId, status:queued'},
+  {g:'org',   m:'GET',   ep:'/reports/:id/download',        scope:'read:reports',   desc:'Signed S3 URL for PDF/XLSX', req:'—', res:'url (15min expiry)'},
+  {g:'org',   m:'POST',  ep:'/organizations/:id/calculator/operational', scope:'read:devices', desc:'BMS operational cost calculation', req:'period, energy, maintenance, installation', res:'energy, maintenance, roi'},
+  {g:'org',   m:'GET',   ep:'/organizations/:id/calculator/billing-preview',scope:'read:billing',desc:'Projected next invoice', req:'—', res:'usage, projected_cost, overage'},
+  {g:'org',   m:'GET',   ep:'/organizations/:id/audit-log', scope:'read:audit',     desc:'Org-scoped audit log', req:'page, action?, from?, to?', res:'events[]'},
+  // ADMIN
+  {g:'admin', m:'GET',   ep:'/admin/organizations',         scope:'system_admin',   desc:'All orgs with status + plan', req:'status?, page', res:'orgs[], total'},
+  {g:'admin', m:'PATCH', ep:'/admin/organizations/:id/status',scope:'system_admin', desc:'Approve / suspend / terminate org', req:'status, reason?', res:'org'},
+  {g:'admin', m:'GET',   ep:'/admin/health/summary',        scope:'system_admin',   desc:'All service statuses', req:'—', res:'services[], overall'},
+  {g:'admin', m:'GET',   ep:'/admin/audit-log',             scope:'system_admin',   desc:'Platform-wide audit log', req:'page, actor?, action?, orgId?', res:'events[]'},
+  {g:'admin', m:'GET',   ep:'/admin/telemetry/live',        scope:'system_admin',   desc:'Real-time platform metrics', req:'—', res:'activeOrgs, rpm, errorRate, queueDepth'},
+  {g:'admin', m:'PATCH', ep:'/admin/invoices/:id',          scope:'system_admin',   desc:'Mark invoice paid (bank transfer reconcile)', req:'paidAt, reference', res:'invoice'},
+  // MANUFACTURER
+  {g:'mfr',   m:'GET',   ep:'/manufacturer/analytics',      scope:'read:fleet',     desc:'Fleet aggregate stats (anonymized)', req:'from?, to?', res:'fleet, firmware, errors, deployments_count'},
+  {g:'mfr',   m:'POST',  ep:'/manufacturer/devices/batch-register', scope:'write:fleet', desc:'Register serial number batch', req:'CSV / [{serial, modelId, firmwareVersion}]', res:'{registered, skipped, errors}'},
+  {g:'mfr',   m:'GET',   ep:'/manufacturer/notification-rules',scope:'read:fleet',  desc:'List notification rules', req:'—', res:'rules[]'},
+  {g:'mfr',   m:'POST',  ep:'/manufacturer/notification-rules',scope:'write:fleet', desc:'Create notification rule', req:'trigger, condition, action, channels[]', res:'rule'},
+];
+
+// ════════════════════════════════════════════════════════
+// Render tables
+// ════════════════════════════════════════════════════════
+function gBadge(g) {
+  const map = {public:'public',auth:'auth',org:'org',admin:'admin',mfr:'mfr',api:'api'};
+  return `<span class="badge ${map[g]||'public'}">${g}</span>`;
+}
+function methodBadge(m) {
+  const colors = {GET:'#1B5E20',POST:'#0D47A1',PATCH:'#E65100',DELETE:'#C62828',PUT:'#6A1B9A'};
+  return `<span class="badge method" style="background:${colors[m]||'#333'}22;color:${colors[m]||'#333'};border-color:${colors[m]||'#333'}44">${m}</span>`;
+}
+
+function renderFE(filter) {
+  const rows = FE_ROUTES.filter(r => filter === 'all' || r.g === filter);
+  const tbody = document.getElementById('fe-tbody');
+  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="7" class="no-rows">ფილტრით ჩანაწერი ვერ მოიძებნა.</td></tr>`; return; }
+  tbody.innerHTML = rows.map(r => `
+    <tr data-g="${r.g}">
+      <td class="mono">${r.path}</td>
+      <td>${gBadge(r.g)}</td>
+      <td><span class="badge role">${r.role}</span></td>
+      <td class="desc">${r.name}</td>
+      <td class="mono" style="font-size:11px">${r.action}</td>
+      <td class="desc">${r.target}</td>
+      <td class="why">${r.why}</td>
+    </tr>`).join('');
+}
+
+function renderAPI(filter) {
+  const rows = API_ROUTES.filter(r => filter === 'all' || r.g === filter);
+  const tbody = document.getElementById('api-tbody');
+  if (!rows.length) { tbody.innerHTML = `<tr><td colspan="7" class="no-rows">ფილტრით ჩანაწერი ვერ მოიძებნა.</td></tr>`; return; }
+  tbody.innerHTML = rows.map(r => `
+    <tr data-g="${r.g}">
+      <td>${methodBadge(r.m)}</td>
+      <td class="mono">${r.ep}</td>
+      <td>${gBadge(r.g)}</td>
+      <td><span class="badge role" style="font-size:9px">${r.scope}</span></td>
+      <td class="desc">${r.desc}</td>
+      <td class="mono" style="font-size:11px;color:var(--text-muted)">${r.req}</td>
+      <td class="mono" style="font-size:11px;color:var(--text-muted)">${r.res}</td>
+    </tr>`).join('');
+}
+
+// filter buttons
+function setupFilters(containerId, renderFn) {
+  document.getElementById(containerId).addEventListener('click', e => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    document.querySelectorAll(`#${containerId} .filter-btn`).forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderFn(btn.dataset.filter);
+  });
+}
+
+renderFE('all');
+renderAPI('all');
+setupFilters('fe-filters', renderFE);
+setupFilters('api-filters', renderAPI);
+</script>
+</body>
+</html>

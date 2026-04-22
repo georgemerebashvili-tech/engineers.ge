@@ -7,7 +7,9 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 // Meta Lead Ads webhook.
+//
 // Secrets are stored in dmt_fb_webhook_settings (DB); env vars remain a fallback.
+// Admins edit the values at /dmt/leads/facebook/setup (password-gated).
 
 const GRAPH_VERSION = 'v20.0';
 

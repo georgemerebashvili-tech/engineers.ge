@@ -4,7 +4,7 @@ import {Save, Trash2, Copy, X} from 'lucide-react';
 import type {Widget, WidgetConfig, DataSource} from '@/lib/dmt/dashboards';
 import {getFields} from '@/lib/dmt/dashboards';
 
-const SOURCES: DataSource[] = ['invoices', 'inventory'];
+const SOURCES: DataSource[] = ['leads', 'invoices', 'inventory'];
 const AGGS = ['count', 'sum', 'avg', 'min', 'max'] as const;
 const WIDTHS = [3, 4, 6, 8, 9, 12] as const;
 const HEIGHTS = [1, 2, 3, 4] as const;
@@ -27,7 +27,7 @@ export function WidgetConfigPanel({
   onSaveTemplate: () => void;
 }) {
   const c = widget.config;
-  const src = c.source ?? 'invoices';
+  const src = c.source ?? 'leads';
   const fields = getFields(src);
 
   const update = (patch: Partial<WidgetConfig>) => onChange(patch);
