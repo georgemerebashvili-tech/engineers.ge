@@ -185,7 +185,8 @@ pre .b { color:var(--brown); font-weight:600; }
       <a href="#s1"><span>01</span>Route tree — visual sitemap</a>
       <a href="#s2"><span>02</span>Guard decision flow — 5 layer</a>
       <a href="#s3"><span>03</span>Frontend routes — სრული ცხრილი</a>
-      <a href="#s4"><span>04</span>API endpoints — სრული ცხრილი</a>
+      <a href="#s4"><span>04</span>API endpoints — სრული ცხრილი ყველა ცვლადით</a>
+      <a href="#s4b"><span>04b</span>Environment variables — ყველა .env ცვლადი</a>
       <a href="#s5"><span>05</span>Routing rules — 12 წესი</a>
       <a href="#s6"><span>06</span>Redirect map — სად გადადის</a>
     </div>
@@ -388,7 +389,12 @@ pre .b { color:var(--brown); font-weight:600; }
 
   <!-- ══════ S4: API TABLE ══════ -->
   <section id="s4">
-    <h2><span class="sec-tag" style="background:var(--indigo-bg);color:var(--indigo)">04</span>API Endpoints — სრული ცხრილი</h2>
+    <h2><span class="sec-tag" style="background:var(--indigo-bg);color:var(--indigo)">04</span>API Endpoints — სრული ცხრილი ყველა ცვლადით</h2>
+
+    <div class="alert info" style="margin-bottom:12px">
+      <span class="alert-icon">ℹ</span>
+      <div>ყოველ endpoint-ს: <strong>path params</strong> · <strong>query params</strong> · <strong>request body fields (type · required · validation)</strong> · <strong>response fields</strong> · <strong>error codes</strong>. Row-ზე კლიკი ვრცლად ხსნის.</div>
+    </div>
 
     <div class="filters" id="api-filters">
       <button class="filter-btn active" data-filter="all">ყველა</button>
@@ -403,16 +409,110 @@ pre .b { color:var(--brown); font-weight:600; }
       <table class="rt-table" id="api-table">
         <thead>
           <tr>
-            <th>Method</th>
-            <th>Endpoint</th>
-            <th>Guard</th>
-            <th>Scope</th>
-            <th>რას აკეთებს</th>
-            <th>Request body</th>
-            <th>Response</th>
+            <th>Method + Endpoint</th>
+            <th>Guard / Scope</th>
+            <th>Path params</th>
+            <th>Query params</th>
+            <th>Body fields</th>
+            <th>Response fields</th>
+            <th>Errors</th>
           </tr>
         </thead>
         <tbody id="api-tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════ S4b: ENV VARIABLES ══════ -->
+  <section id="s4b">
+    <h2><span class="sec-tag" style="background:var(--teal-bg);color:var(--teal)">04b</span>Environment Variables — ყველა ცვლადი</h2>
+    <div class="alert warning">
+      <span class="alert-icon">⚠</span>
+      <div>Default values source code-ში <strong>დაუშვებელია</strong> (SECURITY-PRINCIPLES §7). ყოველი required variable bootstrap-ზე validated — missing = crash with clear message.</div>
+    </div>
+    <div class="rt-table-wrap">
+      <table class="rt-table">
+        <thead><tr><th>Variable</th><th>Required</th><th>Type</th><th>Example / Format</th><th>Used by</th><th>Notes</th></tr></thead>
+        <tbody>
+          <!-- DATABASE -->
+          <tr><td colspan="6" style="background:var(--surface-alt);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Database</td></tr>
+          <tr><td class="mono">DATABASE_URL</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">postgresql://user:pass@host:5432/db</td><td>TypeORM</td><td>Per-environment. No defaults.</td></tr>
+          <tr><td class="mono">DATABASE_SSL</td><td><span class="badge auth">optional</span></td><td class="mono">boolean</td><td class="mono">true</td><td>TypeORM</td><td>prod=true, local=false</td></tr>
+          <tr><td class="mono">DATABASE_POOL_MIN</td><td><span class="badge auth">optional</span></td><td class="mono">number</td><td class="mono">2</td><td>TypeORM</td><td>default 2</td></tr>
+          <tr><td class="mono">DATABASE_POOL_MAX</td><td><span class="badge auth">optional</span></td><td class="mono">number</td><td class="mono">20</td><td>TypeORM</td><td>default 20</td></tr>
+          <!-- REDIS -->
+          <tr><td colspan="6" style="background:var(--surface-alt);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Redis</td></tr>
+          <tr><td class="mono">REDIS_URL</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">redis://host:6379</td><td>Rate limit · Session · Cache</td><td></td></tr>
+          <tr><td class="mono">REDIS_TLS</td><td><span class="badge auth">optional</span></td><td class="mono">boolean</td><td class="mono">true</td><td>Redis client</td><td>prod=true</td></tr>
+          <!-- FIREBASE -->
+          <tr><td colspan="6" style="background:var(--surface-alt);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Firebase Auth</td></tr>
+          <tr><td class="mono">FIREBASE_PROJECT_ID</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">sazeo-prod</td><td>Auth guard</td><td></td></tr>
+          <tr><td class="mono">FIREBASE_CLIENT_EMAIL</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">firebase-adminsdk@...iam...</td><td>Firebase Admin SDK</td><td>Service account email</td></tr>
+          <tr><td class="mono">FIREBASE_PRIVATE_KEY</td><td><span class="badge org">required</span></td><td class="mono">string (PEM)</td><td class="mono">-----BEGIN PRIVATE KEY-----\n...</td><td>Firebase Admin SDK</td><td>Secret Manager in prod</td></tr>
+          <tr><td class="mono">NEXT_PUBLIC_FIREBASE_API_KEY</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">AIzaSy...</td><td>Frontend Firebase client</td><td>Public — safe to expose</td></tr>
+          <tr><td class="mono">NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">sazeo-prod.firebaseapp.com</td><td>Frontend</td><td></td></tr>
+          <!-- JWT / SESSION -->
+          <tr><td colspan="6" style="background:var(--surface-alt);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">JWT / Session</td></tr>
+          <tr><td class="mono">JWT_SECRET</td><td><span class="badge org">required</span></td><td class="mono">string ≥64 chars</td><td class="mono">openssl rand -hex 32</td><td>JWT sign/verify</td><td>Rotate every 90 days</td></tr>
+          <tr><td class="mono">JWT_EXPIRY</td><td><span class="badge auth">optional</span></td><td class="mono">string</td><td class="mono">1h</td><td>JWT</td><td>Access token expiry</td></tr>
+          <tr><td class="mono">SESSION_SECRET</td><td><span class="badge org">required</span></td><td class="mono">string ≥64 chars</td><td class="mono">openssl rand -hex 32</td><td>Session cookie</td><td>Separate from JWT_SECRET</td></tr>
+          <tr><td class="mono">SESSION_COOKIE_DOMAIN</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">sazeo.io</td><td>Session cookie</td><td>prod: .sazeo.io (subdomain wildcard)</td></tr>
+          <!-- STORAGE -->
+          <tr><td colspan="6" style="background:var(--surface-alt);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">AWS / Storage</td></tr>
+          <tr><td class="mono">AWS_REGION</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">us-east-1</td><td>AWS SDK</td><td></td></tr>
+          <tr><td class="mono">AWS_ACCESS_KEY_ID</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">AKIA...</td><td>S3 · SES · SQS · SNS</td><td>IAM role preferred in prod (no key needed)</td></tr>
+          <tr><td class="mono">AWS_SECRET_ACCESS_KEY</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">—</td><td>AWS SDK</td><td>Secret Manager in prod</td></tr>
+          <tr><td class="mono">S3_BUCKET_NAME</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">sazeo-uploads-prod</td><td>File uploads · Reports</td><td>Per-env bucket</td></tr>
+          <tr><td class="mono">S3_SIGNED_URL_EXPIRY_SEC</td><td><span class="badge auth">optional</span></td><td class="mono">number</td><td class="mono">900</td><td>Report download</td><td>default 900 (15min)</td></tr>
+          <!-- MQTT -->
+          <tr><td colspan="6" style="background:var(--surface-alt);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">MQTT Broker</td></tr>
+          <tr><td class="mono">MQTT_BROKER_URL</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">mqtts://mqtt.sazeo.io:8883</td><td>Device ingress</td><td></td></tr>
+          <tr><td class="mono">MQTT_USERNAME</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">sazeo-api</td><td>MQTT client</td><td></td></tr>
+          <tr><td class="mono">MQTT_PASSWORD</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">—</td><td>MQTT client</td><td></td></tr>
+          <tr><td class="mono">MQTT_TOPIC_PREFIX</td><td><span class="badge auth">optional</span></td><td class="mono">string</td><td class="mono">sazeo/v1</td><td>Topic routing</td><td>default: sazeo/v1</td></tr>
+          <!-- PAYMENTS -->
+          <tr><td colspan="6" style="background:var(--surface-alt);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Payments</td></tr>
+          <tr><td class="mono">STRIPE_SECRET_KEY</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">sk_live_...</td><td>Stripe billing</td><td>sk_test_ in non-prod</td></tr>
+          <tr><td class="mono">STRIPE_WEBHOOK_SECRET</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">whsec_...</td><td>Stripe webhook verify</td><td>Separate per endpoint</td></tr>
+          <tr><td class="mono">NEXT_PUBLIC_STRIPE_PK</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">pk_live_...</td><td>Stripe Elements (frontend)</td><td>Public key — safe</td></tr>
+          <tr><td class="mono">BOG_API_KEY</td><td><span class="badge auth">optional</span></td><td class="mono">string</td><td class="mono">—</td><td>BOG Pay gateway</td><td>Georgian local payments</td></tr>
+          <tr><td class="mono">TBC_API_KEY</td><td><span class="badge auth">optional</span></td><td class="mono">string</td><td class="mono">—</td><td>TBC Pay gateway</td><td>Georgian local payments</td></tr>
+          <!-- RS.GE -->
+          <tr><td colspan="6" style="background:var(--surface-alt);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">RS.GE (Georgian Tax)</td></tr>
+          <tr><td class="mono">RSGE_API_URL</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">https://api.rs.ge/rs</td><td>E-invoice</td><td></td></tr>
+          <tr><td class="mono">RSGE_API_KEY</td><td><span class="badge org">required</span></td><td class="mono">string</td><td class="mono">—</td><td>RS.GE auth</td><td></td></tr>
+          <tr><td class="mono">RSGE_SELLER_TIN</td><td><span class="badge org">required</span></td><td class="mono">string (9 digits)</td><td class="mono">405123456</td><td>Invoice generation</td><td>Sazeo-ს საგადასახადო ID</td></tr>
+          <!-- EMAIL -->
+          <tr><td colspan="6" style="background:var(--surface-alt);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Email (AWS SES)</td></tr>
+          <tr><td class="mono">SES_FROM_EMAIL</td><td><span class="badge org">required</span></td><td class="mono">string (email)</td><td class="mono">noreply@sazeo.io</td><td>SES sender</td><td>Verified identity in SES</td></tr>
+          <tr><td class="mono">SES_REPLY_TO</td><td><span class="badge auth">optional</span></td><td class="mono">string (email)</td><td class="mono">support@sazeo.io</td><td>SES headers</td><td></td></tr>
+          <!-- PLATFORM -->
+          <tr><td colspan="6" style="background:var(--surface-alt);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Platform / App</td></tr>
+          <tr><td class="mono">APP_URL</td><td><span class="badge org">required</span></td><td class="mono">string (URL)</td><td class="mono">https://app.sazeo.io</td><td>Email links · CORS · CSP</td><td></td></tr>
+          <tr><td class="mono">API_URL</td><td><span class="badge org">required</span></td><td class="mono">string (URL)</td><td class="mono">https://api.sazeo.io</td><td>Frontend API client</td><td></td></tr>
+          <tr><td class="mono">CORS_ALLOWED_ORIGINS</td><td><span class="badge org">required</span></td><td class="mono">string (CSV)</td><td class="mono">https://app.sazeo.io,https://demo.sazeo.io</td><td>CORS guard</td><td>No wildcard with credentials</td></tr>
+          <tr><td class="mono">HEALTH_SECRET</td><td><span class="badge org">required</span></td><td class="mono">string ≥32 chars</td><td class="mono">—</td><td>GET /health/deep auth</td><td>Load balancer passes this</td></tr>
+          <tr><td class="mono">REQUIRE_ORG_APPROVAL</td><td><span class="badge auth">optional</span></td><td class="mono">boolean</td><td class="mono">true</td><td>Org registration gate</td><td>prod=true recommended</td></tr>
+          <tr><td class="mono">DEMO_ORG_ID</td><td><span class="badge auth">optional</span></td><td class="mono">uuid</td><td class="mono">—</td><td>Demo tenant auto-login</td><td>staging only</td></tr>
+          <tr><td class="mono">NODE_ENV</td><td><span class="badge org">required</span></td><td class="mono">enum</td><td class="mono">production | staging | development</td><td>Guards, logging level</td><td></td></tr>
+          <tr><td class="mono">LOG_LEVEL</td><td><span class="badge auth">optional</span></td><td class="mono">enum</td><td class="mono">info</td><td>Logger</td><td>prod=info, dev=debug</td></tr>
+          <!-- RATE LIMIT -->
+          <tr><td colspan="6" style="background:var(--surface-alt);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Rate Limiting</td></tr>
+          <tr><td class="mono">RATE_LIMIT_GLOBAL_RPM</td><td><span class="badge auth">optional</span></td><td class="mono">number</td><td class="mono">10000</td><td>WAF / Layer 1</td><td>per IP per minute</td></tr>
+          <tr><td class="mono">RATE_LIMIT_LOGIN_RPM</td><td><span class="badge auth">optional</span></td><td class="mono">number</td><td class="mono">10</td><td>/auth/login guard</td><td>brute force prevention</td></tr>
+          <tr><td class="mono">RATE_LIMIT_INVITE_RPH</td><td><span class="badge auth">optional</span></td><td class="mono">number</td><td class="mono">10</td><td>/invites/accept</td><td>per IP per hour</td></tr>
+          <!-- OBSERVABILITY -->
+          <tr><td colspan="6" style="background:var(--surface-alt);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Observability</td></tr>
+          <tr><td class="mono">OTEL_EXPORTER_OTLP_ENDPOINT</td><td><span class="badge auth">optional</span></td><td class="mono">string (URL)</td><td class="mono">https://otlp.us-east-1.amazonaws.com</td><td>OpenTelemetry traces</td><td>AWS X-Ray OTLP endpoint</td></tr>
+          <tr><td class="mono">SENTRY_DSN</td><td><span class="badge auth">optional</span></td><td class="mono">string (URL)</td><td class="mono">https://...@sentry.io/...</td><td>Error tracking</td><td>Not logged in plaintext (SECRETS rule)</td></tr>
+          <tr><td class="mono">CLOUDWATCH_LOG_GROUP</td><td><span class="badge auth">optional</span></td><td class="mono">string</td><td class="mono">/sazeo/api/prod</td><td>Structured logging</td><td></td></tr>
+          <!-- FEATURE FLAGS -->
+          <tr><td colspan="6" style="background:var(--surface-alt);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Feature Flags (remove within 2 sprints)</td></tr>
+          <tr><td class="mono">FEATURE_MANUFACTURER_PORTAL</td><td><span class="badge auth">optional</span></td><td class="mono">boolean</td><td class="mono">false</td><td>Manufacturer routes guard</td><td>Disable routes until shipped</td></tr>
+          <tr><td class="mono">FEATURE_OPERATIONAL_CALCULATOR</td><td><span class="badge auth">optional</span></td><td class="mono">boolean</td><td class="mono">false</td><td>/calculator route</td><td></td></tr>
+          <tr><td class="mono">FEATURE_RSGE_EINVOICE</td><td><span class="badge auth">optional</span></td><td class="mono">boolean</td><td class="mono">false</td><td>RS.GE invoice submit</td><td>Enable after RS.GE sandbox testing</td></tr>
+          <tr><td class="mono">FEATURE_CSP_ENFORCE</td><td><span class="badge auth">optional</span></td><td class="mono">boolean</td><td class="mono">false</td><td>CSP middleware mode</td><td>false=report-only, true=enforce</td></tr>
+        </tbody>
       </table>
     </div>
   </section>
@@ -551,58 +651,323 @@ const FE_ROUTES = [
 ];
 
 // ════════════════════════════════════════════════════════
-// API endpoint data
+// API endpoint data — full variable spec
+// path_params: [{name, type, desc}]
+// query_params: [{name, type, req, desc}]
+// body:         [{name, type, req, validation, desc}]
+// response:     [{name, type, desc}]
+// errors:       [{code, status, when}]
 // ════════════════════════════════════════════════════════
 const API_ROUTES = [
-  // AUTH
-  {g:'public',m:'POST',  ep:'/auth/register',               scope:'—',              desc:'User + org creation start', req:'email, password, name', res:'userId, status'},
-  {g:'public',m:'POST',  ep:'/auth/login',                  scope:'—',              desc:'Firebase sign-in (handled client-side, session cookie set server-side)', req:'idToken', res:'sessionCookie'},
-  {g:'public',m:'POST',  ep:'/auth/logout',                 scope:'—',              desc:'Clear session cookie', req:'—', res:'200'},
-  {g:'public',m:'GET',   ep:'/health',                      scope:'—',              desc:'Shallow health check', req:'—', res:'200 ok'},
-  {g:'public',m:'GET',   ep:'/health/deep',                 scope:'X-Internal-Token', desc:'Full service health', req:'—', res:'status per service'},
-  {g:'public',m:'POST',  ep:'/invites/accept',              scope:'—',              desc:'Accept cross-org invite (can be pre-login)', req:'inviteCode, orgId?', res:'grantId'},
-  // AUTH (no org)
-  {g:'auth',  m:'GET',   ep:'/me',                          scope:'read:profile',   desc:'Current user + memberships', req:'—', res:'user, memberships[]'},
-  {g:'auth',  m:'PATCH', ep:'/me/preferences',              scope:'write:profile',  desc:'Update global user prefs (timezone, theme, locale)', req:'timezone?, theme?, locale?', res:'preferences'},
-  {g:'auth',  m:'GET',   ep:'/me/tokens',                   scope:'read:tokens',    desc:'List personal access tokens (no plaintext)', req:'—', res:'tokens[] (hash hidden)'},
-  {g:'auth',  m:'POST',  ep:'/me/tokens',                   scope:'write:tokens',   desc:'Create PAT — plaintext returned once', req:'name, scope[], expiresInDays?', res:'token (plaintext!), id'},
-  {g:'auth',  m:'DELETE',ep:'/me/tokens/:id',               scope:'write:tokens',   desc:'Revoke PAT instantly (Redis set)', req:'—', res:'204'},
-  {g:'auth',  m:'POST',  ep:'/me/erasure-request',          scope:'write:profile',  desc:'Start GDPR erasure (7-day cooldown)', req:'—', res:'erasureId, cooldownEnds'},
-  {g:'auth',  m:'DELETE',ep:'/me/erasure-request',          scope:'write:profile',  desc:'Cancel erasure during cooldown', req:'—', res:'204'},
-  // ORG
-  {g:'org',   m:'GET',   ep:'/organizations/:id',           scope:'read:org',       desc:'Org profile + plan', req:'—', res:'org, plan, memberCount'},
-  {g:'org',   m:'PATCH', ep:'/organizations/:id',           scope:'write:org',      desc:'Update org name/country', req:'name?, countryCode?', res:'org'},
-  {g:'org',   m:'GET',   ep:'/organizations/:id/members',   scope:'read:members',   desc:'Member list + roles', req:'—', res:'members[]'},
-  {g:'org',   m:'POST',  ep:'/organizations/:id/members',   scope:'write:members',  desc:'Invite user by email', req:'email, role', res:'inviteId'},
-  {g:'org',   m:'PATCH', ep:'/organizations/:id/members/:uid',scope:'write:members',desc:'Change member role', req:'role', res:'membership'},
-  {g:'org',   m:'DELETE',ep:'/organizations/:id/members/:uid',scope:'write:members',desc:'Remove member', req:'—', res:'204'},
-  {g:'org',   m:'POST',  ep:'/organizations/:id/invites',   scope:'write:invites',  desc:'Generate cross-org invite token', req:'scope[], label?, expiresInDays?', res:'inviteCode, expiresAt'},
-  {g:'org',   m:'GET',   ep:'/organizations/:id/grants',    scope:'read:grants',    desc:'Active cross-org grants', req:'—', res:'grants[]'},
-  {g:'org',   m:'DELETE',ep:'/organizations/:id/grants/:gid',scope:'write:grants',  desc:'Revoke cross-org grant instantly', req:'—', res:'204'},
-  {g:'org',   m:'GET',   ep:'/devices',                     scope:'read:devices',   desc:'Device list (paginated, filtered)', req:'page, limit, status?, model?', res:'devices[], total'},
-  {g:'org',   m:'POST',  ep:'/devices/claim',               scope:'write:devices',  desc:'Claim device by serial number', req:'serial', res:'device'},
-  {g:'org',   m:'GET',   ep:'/devices/:id',                 scope:'read:devices',   desc:'Device detail + latest metrics', req:'—', res:'device, metrics'},
-  {g:'org',   m:'POST',  ep:'/devices/:id/commands',        scope:'write:commands', desc:'Send command via MQTT', req:'command, params?', res:'commandId, status'},
-  {g:'org',   m:'GET',   ep:'/alerts',                      scope:'read:alerts',    desc:'Alerts list (active/resolved)', req:'status?, severity?, page', res:'alerts[], total'},
-  {g:'org',   m:'PATCH', ep:'/alerts/:id',                  scope:'write:alerts',   desc:'Resolve / assign / acknowledge', req:'status?, assigneeId?', res:'alert'},
-  {g:'org',   m:'GET',   ep:'/reports',                     scope:'read:reports',   desc:'Report list', req:'page, limit', res:'reports[]'},
-  {g:'org',   m:'POST',  ep:'/reports',                     scope:'write:reports',  desc:'Generate report (async job)', req:'period, type, format', res:'reportId, status:queued'},
-  {g:'org',   m:'GET',   ep:'/reports/:id/download',        scope:'read:reports',   desc:'Signed S3 URL for PDF/XLSX', req:'—', res:'url (15min expiry)'},
-  {g:'org',   m:'POST',  ep:'/organizations/:id/calculator/operational', scope:'read:devices', desc:'BMS operational cost calculation', req:'period, energy, maintenance, installation', res:'energy, maintenance, roi'},
-  {g:'org',   m:'GET',   ep:'/organizations/:id/calculator/billing-preview',scope:'read:billing',desc:'Projected next invoice', req:'—', res:'usage, projected_cost, overage'},
-  {g:'org',   m:'GET',   ep:'/organizations/:id/audit-log', scope:'read:audit',     desc:'Org-scoped audit log', req:'page, action?, from?, to?', res:'events[]'},
-  // ADMIN
-  {g:'admin', m:'GET',   ep:'/admin/organizations',         scope:'system_admin',   desc:'All orgs with status + plan', req:'status?, page', res:'orgs[], total'},
-  {g:'admin', m:'PATCH', ep:'/admin/organizations/:id/status',scope:'system_admin', desc:'Approve / suspend / terminate org', req:'status, reason?', res:'org'},
-  {g:'admin', m:'GET',   ep:'/admin/health/summary',        scope:'system_admin',   desc:'All service statuses', req:'—', res:'services[], overall'},
-  {g:'admin', m:'GET',   ep:'/admin/audit-log',             scope:'system_admin',   desc:'Platform-wide audit log', req:'page, actor?, action?, orgId?', res:'events[]'},
-  {g:'admin', m:'GET',   ep:'/admin/telemetry/live',        scope:'system_admin',   desc:'Real-time platform metrics', req:'—', res:'activeOrgs, rpm, errorRate, queueDepth'},
-  {g:'admin', m:'PATCH', ep:'/admin/invoices/:id',          scope:'system_admin',   desc:'Mark invoice paid (bank transfer reconcile)', req:'paidAt, reference', res:'invoice'},
-  // MANUFACTURER
-  {g:'mfr',   m:'GET',   ep:'/manufacturer/analytics',      scope:'read:fleet',     desc:'Fleet aggregate stats (anonymized)', req:'from?, to?', res:'fleet, firmware, errors, deployments_count'},
-  {g:'mfr',   m:'POST',  ep:'/manufacturer/devices/batch-register', scope:'write:fleet', desc:'Register serial number batch', req:'CSV / [{serial, modelId, firmwareVersion}]', res:'{registered, skipped, errors}'},
-  {g:'mfr',   m:'GET',   ep:'/manufacturer/notification-rules',scope:'read:fleet',  desc:'List notification rules', req:'—', res:'rules[]'},
-  {g:'mfr',   m:'POST',  ep:'/manufacturer/notification-rules',scope:'write:fleet', desc:'Create notification rule', req:'trigger, condition, action, channels[]', res:'rule'},
+  {g:'public',m:'POST',ep:'/auth/register',scope:'—',
+   desc:'Firebase user + pending org record',
+   path_params:[],
+   query_params:[],
+   body:[
+     {name:'email',     type:'string',  req:true,  val:'email format · max 254',  desc:''},
+     {name:'password',  type:'string',  req:true,  val:'min 8 · 1 upper · 1 digit', desc:'Firebase handles hash'},
+     {name:'firstName', type:'string',  req:true,  val:'max 60',  desc:''},
+     {name:'lastName',  type:'string',  req:true,  val:'max 60',  desc:''},
+   ],
+   response:[
+     {name:'userId',  type:'string (uid)', desc:'Firebase UID'},
+     {name:'status',  type:'enum',         desc:'pending_verification'},
+   ],
+   errors:[{code:'USER_EXISTS',status:409,when:'email already registered'},{code:'WEAK_PASSWORD',status:422,when:'password fails rules'}]},
+
+  {g:'public',m:'POST',ep:'/auth/session',scope:'—',
+   desc:'Exchange Firebase idToken → HttpOnly session cookie',
+   path_params:[],query_params:[],
+   body:[{name:'idToken',type:'string',req:true,val:'Firebase ID token',desc:''}],
+   response:[{name:'Set-Cookie',type:'header',desc:'session=...; HttpOnly; Secure; SameSite=Lax'}],
+   errors:[{code:'INVALID_TOKEN',status:401,when:'Firebase token invalid/expired'},{code:'USER_SUSPENDED',status:403,when:'user.status≠active'}]},
+
+  {g:'public',m:'POST',ep:'/auth/logout',scope:'—',
+   desc:'Clear session cookie',
+   path_params:[],query_params:[],body:[],
+   response:[{name:'—',type:'204',desc:'Cookie cleared'}],errors:[]},
+
+  {g:'public',m:'GET',ep:'/health',scope:'—',
+   desc:'Shallow liveness probe',
+   path_params:[],query_params:[],body:[],
+   response:[{name:'status',type:'string',desc:'"ok"'},{name:'uptime',type:'number',desc:'seconds'}],
+   errors:[{code:'—',status:503,when:'process crash (unreachable)'}]},
+
+  {g:'public',m:'GET',ep:'/health/deep',scope:'X-Internal-Token header',
+   desc:'Full dependency health',
+   path_params:[],query_params:[],body:[],
+   response:[
+     {name:'status',type:'enum',desc:'ok|degraded|down'},
+     {name:'checks.postgres.latencyMs',type:'number',desc:''},
+     {name:'checks.redis.latencyMs',type:'number',desc:''},
+     {name:'checks.s3.latencyMs',type:'number',desc:''},
+     {name:'checks.mqtt.latencyMs',type:'number',desc:''},
+     {name:'checks.firebase.latencyMs',type:'number',desc:''},
+   ],
+   errors:[{code:'—',status:401,when:'X-Internal-Token missing/wrong'},{code:'—',status:207,when:'degraded (partial)'}]},
+
+  {g:'public',m:'POST',ep:'/invites/accept',scope:'—',
+   desc:'Accept cross-org invite. Works pre-login (redirects to register).',
+   path_params:[],query_params:[],
+   body:[
+     {name:'inviteCode',type:'string',req:true,val:'format SAZEO-XXXX-YYYY',desc:'SHA-256 matched server-side'},
+     {name:'granteeOrgId',type:'uuid',req:false,val:'',desc:'Required if authenticated. Auto-filled from session.'},
+   ],
+   response:[{name:'grantId',type:'uuid',desc:''},{name:'grantorOrg.name',type:'string',desc:''},{name:'scope',type:'string[]',desc:''}],
+   errors:[{code:'INVITE_INVALID',status:404,when:'code wrong, expired, already used — generic'},{code:'ORG_MISMATCH',status:404,when:'authenticated user not member of granteeOrgId'}]},
+
+  {g:'auth',m:'GET',ep:'/me',scope:'read:profile',
+   desc:'Authenticated user profile + all org memberships',
+   path_params:[],query_params:[],body:[],
+   response:[
+     {name:'id',type:'uuid',desc:''},{name:'email',type:'string',desc:''},{name:'firstName',type:'string',desc:''},
+     {name:'lastName',type:'string',desc:''},{name:'status',type:'enum',desc:'active|pending_verification|suspended'},
+     {name:'memberships[].orgId',type:'uuid',desc:''},{name:'memberships[].orgName',type:'string',desc:''},
+     {name:'memberships[].role',type:'enum',desc:'org_admin|billing_admin|member|viewer'},
+     {name:'memberships[].isDefault',type:'boolean',desc:''},
+   ],errors:[]},
+
+  {g:'auth',m:'PATCH',ep:'/me/preferences',scope:'write:profile',
+   desc:'Update global user preferences (all fields optional)',
+   path_params:[],query_params:[],
+   body:[
+     {name:'timezone',type:'string',req:false,val:'IANA tz, e.g. Asia/Tbilisi',desc:''},
+     {name:'locale',type:'string',req:false,val:'BCP47, e.g. ka-GE',desc:''},
+     {name:'theme',type:'enum',req:false,val:'light|dark|system',desc:''},
+     {name:'dateFormat',type:'string',req:false,val:'DD/MM/YYYY or MM/DD/YYYY',desc:''},
+     {name:'notificationChannel',type:'enum',req:false,val:'email|push|both|none',desc:''},
+     {name:'defaultOrgId',type:'uuid',req:false,val:'must be member of org',desc:''},
+   ],
+   response:[{name:'preferences',type:'object',desc:'full updated preferences'}],
+   errors:[{code:'NOT_MEMBER',status:400,when:'defaultOrgId org not in user memberships'}]},
+
+  {g:'auth',m:'POST',ep:'/me/tokens',scope:'write:tokens',
+   desc:'Create PAT. Plaintext token returned ONCE — never stored.',
+   path_params:[],query_params:[],
+   body:[
+     {name:'name',type:'string',req:true,val:'max 80 chars',desc:'Human label, e.g. "CI deploy"'},
+     {name:'scope',type:'string[]',req:true,val:'non-empty, from InviteScope enum',desc:''},
+     {name:'expiresInDays',type:'number',req:false,val:'1–365 or null (no expiry)',desc:''},
+   ],
+   response:[
+     {name:'id',type:'uuid',desc:''},{name:'token',type:'string',desc:'saz_pat_XXXX — plaintext, shown ONCE'},
+     {name:'prefix',type:'string',desc:'saz_pat_'},{name:'scope',type:'string[]',desc:''},
+     {name:'expiresAt',type:'timestamptz|null',desc:''},
+   ],
+   errors:[{code:'QUOTA_EXCEEDED',status:429,when:'plan PAT quota reached'},{code:'INVALID_SCOPE',status:422,when:'unknown scope value'}]},
+
+  {g:'auth',m:'DELETE',ep:'/me/tokens/:tokenId',scope:'write:tokens',
+   desc:'Revoke PAT instantly (Redis revoked set)',
+   path_params:[{name:'tokenId',type:'uuid',desc:''}],
+   query_params:[],body:[],
+   response:[{name:'—',type:'204',desc:''}],
+   errors:[{code:'NOT_FOUND',status:404,when:'token not owned by user'}]},
+
+  {g:'auth',m:'POST',ep:'/me/erasure-request',scope:'write:profile',
+   desc:'Start GDPR right-to-erasure. 7-day cooldown.',
+   path_params:[],query_params:[],body:[],
+   response:[{name:'erasureId',type:'string',desc:'ERS-YYYY-XXXXX'},{name:'cooldownEndsAt',type:'timestamptz',desc:'now+7d'}],
+   errors:[{code:'IS_ONLY_ADMIN',status:400,when:'user is sole org_admin — must assign another first'},{code:'OPEN_INVOICES',status:400,when:'unpaid invoices exist'}]},
+
+  {g:'org',m:'GET',ep:'/organizations/:orgId',scope:'read:org',
+   desc:'Organization profile, plan, and stats',
+   path_params:[{name:'orgId',type:'uuid',desc:''}],
+   query_params:[],body:[],
+   response:[
+     {name:'id',type:'uuid',desc:''},{name:'name',type:'string',desc:''},{name:'slug',type:'string',desc:''},
+     {name:'orgType',type:'enum',desc:'client|service_provider|manufacturer|platform_operator'},
+     {name:'status',type:'enum',desc:'active|suspended|terminated|pending_approval'},
+     {name:'countryCode',type:'string',desc:'ISO 3166-1 alpha-2'},
+     {name:'plan',type:'object',desc:'name, limits, currentUsage'},
+     {name:'memberCount',type:'number',desc:''},{name:'deviceCount',type:'number',desc:''},
+   ],
+   errors:[{code:'NOT_FOUND',status:404,when:'not member and no grant'}]},
+
+  {g:'org',m:'PATCH',ep:'/organizations/:orgId',scope:'write:org',
+   desc:'Update org profile',
+   path_params:[{name:'orgId',type:'uuid',desc:''}],query_params:[],
+   body:[
+     {name:'name',type:'string',req:false,val:'2–120 chars',desc:''},
+     {name:'countryCode',type:'string',req:false,val:'ISO 3166-1 alpha-2',desc:''},
+     {name:'taxId',type:'string',req:false,val:'9–15 chars',desc:'Georgian TIN or VAT number'},
+   ],
+   response:[{name:'org',type:'object',desc:'updated org'}],
+   errors:[{code:'SLUG_TAKEN',status:409,when:'name change results in duplicate slug'}]},
+
+  {g:'org',m:'POST',ep:'/organizations/:orgId/invites',scope:'write:invites',
+   desc:'Generate cross-org invite token',
+   path_params:[{name:'orgId',type:'uuid',desc:'grantor org'}],query_params:[],
+   body:[
+     {name:'scope',type:'string[]',req:true,val:'from InviteScope enum, non-empty',desc:''},
+     {name:'label',type:'string',req:false,val:'max 120',desc:'UI label, e.g. "TBC Facilities"'},
+     {name:'expiresInDays',type:'number',req:false,val:'1–90, default 30',desc:''},
+   ],
+   response:[{name:'inviteCode',type:'string',desc:'SAZEO-XXXX-YYYY'},{name:'expiresAt',type:'timestamptz',desc:''},{name:'id',type:'uuid',desc:'invite record'}],
+   errors:[{code:'INVITE_LIMIT',status:429,when:'org has 50+ pending invites'}]},
+
+  {g:'org',m:'DELETE',ep:'/organizations/:orgId/grants/:grantId',scope:'write:grants',
+   desc:'Revoke cross-org access grant instantly',
+   path_params:[{name:'orgId',type:'uuid',desc:''},{name:'grantId',type:'uuid',desc:''}],
+   query_params:[],body:[],
+   response:[{name:'—',type:'204',desc:'Redis cache invalidated immediately'}],
+   errors:[{code:'NOT_FOUND',status:404,when:'grant not owned by this org'}]},
+
+  {g:'org',m:'GET',ep:'/devices',scope:'read:devices',
+   desc:'Paginated device list with filters',
+   path_params:[],
+   query_params:[
+     {name:'page',type:'number',req:false,desc:'default 1'},
+     {name:'limit',type:'number',req:false,desc:'10|25|50|100, default 25'},
+     {name:'status',type:'enum',req:false,desc:'online|offline|error|never_seen'},
+     {name:'modelId',type:'uuid',req:false,desc:'filter by device model'},
+     {name:'search',type:'string',req:false,desc:'name or serial fuzzy search'},
+     {name:'sort',type:'string',req:false,desc:'name|lastSeen|status, prefix - for desc'},
+   ],
+   body:[],
+   response:[{name:'data',type:'Device[]',desc:''},{name:'total',type:'number',desc:''},{name:'page',type:'number',desc:''},{name:'limit',type:'number',desc:''}],
+   errors:[]},
+
+  {g:'org',m:'POST',ep:'/devices/claim',scope:'write:devices',
+   desc:'Claim device by serial number from manufacturer registry',
+   path_params:[],query_params:[],
+   body:[
+     {name:'serial',type:'string',req:true,val:'matches manufacturer serial_prefix pattern',desc:''},
+     {name:'name',type:'string',req:false,val:'max 120',desc:'Optional display name, defaults to serial'},
+     {name:'locationLabel',type:'string',req:false,val:'max 120',desc:'e.g. "Building A, Floor 3"'},
+   ],
+   response:[{name:'device',type:'object',desc:'full device record'},{name:'manufacturer',type:'object|null',desc:'if registered in manufacturer DB'}],
+   errors:[{code:'SERIAL_NOT_FOUND',status:404,when:'serial not in manufacturer registry'},{code:'ALREADY_CLAIMED',status:409,when:'serial claimed by another org'}]},
+
+  {g:'org',m:'POST',ep:'/devices/:deviceId/commands',scope:'write:commands',
+   desc:'Send MQTT command to device',
+   path_params:[{name:'deviceId',type:'uuid',desc:''}],query_params:[],
+   body:[
+     {name:'command',type:'enum',req:true,val:'reboot|set_threshold|set_reporting_interval|firmware_update|custom',desc:''},
+     {name:'params',type:'object',req:false,val:'command-specific key-value',desc:'e.g. {threshold: 25, unit: "°C"}'},
+     {name:'timeout',type:'number',req:false,val:'5–300 seconds, default 30',desc:''},
+   ],
+   response:[{name:'commandId',type:'uuid',desc:''},{name:'status',type:'enum',desc:'queued|sent|ack|timeout|error'},{name:'publishedAt',type:'timestamptz',desc:''}],
+   errors:[{code:'DEVICE_OFFLINE',status:400,when:'device last_seen > 5min'},{code:'UNSUPPORTED_COMMAND',status:422,when:'device model does not support command'}]},
+
+  {g:'org',m:'GET',ep:'/alerts',scope:'read:alerts',
+   desc:'Alerts list with filters',
+   path_params:[],
+   query_params:[
+     {name:'status',type:'enum',req:false,desc:'open|acknowledged|resolved, default open'},
+     {name:'severity',type:'enum',req:false,desc:'critical|high|medium|low'},
+     {name:'deviceId',type:'uuid',req:false,desc:'filter by device'},
+     {name:'from',type:'ISO date',req:false,desc:'createdAt ≥'},
+     {name:'to',type:'ISO date',req:false,desc:'createdAt ≤'},
+     {name:'page',type:'number',req:false,desc:'default 1'},
+     {name:'limit',type:'number',req:false,desc:'default 25'},
+   ],
+   body:[],
+   response:[{name:'data',type:'Alert[]',desc:''},{name:'total',type:'number',desc:''},{name:'openCount',type:'number',desc:'active alerts (for badge)'}],
+   errors:[]},
+
+  {g:'org',m:'PATCH',ep:'/alerts/:alertId',scope:'write:alerts',
+   desc:'Update alert status / assign / acknowledge',
+   path_params:[{name:'alertId',type:'uuid',desc:''}],query_params:[],
+   body:[
+     {name:'status',type:'enum',req:false,val:'acknowledged|resolved',desc:''},
+     {name:'assigneeId',type:'uuid',req:false,val:'must be org member',desc:''},
+     {name:'note',type:'string',req:false,val:'max 500 chars',desc:'Resolution note'},
+   ],
+   response:[{name:'alert',type:'object',desc:'updated alert with timeline entry'}],
+   errors:[{code:'NOT_FOUND',status:404,when:'alert not in org'},{code:'ALREADY_RESOLVED',status:400,when:'status already resolved'}]},
+
+  {g:'org',m:'POST',ep:'/reports',scope:'write:reports',
+   desc:'Queue async report generation',
+   path_params:[],query_params:[],
+   body:[
+     {name:'type',type:'enum',req:true,val:'energy|maintenance|alert_summary|device_uptime|custom',desc:''},
+     {name:'format',type:'enum',req:true,val:'pdf|xlsx',desc:''},
+     {name:'period.from',type:'ISO date',req:true,val:'',desc:''},
+     {name:'period.to',type:'ISO date',req:true,val:'max 366 days range',desc:''},
+     {name:'deviceIds',type:'uuid[]',req:false,val:'empty = all devices',desc:''},
+     {name:'title',type:'string',req:false,val:'max 120',desc:'Custom report title'},
+   ],
+   response:[{name:'reportId',type:'uuid',desc:''},{name:'status',type:'string',desc:'queued'},{name:'estimatedSecs',type:'number',desc:'ETA for completion'}],
+   errors:[{code:'PERIOD_TOO_LARGE',status:422,when:'range > 366 days'},{code:'QUOTA_EXCEEDED',status:429,when:'plan report limit reached'}]},
+
+  {g:'org',m:'POST',ep:'/organizations/:orgId/calculator/operational',scope:'read:devices',
+   desc:'BMS operational cost + ROI calculation',
+   path_params:[{name:'orgId',type:'uuid',desc:''}],query_params:[],
+   body:[
+     {name:'period.from',type:'ISO date',req:true,val:'',desc:''},
+     {name:'period.to',type:'ISO date',req:true,val:'',desc:''},
+     {name:'energy.tariffKwhGel',type:'number',req:true,val:'0.01–9.99',desc:'GEL per kWh'},
+     {name:'energy.tariffKwhPeak',type:'number',req:false,val:'',desc:'Peak hour surcharge'},
+     {name:'energy.baselineKwh',type:'number',req:false,val:'',desc:'Pre-BMS reference'},
+     {name:'energy.useDeviceData',type:'boolean',req:false,val:'default true',desc:'Pull from sensors automatically'},
+     {name:'maintenance.serviceContractsGel',type:'number',req:false,val:'',desc:''},
+     {name:'maintenance.emergencyCalls',type:'number',req:false,val:'',desc:''},
+     {name:'maintenance.avgCallCostGel',type:'number',req:false,val:'',desc:''},
+     {name:'installation.capexGel',type:'number',req:false,val:'',desc:'BMS capex for ROI calc'},
+   ],
+   response:[
+     {name:'energy.actualKwh',type:'number',desc:'unit: kWh'},{name:'energy.savingsGel',type:'number',desc:''},
+     {name:'energy.savingsPct',type:'string',desc:''},{name:'maintenance.totalCostGel',type:'number',desc:''},
+     {name:'roi.paybackMonths',type:'number',desc:''},{name:'roi.npv5yrGel',type:'number',desc:''},
+     {name:'roi.irrPct',type:'string',desc:''},{name:'roi.breakEvenDate',type:'string',desc:''},
+   ],
+   errors:[{code:'NO_DEVICE_DATA',status:400,when:'useDeviceData=true but no sensors in period'}]},
+
+  {g:'admin',m:'PATCH',ep:'/admin/organizations/:orgId/status',scope:'system_admin',
+   desc:'Approve / suspend / terminate org',
+   path_params:[{name:'orgId',type:'uuid',desc:''}],query_params:[],
+   body:[
+     {name:'status',type:'enum',req:true,val:'active|suspended|terminated',desc:''},
+     {name:'reason',type:'string',req:false,val:'max 500 chars',desc:'Logged in audit_log.meta'},
+     {name:'notifyAdmin',type:'boolean',req:false,val:'default true',desc:'Email org_admin on change'},
+   ],
+   response:[{name:'org',type:'object',desc:'updated'}],
+   errors:[{code:'INVALID_TRANSITION',status:400,when:'terminated → active not allowed (must re-register)'}]},
+
+  {g:'admin',m:'GET',ep:'/admin/audit-log',scope:'system_admin',
+   desc:'Platform-wide audit log search',
+   path_params:[],
+   query_params:[
+     {name:'actorUserId',type:'uuid',req:false,desc:'filter by actor'},
+     {name:'actorOrgId',type:'uuid',req:false,desc:''},
+     {name:'targetOrgId',type:'uuid',req:false,desc:'cross-tenant events'},
+     {name:'action',type:'string',req:false,desc:'namespaced: org.invite.accept'},
+     {name:'resourceType',type:'string',req:false,desc:'organization|device|user|invoice'},
+     {name:'from',type:'ISO date',req:false,desc:''},
+     {name:'to',type:'ISO date',req:false,desc:''},
+     {name:'page',type:'number',req:false,desc:'default 1'},
+     {name:'limit',type:'number',req:false,desc:'max 200'},
+   ],
+   body:[],
+   response:[{name:'data',type:'AuditEvent[]',desc:''},{name:'total',type:'number',desc:''}],
+   errors:[]},
+
+  {g:'mfr',m:'POST',ep:'/manufacturer/devices/batch-register',scope:'write:fleet',
+   desc:'Register serial number batch from CSV or JSON',
+   path_params:[],query_params:[],
+   body:[
+     {name:'modelId',type:'uuid',req:true,val:'',desc:'device_models.id'},
+     {name:'records',type:'array',req:true,val:'max 10 000 per request',desc:''},
+     {name:'records[].serial',type:'string',req:true,val:'matches model serial_prefix',desc:''},
+     {name:'records[].productionDate',type:'ISO date',req:true,val:'',desc:''},
+     {name:'records[].firmwareVersion',type:'string',req:true,val:'semver',desc:'factory firmware'},
+   ],
+   response:[{name:'registered',type:'number',desc:''},{name:'skipped',type:'number',desc:'duplicates'},{name:'errors',type:'array',desc:'[{serial, reason}]'}],
+   errors:[{code:'MODEL_NOT_FOUND',status:404,when:'modelId not owned by manufacturer'},{code:'PREFIX_MISMATCH',status:422,when:'serial does not match model prefix'}]},
+
+  {g:'mfr',m:'POST',ep:'/manufacturer/notification-rules',scope:'write:fleet',
+   desc:'Create manufacturer notification rule',
+   path_params:[],query_params:[],
+   body:[
+     {name:'trigger',type:'enum',req:true,val:'device_first_online|device_offline|error_threshold|firmware_outdated',desc:''},
+     {name:'condition',type:'object',req:false,val:'trigger-specific: {errorCount:10, windowHours:24} or {modelId, fwVersion}',desc:''},
+     {name:'channels',type:'string[]',req:true,val:'email|webhook|dashboard',desc:''},
+     {name:'webhookUrl',type:'string',req:false,val:'https:// only, max 512',desc:'Required if webhook in channels'},
+     {name:'label',type:'string',req:false,val:'max 80',desc:'Rule name for UI'},
+     {name:'enabled',type:'boolean',req:false,val:'default true',desc:''},
+   ],
+   response:[{name:'rule',type:'object',desc:'created rule'},{name:'ruleId',type:'uuid',desc:''}],
+   errors:[{code:'RULE_LIMIT',status:429,when:'org has 20+ rules'},{code:'WEBHOOK_UNREACHABLE',status:400,when:'test ping to webhookUrl failed'}]},
 ];
 
 // ════════════════════════════════════════════════════════
@@ -633,19 +998,38 @@ function renderFE(filter) {
     </tr>`).join('');
 }
 
+function renderVarList(arr, type) {
+  if (!arr || !arr.length) return '<span style="color:var(--text-dim);font-size:11px">—</span>';
+  return arr.map(v => {
+    if (type === 'path') return `<div style="margin-bottom:3px"><span style="font-family:monospace;font-size:11px;color:var(--primary-dark);font-weight:600">:${v.name}</span> <span style="font-size:10.5px;color:var(--text-muted)">${v.type}</span>${v.desc?` <span style="font-size:10.5px;color:var(--text-dim)">${v.desc}</span>`:''}</div>`;
+    if (type === 'query') return `<div style="margin-bottom:3px"><span style="font-family:monospace;font-size:11px;color:var(--teal);font-weight:600">${v.name}</span><span style="font-size:10px;color:var(--text-dim)">${v.req?'':'?'}</span> <span style="font-size:10.5px;color:var(--text-muted)">${v.type}</span>${v.desc?` <span style="font-size:10.5px;color:var(--text-dim)">— ${v.desc}</span>`:''}</div>`;
+    if (type === 'body') return `<div style="margin-bottom:4px;padding-bottom:4px;border-bottom:1px dashed var(--border)"><span style="font-family:monospace;font-size:11px;color:var(--purple);font-weight:600">${v.name}</span><span style="font-size:10px;color:var(--text-dim)">${v.req?'*':''}</span> <span style="font-size:10.5px;color:var(--text-muted)">${v.type}</span>${v.val?` <span style="font-size:10px;color:var(--orange)">[ ${v.val} ]</span>`:''} ${v.desc?`<br><span style="font-size:10.5px;color:var(--text-dim);padding-left:8px">${v.desc}</span>`:''}</div>`;
+    if (type === 'res') return `<div style="margin-bottom:3px"><span style="font-family:monospace;font-size:11px;color:var(--success);font-weight:600">${v.name}</span> <span style="font-size:10.5px;color:var(--text-muted)">${v.type}</span>${v.desc?` <span style="font-size:10.5px;color:var(--text-dim)">— ${v.desc}</span>`:''}</div>`;
+    if (type === 'err') return `<div style="margin-bottom:3px"><span style="font-family:monospace;font-size:10.5px;color:var(--error);font-weight:600">${v.status}</span> <span style="font-size:10px;font-family:monospace;color:var(--error);opacity:.7">${v.code}</span><br><span style="font-size:10.5px;color:var(--text-dim);padding-left:8px">${v.when}</span></div>`;
+    return '';
+  }).join('');
+}
+
 function renderAPI(filter) {
   const rows = API_ROUTES.filter(r => filter === 'all' || r.g === filter);
   const tbody = document.getElementById('api-tbody');
   if (!rows.length) { tbody.innerHTML = `<tr><td colspan="7" class="no-rows">ფილტრით ჩანაწერი ვერ მოიძებნა.</td></tr>`; return; }
   tbody.innerHTML = rows.map(r => `
     <tr data-g="${r.g}">
-      <td>${methodBadge(r.m)}</td>
-      <td class="mono">${r.ep}</td>
-      <td>${gBadge(r.g)}</td>
-      <td><span class="badge role" style="font-size:9px">${r.scope}</span></td>
-      <td class="desc">${r.desc}</td>
-      <td class="mono" style="font-size:11px;color:var(--text-muted)">${r.req}</td>
-      <td class="mono" style="font-size:11px;color:var(--text-muted)">${r.res}</td>
+      <td>
+        ${methodBadge(r.m)}
+        <div class="mono" style="margin-top:4px;font-size:11.5px">${r.ep}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${r.desc}</div>
+      </td>
+      <td>
+        ${gBadge(r.g)}<br>
+        <span style="font-family:monospace;font-size:10px;color:var(--purple)">${r.scope}</span>
+      </td>
+      <td style="min-width:100px">${renderVarList(r.path_params,'path')}</td>
+      <td style="min-width:150px">${renderVarList(r.query_params,'query')}</td>
+      <td style="min-width:200px">${renderVarList(r.body,'body')}</td>
+      <td style="min-width:160px">${renderVarList(r.response,'res')}</td>
+      <td style="min-width:120px">${renderVarList(r.errors,'err')}</td>
     </tr>`).join('');
 }
 
