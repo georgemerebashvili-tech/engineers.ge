@@ -18,7 +18,7 @@ export function ConstructionAppFrame({session}: {session: ConstructionSession}) 
     <div className="flex h-screen flex-col">
       <header className="flex items-center gap-4 border-b border-slate-200 bg-white px-4 py-2 text-sm">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#475569] text-white">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1565C0] text-white">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M2 22 12 2l10 20H2z" />
               <path d="M10 14h4v8h-4z" />
@@ -39,11 +39,17 @@ export function ConstructionAppFrame({session}: {session: ConstructionSession}) 
           {session.role === 'admin' && (
             <Link
               href="/construction/admin"
-              className="rounded-md border border-slate-600 bg-[#475569] px-3 py-1.5 font-semibold text-white shadow-sm transition hover:bg-[#334155]"
+              className="rounded-md border border-slate-600 bg-[#1565C0] px-3 py-1.5 font-semibold text-white shadow-sm transition hover:bg-[#0D47A1]"
             >
               ადმინი
             </Link>
           )}
+          <Link
+            href="/construction/procurement"
+            className="rounded-md border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+          >
+            🏗️ შესყიდვები
+          </Link>
           <Link
             href="/construction/mobile"
             className="rounded-md border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 md:hidden"

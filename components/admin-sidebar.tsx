@@ -361,6 +361,22 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
           }
         },
         {
+          key: 'construction-procurement',
+          label: 'შესყიდვები / ტენდ.',
+          icon: Building2,
+          onClick: () => {
+            window.open('/construction/procurement', '_blank', 'noopener,noreferrer');
+          }
+        },
+        {
+          key: 'construction-contacts',
+          label: 'მომწ. კონტაქტები',
+          icon: Building2,
+          onClick: () => {
+            window.open('/construction/procurement/contacts', '_blank', 'noopener,noreferrer');
+          }
+        },
+        {
           key: 'staging-engineering',
           label: 'Staging · Engineering',
           icon: FlaskConical,
