@@ -16,7 +16,7 @@ export async function GET(req: Request) {
   const db = supabaseAdmin();
   let q = db
     .from('construction_contacts')
-    .select('id, name, company, email, phone, category, notes, active, created_by, created_at')
+    .select('id, name, identification_code, company, email, phone, category, notes, active, created_by, created_at')
     .order('name');
 
   if (activeOnly) q = q.eq('active', true);
@@ -41,13 +41,14 @@ export async function POST(req: Request) {
   const db = supabaseAdmin();
   const {data, error} = await db.from('construction_contacts').insert({
     name,
+    identification_code: (body.identification_code as string)?.trim() || null,
     company: (body.company as string)?.trim() || null,
     email: (body.email as string)?.trim() || null,
     phone: (body.phone as string)?.trim() || null,
     category: (body.category as string)?.trim() || null,
     notes: (body.notes as string)?.trim() || null,
     created_by: session.username
-  }).select('id, name, company, email, phone, category, notes, active, created_by, created_at').single();
+  }).select('id, name, identification_code, company, email, phone, category, notes, active, created_by, created_at').single();
 
   if (error) return NextResponse.json({error: 'db_error'}, {status: 500});
   return NextResponse.json({contact: data}, {status: 201});

@@ -5,7 +5,8 @@ import {sendTenderAnnouncementEmail} from '@/lib/construction/procurement-email'
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(req: Request, {params}: {params: {id: string}}) {
+export async function POST(req: Request, {params}: {params: Promise<{id: string}>}) {
+  const {id} = await params;
   const session = await getConstructionSession();
   if (!session || session.role !== 'admin') return NextResponse.json({error: 'forbidden'}, {status: 403});
 
@@ -22,14 +23,14 @@ export async function POST(req: Request, {params}: {params: {id: string}}) {
   const [{data: project, error: pErr}, {data: contacts, error: cErr}, {count: itemCount}] = await Promise.all([
     db.from('construction_procurement_projects')
       .select('id, project_no, name')
-      .eq('id', params.id)
+      .eq('id', id)
       .single(),
     db.from('construction_contacts')
       .select('id, name, email')
       .in('id', contact_ids),
     db.from('construction_procurement_items')
       .select('id', {count: 'exact', head: true})
-      .eq('project_id', params.id)
+      .eq('project_id', id)
   ]);
 
   if (pErr || !project) return NextResponse.json({error: 'project_not_found'}, {status: 404});
@@ -48,7 +49,7 @@ export async function POST(req: Request, {params}: {params: {id: string}}) {
     const {data: invite, error: iErr} = await db
       .from('construction_tender_invites')
       .upsert({
-        project_id: params.id,
+        project_id: id,
         contact_id: contact.id,
         status: 'pending',
         sent_at: new Date().toISOString()
@@ -65,7 +66,7 @@ export async function POST(req: Request, {params}: {params: {id: string}}) {
     const emailRes = await sendTenderAnnouncementEmail({
       to: contact.email,
       contactName: contact.name,
-      projectNo: project.project_no || params.id.slice(0, 8),
+      projectNo: project.project_no || id.slice(0, 8),
       projectName: project.name,
       itemCount: itemCount ?? 0,
       tenderUrl,
@@ -83,7 +84,7 @@ export async function POST(req: Request, {params}: {params: {id: string}}) {
   // mark project as open if it's still draft
   await db.from('construction_procurement_projects')
     .update({status: 'open', updated_at: new Date().toISOString()})
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('status', 'draft');
 
   return NextResponse.json({results});

@@ -4,7 +4,8 @@ import {supabaseAdmin} from '@/lib/supabase/admin';
 export const dynamic = 'force-dynamic';
 
 // Public endpoint — no auth required; token authenticates the supplier
-export async function GET(_req: Request, {params}: {params: {token: string}}) {
+export async function GET(_req: Request, {params}: {params: Promise<{token: string}>}) {
+  const {token} = await params;
   const db = supabaseAdmin();
 
   const {data: invite, error} = await db
@@ -17,16 +18,15 @@ export async function GET(_req: Request, {params}: {params: {token: string}}) {
       ),
       contact:construction_contacts(id, name, company)
     `)
-    .eq('token', params.token)
+    .eq('token', token)
     .single();
 
   if (error || !invite) return NextResponse.json({error: 'not_found'}, {status: 404});
 
-  // mark as viewed if pending
   if (invite.status === 'pending') {
     await db.from('construction_tender_invites')
       .update({status: 'viewed', viewed_at: new Date().toISOString()})
-      .eq('token', params.token);
+      .eq('token', token);
   }
 
   // fetch existing bids for this contact

@@ -4,7 +4,8 @@ import {supabaseAdmin} from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_req: Request, {params}: {params: {id: string}}) {
+export async function GET(_req: Request, {params}: {params: Promise<{id: string}>}) {
+  const {id} = await params;
   const session = await getConstructionSession();
   if (!session) return NextResponse.json({error: 'unauthorized'}, {status: 401});
 
@@ -12,13 +13,14 @@ export async function GET(_req: Request, {params}: {params: {id: string}}) {
   const {data, error} = await db
     .from('construction_procurement_bids')
     .select('id, item_id, contact_id, product_price, install_price, updated_at')
-    .eq('project_id', params.id);
+    .eq('project_id', id);
 
   if (error) return NextResponse.json({error: 'db_error'}, {status: 500});
   return NextResponse.json({bids: data ?? []});
 }
 
-export async function PATCH(req: Request, {params}: {params: {id: string}}) {
+export async function PATCH(req: Request, {params}: {params: Promise<{id: string}>}) {
+  const {id} = await params;
   const session = await getConstructionSession();
   if (!session || session.role !== 'admin') return NextResponse.json({error: 'forbidden'}, {status: 403});
 
@@ -30,7 +32,7 @@ export async function PATCH(req: Request, {params}: {params: {id: string}}) {
   if (!item_id || !contact_id) return NextResponse.json({error: 'item_id and contact_id required'}, {status: 400});
 
   const upsertRow: Record<string, unknown> = {
-    project_id: params.id,
+    project_id: id,
     item_id,
     contact_id,
     updated_at: new Date().toISOString()

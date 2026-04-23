@@ -20,12 +20,14 @@ const CAT_COLORS: Record<string, string> = {
 };
 
 type Contact = {
-  id: string; name: string; company: string | null; email: string | null;
-  phone: string | null; category: string | null; notes: string | null;
+  id: string; name: string; identification_code: string | null; company: string | null;
+  email: string | null; phone: string | null; category: string | null; notes: string | null;
   active: boolean; created_by: string; created_at: string;
 };
 
-const EMPTY_FORM = {name: '', company: '', email: '', phone: '', category: '', notes: ''};
+const EMPTY_FORM = {name: '', identification_code: '', company: '', email: '', phone: '', category: '', notes: ''};
+
+type RsResult = {name: string; status: string | null; address: string | null; director: string | null; vat_payer: boolean};
 
 export function ContactsClient({session}: {session: ConstructionSession}) {
   const router = useRouter();
@@ -39,9 +41,13 @@ export function ContactsClient({session}: {session: ConstructionSession}) {
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [creating, setCreating] = useState(false);
+  const [rsLooking, setRsLooking] = useState(false);
+  const [rsResult, setRsResult] = useState<RsResult | null>(null);
+  const [rsErr, setRsErr] = useState<string | null>(null);
 
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState(EMPTY_FORM);
+  const [editRsLooking, setEditRsLooking] = useState(false);
 
   function flash(msg: string) { setToast(msg); setTimeout(() => setToast(null), 2500); }
 
@@ -58,6 +64,32 @@ export function ContactsClient({session}: {session: ConstructionSession}) {
 
   useEffect(() => { load(); }, [load]);
 
+  async function doRsLookup(code: string, setter: (f: typeof EMPTY_FORM) => void, currentForm: typeof EMPTY_FORM) {
+    if (!code.trim()) return;
+    setRsLooking(true); setRsErr(null); setRsResult(null);
+    try {
+      const r = await fetch(`/api/construction/lookup?code=${encodeURIComponent(code.trim())}`);
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error ?? `HTTP ${r.status}`);
+      setRsResult(d);
+      if (d.name) setter({...currentForm, company: d.name, identification_code: code.trim()});
+    } catch (e) { setRsErr((e as Error).message); }
+    finally { setRsLooking(false); }
+  }
+
+  async function doEditRsLookup(code: string) {
+    if (!code.trim()) return;
+    setEditRsLooking(true);
+    try {
+      const r = await fetch(`/api/construction/lookup?code=${encodeURIComponent(code.trim())}`);
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error ?? `HTTP ${r.status}`);
+      if (d.name) setEditForm(p => ({...p, company: d.name, identification_code: code.trim()}));
+      flash(`RS.ge: ${d.name}`);
+    } catch (e) { flash(`RS.ge: ${(e as Error).message}`); }
+    finally { setEditRsLooking(false); }
+  }
+
   async function createContact(e: React.FormEvent) {
     e.preventDefault();
     if (creating || !form.name.trim()) return;
@@ -70,13 +102,23 @@ export function ContactsClient({session}: {session: ConstructionSession}) {
     if (!res.ok) { flash('შექმნა ვერ მოხერხდა'); setCreating(false); return; }
     flash('კონტაქტი დაემატა ✓');
     setForm(EMPTY_FORM);
+    setRsResult(null);
+    setRsErr(null);
     setCreating(false);
     load();
   }
 
   function startEdit(c: Contact) {
     setEditId(c.id);
-    setEditForm({name: c.name, company: c.company ?? '', email: c.email ?? '', phone: c.phone ?? '', category: c.category ?? '', notes: c.notes ?? ''});
+    setEditForm({
+      name: c.name,
+      identification_code: c.identification_code ?? '',
+      company: c.company ?? '',
+      email: c.email ?? '',
+      phone: c.phone ?? '',
+      category: c.category ?? '',
+      notes: c.notes ?? ''
+    });
   }
 
   async function saveEdit() {
@@ -117,7 +159,8 @@ export function ContactsClient({session}: {session: ConstructionSession}) {
 
   const filtered = contacts.filter((c) => {
     if (search && !c.name.toLowerCase().includes(search.toLowerCase()) &&
-        !(c.company ?? '').toLowerCase().includes(search.toLowerCase())) return false;
+        !(c.company ?? '').toLowerCase().includes(search.toLowerCase()) &&
+        !(c.identification_code ?? '').includes(search)) return false;
     if (filterCat && c.category !== filterCat) return false;
     return true;
   });
@@ -143,10 +186,61 @@ export function ContactsClient({session}: {session: ConstructionSession}) {
       </header>
 
       <div className="mx-auto max-w-5xl px-4 py-6 space-y-5">
+
         {/* Create form */}
         {isAdmin && (
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="mb-4 text-sm font-bold text-slate-900">ახალი კონტაქტი</h2>
+
+            {/* RS.ge lookup row */}
+            <div className="mb-4 flex items-end gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <div className="flex-1">
+                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+                  საიდენტიფიკაციო კოდი — RS.ge ძიება
+                </label>
+                <input
+                  value={form.identification_code}
+                  onChange={(e) => { setForm(p => ({...p, identification_code: e.target.value})); setRsResult(null); setRsErr(null); }}
+                  placeholder="123456789"
+                  maxLength={11}
+                  className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-sm focus:border-[#1565C0] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/20"
+                />
+              </div>
+              <button
+                type="button"
+                disabled={rsLooking || !form.identification_code.trim()}
+                onClick={() => doRsLookup(form.identification_code, setForm, form)}
+                className="flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white transition disabled:opacity-50"
+                style={{background: P}}
+              >
+                {rsLooking ? (
+                  <span className="flex items-center gap-1.5"><span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" /> ეძებს…</span>
+                ) : '🔍 RS.ge'}
+              </button>
+            </div>
+
+            {/* RS.ge result banner */}
+            {rsResult && (
+              <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-[12.5px]">
+                <div className="flex items-start gap-2">
+                  <span className="text-lg">✅</span>
+                  <div>
+                    <div className="font-bold text-emerald-800">{rsResult.name}</div>
+                    {rsResult.status && <div className="text-emerald-600">სტატუსი: {rsResult.status}</div>}
+                    {rsResult.address && <div className="text-emerald-600">მისამართი: {rsResult.address}</div>}
+                    {rsResult.director && <div className="text-emerald-600">დირექტორი: {rsResult.director}</div>}
+                    {rsResult.vat_payer && <div className="mt-0.5 inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700">დღგ გადამხდელი</div>}
+                    <div className="mt-1 text-[11px] text-emerald-500">კომპანიის სახელი ჩაიწერა ↓</div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {rsErr && (
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[12.5px] text-red-600">
+                ⚠️ {rsErr}
+              </div>
+            )}
+
             <form onSubmit={createContact} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 {key: 'name', label: 'სახელი *', placeholder: 'ნ. ნინუა', required: true},
@@ -189,8 +283,8 @@ export function ContactsClient({session}: {session: ConstructionSession}) {
         <div className="flex flex-wrap gap-3">
           <input
             value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="🔍 სახელი / კომპანია"
-            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#1565C0] focus:outline-none w-56"
+            placeholder="🔍 სახელი / კომპანია / ს.კ."
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus:border-[#1565C0] focus:outline-none w-64"
           />
           <select
             value={filterCat} onChange={(e) => setFilterCat(e.target.value)}
@@ -214,6 +308,7 @@ export function ContactsClient({session}: {session: ConstructionSession}) {
                 <thead>
                   <tr className="border-b border-slate-200 text-left text-[11px] font-bold uppercase tracking-wider text-slate-400">
                     <th className="px-4 py-3">სახელი</th>
+                    <th className="px-4 py-3">ს.კ.</th>
                     <th className="px-4 py-3">კომპანია</th>
                     <th className="px-4 py-3">ელ-ფოსტა</th>
                     <th className="px-4 py-3">ტელ.</th>
@@ -224,10 +319,30 @@ export function ContactsClient({session}: {session: ConstructionSession}) {
                 </thead>
                 <tbody>
                   {filtered.map((c) => (
-                    <tr key={c.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                    <>
                       {editId === c.id ? (
-                        <>
+                        <tr key={c.id} className="border-b border-slate-100">
                           <td className="px-3 py-2"><input className="w-full rounded border border-slate-200 px-2 py-1 text-xs focus:border-[#1565C0] focus:outline-none" value={editForm.name} onChange={(e) => setEditForm((p) => ({...p, name: e.target.value}))} /></td>
+                          <td className="px-3 py-2">
+                            <div className="flex gap-1">
+                              <input
+                                className="w-24 rounded border border-slate-200 px-2 py-1 font-mono text-xs focus:border-[#1565C0] focus:outline-none"
+                                value={editForm.identification_code}
+                                onChange={(e) => setEditForm((p) => ({...p, identification_code: e.target.value}))}
+                                placeholder="ს.კ."
+                                maxLength={11}
+                              />
+                              <button
+                                type="button"
+                                disabled={editRsLooking || !editForm.identification_code.trim()}
+                                onClick={() => doEditRsLookup(editForm.identification_code)}
+                                className="rounded border border-[#1565C0] px-1.5 py-1 text-[10px] font-semibold text-[#1565C0] hover:bg-[#EEF4FD] disabled:opacity-40"
+                                title="RS.ge-ში მოძებნა"
+                              >
+                                {editRsLooking ? '…' : '🔍'}
+                              </button>
+                            </div>
+                          </td>
                           <td className="px-3 py-2"><input className="w-full rounded border border-slate-200 px-2 py-1 text-xs focus:border-[#1565C0] focus:outline-none" value={editForm.company} onChange={(e) => setEditForm((p) => ({...p, company: e.target.value}))} /></td>
                           <td className="px-3 py-2"><input type="email" className="w-full rounded border border-slate-200 px-2 py-1 text-xs focus:border-[#1565C0] focus:outline-none" value={editForm.email} onChange={(e) => setEditForm((p) => ({...p, email: e.target.value}))} /></td>
                           <td className="px-3 py-2"><input className="w-28 rounded border border-slate-200 px-2 py-1 text-xs focus:border-[#1565C0] focus:outline-none" value={editForm.phone} onChange={(e) => setEditForm((p) => ({...p, phone: e.target.value}))} /></td>
@@ -244,10 +359,11 @@ export function ContactsClient({session}: {session: ConstructionSession}) {
                               <button onClick={() => setEditId(null)} className="rounded border border-slate-200 px-2 py-1 text-[11px] text-slate-500">გაუქ.</button>
                             </div>
                           </td>
-                        </>
+                        </tr>
                       ) : (
-                        <>
+                        <tr key={c.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                           <td className="px-4 py-3 font-semibold text-slate-900">{c.name}</td>
+                          <td className="px-4 py-3 font-mono text-[11px] text-slate-500">{c.identification_code ?? '—'}</td>
                           <td className="px-4 py-3 text-slate-600">{c.company ?? '—'}</td>
                           <td className="px-4 py-3 text-slate-600 font-mono text-xs">{c.email ?? '—'}</td>
                           <td className="px-4 py-3 text-slate-600 text-xs">{c.phone ?? '—'}</td>
@@ -277,9 +393,9 @@ export function ContactsClient({session}: {session: ConstructionSession}) {
                               </div>
                             </td>
                           )}
-                        </>
+                        </tr>
                       )}
-                    </tr>
+                    </>
                   ))}
                 </tbody>
               </table>

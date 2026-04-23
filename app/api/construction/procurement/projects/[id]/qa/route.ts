@@ -4,7 +4,8 @@ import {supabaseAdmin} from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_req: Request, {params}: {params: {id: string}}) {
+export async function GET(_req: Request, {params}: {params: Promise<{id: string}>}) {
+  const {id} = await params;
   const session = await getConstructionSession();
   if (!session) return NextResponse.json({error: 'unauthorized'}, {status: 401});
 
@@ -16,14 +17,15 @@ export async function GET(_req: Request, {params}: {params: {id: string}}) {
       contact:construction_contacts(id, name, company),
       answers:construction_procurement_qa_answers(id, answer, answered_by, created_at)
     `)
-    .eq('project_id', params.id)
+    .eq('project_id', id)
     .order('created_at', {ascending: false});
 
   if (error) return NextResponse.json({error: 'db_error'}, {status: 500});
   return NextResponse.json({qa: data ?? []});
 }
 
-export async function POST(req: Request, {params}: {params: {id: string}}) {
+export async function POST(req: Request, {params}: {params: Promise<{id: string}>}) {
+  const {id} = await params;
   const session = await getConstructionSession();
   if (!session || session.role !== 'admin') return NextResponse.json({error: 'forbidden'}, {status: 403});
 
@@ -36,7 +38,7 @@ export async function POST(req: Request, {params}: {params: {id: string}}) {
 
   const db = supabaseAdmin();
   const {data, error} = await db.from('construction_procurement_qa').insert({
-    project_id: params.id, contact_id, question
+    project_id: id, contact_id, question
   }).select('id, contact_id, question, created_at').single();
 
   if (error) return NextResponse.json({error: 'db_error'}, {status: 500});

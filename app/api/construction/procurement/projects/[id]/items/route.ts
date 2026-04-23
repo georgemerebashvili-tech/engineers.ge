@@ -4,7 +4,8 @@ import {supabaseAdmin} from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_req: Request, {params}: {params: {id: string}}) {
+export async function GET(_req: Request, {params}: {params: Promise<{id: string}>}) {
+  const {id} = await params;
   const session = await getConstructionSession();
   if (!session) return NextResponse.json({error: 'unauthorized'}, {status: 401});
 
@@ -12,14 +13,15 @@ export async function GET(_req: Request, {params}: {params: {id: string}}) {
   const {data, error} = await db
     .from('construction_procurement_items')
     .select('id, project_id, sort_order, name, unit, qty, labor_note, created_at')
-    .eq('project_id', params.id)
+    .eq('project_id', id)
     .order('sort_order');
 
   if (error) return NextResponse.json({error: 'db_error'}, {status: 500});
   return NextResponse.json({items: data ?? []});
 }
 
-export async function POST(req: Request, {params}: {params: {id: string}}) {
+export async function POST(req: Request, {params}: {params: Promise<{id: string}>}) {
+  const {id} = await params;
   const session = await getConstructionSession();
   if (!session || session.role !== 'admin') return NextResponse.json({error: 'forbidden'}, {status: 403});
 
@@ -29,11 +31,10 @@ export async function POST(req: Request, {params}: {params: {id: string}}) {
   const name = (body.name as string)?.trim() || 'ახალი სტრიქონი';
 
   const db = supabaseAdmin();
-  // get max sort_order
   const {data: existing} = await db
     .from('construction_procurement_items')
     .select('sort_order')
-    .eq('project_id', params.id)
+    .eq('project_id', id)
     .order('sort_order', {ascending: false})
     .limit(1)
     .maybeSingle();
@@ -41,7 +42,7 @@ export async function POST(req: Request, {params}: {params: {id: string}}) {
   const sort_order = ((existing?.sort_order as number) ?? -1) + 1;
 
   const {data, error} = await db.from('construction_procurement_items').insert({
-    project_id: params.id,
+    project_id: id,
     sort_order,
     name,
     unit: (body.unit as string) || 'pcs',
@@ -53,7 +54,8 @@ export async function POST(req: Request, {params}: {params: {id: string}}) {
   return NextResponse.json({item: data}, {status: 201});
 }
 
-export async function PATCH(req: Request, {params}: {params: {id: string}}) {
+export async function PATCH(req: Request, {params}: {params: Promise<{id: string}>}) {
+  const {id} = await params;
   const session = await getConstructionSession();
   if (!session || session.role !== 'admin') return NextResponse.json({error: 'forbidden'}, {status: 403});
 
@@ -73,7 +75,7 @@ export async function PATCH(req: Request, {params}: {params: {id: string}}) {
     .from('construction_procurement_items')
     .update(allowed)
     .eq('id', itemId)
-    .eq('project_id', params.id)
+    .eq('project_id', id)
     .select('id, sort_order, name, unit, qty, labor_note')
     .single();
 
@@ -81,7 +83,8 @@ export async function PATCH(req: Request, {params}: {params: {id: string}}) {
   return NextResponse.json({item: data});
 }
 
-export async function DELETE(req: Request, {params}: {params: {id: string}}) {
+export async function DELETE(req: Request, {params}: {params: Promise<{id: string}>}) {
+  const {id} = await params;
   const session = await getConstructionSession();
   if (!session || session.role !== 'admin') return NextResponse.json({error: 'forbidden'}, {status: 403});
 
@@ -94,7 +97,7 @@ export async function DELETE(req: Request, {params}: {params: {id: string}}) {
     .from('construction_procurement_items')
     .delete()
     .eq('id', itemId)
-    .eq('project_id', params.id);
+    .eq('project_id', id);
 
   if (error) return NextResponse.json({error: 'db_error'}, {status: 500});
   return NextResponse.json({ok: true});

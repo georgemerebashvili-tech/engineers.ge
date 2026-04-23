@@ -4,7 +4,8 @@ import {supabaseAdmin} from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_req: Request, {params}: {params: {id: string}}) {
+export async function GET(_req: Request, {params}: {params: Promise<{id: string}>}) {
+  const {id} = await params;
   const session = await getConstructionSession();
   if (!session) return NextResponse.json({error: 'unauthorized'}, {status: 401});
 
@@ -15,14 +16,15 @@ export async function GET(_req: Request, {params}: {params: {id: string}}) {
       project_id, contact_id, sort_order,
       contact:construction_contacts(id, name, company, email, phone, category)
     `)
-    .eq('project_id', params.id)
+    .eq('project_id', id)
     .order('sort_order');
 
   if (error) return NextResponse.json({error: 'db_error'}, {status: 500});
   return NextResponse.json({participants: data ?? []});
 }
 
-export async function POST(req: Request, {params}: {params: {id: string}}) {
+export async function POST(req: Request, {params}: {params: Promise<{id: string}>}) {
+  const {id} = await params;
   const session = await getConstructionSession();
   if (!session || session.role !== 'admin') return NextResponse.json({error: 'forbidden'}, {status: 403});
 
@@ -37,7 +39,7 @@ export async function POST(req: Request, {params}: {params: {id: string}}) {
   const {data: existing} = await db
     .from('construction_procurement_participants')
     .select('sort_order')
-    .eq('project_id', params.id)
+    .eq('project_id', id)
     .order('sort_order', {ascending: false})
     .limit(1)
     .maybeSingle();
@@ -45,7 +47,7 @@ export async function POST(req: Request, {params}: {params: {id: string}}) {
   const sort_order = ((existing?.sort_order as number) ?? -1) + 1;
 
   const {error} = await db.from('construction_procurement_participants').upsert({
-    project_id: params.id,
+    project_id: id,
     contact_id,
     sort_order
   }, {onConflict: 'project_id,contact_id', ignoreDuplicates: true});
@@ -54,7 +56,8 @@ export async function POST(req: Request, {params}: {params: {id: string}}) {
   return NextResponse.json({ok: true}, {status: 201});
 }
 
-export async function DELETE(req: Request, {params}: {params: {id: string}}) {
+export async function DELETE(req: Request, {params}: {params: Promise<{id: string}>}) {
+  const {id} = await params;
   const session = await getConstructionSession();
   if (!session || session.role !== 'admin') return NextResponse.json({error: 'forbidden'}, {status: 403});
 
@@ -66,7 +69,7 @@ export async function DELETE(req: Request, {params}: {params: {id: string}}) {
   const {error} = await db
     .from('construction_procurement_participants')
     .delete()
-    .eq('project_id', params.id)
+    .eq('project_id', id)
     .eq('contact_id', contact_id);
 
   if (error) return NextResponse.json({error: 'db_error'}, {status: 500});

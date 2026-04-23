@@ -4,7 +4,8 @@ import {supabaseAdmin} from '@/lib/supabase/admin';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(_req: Request, {params}: {params: {id: string}}) {
+export async function GET(_req: Request, {params}: {params: Promise<{id: string}>}) {
+  const {id} = await params;
   const session = await getConstructionSession();
   if (!session) return NextResponse.json({error: 'unauthorized'}, {status: 401});
 
@@ -12,13 +13,14 @@ export async function GET(_req: Request, {params}: {params: {id: string}}) {
   const {data, error} = await db
     .from('construction_procurement_selections')
     .select('item_id, contact_id, price_type')
-    .eq('project_id', params.id);
+    .eq('project_id', id);
 
   if (error) return NextResponse.json({error: 'db_error'}, {status: 500});
   return NextResponse.json({selections: data ?? []});
 }
 
-export async function PATCH(req: Request, {params}: {params: {id: string}}) {
+export async function PATCH(req: Request, {params}: {params: Promise<{id: string}>}) {
+  const {id} = await params;
   const session = await getConstructionSession();
   if (!session || session.role !== 'admin') return NextResponse.json({error: 'forbidden'}, {status: 403});
 
@@ -31,7 +33,6 @@ export async function PATCH(req: Request, {params}: {params: {id: string}}) {
   const db = supabaseAdmin();
 
   if (!contact_id) {
-    // clear selection
     await db.from('construction_procurement_selections')
       .delete()
       .eq('item_id', item_id)
@@ -40,7 +41,7 @@ export async function PATCH(req: Request, {params}: {params: {id: string}}) {
   }
 
   const {error} = await db.from('construction_procurement_selections').upsert({
-    project_id: params.id,
+    project_id: id,
     item_id,
     contact_id,
     price_type

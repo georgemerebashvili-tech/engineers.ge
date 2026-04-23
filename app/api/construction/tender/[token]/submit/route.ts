@@ -5,7 +5,8 @@ export const dynamic = 'force-dynamic';
 
 type BidInput = {item_id: string; product_price?: number | null; install_price?: number | null};
 
-export async function POST(req: Request, {params}: {params: {token: string}}) {
+export async function POST(req: Request, {params}: {params: Promise<{token: string}>}) {
+  const {token} = await params;
   let body: {bids: BidInput[]};
   try { body = await req.json(); } catch { return NextResponse.json({error: 'bad_request'}, {status: 400}); }
 
@@ -14,7 +15,7 @@ export async function POST(req: Request, {params}: {params: {token: string}}) {
   const {data: invite, error} = await db
     .from('construction_tender_invites')
     .select('id, contact_id, project_id, status')
-    .eq('token', params.token)
+    .eq('token', token)
     .single();
 
   if (error || !invite) return NextResponse.json({error: 'not_found'}, {status: 404});
@@ -39,7 +40,7 @@ export async function POST(req: Request, {params}: {params: {token: string}}) {
 
   await db.from('construction_tender_invites')
     .update({status: 'submitted', submitted_at: new Date().toISOString()})
-    .eq('token', params.token);
+    .eq('token', token);
 
   return NextResponse.json({ok: true});
 }
