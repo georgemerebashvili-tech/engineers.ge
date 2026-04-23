@@ -135,6 +135,13 @@ export default function InventoryPage() {
     );
   }, [items, q]);
 
+  // Shared tag pool — all unique tags across all items
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    items.forEach((item) => item.tags.forEach((t) => set.add(t)));
+    return [...set].sort((a, b) => a.localeCompare(b, 'ka'));
+  }, [items]);
+
   const totalQty = items.reduce((s, p) => s + p.qty, 0);
   const inStock = items.filter((p) => p.qty > 0).length;
   const outOfStock = items.filter((p) => p.qty === 0).length;
@@ -264,6 +271,7 @@ export default function InventoryPage() {
                       key={item.id}
                       index={i + 1}
                       item={item}
+                      allTags={allTags}
                       onPatch={(patch) => handlePatch(item.id, patch)}
                       onDelete={() => handleDelete(item.id)}
                       onReserveClick={() => setReserveTarget(item)}
@@ -278,6 +286,7 @@ export default function InventoryPage() {
 
       {showAdd && (
         <AddItemModal
+          allTags={allTags}
           onClose={() => setShowAdd(false)}
           onSaved={() => {
             setShowAdd(false);
@@ -301,16 +310,140 @@ export default function InventoryPage() {
   );
 }
 
+// ── TagInput ─────────────────────────────────────────────────────────────
+function TagInput({
+  value,
+  onChange,
+  suggestions,
+  onBlur,
+  autoFocus,
+  placeholder = 'ტეგი…',
+}: {
+  value: string[];
+  onChange: (tags: string[]) => void;
+  suggestions: string[];
+  onBlur?: () => void;
+  autoFocus?: boolean;
+  placeholder?: string;
+}) {
+  const [input, setInput] = useState('');
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (autoFocus) inputRef.current?.focus();
+  }, [autoFocus]);
+
+  const filtered = useMemo(
+    () =>
+      suggestions.filter(
+        (s) => !value.includes(s) && s.toLowerCase().includes(input.toLowerCase()),
+      ),
+    [suggestions, value, input],
+  );
+
+  function add(tag: string) {
+    const t = tag.trim();
+    if (t && !value.includes(t)) onChange([...value, t]);
+    setInput('');
+  }
+
+  function remove(tag: string) {
+    onChange(value.filter((t) => t !== tag));
+  }
+
+  function handleKey(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      if (input.trim()) add(input);
+      else if (filtered[0]) add(filtered[0]);
+    } else if (e.key === 'Backspace' && !input && value.length > 0) {
+      remove(value[value.length - 1]);
+    } else if (e.key === 'Escape') {
+      setOpen(false);
+      onBlur?.();
+    }
+  }
+
+  function handleBlur(e: React.FocusEvent) {
+    if (containerRef.current?.contains(e.relatedTarget as Node)) return;
+    setOpen(false);
+    onBlur?.();
+  }
+
+  return (
+    <div ref={containerRef} className="relative" onBlur={handleBlur}>
+      <div
+        className="flex min-h-[34px] flex-wrap items-center gap-1 rounded-md border border-blue bg-sur px-2 py-1"
+        onClick={() => inputRef.current?.focus()}
+      >
+        {value.map((tag) => (
+          <span
+            key={tag}
+            className="inline-flex items-center gap-1 rounded-full border border-blue-bd bg-blue-lt px-2 py-0.5 font-mono text-[9.5px] text-blue"
+          >
+            {tag}
+            <button
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                remove(tag);
+              }}
+              className="ml-0.5 text-blue/60 hover:text-blue"
+            >
+              <X size={9} strokeWidth={2.5} />
+            </button>
+          </span>
+        ))}
+        <input
+          ref={inputRef}
+          value={input}
+          onChange={(e) => {
+            setInput(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={handleKey}
+          placeholder={value.length === 0 ? placeholder : ''}
+          className="min-w-[80px] flex-1 bg-transparent text-[12px] text-text outline-none placeholder:text-text-3"
+        />
+      </div>
+
+      {open && filtered.length > 0 && (
+        <div className="absolute left-0 top-full z-30 mt-1 max-h-48 w-full overflow-y-auto rounded-[8px] border border-bdr bg-sur shadow-lg">
+          {filtered.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                add(s);
+              }}
+              className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[11.5px] text-text hover:bg-sur-2"
+            >
+              <Tag size={10} className="shrink-0 text-text-3" />
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── ProductRow ───────────────────────────────────────────────────────────
 function ProductRow({
   index,
   item,
+  allTags,
   onPatch,
   onDelete,
   onReserveClick,
 }: {
   index: number;
   item: InventoryItem;
+  allTags: string[];
   onPatch: (patch: Partial<InventoryItem>) => void;
   onDelete: () => void;
   onReserveClick: () => void;
@@ -318,6 +451,7 @@ function ProductRow({
   const [menuOpen, setMenuOpen] = useState(false);
   const [editingDesc, setEditingDesc] = useState(false);
   const [descDraft, setDescDraft] = useState('');
+  const [editingTags, setEditingTags] = useState(false);
   const [qtyDraft, setQtyDraft] = useState(String(item.qty));
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -460,19 +594,36 @@ function ProductRow({
 
       {/* მეტა ტაგები */}
       <td className="px-3 py-2">
-        <div className="flex flex-wrap gap-1">
-          {item.tags.map((tag) => (
-            <span
-              key={tag}
-              className="inline-flex items-center rounded-full border border-bdr bg-sur-2 px-1.5 py-0.5 font-mono text-[9.5px] text-text-3"
-            >
-              {tag}
-            </span>
-          ))}
-          {item.tags.length === 0 && (
-            <span className="text-[11px] italic text-text-3">—</span>
-          )}
-        </div>
+        {editingTags ? (
+          <TagInput
+            value={item.tags}
+            suggestions={allTags}
+            onChange={(tags) => {
+              onPatch({tags});
+              setEditingTags(false);
+            }}
+            onBlur={() => setEditingTags(false)}
+            autoFocus
+          />
+        ) : (
+          <div
+            className="flex min-h-[28px] cursor-pointer flex-wrap gap-1"
+            onClick={() => setEditingTags(true)}
+            title="დააჭირე შესაცვლელად"
+          >
+            {item.tags.map((tag) => (
+              <span
+                key={tag}
+                className="inline-flex items-center rounded-full border border-bdr bg-sur-2 px-1.5 py-0.5 font-mono text-[9.5px] text-text-3"
+              >
+                {tag}
+              </span>
+            ))}
+            {item.tags.length === 0 && (
+              <span className="text-[11px] italic text-text-3">+ ტეგი</span>
+            )}
+          </div>
+        )}
       </td>
 
       {/* განზ. */}
@@ -554,7 +705,6 @@ const EMPTY_FORM = {
   sku: '',
   name: '',
   description: '',
-  tags: '',
   dimensions: '',
   qty: '0',
   price: '',
@@ -562,13 +712,16 @@ const EMPTY_FORM = {
 };
 
 function AddItemModal({
+  allTags,
   onClose,
   onSaved,
 }: {
+  allTags: string[];
   onClose: () => void;
   onSaved: () => void;
 }) {
   const [form, setForm] = useState(EMPTY_FORM);
+  const [tags, setTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -589,10 +742,7 @@ function AddItemModal({
           sku: form.sku.trim(),
           name: form.name.trim(),
           description: form.description.trim() || undefined,
-          tags: form.tags
-            .split(',')
-            .map((t) => t.trim())
-            .filter(Boolean),
+          tags,
           dimensions: form.dimensions.trim() || undefined,
           qty: Math.max(0, parseInt(form.qty, 10) || 0),
           price: form.price ? parseFloat(form.price) : undefined,
@@ -673,12 +823,12 @@ function AddItemModal({
             />
           </Field>
 
-          <Field label="მეტა ტაგები (მძიმით გამოყოფილი)" className="mt-3">
-            <input
-              value={form.tags}
-              onChange={set('tags')}
-              placeholder="კონდიციონერი, Gree, 24000BTU"
-              className={inputCls}
+          <Field label="მეტა ტაგები" className="mt-3">
+            <TagInput
+              value={tags}
+              onChange={setTags}
+              suggestions={allTags}
+              placeholder="ტეგი + Enter…"
             />
           </Field>
 
