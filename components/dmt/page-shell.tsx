@@ -84,7 +84,7 @@ export function DmtPageShell({
           </div>
         )}
       </header>
-      <div className="flex-1 overflow-auto">{children}</div>
+      <div className="flex flex-1 flex-col overflow-auto">{children}</div>
     </div>
   );
 }

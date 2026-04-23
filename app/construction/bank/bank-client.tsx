@@ -63,8 +63,18 @@ type TodayTx = {
   BeneficiaryDetails?: { Name: string; Inn: string; AccountNumber: string; BankCode: string; BankName: string };
 };
 
-type Tab = 'balance' | 'statement' | 'today';
+type Tab = 'balance' | 'statement' | 'today' | 'config';
 type DirectionFilter = 'all' | 'credit' | 'debit';
+
+type ConfigData = {
+  configured: boolean;
+  client_id?: string;
+  client_secret_masked?: string;
+  account_iban?: string;
+  account_currency?: string;
+  updated_at?: string;
+  updated_by?: string;
+};
 
 // ── component ─────────────────────────────────────────────────────────────────
 export function BankClient({session}: {session: ConstructionSession}) {
@@ -91,6 +101,17 @@ export function BankClient({session}: {session: ConstructionSession}) {
   const [todayErr, setTodayErr]   = useState<string | null>(null);
   const [todayQ, setTodayQ]       = useState('');
   const [todayDir, setTodayDir]   = useState<DirectionFilter>('all');
+
+  // config
+  const [cfg, setCfg]             = useState<ConfigData | null>(null);
+  const [cfgLoad, setCfgLoad]     = useState(false);
+  const [cfgErr, setCfgErr]       = useState<string | null>(null);
+  const [cfgSaving, setCfgSaving] = useState(false);
+  const [cfgOk, setCfgOk]         = useState(false);
+  const [fClientId, setFClientId]         = useState('');
+  const [fClientSecret, setFClientSecret] = useState('');
+  const [fIban, setFIban]                 = useState('');
+  const [fCurrency, setFCurrency]         = useState('GEL');
 
   // ── loaders ──────────────────────────────────────────────────────────────
   const loadBalance = useCallback(async () => {
@@ -131,8 +152,42 @@ export function BankClient({session}: {session: ConstructionSession}) {
     finally { setTodayLoad(false); }
   }, []);
 
+  const loadConfig = useCallback(async () => {
+    setCfgLoad(true); setCfgErr(null); setCfgOk(false);
+    try {
+      const r = await fetch('/api/construction/bank/config');
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error ?? `HTTP ${r.status}`);
+      setCfg(d);
+      if (d.client_id) setFClientId(d.client_id);
+      if (d.account_iban) setFIban(d.account_iban);
+      if (d.account_currency) setFCurrency(d.account_currency);
+    } catch (e) { setCfgErr((e as Error).message); }
+    finally { setCfgLoad(false); }
+  }, []);
+
+  async function saveConfig(e: React.FormEvent) {
+    e.preventDefault();
+    if (!fClientId.trim() || !fClientSecret.trim() || !fIban.trim()) return;
+    setCfgSaving(true); setCfgErr(null); setCfgOk(false);
+    try {
+      const r = await fetch('/api/construction/bank/config', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({client_id: fClientId.trim(), client_secret: fClientSecret.trim(), account_iban: fIban.trim(), account_currency: fCurrency.trim() || 'GEL'}),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error ?? `HTTP ${r.status}`);
+      setCfgOk(true);
+      setFClientSecret('');
+      await loadConfig();
+    } catch (e) { setCfgErr((e as Error).message); }
+    finally { setCfgSaving(false); }
+  }
+
   useEffect(() => { if (tab === 'balance') loadBalance(); }, [tab, loadBalance]);
   useEffect(() => { if (tab === 'today') loadToday(); }, [tab, loadToday]);
+  useEffect(() => { if (tab === 'config') loadConfig(); }, [tab, loadConfig]);
 
   // ── filtered rows ─────────────────────────────────────────────────────────
   const filteredStmt = (stmt?.Records ?? []).filter(r => {
@@ -233,6 +288,7 @@ export function BankClient({session}: {session: ConstructionSession}) {
             {id: 'balance',   label: '💰 ბალანსი'},
             {id: 'today',     label: '📅 დღეს'},
             {id: 'statement', label: '📋 ამონაწერი'},
+            {id: 'config',    label: '⚙️ კონფიგურაცია'},
           ] as {id: Tab; label: string}[]).map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`-mb-px px-5 py-2.5 text-[13px] font-semibold border-b-2 transition-colors ${
@@ -405,6 +461,87 @@ export function BankClient({session}: {session: ConstructionSession}) {
             )}
           </div>
         )}
+
+        {/* ═══ CONFIG TAB ═══ */}
+        {tab === 'config' && (
+          <div className="max-w-xl">
+            {cfgLoad && <LoadingState label="კონფიგურაცია იტვირთება…" />}
+
+            {/* current status */}
+            {cfg && !cfgLoad && (
+              <div className={`mb-6 flex items-center gap-3 rounded-xl border px-4 py-3 text-[12.5px] font-semibold ${
+                cfg.configured
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border-amber-200 bg-amber-50 text-amber-700'
+              }`}>
+                <span className="text-xl">{cfg.configured ? '✅' : '⚠️'}</span>
+                <div>
+                  {cfg.configured ? (
+                    <>
+                      <div>კონფიგურირებულია · IBAN: <span className="font-mono">{cfg.account_iban}</span> · {cfg.account_currency}</div>
+                      <div className="font-mono text-[10.5px] font-normal text-emerald-600">client_id: {cfg.client_id} · secret: {cfg.client_secret_masked}</div>
+                      {cfg.updated_by && <div className="mt-0.5 font-mono text-[10px] font-normal text-emerald-500">შეინახა: {cfg.updated_by} · {cfg.updated_at ? new Date(cfg.updated_at).toLocaleString('ka-GE') : ''}</div>}
+                    </>
+                  ) : 'კრედენშელები არ არის დაყენებული — შეავსე ქვემოთ'}
+                </div>
+              </div>
+            )}
+
+            {/* form */}
+            <form onSubmit={saveConfig} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400 mb-1">BOG Business Online API</div>
+
+              <CfgField label="Client ID *" hint="bonline.bog.ge/admin/api">
+                <input required value={fClientId} onChange={e => setFClientId(e.target.value)}
+                  placeholder="xxxxxxxxxxxxxxxxx"
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-[12.5px] text-slate-800 focus:border-[#1565C0] focus:bg-white focus:outline-none" />
+              </CfgField>
+
+              <CfgField label="Client Secret *" hint="secret — ინახება დაშიფრულად">
+                <input required value={fClientSecret} onChange={e => setFClientSecret(e.target.value)}
+                  type="password"
+                  placeholder={cfg?.configured ? '••••••••  (ახალი შეიყვანე შესაცვლელად)' : 'client_secret…'}
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-[12.5px] text-slate-800 focus:border-[#1565C0] focus:bg-white focus:outline-none" />
+              </CfgField>
+
+              <CfgField label="IBAN *" hint="ანგარიშის ნომერი (GE…)">
+                <input required value={fIban} onChange={e => setFIban(e.target.value)}
+                  placeholder="GE00BG0000000000000000"
+                  className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-[12.5px] text-slate-800 focus:border-[#1565C0] focus:bg-white focus:outline-none" />
+              </CfgField>
+
+              <CfgField label="ვალუტა" hint="ISO 4217">
+                <select value={fCurrency} onChange={e => setFCurrency(e.target.value)}
+                  className="w-32 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-[12.5px] text-slate-800 focus:border-[#1565C0] focus:bg-white focus:outline-none">
+                  <option value="GEL">GEL</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                </select>
+              </CfgField>
+
+              {cfgErr && <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-[12px] text-red-600">⚠️ {cfgErr}</div>}
+              {cfgOk  && <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12px] text-emerald-700">✅ შენახულია! ბალანსის ტაბზე გადი.</div>}
+
+              <div className="flex items-center gap-3 pt-1">
+                <button type="submit" disabled={cfgSaving}
+                  className="rounded-md bg-[#1565C0] px-5 py-2 text-[12.5px] font-semibold text-white transition hover:bg-[#0D47A1] disabled:opacity-60">
+                  {cfgSaving ? 'ინახება…' : '💾 შენახვა'}
+                </button>
+                <span className="text-[11px] text-slate-400">მხოლოდ admin-ს შეუძლია ცვლილება</span>
+              </div>
+            </form>
+
+            <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-[11.5px] text-slate-500">
+              <div className="font-semibold text-slate-600 mb-1">სად ვიპოვო credentials?</div>
+              <ol className="list-decimal list-inside space-y-0.5">
+                <li>გახსენი <span className="font-mono text-[11px]">bonline.bog.ge/admin/api</span></li>
+                <li>შექმენი ან დაარედაქტირე app</li>
+                <li>დააკოპირე <strong>Client ID</strong> და <strong>Client Secret</strong></li>
+                <li>IBAN — BOG Business Online-ში ანგარიშის ნომერი (GE…)</li>
+              </ol>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -515,6 +652,18 @@ function TxTable({rows}: {rows: TxRow[]}) {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function CfgField({label, hint, children}: {label: string; hint?: string; children: React.ReactNode}) {
+  return (
+    <div>
+      <div className="mb-1 flex items-baseline gap-2">
+        <span className="font-mono text-[10.5px] font-bold uppercase tracking-[0.08em] text-slate-500">{label}</span>
+        {hint && <span className="text-[10px] text-slate-400">{hint}</span>}
+      </div>
+      {children}
     </div>
   );
 }

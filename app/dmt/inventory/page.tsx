@@ -1,6 +1,7 @@
 'use client';
 
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import ReactCrop, {
   centerCrop,
   makeAspectCrop,
@@ -153,6 +154,7 @@ export default function InventoryPage() {
   const [reserveTarget, setReserveTarget] = useState<InventoryItem | null>(null);
   const [showLogs, setShowLogs] = useState(false);
   const [compositionTarget, setCompositionTarget] = useState<InventoryItem | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -239,7 +241,7 @@ export default function InventoryPage() {
         </div>
       }
     >
-      <div className="px-6 py-5 md:px-8">
+      <div className="flex min-h-full flex-col px-6 py-5 md:px-8">
         {/* Stat cards */}
         <div className="mb-5 grid gap-3 md:grid-cols-4">
           <StatCard label="სულ SKU" value={String(items.length)} icon={Boxes} />
@@ -270,7 +272,7 @@ export default function InventoryPage() {
         ) : filtered.length === 0 ? (
           <EmptyState title="შედეგი ვერ მოიძებნა" hint="შეცვალე ძიება." icon={Package} />
         ) : (
-          <div className="overflow-hidden rounded-[10px] bg-sur">
+          <div className="flex-1 overflow-hidden rounded-[10px] bg-sur" style={{minHeight: 800}}>
             <div className="border-b border-bdr bg-sur-2 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-text-3">
               <span className="text-navy">{filtered.length}</span> / {items.length} პოზიცია
               {totalQty > 0 && (
@@ -279,7 +281,7 @@ export default function InventoryPage() {
                 </span>
               )}
             </div>
-            <div className="overflow-x-auto">
+            <div className="flex-1 overflow-x-auto">
               <table className="w-full text-[12.5px]">
                 <thead>
                   <tr className="border-b border-bdr bg-sur-2 text-left font-mono text-[10px] uppercase tracking-[0.06em] text-text-3">
@@ -309,6 +311,7 @@ export default function InventoryPage() {
                       onDelete={() => handleDelete(item.id)}
                       onReserveClick={() => setReserveTarget(item)}
                       onCompositionClick={() => setCompositionTarget(item)}
+                      onImageClick={(url) => setLightboxUrl(url)}
                     />
                   ))}
                 </tbody>
@@ -318,29 +321,30 @@ export default function InventoryPage() {
         )}
       </div>
 
-      {showAdd && (
-        <AddItemModal
-          allTags={allTags}
-          onClose={() => setShowAdd(false)}
-          onSaved={() => {
-            setShowAdd(false);
-            reload();
-            if (showLogs) loadLogs();
-          }}
-        />
-      )}
-
-      {reserveTarget && (
-        <ReserveModal
-          item={reserveTarget}
-          onSave={async (ids) => {
-            await handlePatch(reserveTarget.id, {reserve_lead_ids: ids});
-            setReserveTarget(null);
-          }}
-          onClose={() => setReserveTarget(null)}
-        />
-      )}
     </DmtPageShell>
+
+    {showAdd && (
+      <AddItemModal
+        allTags={allTags}
+        onClose={() => setShowAdd(false)}
+        onSaved={() => {
+          setShowAdd(false);
+          reload();
+          if (showLogs) loadLogs();
+        }}
+      />
+    )}
+
+    {reserveTarget && (
+      <ReserveModal
+        item={reserveTarget}
+        onSave={async (ids) => {
+          await handlePatch(reserveTarget.id, {reserve_lead_ids: ids});
+          setReserveTarget(null);
+        }}
+        onClose={() => setReserveTarget(null)}
+      />
+    )}
 
     {compositionTarget && (
       <CompositionPanel
@@ -351,6 +355,27 @@ export default function InventoryPage() {
           setCompositionTarget(null);
         }}
       />
+    )}
+    {lightboxUrl && (
+      <div
+        className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+        onClick={() => setLightboxUrl(null)}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={lightboxUrl}
+          alt=""
+          onClick={(e) => e.stopPropagation()}
+          className="max-h-[80vh] max-w-[80vw] rounded-xl object-contain shadow-2xl"
+        />
+        <button
+          type="button"
+          onClick={() => setLightboxUrl(null)}
+          className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+        >
+          <X size={16} />
+        </button>
+      </div>
     )}
     </>
   );
@@ -374,6 +399,7 @@ function TagInput({
 }) {
   const [input, setInput] = useState('');
   const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState<{top: number; left: number; width: number} | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -388,6 +414,15 @@ function TagInput({
       ),
     [suggestions, value, input],
   );
+
+  function openDrop() {
+    const el = containerRef.current;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      setDropPos({top: r.bottom + 4, left: r.left, width: r.width});
+    }
+    setOpen(true);
+  }
 
   function add(tag: string) {
     const t = tag.trim();
@@ -447,17 +482,20 @@ function TagInput({
           value={input}
           onChange={(e) => {
             setInput(e.target.value);
-            setOpen(true);
+            openDrop();
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={openDrop}
           onKeyDown={handleKey}
           placeholder={value.length === 0 ? placeholder : ''}
           className="min-w-[80px] flex-1 bg-transparent text-[12px] text-text outline-none placeholder:text-text-3"
         />
       </div>
 
-      {open && filtered.length > 0 && (
-        <div className="absolute left-0 top-full z-30 mt-1 max-h-48 w-full overflow-y-auto rounded-[8px] border border-bdr bg-sur shadow-lg">
+      {open && filtered.length > 0 && dropPos && createPortal(
+        <div
+          className="fixed z-[160] max-h-48 overflow-y-auto rounded-[8px] border border-bdr bg-sur shadow-lg"
+          style={{top: dropPos.top, left: dropPos.left, width: dropPos.width}}
+        >
           {filtered.map((s) => (
             <button
               key={s}
@@ -472,7 +510,8 @@ function TagInput({
               {s}
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -487,6 +526,7 @@ function ProductRow({
   onDelete,
   onReserveClick,
   onCompositionClick,
+  onImageClick,
 }: {
   index: number;
   item: InventoryItem;
@@ -495,14 +535,16 @@ function ProductRow({
   onDelete: () => void;
   onReserveClick: () => void;
   onCompositionClick: () => void;
+  onImageClick: (url: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [imgOpen, setImgOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{top: number; left: number} | null>(null);
   const [editingDesc, setEditingDesc] = useState(false);
   const [descDraft, setDescDraft] = useState('');
   const [editingTags, setEditingTags] = useState(false);
   const [qtyDraft, setQtyDraft] = useState(String(item.qty));
   const menuRef = useRef<HTMLDivElement>(null);
+  const menuBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setQtyDraft(String(item.qty));
@@ -511,11 +553,24 @@ function ProductRow({
   useEffect(() => {
     if (!menuOpen) return;
     const h = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
+      if (
+        !menuRef.current?.contains(e.target as Node) &&
+        !menuBtnRef.current?.contains(e.target as Node)
+      ) setMenuOpen(false);
     };
     document.addEventListener('mousedown', h);
     return () => document.removeEventListener('mousedown', h);
   }, [menuOpen]);
+
+  function handleMenuToggle() {
+    if (menuOpen) { setMenuOpen(false); return; }
+    const btn = menuBtnRef.current;
+    if (btn) {
+      const r = btn.getBoundingClientRect();
+      setMenuPos({top: r.bottom + 4, left: r.left});
+    }
+    setMenuOpen(true);
+  }
 
   const stockTotal =
     item.qty > 0 && item.price != null ? item.qty * item.price : null;
@@ -539,64 +594,68 @@ function ProductRow({
 
       {/* Actions menu */}
       <td className="px-2 py-2">
-        <div className="relative" ref={menuRef}>
-          <button
-            type="button"
-            onClick={() => setMenuOpen((v) => !v)}
-            className="inline-flex h-6 w-6 items-center justify-center rounded-md text-text-3 transition-colors hover:bg-blue-lt hover:text-blue"
+        <button
+          ref={menuBtnRef}
+          type="button"
+          onClick={handleMenuToggle}
+          className="inline-flex h-6 w-6 items-center justify-center rounded-md text-text-3 transition-colors hover:bg-blue-lt hover:text-blue"
+        >
+          <MoreHorizontal size={13} strokeWidth={2} />
+        </button>
+        {menuOpen && menuPos && createPortal(
+          <div
+            ref={menuRef}
+            className="fixed z-[150] min-w-[200px] overflow-hidden rounded-[8px] border border-bdr bg-sur shadow-lg"
+            style={{top: menuPos.top, left: menuPos.left}}
           >
-            <MoreHorizontal size={13} strokeWidth={2} />
-          </button>
-          {menuOpen && (
-            <div className="absolute left-0 top-7 z-20 min-w-[200px] overflow-hidden rounded-[8px] border border-bdr bg-sur shadow-lg">
-              <button
-                type="button"
-                onClick={() => { setMenuOpen(false); onCompositionClick(); }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-[11.5px] font-semibold text-blue hover:bg-blue-lt"
-              >
-                <Layers size={11} /> შემადგენლობა
-                <span className="ml-auto rounded-full bg-blue px-1.5 py-px font-mono text-[8.5px] font-bold text-white">NEW</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => { setMenuOpen(false); onCompositionClick(); }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-[11.5px] text-text hover:bg-sur-2"
-              >
-                <DollarSign size={11} /> თვითღირებულება
-              </button>
-              <div className="border-t border-bdr" />
-              <button
-                type="button"
-                onClick={() => {
-                  setDescDraft(item.description ?? '');
-                  setEditingDesc(true);
-                  setMenuOpen(false);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-[11.5px] text-text hover:bg-sur-2"
-              >
-                <Edit2 size={11} /> განმარტება შეცვლა
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText(item.sku);
-                  setMenuOpen(false);
-                }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-[11.5px] text-text hover:bg-sur-2"
-              >
-                <Copy size={11} /> კოდი კოპირება
-              </button>
-              <div className="border-t border-bdr" />
-              <button
-                type="button"
-                onClick={() => { setMenuOpen(false); onDelete(); }}
-                className="flex w-full items-center gap-2 px-3 py-2 text-[11.5px] text-red hover:bg-red-lt"
-              >
-                <Trash2 size={11} /> წაშლა
-              </button>
-            </div>
-          )}
-        </div>
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); onCompositionClick(); }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-[11.5px] font-semibold text-blue hover:bg-blue-lt"
+            >
+              <Layers size={11} /> შემადგენლობა
+              <span className="ml-auto rounded-full bg-blue px-1.5 py-px font-mono text-[8.5px] font-bold text-white">NEW</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); onCompositionClick(); }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-[11.5px] text-text hover:bg-sur-2"
+            >
+              <DollarSign size={11} /> თვითღირებულება
+            </button>
+            <div className="border-t border-bdr" />
+            <button
+              type="button"
+              onClick={() => {
+                setDescDraft(item.description ?? '');
+                setEditingDesc(true);
+                setMenuOpen(false);
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-[11.5px] text-text hover:bg-sur-2"
+            >
+              <Edit2 size={11} /> განმარტება შეცვლა
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(item.sku);
+                setMenuOpen(false);
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-[11.5px] text-text hover:bg-sur-2"
+            >
+              <Copy size={11} /> კოდი კოპირება
+            </button>
+            <div className="border-t border-bdr" />
+            <button
+              type="button"
+              onClick={() => { setMenuOpen(false); onDelete(); }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-[11.5px] text-red hover:bg-red-lt"
+            >
+              <Trash2 size={11} /> წაშლა
+            </button>
+          </div>,
+          document.body
+        )}
       </td>
 
       {/* კოდი */}
@@ -613,33 +672,12 @@ function ProductRow({
               src={item.image_url}
               alt={item.name}
               loading="lazy"
-              onClick={() => setImgOpen(true)}
+              onClick={() => item.image_url && onImageClick(item.image_url)}
               className="h-8 w-8 shrink-0 cursor-zoom-in rounded-md border border-bdr object-contain transition-opacity hover:opacity-75"
             />
           ) : (
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-bdr bg-sur-2 text-text-3">
               <Tag size={10} />
-            </div>
-          )}
-          {imgOpen && item.image_url && (
-            <div
-              className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm"
-              onClick={() => setImgOpen(false)}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={item.image_url}
-                alt={item.name}
-                onClick={(e) => e.stopPropagation()}
-                className="max-h-[80vh] max-w-[80vw] rounded-xl border border-white/10 object-contain shadow-2xl"
-              />
-              <button
-                type="button"
-                onClick={() => setImgOpen(false)}
-                className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
-              >
-                <X size={16} />
-              </button>
             </div>
           )}
           <div className="min-w-0">
