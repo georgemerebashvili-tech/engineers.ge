@@ -79,6 +79,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
   const [allContacts,setAllContacts]=useState<Contact[]>([]);
   const [qa,setQa]=useState<QAItem[]>([]);
   const [loading,setLoading]=useState(true);
+  const [loadErr,setLoadErr]=useState<string|null>(null);
   const [toast,setToast]=useState<string|null>(null);
 
   // ── tab ──
@@ -139,31 +140,44 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
   // ── load ──────────────────────────────────────────────────────────────────
   const loadAll=useCallback(async()=>{
     setLoading(true);
-    const [pR,iR,partR,bR,sR,cR,qaR]=await Promise.all([
-      fetch(`/api/construction/procurement/projects/${projectId}`),
-      fetch(`/api/construction/procurement/projects/${projectId}/items`),
-      fetch(`/api/construction/procurement/projects/${projectId}/participants`),
-      fetch(`/api/construction/procurement/projects/${projectId}/bids`),
-      fetch(`/api/construction/procurement/projects/${projectId}/selections`),
-      fetch('/api/construction/procurement/contacts'),
-      fetch(`/api/construction/procurement/projects/${projectId}/qa`),
-    ]);
-    if(pR.ok){const d=await pR.json();const p=d.project;
+    setLoadErr(null);
+    try{
+      // fetch project first — gate everything else on it
+      const pR=await fetch(`/api/construction/procurement/projects/${projectId}`);
+      if(pR.status===401){router.replace('/construction');return;}
+      if(!pR.ok){
+        const txt=await pR.text().catch(()=>'');
+        setLoadErr(`API ${pR.status}: ${txt.slice(0,120)}`);
+        setLoading(false);return;
+      }
+      const pData=await pR.json();
+      const p=pData.project;
+      if(!p){setLoadErr('project null in API response');setLoading(false);return;}
       setProject(p);setHNo(p.project_no??'');setHName(p.name??'');
       setHDate(p.project_date??'');setHNotes(p.notes??'');
       setHDrive(p.drive_url??'');setHStatus(p.status??'draft');
-    }
+
+      // now fetch the rest in parallel — failures are non-fatal
+      const [iR,partR,bR,sR,cR,qaR]=await Promise.all([
+        fetch(`/api/construction/procurement/projects/${projectId}/items`),
+        fetch(`/api/construction/procurement/projects/${projectId}/participants`),
+        fetch(`/api/construction/procurement/projects/${projectId}/bids`),
+        fetch(`/api/construction/procurement/projects/${projectId}/selections`),
+        fetch('/api/construction/procurement/contacts'),
+        fetch(`/api/construction/procurement/projects/${projectId}/qa`),
+      ]);
     if(iR.ok) setItems((await iR.json()).items??[]);
     if(partR.ok){const ps=(await partR.json()).participants??[];
       setParticipants(ps);
       setSupVis(prev=>{const n={...prev};ps.forEach((p:Participant)=>{if(!(p.contact_id in n))n[p.contact_id]=true;});return n;});
     }
-    if(bR.ok) setBids((await bR.json()).bids??[]);
-    if(sR.ok) setSels((await sR.json()).selections??[]);
-    if(cR.ok) setAllContacts((await cR.json()).contacts??[]);
-    if(qaR.ok) setQa((await qaR.json()).qa??[]);
-    setLoading(false);
-  },[projectId]);
+      if(bR.ok) setBids((await bR.json()).bids??[]);
+      if(sR.ok) setSels((await sR.json()).selections??[]);
+      if(cR.ok) setAllContacts((await cR.json()).contacts??[]);
+      if(qaR.ok) setQa((await qaR.json()).qa??[]);
+    }catch(e){setLoadErr(String(e));}
+    finally{setLoading(false);}
+  },[projectId,router]);
 
   useEffect(()=>{loadAll();},[loadAll]);
 
@@ -666,9 +680,16 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
       <div className="text-sm text-slate-400">იტვირთება…</div>
     </div>
   );
-  if(!project)return(
-    <div className="flex h-screen items-center justify-center bg-slate-50">
-      <div className="text-sm text-red-500">პროექტი ვერ მოიძებნა</div>
+  if(loadErr||!project)return(
+    <div className="flex h-screen flex-col items-center justify-center gap-4 bg-slate-50 px-4">
+      <div className="text-sm text-red-500 font-semibold">შეცდომა</div>
+      {loadErr&&<div className="max-w-md rounded-lg border border-red-200 bg-red-50 px-4 py-3 font-mono text-xs text-red-700 break-all">{loadErr}</div>}
+      {!loadErr&&<div className="text-xs text-slate-400">პროექტი ვერ მოიძებნა (project null)</div>}
+      <div className="flex gap-3">
+        <button onClick={()=>loadAll()} className="rounded-lg border border-slate-200 px-4 py-2 text-sm hover:bg-slate-100">🔄 განახლება</button>
+        <Link href="/construction/procurement" className="rounded-lg border border-slate-200 px-4 py-2 text-sm hover:bg-slate-100">← სია</Link>
+        <Link href="/construction" className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-500 hover:bg-slate-100">🔑 შესვლა</Link>
+      </div>
     </div>
   );
 
