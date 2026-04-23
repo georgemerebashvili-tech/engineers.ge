@@ -51,6 +51,12 @@ export function ConstructionAppFrame({session}: {session: ConstructionSession}) 
             🏗️ შესყიდვები
           </Link>
           <Link
+            href="/construction/bank"
+            className="rounded-md border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+          >
+            🏦 ბანკი
+          </Link>
+          <Link
             href="/construction/mobile"
             className="rounded-md border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 md:hidden"
           >
