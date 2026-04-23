@@ -102,11 +102,8 @@ export function BankClient({session}: {session: ConstructionSession}) {
   const [todayQ, setTodayQ]       = useState('');
   const [todayDir, setTodayDir]   = useState<DirectionFilter>('all');
 
-  // rs.ge lookup
+  // rs.ge
   const [rsCode, setRsCode]       = useState('');
-  const [rsResult, setRsResult]   = useState<{identification_code:string;name:string;status:string|null;address:string|null;director:string|null;vat_payer:boolean} | null>(null);
-  const [rsLoad, setRsLoad]       = useState(false);
-  const [rsErr, setRsErr]         = useState<string | null>(null);
 
   // config
   const [cfg, setCfg]             = useState<ConfigData | null>(null);
@@ -171,19 +168,6 @@ export function BankClient({session}: {session: ConstructionSession}) {
     } catch (e) { setCfgErr((e as Error).message); }
     finally { setCfgLoad(false); }
   }, []);
-
-  async function lookupRs(e: React.FormEvent) {
-    e.preventDefault();
-    if (!rsCode.trim()) return;
-    setRsLoad(true); setRsErr(null); setRsResult(null);
-    try {
-      const r = await fetch(`/api/construction/lookup?code=${encodeURIComponent(rsCode.trim())}`);
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error ?? `HTTP ${r.status}`);
-      setRsResult(d);
-    } catch (e) { setRsErr((e as Error).message); }
-    finally { setRsLoad(false); }
-  }
 
   async function saveConfig(e: React.FormEvent) {
     e.preventDefault();
@@ -485,42 +469,80 @@ export function BankClient({session}: {session: ConstructionSession}) {
         {/* ═══ RS.GE TAB ═══ */}
         {tab === 'rsge' && (
           <div className="max-w-xl space-y-5">
-            <form onSubmit={lookupRs} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400 mb-3">RS.ge — გადასახადის გადამხდელის ძიება</div>
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400 mb-3">გადასახადის გადამხდელის ძიება</div>
               <div className="flex gap-2">
                 <input
-                  value={rsCode} onChange={e => setRsCode(e.target.value)}
+                  value={rsCode}
+                  onChange={e => setRsCode(e.target.value.replace(/\D/g, '').slice(0, 11))}
                   placeholder="საიდენტიფიკაციო კოდი (9–11 ციფრი)"
                   className="flex-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-[13px] text-slate-800 focus:border-[#1565C0] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1565C0]/20"
                 />
-                <button type="submit" disabled={rsLoad || !rsCode.trim()}
-                  className="rounded-md bg-[#1565C0] px-4 py-2 text-[12.5px] font-semibold text-white transition hover:bg-[#0D47A1] disabled:opacity-50">
-                  {rsLoad ? '⟳ ძიება…' : '🔍 ძიება'}
-                </button>
               </div>
-              <p className="mt-2 text-[11px] text-slate-400">Revenue Service of Georgia — საჯარო API</p>
-            </form>
+            </div>
 
-            {rsLoad && <LoadingState label="RS.ge-ს ვკითხავ…" />}
-            {rsErr  && <ErrorState msg={rsErr} onRetry={() => { setRsErr(null); }} />}
+            {rsCode.trim().length >= 9 && (
+              <div className="space-y-3">
+                <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-400">
+                  კოდი: {rsCode.trim()} — გახსენი ერთ-ერთ სერვისში
+                </div>
 
-            {rsResult && !rsLoad && (
-              <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 py-3">
-                  <div className="font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">შედეგი</div>
-                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${rsResult.vat_payer ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
-                    {rsResult.vat_payer ? '✓ დღგ-ს გადამხდელი' : 'დღგ-ს გადამხდელი არ არის'}
-                  </span>
-                </div>
-                <div className="divide-y divide-slate-100">
-                  <RsRow label="სახელი / დასახელება" value={rsResult.name} bold />
-                  <RsRow label="საიდენტიფიკაციო კოდი" value={rsResult.identification_code} mono />
-                  <RsRow label="სტატუსი" value={rsResult.status} />
-                  <RsRow label="მისამართი" value={rsResult.address} />
-                  <RsRow label="დირექტორი" value={rsResult.director} />
-                </div>
+                {/* RS.ge */}
+                <a
+                  href={`https://eservices.rs.ge/TaxpayerSearch/ka#tin=${rsCode.trim()}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-[#1565C0] hover:shadow-md"
+                >
+                  <div>
+                    <div className="font-semibold text-slate-900 text-[13px]">🏛️ RS.ge — შემოსავლების სამსახური</div>
+                    <div className="mt-0.5 text-[11.5px] text-slate-500">გადასახადის გადამხდელის სტატუსი, დღგ, ვალდებულებები</div>
+                  </div>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
+
+                {/* NAPR */}
+                <a
+                  href={`https://www.napr.gov.ge/ka/search?q=${rsCode.trim()}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-[#1565C0] hover:shadow-md"
+                >
+                  <div>
+                    <div className="font-semibold text-slate-900 text-[13px]">📋 NAPR — საჯარო რეესტრი</div>
+                    <div className="mt-0.5 text-[11.5px] text-slate-500">ბიზნეს ამონაწერი, დირექტორი, პარტნიორები, რეგისტრაცია</div>
+                  </div>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
+
+                {/* Reportal */}
+                <a
+                  href={`https://reportal.ge/ka/Base/Search?str=${rsCode.trim()}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-[#1565C0] hover:shadow-md"
+                >
+                  <div>
+                    <div className="font-semibold text-slate-900 text-[13px]">📊 Reportal.ge — ანგარიშგება</div>
+                    <div className="mt-0.5 text-[11.5px] text-slate-500">ფინანსური ანგარიშგება, აუდიტი, ბალანსი</div>
+                  </div>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </a>
               </div>
             )}
+
+            {rsCode.trim().length > 0 && rsCode.trim().length < 9 && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[12px] text-amber-700">
+                ⚠️ საიდენტიფიკაციო კოდი 9–11 ციფრია · შეიყვანე სრული კოდი
+              </div>
+            )}
+
+            <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-[11.5px] text-slate-500">
+              <div className="font-semibold text-slate-600 mb-1">სად ვნახო საიდენტ. კოდი?</div>
+              <ul className="list-disc list-inside space-y-0.5">
+                <li>კომპანიის რეგისტრაციის ამონაწერი (NAPR)</li>
+                <li>საბანკო გადახდის დავალება — სვეტი «INN»</li>
+                <li>ხელშეკრულება, ინვოისი, სხვა ოფიციალური დოკ.</li>
+                <li>პირად. მოწმობა (11 ციფრი) ან კომპ. სერტ. (9 ციფრი)</li>
+              </ul>
+            </div>
           </div>
         )}
 
