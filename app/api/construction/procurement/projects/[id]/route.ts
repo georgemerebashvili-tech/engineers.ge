@@ -11,15 +11,14 @@ export async function GET(_req: Request, {params}: {params: {id: string}}) {
   const db = supabaseAdmin();
   const {data, error} = await db
     .from('construction_procurement_projects')
-    .select(`
-      id, project_no, name, notes, status, drive_url, created_by, created_at, updated_at,
-      winner_contact_id,
-      site:construction_sites(id, name)
-    `)
+    .select('id, project_no, name, notes, status, drive_url, project_date, formulas, created_by, created_at, updated_at, winner_contact_id, site_id')
     .eq('id', params.id)
     .single();
 
-  if (error) return NextResponse.json({error: 'not_found'}, {status: 404});
+  if (error) {
+    console.error('[procurement] project GET', params.id, error);
+    return NextResponse.json({error: 'not_found'}, {status: 404});
+  }
   return NextResponse.json({project: data});
 }
 
@@ -31,7 +30,7 @@ export async function PATCH(req: Request, {params}: {params: {id: string}}) {
   try { body = await req.json(); } catch { return NextResponse.json({error: 'bad_request'}, {status: 400}); }
 
   const allowed: Record<string, unknown> = {updated_at: new Date().toISOString()};
-  for (const k of ['project_no', 'name', 'notes', 'status', 'drive_url', 'site_id', 'winner_contact_id']) {
+  for (const k of ['project_no', 'name', 'notes', 'status', 'drive_url', 'project_date', 'site_id', 'winner_contact_id', 'formulas']) {
     if (k in body) allowed[k] = body[k] === '' ? null : body[k];
   }
 
@@ -40,7 +39,7 @@ export async function PATCH(req: Request, {params}: {params: {id: string}}) {
     .from('construction_procurement_projects')
     .update(allowed)
     .eq('id', params.id)
-    .select('id, project_no, name, notes, status, drive_url, updated_at, winner_contact_id')
+    .select('id, project_no, name, notes, status, drive_url, project_date, formulas, updated_at, winner_contact_id')
     .single();
 
   if (error) return NextResponse.json({error: 'db_error'}, {status: 500});

@@ -11,11 +11,7 @@ export async function GET() {
   const db = supabaseAdmin();
   const {data, error} = await db
     .from('construction_procurement_projects')
-    .select(`
-      id, project_no, name, notes, status, drive_url, created_by, created_at, updated_at,
-      winner_contact_id,
-      site:construction_sites(id, name)
-    `)
+    .select('id, project_no, name, notes, status, drive_url, project_date, created_by, created_at, updated_at, winner_contact_id, site_id')
     .order('created_at', {ascending: false});
 
   if (error) return NextResponse.json({error: 'db_error'}, {status: 500});
