@@ -353,6 +353,14 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
           }
         },
         {
+          key: 'construction-project',
+          label: 'KAYA Construction',
+          icon: Building2,
+          onClick: () => {
+            window.open('/construction/admin', '_blank', 'noopener,noreferrer');
+          }
+        },
+        {
           key: 'staging-engineering',
           label: 'Staging · Engineering',
           icon: FlaskConical,
