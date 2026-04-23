@@ -63,7 +63,7 @@ type TodayTx = {
   BeneficiaryDetails?: { Name: string; Inn: string; AccountNumber: string; BankCode: string; BankName: string };
 };
 
-type Tab = 'balance' | 'statement' | 'today' | 'config';
+type Tab = 'balance' | 'statement' | 'today' | 'config' | 'rsge';
 type DirectionFilter = 'all' | 'credit' | 'debit';
 
 type ConfigData = {
@@ -101,6 +101,12 @@ export function BankClient({session}: {session: ConstructionSession}) {
   const [todayErr, setTodayErr]   = useState<string | null>(null);
   const [todayQ, setTodayQ]       = useState('');
   const [todayDir, setTodayDir]   = useState<DirectionFilter>('all');
+
+  // rs.ge lookup
+  const [rsCode, setRsCode]       = useState('');
+  const [rsResult, setRsResult]   = useState<{identification_code:string;name:string;status:string|null;address:string|null;director:string|null;vat_payer:boolean} | null>(null);
+  const [rsLoad, setRsLoad]       = useState(false);
+  const [rsErr, setRsErr]         = useState<string | null>(null);
 
   // config
   const [cfg, setCfg]             = useState<ConfigData | null>(null);
@@ -165,6 +171,19 @@ export function BankClient({session}: {session: ConstructionSession}) {
     } catch (e) { setCfgErr((e as Error).message); }
     finally { setCfgLoad(false); }
   }, []);
+
+  async function lookupRs(e: React.FormEvent) {
+    e.preventDefault();
+    if (!rsCode.trim()) return;
+    setRsLoad(true); setRsErr(null); setRsResult(null);
+    try {
+      const r = await fetch(`/api/construction/lookup?code=${encodeURIComponent(rsCode.trim())}`);
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error ?? `HTTP ${r.status}`);
+      setRsResult(d);
+    } catch (e) { setRsErr((e as Error).message); }
+    finally { setRsLoad(false); }
+  }
 
   async function saveConfig(e: React.FormEvent) {
     e.preventDefault();
@@ -289,6 +308,7 @@ export function BankClient({session}: {session: ConstructionSession}) {
             {id: 'today',     label: '📅 დღეს'},
             {id: 'statement', label: '📋 ამონაწერი'},
             {id: 'config',    label: '⚙️ კონფიგურაცია'},
+            {id: 'rsge',      label: '🏛️ RS.ge'},
           ] as {id: Tab; label: string}[]).map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
               className={`-mb-px px-5 py-2.5 text-[13px] font-semibold border-b-2 transition-colors ${
@@ -457,6 +477,48 @@ export function BankClient({session}: {session: ConstructionSession}) {
                 <div className="text-3xl">📋</div>
                 <div className="mt-3 text-[14px] font-semibold text-slate-700">ამონაწერი</div>
                 <div className="mt-1 text-[12px] text-slate-400">აირჩიე პერიოდი და დააჭირე "ამონაწერი"</div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ═══ RS.GE TAB ═══ */}
+        {tab === 'rsge' && (
+          <div className="max-w-xl space-y-5">
+            <form onSubmit={lookupRs} className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400 mb-3">RS.ge — გადასახადის გადამხდელის ძიება</div>
+              <div className="flex gap-2">
+                <input
+                  value={rsCode} onChange={e => setRsCode(e.target.value)}
+                  placeholder="საიდენტიფიკაციო კოდი (9–11 ციფრი)"
+                  className="flex-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-[13px] text-slate-800 focus:border-[#1565C0] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1565C0]/20"
+                />
+                <button type="submit" disabled={rsLoad || !rsCode.trim()}
+                  className="rounded-md bg-[#1565C0] px-4 py-2 text-[12.5px] font-semibold text-white transition hover:bg-[#0D47A1] disabled:opacity-50">
+                  {rsLoad ? '⟳ ძიება…' : '🔍 ძიება'}
+                </button>
+              </div>
+              <p className="mt-2 text-[11px] text-slate-400">Revenue Service of Georgia — საჯარო API</p>
+            </form>
+
+            {rsLoad && <LoadingState label="RS.ge-ს ვკითხავ…" />}
+            {rsErr  && <ErrorState msg={rsErr} onRetry={() => { setRsErr(null); }} />}
+
+            {rsResult && !rsLoad && (
+              <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-5 py-3">
+                  <div className="font-mono text-[10px] font-bold uppercase tracking-[0.1em] text-slate-400">შედეგი</div>
+                  <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${rsResult.vat_payer ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>
+                    {rsResult.vat_payer ? '✓ დღგ-ს გადამხდელი' : 'დღგ-ს გადამხდელი არ არის'}
+                  </span>
+                </div>
+                <div className="divide-y divide-slate-100">
+                  <RsRow label="სახელი / დასახელება" value={rsResult.name} bold />
+                  <RsRow label="საიდენტიფიკაციო კოდი" value={rsResult.identification_code} mono />
+                  <RsRow label="სტატუსი" value={rsResult.status} />
+                  <RsRow label="მისამართი" value={rsResult.address} />
+                  <RsRow label="დირექტორი" value={rsResult.director} />
+                </div>
               </div>
             )}
           </div>
@@ -725,6 +787,16 @@ function EmptyState({label}: {label: string}) {
     <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center">
       <div className="text-3xl">🔍</div>
       <div className="mt-2 text-[13px] font-semibold text-slate-600">{label}</div>
+    </div>
+  );
+}
+
+function RsRow({label, value, bold, mono}: {label: string; value?: string | null; bold?: boolean; mono?: boolean}) {
+  if (!value) return null;
+  return (
+    <div className="flex gap-3 px-5 py-3 text-[12.5px]">
+      <span className="w-44 shrink-0 text-slate-400">{label}</span>
+      <span className={`text-slate-800 ${bold ? 'font-semibold' : ''} ${mono ? 'font-mono' : ''}`}>{value}</span>
     </div>
   );
 }
