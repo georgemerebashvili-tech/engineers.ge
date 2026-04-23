@@ -85,11 +85,11 @@ export async function sendConstructionResetEmail(opts: {
   const who = opts.displayName || opts.username;
   const html = `
     <div style="font-family:system-ui,-apple-system,sans-serif;max-width:480px;padding:20px;line-height:1.55;color:#0f172a">
-      <h2 style="color:#EA580C;margin:0 0 12px">გამარჯობა, ${escapeHtml(who)}</h2>
+      <h2 style="color:#1565C0;margin:0 0 12px">გამარჯობა, ${escapeHtml(who)}</h2>
       <p>მივიღეთ პაროლის აღდგენის მოთხოვნა ანგარიშისთვის <b>${escapeHtml(opts.username)}</b>.</p>
       <p>ახალი პაროლის დასაყენებლად დააჭირე ქვემოთ ღილაკს:</p>
       <p style="text-align:center;margin:24px 0">
-        <a href="${opts.resetUrl}" style="background:#EA580C;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">პაროლის შეცვლა</a>
+        <a href="${opts.resetUrl}" style="background:#1565C0;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">პაროლის შეცვლა</a>
       </p>
       <p style="color:#64748b;font-size:12px">ბმული ვადა გადის 1 საათში. თუ შენ არ მოგითხოვია, უგულებელჰყავი ეს წერილი — პაროლი არ შეიცვლება.</p>
       <p style="color:#94a3b8;font-size:11px;margin-top:24px">— KAYA Construction · engineers.ge</p>

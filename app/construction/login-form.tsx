@@ -76,7 +76,7 @@ export function ConstructionLoginForm() {
           autoComplete="username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-[#475569] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#475569]/20"
+          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-[#1565C0] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1565C0]/20"
           placeholder="admin_kaya"
           required
           autoFocus
@@ -97,7 +97,7 @@ export function ConstructionLoginForm() {
             autoComplete="current-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 pr-10 text-sm text-slate-900 focus:border-[#475569] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#475569]/20"
+            className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 pr-10 text-sm text-slate-900 focus:border-[#1565C0] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#1565C0]/20"
             placeholder="••••••••"
             required
           />
@@ -129,7 +129,7 @@ export function ConstructionLoginForm() {
           type="checkbox"
           checked={remember}
           onChange={(e) => setRemember(e.target.checked)}
-          className="h-3.5 w-3.5 cursor-pointer accent-[#475569]"
+          className="h-3.5 w-3.5 cursor-pointer accent-[#1565C0]"
         />
         დამიმახსოვრე პაროლი ამ კომპიუტერზე
       </label>
@@ -141,14 +141,14 @@ export function ConstructionLoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-lg bg-[#475569] px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-[#334155] disabled:opacity-60"
+        className="w-full rounded-lg bg-[#1565C0] px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0D47A1] disabled:opacity-60"
       >
         {pending ? 'მოითმინე…' : 'შესვლა'}
       </button>
       <div className="pt-1 text-center text-xs">
         <Link
           href="/construction/forgot"
-          className="text-slate-500 hover:text-[#475569] hover:underline"
+          className="text-slate-500 hover:text-[#1565C0] hover:underline"
         >
           პაროლი დაგავიწყდა?
         </Link>

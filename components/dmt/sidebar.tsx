@@ -127,7 +127,7 @@ const SECTIONS: NavSection[] = [
         href: '/dmt/inventory',
         icon: Package,
         children: [
-          {key: 'inv-objects', label: 'ობიექტები', href: '/dmt/inventory?tab=objects', icon: Building2},
+          {key: 'inv-objects', label: 'პროდუქცია', href: '/dmt/inventory?tab=objects', icon: Building2},
           {key: 'inv-stock', label: 'მარაგი · SKU', href: '/dmt/inventory?tab=stock', icon: Boxes}
         ]
       }

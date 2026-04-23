@@ -53,7 +53,7 @@ export function ConstructionResetForm() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#475569] focus:outline-none focus:ring-2 focus:ring-[#475569]/20"
+          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#1565C0] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/20"
           placeholder="მინ. 6 სიმბოლო"
           required
           autoFocus
@@ -65,7 +65,7 @@ export function ConstructionResetForm() {
           type="password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#475569] focus:outline-none focus:ring-2 focus:ring-[#475569]/20"
+          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#1565C0] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/20"
           placeholder="••••••"
           required
         />
@@ -76,7 +76,7 @@ export function ConstructionResetForm() {
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-lg bg-[#475569] px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-[#334155] disabled:opacity-60"
+        className="w-full rounded-lg bg-[#1565C0] px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-[#0D47A1] disabled:opacity-60"
       >
         {pending ? 'ინახება…' : 'პაროლის შეცვლა'}
       </button>

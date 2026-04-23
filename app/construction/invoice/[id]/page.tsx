@@ -77,7 +77,7 @@ export default async function ConstructionInvoicePage({
       <div className="mx-auto max-w-[800px] bg-white p-12 shadow-xl ring-1 ring-slate-200 print:p-10 print:shadow-none print:ring-0">
         {/* Print action bar */}
         <div className="mb-6 flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3 text-sm print:hidden">
-          <a href="/construction/app" className="text-slate-600 hover:text-[#EA580C]">
+          <a href="/construction/app" className="text-slate-600 hover:text-[#1565C0]">
             ← ინვენტარიზაცია
           </a>
           <InvoicePrintButton />
@@ -87,7 +87,7 @@ export default async function ConstructionInvoicePage({
         <div className="mb-8 flex items-start justify-between border-b-2 border-slate-900 pb-6">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#EA580C] text-white">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#1565C0] text-white">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M2 22 12 2l10 20H2z" /><path d="M10 14h4v8h-4z" />
                 </svg>
@@ -113,7 +113,7 @@ export default async function ConstructionInvoicePage({
           <div>
             <div className="text-xs uppercase tracking-wider text-slate-500">ობიექტი</div>
             <div className="mt-1 font-semibold text-slate-900">
-              {site.alias && <span className="mr-2 font-mono text-[#EA580C]">{site.alias}</span>}
+              {site.alias && <span className="mr-2 font-mono text-[#1565C0]">{site.alias}</span>}
               {site.name}
             </div>
             <div className="mt-1 text-xs text-slate-600">

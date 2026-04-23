@@ -30,10 +30,10 @@ const RULES: Array<{id: string; title: string; body: string}> = [
 
 export default function ConstructionNdaPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FFF7ED] to-[#FEF3C7] p-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#E3F2FD] to-[#BBDEFB] p-6">
       <div className="mx-auto max-w-2xl rounded-2xl bg-white p-8 shadow-xl ring-1 ring-slate-200">
         <div className="mb-5 flex flex-col items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EA580C] text-white">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1565C0] text-white">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M2 22 12 2l10 20H2z" /><path d="M10 14h4v8h-4z" />
             </svg>
@@ -50,7 +50,7 @@ export default function ConstructionNdaPage() {
         <div className="space-y-3">
           {RULES.map((r, i) => (
             <div key={r.id} className="flex gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#EA580C] text-xs font-bold text-white">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#1565C0] text-xs font-bold text-white">
                 {i + 1}
               </div>
               <div className="min-w-0">

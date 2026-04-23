@@ -46,7 +46,7 @@
   --st-progress: #475569;   /* მიმდინარე — tbc blue */
   --st-progress-bg: #F1F5F9;
   --st-pending: #F59E0B;    /* დასასრულებელი — amber */
-  --st-pending-bg: #FEF3C7;
+  --st-pending-bg: #E3F2FD;
   --st-described: #8B5CF6;  /* აღწერილი — purple */
   --st-described-bg: #EDE9FE;
   --st-todescribe: #EC4899; /* ასაღწერი — pink */
@@ -56,7 +56,7 @@
 
   --amber-600: #D97706;
   --amber-500: #F59E0B;
-  --amber-100: #FEF3C7;
+  --amber-100: #E3F2FD;
   --red-600: #DC2626;
   --red-500: #EF4444;
   --red-100: #FEE2E2;
@@ -548,7 +548,7 @@ table.branches td {
 }
 .type-badge.head { background: #DBEAFE; color: #1E40AF; }
 .type-badge.branch { background: var(--dmt-teal-light); color: var(--dmt-teal-dark); }
-.type-badge.sc { background: #FEF3C7; color: #92400E; }
+.type-badge.sc { background: #E3F2FD; color: #92400E; }
 .type-badge.cash { background: #FCE7F3; color: #BE185D; }
 .status-pill {
   display: inline-flex;
@@ -946,7 +946,7 @@ table.devices-sheet thead th:last-child { border-right: none; }
 table.devices-sheet tbody tr { transition: background 0.08s; }
 table.devices-sheet tbody tr:hover { background: var(--slate-050); }
 table.devices-sheet tbody tr.is-unplanned { background: #FFFBEB; }
-table.devices-sheet tbody tr.is-unplanned:hover { background: #FEF3C7; }
+table.devices-sheet tbody tr.is-unplanned:hover { background: #E3F2FD; }
 table.devices-sheet td {
   padding: 0;
   border-bottom: 1px solid var(--border);
@@ -1584,7 +1584,7 @@ table.devices-sheet td:last-child { border-right: none; }
 <div class="topbar">
   <a href="/construction/mobile"
      title="მობილური ვერსია"
-     style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:7px;background:linear-gradient(135deg,#EA580C,#00AA8D);color:white;font-size:13px;font-weight:600;text-decoration:none;margin-right:10px;">
+     style="display:inline-flex;align-items:center;gap:4px;padding:5px 10px;border-radius:7px;background:linear-gradient(135deg,#1565C0,#00AA8D);color:white;font-size:13px;font-weight:600;text-decoration:none;margin-right:10px;">
     📱 <span style="font-size:12px;">მობილური</span>
   </a>
   <div class="topbar-title" style="font-weight:700;font-size:15px;color:var(--slate-800);">ინვენტარიზაციის პანელი</div>
@@ -2201,7 +2201,7 @@ const STATUS_LABELS = {
 const STATUS_ORDER = ['done', 'progress', 'pending', 'described', 'todescribe', 'general'];
 const STATUS_COLORS = {
   done: '#00AA8D',
-  progress: '#EA580C',
+  progress: '#1565C0',
   pending: '#F59E0B',
   described: '#8B5CF6',
   todescribe: '#EC4899',
@@ -2898,7 +2898,7 @@ function renderSlideMap(b) {
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       attribution: '© OpenStreetMap © CARTO', subdomains: 'abcd', maxZoom: 19,
     }).addTo(state.slideMap);
-    const color = (typeof STATUS_COLORS !== 'undefined' && STATUS_COLORS[b.status]) || '#EA580C';
+    const color = (typeof STATUS_COLORS !== 'undefined' && STATUS_COLORS[b.status]) || '#1565C0';
     L.circleMarker([lat, lng], {
       radius: 9, fillColor: color, color: '#fff', weight: 3, opacity: 1, fillOpacity: 0.95
     }).addTo(state.slideMap)
@@ -3099,7 +3099,7 @@ function renderRegionChart() {
     type: 'bar',
     data: {
       labels: sorted.map(([k]) => k),
-      datasets: [{ data: sorted.map(([,v]) => v), backgroundColor: '#EA580C', borderRadius: 4, barThickness: 14 }],
+      datasets: [{ data: sorted.map(([,v]) => v), backgroundColor: '#1565C0', borderRadius: 4, barThickness: 14 }],
     },
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
@@ -3221,7 +3221,7 @@ function renderTypesChart() {
   state.branches.forEach(b => { if (b.type) counts[b.type] = (counts[b.type] || 0) + 1; });
   const entries = Object.entries(counts);
   if (!entries.length) return;
-  const palette = ['#EA580C', '#00AA8D', '#8B5CF6', '#F59E0B', '#EC4899', '#64748B'];
+  const palette = ['#1565C0', '#00AA8D', '#8B5CF6', '#F59E0B', '#EC4899', '#64748B'];
   charts.types = new Chart(canvas, {
     type: 'pie',
     data: {
@@ -3330,7 +3330,7 @@ function setupDetailMap(b) {
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       attribution: '© OpenStreetMap © CARTO', subdomains: 'abcd', maxZoom: 19,
     }).addTo(state.detailMap);
-    const color = (typeof STATUS_COLORS !== 'undefined' && STATUS_COLORS[b.status]) || '#EA580C';
+    const color = (typeof STATUS_COLORS !== 'undefined' && STATUS_COLORS[b.status]) || '#1565C0';
     L.circleMarker([lat, lng], {
       radius: 9, fillColor: color, color: '#fff', weight: 3, opacity: 1, fillOpacity: 0.95
     }).addTo(state.detailMap)

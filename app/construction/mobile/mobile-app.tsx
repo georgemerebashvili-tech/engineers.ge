@@ -71,7 +71,7 @@ export function ConstructionMobileApp({session}: {session: ConstructionSession})
     const devices = selected.devices || [];
     return (
       <div className="flex h-screen flex-col bg-slate-50">
-        <header className="flex items-center gap-3 border-b border-slate-200 bg-[#475569] px-4 py-3 text-white">
+        <header className="flex items-center gap-3 border-b border-slate-200 bg-[#1565C0] px-4 py-3 text-white">
           <button onClick={() => setSelected(null)} className="text-white/80 hover:text-white">
             ← უკან
           </button>
@@ -83,7 +83,7 @@ export function ConstructionMobileApp({session}: {session: ConstructionSession})
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-xl bg-white border border-slate-200 p-3 text-center shadow-sm">
-              <div className="text-2xl font-bold text-[#475569]">{selected.planned_count}</div>
+              <div className="text-2xl font-bold text-[#1565C0]">{selected.planned_count}</div>
               <div className="text-xs text-slate-500">დაგეგმილი</div>
             </div>
             <div className="rounded-xl bg-white border border-slate-200 p-3 text-center shadow-sm">
@@ -99,7 +99,7 @@ export function ConstructionMobileApp({session}: {session: ConstructionSession})
             devices.map((d, i) => (
               <div key={i} className="rounded-xl bg-white border border-slate-200 p-4 shadow-sm">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[#475569] font-bold text-sm">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-[#1565C0] font-bold text-sm">
                     {i + 1}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -130,7 +130,7 @@ export function ConstructionMobileApp({session}: {session: ConstructionSession})
 
   return (
     <div className="flex h-screen flex-col bg-slate-50">
-      <header className="border-b border-slate-200 bg-[#475569] px-4 py-3">
+      <header className="border-b border-slate-200 bg-[#1565C0] px-4 py-3">
         <div className="flex items-center justify-between mb-3">
           <div>
             <div className="text-sm font-extrabold text-white">KAYA Construction</div>
@@ -157,7 +157,7 @@ export function ConstructionMobileApp({session}: {session: ConstructionSession})
             <button
               key={s.id}
               onClick={() => setSelected(s)}
-              className="w-full rounded-xl bg-white border border-slate-200 p-4 text-left shadow-sm hover:border-[#475569]/30 hover:shadow-md transition-all"
+              className="w-full rounded-xl bg-white border border-slate-200 p-4 text-left shadow-sm hover:border-[#1565C0]/30 hover:shadow-md transition-all"
             >
               <div className="flex items-center justify-between">
                 <div className="min-w-0 flex-1">
@@ -169,7 +169,7 @@ export function ConstructionMobileApp({session}: {session: ConstructionSession})
                   </div>
                 </div>
                 <div className="ml-3 text-right shrink-0">
-                  <div className="font-mono text-lg font-bold text-[#475569]">
+                  <div className="font-mono text-lg font-bold text-[#1565C0]">
                     {(s.devices || []).length}
                   </div>
                   <div className="text-[10px] text-slate-400">/ {s.planned_count}</div>

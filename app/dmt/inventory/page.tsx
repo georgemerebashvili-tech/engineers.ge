@@ -25,7 +25,11 @@ import {
   User,
   AlertCircle,
   Upload,
-  ImageIcon,
+  Layers,
+  DollarSign,
+  Maximize2,
+  Minimize2,
+  GripVertical,
 } from 'lucide-react';
 import {LEADS, STAGE_META} from '@/lib/dmt/leads-data';
 
@@ -45,6 +49,24 @@ type InventoryItem = {
   created_at: string;
   updated_by: string | null;
   updated_at: string | null;
+};
+
+type ComponentItem = {
+  id: number;
+  name: string;
+  code: string;
+  desc: string;
+  qty: number;
+  price: number;
+  currency: string;
+  image_url: string | null;
+};
+
+type ExtraCost = {
+  id: number;
+  label: string;
+  value: number;
+  type: '%' | '₾' | '$' | '€';
 };
 
 type LogEntry = {
@@ -130,6 +152,7 @@ export default function InventoryPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [reserveTarget, setReserveTarget] = useState<InventoryItem | null>(null);
   const [showLogs, setShowLogs] = useState(false);
+  const [compositionTarget, setCompositionTarget] = useState<InventoryItem | null>(null);
 
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -186,6 +209,7 @@ export default function InventoryPage() {
   }
 
   return (
+    <>
     <DmtPageShell
       kicker="OPERATIONS"
       title="ინვენტარი"
@@ -246,7 +270,7 @@ export default function InventoryPage() {
         ) : filtered.length === 0 ? (
           <EmptyState title="შედეგი ვერ მოიძებნა" hint="შეცვალე ძიება." icon={Package} />
         ) : (
-          <div className="overflow-hidden rounded-[10px] border border-bdr bg-sur">
+          <div className="overflow-hidden rounded-[10px] bg-sur">
             <div className="border-b border-bdr bg-sur-2 px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.06em] text-text-3">
               <span className="text-navy">{filtered.length}</span> / {items.length} პოზიცია
               {totalQty > 0 && (
@@ -284,6 +308,7 @@ export default function InventoryPage() {
                       onPatch={(patch) => handlePatch(item.id, patch)}
                       onDelete={() => handleDelete(item.id)}
                       onReserveClick={() => setReserveTarget(item)}
+                      onCompositionClick={() => setCompositionTarget(item)}
                     />
                   ))}
                 </tbody>
@@ -316,6 +341,18 @@ export default function InventoryPage() {
         />
       )}
     </DmtPageShell>
+
+    {compositionTarget && (
+      <CompositionPanel
+        item={compositionTarget}
+        onClose={() => setCompositionTarget(null)}
+        onSavePrice={(price: number) => {
+          handlePatch(compositionTarget.id, {price});
+          setCompositionTarget(null);
+        }}
+      />
+    )}
+    </>
   );
 }
 
@@ -449,6 +486,7 @@ function ProductRow({
   onPatch,
   onDelete,
   onReserveClick,
+  onCompositionClick,
 }: {
   index: number;
   item: InventoryItem;
@@ -456,8 +494,10 @@ function ProductRow({
   onPatch: (patch: Partial<InventoryItem>) => void;
   onDelete: () => void;
   onReserveClick: () => void;
+  onCompositionClick: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [imgOpen, setImgOpen] = useState(false);
   const [editingDesc, setEditingDesc] = useState(false);
   const [descDraft, setDescDraft] = useState('');
   const [editingTags, setEditingTags] = useState(false);
@@ -508,7 +548,23 @@ function ProductRow({
             <MoreHorizontal size={13} strokeWidth={2} />
           </button>
           {menuOpen && (
-            <div className="absolute left-0 top-7 z-20 min-w-[170px] overflow-hidden rounded-[8px] border border-bdr bg-sur shadow-lg">
+            <div className="absolute left-0 top-7 z-20 min-w-[200px] overflow-hidden rounded-[8px] border border-bdr bg-sur shadow-lg">
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); onCompositionClick(); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-[11.5px] font-semibold text-blue hover:bg-blue-lt"
+              >
+                <Layers size={11} /> შემადგენლობა
+                <span className="ml-auto rounded-full bg-blue px-1.5 py-px font-mono text-[8.5px] font-bold text-white">NEW</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMenuOpen(false); onCompositionClick(); }}
+                className="flex w-full items-center gap-2 px-3 py-2 text-[11.5px] text-text hover:bg-sur-2"
+              >
+                <DollarSign size={11} /> თვითღირებულება
+              </button>
+              <div className="border-t border-bdr" />
               <button
                 type="button"
                 onClick={() => {
@@ -533,10 +589,7 @@ function ProductRow({
               <div className="border-t border-bdr" />
               <button
                 type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onDelete();
-                }}
+                onClick={() => { setMenuOpen(false); onDelete(); }}
                 className="flex w-full items-center gap-2 px-3 py-2 text-[11.5px] text-red hover:bg-red-lt"
               >
                 <Trash2 size={11} /> წაშლა
@@ -560,11 +613,33 @@ function ProductRow({
               src={item.image_url}
               alt={item.name}
               loading="lazy"
-              className="h-8 w-8 shrink-0 rounded-md border border-bdr object-contain"
+              onClick={() => setImgOpen(true)}
+              className="h-8 w-8 shrink-0 cursor-zoom-in rounded-md border border-bdr object-contain transition-opacity hover:opacity-75"
             />
           ) : (
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-bdr bg-sur-2 text-text-3">
               <Tag size={10} />
+            </div>
+          )}
+          {imgOpen && item.image_url && (
+            <div
+              className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+              onClick={() => setImgOpen(false)}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={item.image_url}
+                alt={item.name}
+                onClick={(e) => e.stopPropagation()}
+                className="max-h-[80vh] max-w-[80vw] rounded-xl border border-white/10 object-contain shadow-2xl"
+              />
+              <button
+                type="button"
+                onClick={() => setImgOpen(false)}
+                className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+              >
+                <X size={16} />
+              </button>
             </div>
           )}
           <div className="min-w-0">
@@ -669,13 +744,12 @@ function ProductRow({
 
       {/* დაამატა */}
       <td className="px-3 py-2">
-        <div className="flex items-center gap-1.5 text-[11px] text-text-2">
-          <User size={11} strokeWidth={2} className="shrink-0 text-text-3" />
-          <span className="line-clamp-1">{item.created_by}</span>
-        </div>
+        <span className="line-clamp-1 text-[11px] text-text-2">
+          {item.created_by?.split('@')[0] ?? '—'}
+        </span>
         {item.updated_by && (
           <div className="mt-0.5 font-mono text-[9.5px] text-text-3">
-            განახლდა: {item.updated_by}
+            ↑ {item.updated_by.split('@')[0]}
           </div>
         )}
       </td>
@@ -752,19 +826,19 @@ function ImageUploadCrop({
       const img = imgRef.current;
       const scaleX = img.naturalWidth / img.width;
       const scaleY = img.naturalHeight / img.height;
-      const dpr = window.devicePixelRatio || 1;
+      const cropW = Math.floor(completedCrop.width * scaleX);
+      const cropH = Math.floor(completedCrop.height * scaleY);
       const canvas = document.createElement('canvas');
-      canvas.width = Math.floor(completedCrop.width * scaleX * dpr);
-      canvas.height = Math.floor(completedCrop.height * scaleY * dpr);
+      canvas.width = cropW;
+      canvas.height = cropH;
       const ctx = canvas.getContext('2d')!;
-      ctx.scale(dpr, dpr);
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(
         img,
         completedCrop.x * scaleX, completedCrop.y * scaleY,
-        completedCrop.width * scaleX, completedCrop.height * scaleY,
+        cropW, cropH,
         0, 0,
-        completedCrop.width * scaleX, completedCrop.height * scaleY,
+        cropW, cropH,
       );
       const blob = await new Promise<Blob>((res, rej) =>
         canvas.toBlob((b) => (b ? res(b) : rej(new Error('canvas empty'))), 'image/jpeg', 0.9),
@@ -797,7 +871,7 @@ function ImageUploadCrop({
   if (step === 'crop' && src) {
     return (
       <div className="space-y-2">
-        <div className="overflow-hidden rounded-md border border-bdr bg-[#000]">
+        <div className="overflow-hidden rounded-md border border-bdr bg-sur-2 flex justify-center">
           <ReactCrop
             crop={crop}
             onChange={(_, pc) => setCrop(pc)}
@@ -811,7 +885,7 @@ function ImageUploadCrop({
               src={src}
               alt="crop"
               onLoad={onImageLoad}
-              style={{maxHeight: 260, width: '100%', objectFit: 'contain', display: 'block'}}
+              style={{maxHeight: 280, maxWidth: '100%', width: 'auto', display: 'block'}}
             />
           </ReactCrop>
         </div>
@@ -1360,6 +1434,405 @@ function ErrorState({message}: {message: string}) {
   return (
     <div className="flex items-center gap-2 rounded-[10px] border border-red bg-red-lt px-4 py-4 text-[12px] text-red">
       <AlertCircle size={15} /> {message}
+    </div>
+  );
+}
+
+// ── CompositionPanel ─────────────────────────────────────────────────────
+const COMP_RATES: Record<string, number> = {GEL: 1, USD: 2.67, EUR: 2.9, JPY: 0.0178, სხვა: 1};
+const COMP_CURRENCIES = ['GEL', 'USD', 'EUR', 'JPY', 'სხვა'] as const;
+type CompCurrency = typeof COMP_CURRENCIES[number];
+
+function fmtGel(n: number) {
+  return '₾ ' + n.toLocaleString('ka-GE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function CompositionPanel({
+  item,
+  onClose,
+  onSavePrice,
+}: {
+  item: InventoryItem;
+  onClose: () => void;
+  onSavePrice: (price: number) => void;
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [tab, setTab] = useState<'composition' | 'history' | 'attachments'>('composition');
+  const [fullscreen, setFullscreen] = useState(false);
+  const [rows, setRows] = useState<ComponentItem[]>([
+    {id: 1, name: '', code: '', desc: '', qty: 1, price: 0, currency: 'GEL', image_url: null},
+  ]);
+  const [extras, setExtras] = useState<ExtraCost[]>([
+    {id: 1, label: 'მოგება', value: 15, type: '%'},
+    {id: 2, label: 'ტრანსპორტირება', value: 80, type: '₾'},
+  ]);
+  const rowId = useRef(2);
+  const extraId = useRef(3);
+
+  // close on Escape
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [onClose]);
+
+  // drag
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    let dragging = false, startX = 0, startY = 0, origLeft = 0, origTop = 0;
+    const handle = panel.querySelector<HTMLElement>('[data-drag-handle]');
+    if (!handle) return;
+    const onDown = (e: MouseEvent) => {
+      if (fullscreen) return;
+      dragging = true;
+      startX = e.clientX; startY = e.clientY;
+      const r = panel.getBoundingClientRect();
+      origLeft = r.left; origTop = r.top;
+      panel.style.transform = 'none';
+      panel.style.left = origLeft + 'px';
+      panel.style.top = origTop + 'px';
+      panel.style.right = 'auto';
+      e.preventDefault();
+    };
+    const onMove = (e: MouseEvent) => {
+      if (!dragging) return;
+      panel.style.left = (origLeft + e.clientX - startX) + 'px';
+      panel.style.top = (origTop + e.clientY - startY) + 'px';
+    };
+    const onUp = () => { dragging = false; };
+    handle.addEventListener('mousedown', onDown);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      handle.removeEventListener('mousedown', onDown);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, [fullscreen]);
+
+  // resize from left edge
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const handle = panel.querySelector<HTMLElement>('[data-resize-handle]');
+    if (!handle) return;
+    let resizing = false, startX = 0, startW = 0;
+    const onDown = (e: MouseEvent) => {
+      if (fullscreen) return;
+      resizing = true; startX = e.clientX; startW = panel.offsetWidth;
+      e.preventDefault();
+    };
+    const onMove = (e: MouseEvent) => {
+      if (!resizing) return;
+      const newW = Math.min(Math.max(400, startW + (startX - e.clientX)), window.innerWidth - 60);
+      panel.style.width = newW + 'px';
+    };
+    const onUp = () => { resizing = false; };
+    handle.addEventListener('mousedown', onDown);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      handle.removeEventListener('mousedown', onDown);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, [fullscreen]);
+
+  function compSum(r: ComponentItem): number {
+    return (r.qty || 0) * (r.price || 0) * (COMP_RATES[r.currency] ?? 1);
+  }
+
+  const compTotal = rows.reduce((s, r) => s + compSum(r), 0);
+  const {extrasRows, grandTotal} = (() => {
+    let running = compTotal;
+    const extrasRows: {label: string; amount: number}[] = [];
+    for (const ex of extras) {
+      let amt = 0;
+      if (ex.type === '%') amt = running * (ex.value / 100);
+      else if (ex.type === '₾') amt = ex.value;
+      else if (ex.type === '$') amt = ex.value * COMP_RATES['USD'];
+      else if (ex.type === '€') amt = ex.value * COMP_RATES['EUR'];
+      running += amt;
+      extrasRows.push({label: `${ex.label} (${ex.value}${ex.type})`, amount: amt});
+    }
+    return {extrasRows, grandTotal: running};
+  })();
+
+  function patchRow(id: number, patch: Partial<ComponentItem>) {
+    setRows(prev => prev.map(r => r.id === id ? {...r, ...patch} : r));
+  }
+
+  function addRow() {
+    setRows(prev => [...prev, {id: ++rowId.current, name: '', code: '', desc: '', qty: 1, price: 0, currency: 'GEL', image_url: null}]);
+  }
+
+  function removeRow(id: number) {
+    setRows(prev => prev.filter(r => r.id !== id));
+  }
+
+  function patchExtra(id: number, patch: Partial<ExtraCost>) {
+    setExtras(prev => prev.map(e => e.id === id ? {...e, ...patch} : e));
+  }
+
+  function addExtra() {
+    setExtras(prev => [...prev, {id: ++extraId.current, label: 'ახალი ხარჯი', value: 0, type: '%'}]);
+  }
+
+  function removeExtra(id: number) {
+    setExtras(prev => prev.filter(e => e.id !== id));
+  }
+
+  return (
+    <>
+      {/* overlay */}
+      <div
+        className="fixed inset-0 z-[100] bg-[rgba(10,15,30,0.35)] backdrop-blur-[2px]"
+        onClick={onClose}
+      />
+
+      {/* panel */}
+      <div
+        ref={panelRef}
+        className={`fixed top-0 right-0 z-[110] flex h-screen flex-col border-l border-bdr bg-sur shadow-[−8px_0_40px_rgba(0,0,0,0.12)] transition-transform duration-[250ms] ${fullscreen ? '!left-0 !right-0 !top-0 w-screen border-l-0' : 'w-[680px]'}`}
+        style={{transform: 'translateX(0)'}}
+      >
+        {/* resize handle */}
+        <div
+          data-resize-handle
+          className="absolute left-0 top-0 z-10 h-full w-2 cursor-ew-resize"
+        />
+
+        {/* header */}
+        <div className="flex shrink-0 items-center border-b border-bdr bg-sur">
+          <div
+            data-drag-handle
+            title="გადაადგილება"
+            className="flex h-12 cursor-grab items-center px-2.5 text-text-3 active:cursor-grabbing"
+          >
+            <GripVertical size={16} />
+          </div>
+          <div className="flex flex-1 flex-col justify-center py-2.5">
+            <div className="font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-text-3">
+              {item.sku} · შემადგენლობა
+            </div>
+            <div className="text-[14px] font-bold text-navy">{item.name}</div>
+          </div>
+          <div className="flex shrink-0 items-center gap-1 px-3">
+            <button
+              type="button"
+              onClick={() => setFullscreen(v => !v)}
+              title={fullscreen ? 'პანელის ზომაზე' : 'სრული ეკრანი'}
+              className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-md border border-bdr bg-sur-2 text-text-2 hover:border-blue hover:bg-blue-lt hover:text-blue"
+            >
+              {fullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              title="დახურვა"
+              className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-md border border-bdr bg-sur-2 text-text-2 hover:border-blue hover:bg-blue-lt hover:text-blue"
+            >
+              <X size={13} />
+            </button>
+          </div>
+        </div>
+
+        {/* tabs */}
+        <div className="flex shrink-0 border-b border-bdr bg-sur-2 px-4">
+          {(['composition', 'history', 'attachments'] as const).map((t) => {
+            const labels = {composition: '🧩 შემადგენლობა', history: '📋 ისტორია', attachments: '📎 დანართები'};
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTab(t)}
+                className={`-mb-px whitespace-nowrap border-b-2 px-4 py-2.5 text-[12px] font-semibold transition-colors ${tab === t ? 'border-blue text-blue' : 'border-transparent text-text-3 hover:text-text-2'}`}
+              >
+                {labels[t]}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* body */}
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {tab === 'composition' && (
+            <div className="flex flex-col p-5 gap-5">
+
+              {/* components section */}
+              <div>
+                <SectionLabel>კომპონენტები</SectionLabel>
+                <div className="overflow-hidden rounded-lg border border-bdr">
+                  <table className="w-full border-collapse text-[12px]">
+                    <thead>
+                      <tr className="border-b border-bdr bg-sur-2 font-mono text-[9.5px] uppercase tracking-[0.06em] text-text-3">
+                        <th className="w-7 px-2.5 py-2 text-center font-bold">N</th>
+                        <th className="w-8 px-2 py-2 font-bold"></th>
+                        <th className="min-w-[130px] px-2.5 py-2 text-left font-bold">დასახელება</th>
+                        <th className="min-w-[80px] px-2.5 py-2 text-left font-bold">კოდი</th>
+                        <th className="min-w-[110px] px-2.5 py-2 text-left font-bold">განმარტება</th>
+                        <th className="w-16 px-2.5 py-2 text-right font-bold">რაოდ.</th>
+                        <th className="w-20 px-2.5 py-2 text-right font-bold">ფასი</th>
+                        <th className="w-20 px-2.5 py-2 font-bold">ვალუტა</th>
+                        <th className="w-24 px-2.5 py-2 text-right font-bold">ჯამი</th>
+                        <th className="w-7 px-2 py-2 font-bold"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((r, i) => (
+                        <tr key={r.id} className="border-b border-bdr last:border-0 hover:bg-blue-lt/30">
+                          <td className="px-2.5 py-1.5 text-center font-mono text-[10px] text-text-3">{i + 1}</td>
+                          <td className="px-2 py-1.5">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-[5px] border border-bdr bg-sur-2 text-[11px] text-text-3">📷</div>
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <input value={r.name} onChange={e => patchRow(r.id, {name: e.target.value})} placeholder="დასახელება"
+                              className="w-full rounded-[5px] border border-transparent bg-transparent px-1.5 py-0.5 text-[11.5px] text-text outline-none hover:border-bdr focus:border-blue focus:bg-sur" />
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <input value={r.code} onChange={e => patchRow(r.id, {code: e.target.value})} placeholder="კოდი"
+                              className="w-full rounded-[5px] border border-transparent bg-transparent px-1.5 py-0.5 font-mono text-[11px] text-text outline-none hover:border-bdr focus:border-blue focus:bg-sur" />
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <input value={r.desc} onChange={e => patchRow(r.id, {desc: e.target.value})} placeholder="განმარტება"
+                              className="w-full rounded-[5px] border border-transparent bg-transparent px-1.5 py-0.5 text-[11.5px] text-text outline-none hover:border-bdr focus:border-blue focus:bg-sur" />
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <input type="number" value={r.qty} min={0} onChange={e => patchRow(r.id, {qty: +e.target.value})}
+                              className="w-full rounded-[5px] border border-transparent bg-transparent px-1.5 py-0.5 text-right font-mono text-[11.5px] text-text outline-none hover:border-bdr focus:border-blue focus:bg-sur" />
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <input type="number" value={r.price} min={0} step={0.01} onChange={e => patchRow(r.id, {price: +e.target.value})}
+                              className="w-full rounded-[5px] border border-transparent bg-transparent px-1.5 py-0.5 text-right font-mono text-[11.5px] text-text outline-none hover:border-bdr focus:border-blue focus:bg-sur" />
+                          </td>
+                          <td className="px-2 py-1.5">
+                            <select value={r.currency} onChange={e => patchRow(r.id, {currency: e.target.value})}
+                              className="w-full rounded-[5px] border border-bdr bg-sur-2 px-1.5 py-0.5 text-[11px] text-text outline-none focus:border-blue">
+                              {COMP_CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                          </td>
+                          <td className="px-2.5 py-1.5 text-right font-mono text-[11px] font-semibold text-navy">{fmtGel(compSum(r))}</td>
+                          <td className="px-2 py-1.5">
+                            <button type="button" onClick={() => removeRow(r.id)}
+                              className="inline-flex h-[22px] w-[22px] items-center justify-center rounded-[5px] border border-transparent text-text-3 hover:border-red hover:bg-red-lt hover:text-red">
+                              <X size={11} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <button type="button" onClick={addRow}
+                    className="flex w-full items-center gap-1.5 rounded-b-lg border-t border-dashed border-bdr px-2.5 py-2 text-[11.5px] font-semibold text-blue hover:bg-blue-lt">
+                    <Plus size={12} /> კომპონენტის დამატება
+                  </button>
+                </div>
+              </div>
+
+              {/* extra costs */}
+              <div>
+                <SectionLabel>დამატებითი ხარჯები</SectionLabel>
+                <div className="mb-3 grid grid-cols-2 gap-2.5">
+                  {extras.map(ex => (
+                    <div key={ex.id} className="flex flex-col gap-1">
+                      <input value={ex.label} onChange={e => patchExtra(ex.id, {label: e.target.value})}
+                        className="w-full border-0 bg-transparent text-[10.5px] font-semibold text-text-2 outline-none" />
+                      <div className="flex items-center gap-1">
+                        <input type="number" value={ex.value} min={0} step={0.01} onChange={e => patchExtra(ex.id, {value: +e.target.value})}
+                          className="flex-1 rounded-md border border-bdr bg-sur px-2 py-1.5 font-mono text-[12px] text-text outline-none focus:border-blue" />
+                        <select value={ex.type} onChange={e => patchExtra(ex.id, {type: e.target.value as ExtraCost['type']})}
+                          className="w-14 rounded-md border border-bdr bg-sur-2 px-1.5 py-1.5 font-mono text-[11px] text-text outline-none focus:border-blue">
+                          <option value="%">%</option>
+                          <option value="₾">₾</option>
+                          <option value="$">$</option>
+                          <option value="€">€</option>
+                        </select>
+                        <button type="button" onClick={() => removeExtra(ex.id)}
+                          className="inline-flex h-[30px] w-[30px] items-center justify-center rounded-md border border-transparent text-text-3 hover:border-red hover:bg-red-lt hover:text-red">
+                          <X size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <button type="button" onClick={addExtra}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-md border border-dashed border-bdr px-3 py-1.5 text-[11.5px] font-semibold text-blue hover:border-blue hover:bg-blue-lt">
+                  <Plus size={12} /> დამატებითი ხარჯი
+                </button>
+              </div>
+
+              {/* invoice summary */}
+              <div>
+                <SectionLabel>ანგარიშ-ფაქტურა</SectionLabel>
+                <div className="rounded-lg border border-bdr bg-sur-2 px-4 py-3">
+                  <div className="flex items-center justify-between border-b border-bdr py-1.5 text-[12px] text-text-2">
+                    <span className="font-medium">კომპონენტების ჯამი</span>
+                    <span className="font-mono font-semibold text-text">{fmtGel(compTotal)}</span>
+                  </div>
+                  {extrasRows.map((er, i) => (
+                    <div key={i} className="flex items-center justify-between border-b border-bdr py-1.5 text-[12px] text-text-2">
+                      <span className="font-medium">{er.label}</span>
+                      <span className="font-mono font-semibold text-text">{er.amount >= 0 ? '+' : ''}{fmtGel(er.amount)}</span>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between pt-2 text-[13px]">
+                    <span className="font-bold text-navy">🏷 ჯამური ღირებულება (SKU ფასი)</span>
+                    <span className="font-mono text-[15px] font-extrabold text-navy">{fmtGel(grandTotal)}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 text-[11px]">
+                    <span className="text-text-3">ეს თანხა დაყენდება SKU-ს ფასად</span>
+                    <span className="font-mono font-semibold text-grn">{fmtGel(grandTotal)}</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {tab === 'history' && (
+            <div className="p-5">
+              <SectionLabel>ისტორია</SectionLabel>
+              <div className="py-4 text-[12px] text-text-3">ჩანაწერები არ მოიძებნა.</div>
+            </div>
+          )}
+
+          {tab === 'attachments' && (
+            <div className="p-5">
+              <SectionLabel>დანართები</SectionLabel>
+              <div className="py-4 text-[12px] text-text-3">დანართები არ არის.</div>
+            </div>
+          )}
+        </div>
+
+        {/* footer */}
+        <div className="flex shrink-0 items-center gap-2 border-t border-bdr bg-sur px-5 py-3">
+          <div className="flex flex-1 items-baseline gap-1.5">
+            <span className="text-[11px] font-semibold text-text-3">პროდუქციის ფასი:</span>
+            <span className="font-mono text-[18px] font-extrabold text-navy">
+              {grandTotal.toLocaleString('ka-GE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+            </span>
+            <span className="text-[12px] text-text-2">₾ GEL</span>
+          </div>
+          <button type="button" onClick={onClose}
+            className="rounded-md border border-bdr bg-sur-2 px-3 py-1.5 text-[12px] font-semibold text-text-2 hover:border-blue hover:text-blue">
+            გაუქმება
+          </button>
+          <button type="button" onClick={() => onSavePrice(grandTotal)}
+            className="rounded-md border border-blue bg-blue px-3 py-1.5 text-[12px] font-semibold text-white hover:opacity-90">
+            💾 შენახვა
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function SectionLabel({children}: {children: React.ReactNode}) {
+  return (
+    <div className="mb-2.5 flex items-center gap-2 font-mono text-[9.5px] font-bold uppercase tracking-[0.08em] text-text-3">
+      {children}
+      <div className="h-px flex-1 bg-bdr" />
     </div>
   );
 }

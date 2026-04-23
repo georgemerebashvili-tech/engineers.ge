@@ -36,9 +36,9 @@ type AuditEvent = {
   created_at: string;
 };
 
-const PRIMARY = '#475569';
-const PRIMARY_DARK = '#334155';
-const PRIMARY_LIGHT = '#F1F5F9';
+const PRIMARY = '#1565C0';
+const PRIMARY_DARK = '#0D47A1';
+const PRIMARY_LIGHT = '#E3F2FD';
 
 export function ConstructionAdminPanel({session}: {session: ConstructionSession}) {
   const router = useRouter();
@@ -177,7 +177,7 @@ export function ConstructionAdminPanel({session}: {session: ConstructionSession}
       {/* Header */}
       <header className="flex items-center gap-4 border-b border-slate-200 bg-white px-4 py-2.5 text-sm">
         <div className="flex items-center gap-3">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#475569] text-white">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#1565C0] text-white">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M2 22 12 2l10 20H2z" /><path d="M10 14h4v8h-4z" />
             </svg>
@@ -213,7 +213,7 @@ export function ConstructionAdminPanel({session}: {session: ConstructionSession}
               onClick={() => setTab(t)}
               className={`mr-1 border-b-2 px-4 py-3 text-sm font-semibold transition-colors ${
                 tab === t
-                  ? 'border-[#475569] text-[#475569]'
+                  ? 'border-[#1565C0] text-[#1565C0]'
                   : 'border-transparent text-slate-500 hover:text-slate-800'
               }`}
             >
@@ -237,27 +237,27 @@ export function ConstructionAdminPanel({session}: {session: ConstructionSession}
                 <div>
                   <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Username *</label>
                   <input value={newUsername} onChange={(e) => setNewUsername(e.target.value)} required placeholder="user_giorgi"
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#475569] focus:outline-none focus:ring-2 focus:ring-[#475569]/20" />
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#1565C0] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/20" />
                 </div>
                 <div>
                   <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">სახელი</label>
                   <input value={newDisplay} onChange={(e) => setNewDisplay(e.target.value)} placeholder="გიორგი მ."
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#475569] focus:outline-none focus:ring-2 focus:ring-[#475569]/20" />
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#1565C0] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/20" />
                 </div>
                 <div>
                   <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">ელფოსტა *</label>
                   <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} required type="email" placeholder="giorgi@example.com"
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#475569] focus:outline-none focus:ring-2 focus:ring-[#475569]/20" />
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#1565C0] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/20" />
                 </div>
                 <div>
                   <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">პაროლი (ან ავტო)</label>
                   <input value={newPassword} onChange={(e) => setNewPassword(e.target.value)} type="text" placeholder="ცარიელი = ავტო 4-char"
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#475569] focus:outline-none focus:ring-2 focus:ring-[#475569]/20" />
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#1565C0] focus:outline-none focus:ring-2 focus:ring-[#1565C0]/20" />
                 </div>
                 <div>
                   <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">როლი</label>
                   <select value={newRole} onChange={(e) => setNewRole(e.target.value as 'admin' | 'user')}
-                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#475569] focus:outline-none">
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#1565C0] focus:outline-none">
                     <option value="user">user</option>
                     <option value="admin">admin</option>
                   </select>
@@ -307,7 +307,7 @@ export function ConstructionAdminPanel({session}: {session: ConstructionSession}
                           </button>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${u.role === 'admin' ? 'bg-slate-100 text-[#475569]' : 'bg-slate-100 text-slate-600'}`}>
+                          <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${u.role === 'admin' ? 'bg-slate-100 text-[#1565C0]' : 'bg-slate-100 text-slate-600'}`}>
                             {u.role}
                           </span>
                         </td>
@@ -364,7 +364,7 @@ export function ConstructionAdminPanel({session}: {session: ConstructionSession}
                     <tr key={e.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                       <td className="px-4 py-2.5 font-mono text-[11px] text-slate-400">{new Date(e.created_at).toLocaleString('ka')}</td>
                       <td className="px-4 py-2.5 font-mono text-[12px] font-semibold text-slate-700">{e.actor}</td>
-                      <td className="px-4 py-2.5"><span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[#475569]">{e.action}</span></td>
+                      <td className="px-4 py-2.5"><span className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-[#1565C0]">{e.action}</span></td>
                       <td className="px-4 py-2.5 text-xs text-slate-600">{e.summary || '—'}</td>
                       <td className="px-4 py-2.5 font-mono text-[11px] text-slate-400">{e.ip || '—'}</td>
                     </tr>

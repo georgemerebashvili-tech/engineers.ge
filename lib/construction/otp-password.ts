@@ -23,18 +23,18 @@ export async function sendConstructionOnboardingEmail(opts: {
   const who = opts.displayName || opts.username;
   const html = `
     <div style="font-family:system-ui,-apple-system,sans-serif;max-width:480px;padding:20px;line-height:1.55;color:#0f172a">
-      <h2 style="color:#EA580C;margin:0 0 12px">გამარჯობა, ${escapeHtml(who)}</h2>
+      <h2 style="color:#1565C0;margin:0 0 12px">გამარჯობა, ${escapeHtml(who)}</h2>
       <p>KAYA Construction-ის ინვენტარიზაციის სისტემაში შენთვის ანგარიში შექმნილია.</p>
 
-      <table style="width:100%;border-collapse:collapse;margin:18px 0;background:#F1F5F9;border-radius:8px;overflow:hidden;">
+      <table style="width:100%;border-collapse:collapse;margin:18px 0;background:#E3F2FD;border-radius:8px;overflow:hidden;">
         <tr><td style="padding:10px 14px;font-size:12px;color:#64748B;text-transform:uppercase;letter-spacing:0.05em;">Username</td>
             <td style="padding:10px 14px;font-family:ui-monospace,monospace;font-weight:700;font-size:16px;">${escapeHtml(opts.username)}</td></tr>
         <tr><td style="padding:10px 14px;font-size:12px;color:#64748B;text-transform:uppercase;letter-spacing:0.05em;">დროებითი პაროლი</td>
-            <td style="padding:10px 14px;font-family:ui-monospace,monospace;font-weight:700;font-size:22px;color:#EA580C;letter-spacing:0.15em;">${escapeHtml(opts.tempPassword)}</td></tr>
+            <td style="padding:10px 14px;font-family:ui-monospace,monospace;font-weight:700;font-size:22px;color:#1565C0;letter-spacing:0.15em;">${escapeHtml(opts.tempPassword)}</td></tr>
       </table>
 
       <p style="text-align:center;margin:24px 0">
-        <a href="${opts.loginUrl}" style="background:#EA580C;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">შესვლა</a>
+        <a href="${opts.loginUrl}" style="background:#1565C0;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600;display:inline-block">შესვლა</a>
       </p>
 
       <div style="background:#FEF3C7;padding:12px;border-radius:8px;font-size:12px;color:#92400E;margin:14px 0">
