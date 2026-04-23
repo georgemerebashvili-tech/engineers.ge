@@ -112,7 +112,6 @@ const SECTIONS: NavSection[] = [
         href: '/dmt/leads',
         icon: Users,
         children: [
-          {key: 'leads-overview', label: 'Pipeline · მიმოხილვა', href: '/dmt/leads', icon: TrendingUp},
           {key: 'leads-fb', label: 'Facebook ლიდები', href: '/dmt/leads/facebook', icon: Facebook},
           {key: 'leads-fb-analytics', label: 'FB ანალიტიკა', href: '/dmt/leads/facebook/analytics', icon: BarChart3},
           {key: 'leads-manual', label: 'ყველა ლიდი · grid', href: '/dmt/leads/manual', icon: Table2},
