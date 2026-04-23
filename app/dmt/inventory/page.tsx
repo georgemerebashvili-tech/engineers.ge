@@ -1,6 +1,13 @@
 'use client';
 
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import ReactCrop, {
+  centerCrop,
+  makeAspectCrop,
+  type Crop,
+  type PixelCrop,
+} from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 import {DmtPageShell} from '@/components/dmt/page-shell';
 import {
   Boxes,
@@ -17,6 +24,8 @@ import {
   Clock,
   User,
   AlertCircle,
+  Upload,
+  ImageIcon,
 } from 'lucide-react';
 import {LEADS, STAGE_META} from '@/lib/dmt/leads-data';
 
@@ -700,6 +709,191 @@ function ProductRow({
   );
 }
 
+// ── ImageUploadCrop ──────────────────────────────────────────────────────
+function ImageUploadCrop({
+  value,
+  onChange,
+}: {
+  value: string | null;
+  onChange: (url: string | null) => void;
+}) {
+  const [step, setStep] = useState<'idle' | 'crop' | 'uploading'>('idle');
+  const [src, setSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState<Crop>();
+  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
+  const [uploadErr, setUploadErr] = useState<string | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const replaceRef = useRef<HTMLInputElement>(null);
+
+  function onSelectFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSrc(reader.result as string);
+      setCrop(undefined);
+      setStep('crop');
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function onImageLoad(e: React.SyntheticEvent<HTMLImageElement>) {
+    const {naturalWidth: w, naturalHeight: h} = e.currentTarget;
+    const c = centerCrop(makeAspectCrop({unit: '%', width: 80}, 1, w, h), w, h);
+    setCrop(c);
+  }
+
+  async function handleCrop() {
+    if (!completedCrop || !imgRef.current) return;
+    setStep('uploading');
+    setUploadErr(null);
+    try {
+      const img = imgRef.current;
+      const scaleX = img.naturalWidth / img.width;
+      const scaleY = img.naturalHeight / img.height;
+      const dpr = window.devicePixelRatio || 1;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.floor(completedCrop.width * scaleX * dpr);
+      canvas.height = Math.floor(completedCrop.height * scaleY * dpr);
+      const ctx = canvas.getContext('2d')!;
+      ctx.scale(dpr, dpr);
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(
+        img,
+        completedCrop.x * scaleX, completedCrop.y * scaleY,
+        completedCrop.width * scaleX, completedCrop.height * scaleY,
+        0, 0,
+        completedCrop.width * scaleX, completedCrop.height * scaleY,
+      );
+      const blob = await new Promise<Blob>((res, rej) =>
+        canvas.toBlob((b) => (b ? res(b) : rej(new Error('canvas empty'))), 'image/jpeg', 0.9),
+      );
+      const fd = new FormData();
+      fd.append('file', blob, 'crop.jpg');
+      const r = await fetch('/api/dmt/inventory/upload', {method: 'POST', body: fd});
+      if (!r.ok) throw new Error((await r.json()).error ?? 'upload failed');
+      const {url} = await r.json();
+      onChange(url);
+      setSrc(null);
+      setStep('idle');
+    } catch (e) {
+      setUploadErr((e as Error).message);
+      setStep('crop');
+    }
+  }
+
+  // uploading spinner
+  if (step === 'uploading') {
+    return (
+      <div className="flex items-center gap-2 rounded-md border border-bdr bg-sur-2 px-4 py-5 text-[12px] text-text-3">
+        <div className="h-4 w-4 animate-spin rounded-full border-2 border-bdr border-t-blue" />
+        იტვირთება…
+      </div>
+    );
+  }
+
+  // crop step
+  if (step === 'crop' && src) {
+    return (
+      <div className="space-y-2">
+        <div className="overflow-hidden rounded-md border border-bdr bg-[#000]">
+          <ReactCrop
+            crop={crop}
+            onChange={(_, pc) => setCrop(pc)}
+            onComplete={(c) => setCompletedCrop(c)}
+            aspect={1}
+            minWidth={40}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              ref={imgRef}
+              src={src}
+              alt="crop"
+              onLoad={onImageLoad}
+              style={{maxHeight: 260, width: '100%', objectFit: 'contain', display: 'block'}}
+            />
+          </ReactCrop>
+        </div>
+        {uploadErr && <div className="text-[11px] text-red">{uploadErr}</div>}
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {setStep('idle'); setSrc(null);}}
+            className="h-7 rounded-md border border-bdr px-3 text-[11.5px] text-text-2 hover:bg-sur-2"
+          >
+            გაუქმება
+          </button>
+          <button
+            type="button"
+            onClick={handleCrop}
+            disabled={!completedCrop}
+            className="h-7 rounded-md bg-blue px-3 text-[11.5px] font-semibold text-white hover:opacity-90 disabled:opacity-40"
+          >
+            ამოჭრა და ატვირთვა
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // has uploaded image — preview + replace
+  if (value && step === 'idle') {
+    return (
+      <div className="flex items-center gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={value}
+          alt=""
+          className="h-16 w-16 rounded-md border border-bdr object-contain bg-sur-2"
+        />
+        <div className="flex flex-col gap-1">
+          <button
+            type="button"
+            onClick={() => replaceRef.current?.click()}
+            className="text-[11.5px] text-blue hover:underline"
+          >
+            სხვა სურათი
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange(null)}
+            className="text-[11.5px] text-red hover:underline"
+          >
+            წაშლა
+          </button>
+        </div>
+        <input
+          ref={replaceRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="sr-only"
+          onChange={onSelectFile}
+        />
+      </div>
+    );
+  }
+
+  // default: drop zone
+  return (
+    <label className="group flex cursor-pointer flex-col items-center justify-center gap-2 rounded-md border border-dashed border-bdr bg-sur-2 px-4 py-6 transition-colors hover:border-blue hover:bg-blue-lt">
+      <Upload size={20} className="text-text-3 transition-colors group-hover:text-blue" />
+      <div className="text-center">
+        <div className="text-[12px] font-semibold text-text-2 group-hover:text-blue">
+          სურათის ატვირთვა
+        </div>
+        <div className="mt-0.5 text-[10.5px] text-text-3">JPEG / PNG / WebP · max 5 MB</div>
+      </div>
+      <input
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        onChange={onSelectFile}
+      />
+    </label>
+  );
+}
+
 // ── AddItemModal ─────────────────────────────────────────────────────────
 const EMPTY_FORM = {
   sku: '',
@@ -708,7 +902,6 @@ const EMPTY_FORM = {
   dimensions: '',
   qty: '0',
   price: '',
-  image_url: '',
 };
 
 function AddItemModal({
@@ -722,6 +915,7 @@ function AddItemModal({
 }) {
   const [form, setForm] = useState(EMPTY_FORM);
   const [tags, setTags] = useState<string[]>([]);
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -746,7 +940,7 @@ function AddItemModal({
           dimensions: form.dimensions.trim() || undefined,
           qty: Math.max(0, parseInt(form.qty, 10) || 0),
           price: form.price ? parseFloat(form.price) : undefined,
-          image_url: form.image_url.trim() || undefined,
+          image_url: imageUrl || undefined,
         }),
       });
       if (!res.ok) {
@@ -855,13 +1049,8 @@ function AddItemModal({
             </Field>
           </div>
 
-          <Field label="სურათის URL" className="mt-3">
-            <input
-              value={form.image_url}
-              onChange={set('image_url')}
-              placeholder="https://..."
-              className={inputCls}
-            />
+          <Field label="სურათი" className="mt-3">
+            <ImageUploadCrop value={imageUrl} onChange={setImageUrl} />
           </Field>
 
           {err && (
