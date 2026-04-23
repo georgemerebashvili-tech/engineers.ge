@@ -38,6 +38,8 @@ try {
     [SQL_PATH.split('/').pop()]
   );
   await c.query('commit');
+  // notify PostgREST to reload schema cache so new columns/tables are visible immediately
+  await c.query("NOTIFY pgrst, 'reload schema'");
   console.log('applied ✓', SQL_PATH);
 } catch (e) {
   await c.query('rollback');
