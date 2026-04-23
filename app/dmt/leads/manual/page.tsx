@@ -274,7 +274,7 @@ export default function ManualLeadsPage() {
     async function loadUsers() {
       setUsersLoading(true);
       try {
-        const res = await fetch('/api/dmt/leads/manual/users', {cache: 'no-store'});
+        const res = await fetch('/api/dmt/users', {cache: 'no-store'});
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
           if (!cancelled) setUsersError(data.error || 'users_load_failed');
