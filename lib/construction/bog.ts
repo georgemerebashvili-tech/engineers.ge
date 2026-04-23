@@ -94,7 +94,8 @@ export async function bogBalance(iban: string, currency: string) {
 export async function bogStatement(iban: string, currency: string, from: string, to: string) {
   const cfg = await getBogConfig();
   if (!cfg) throw new Error('BOG credentials not configured');
-  return bogGet(cfg, `statement/${cleanIban(iban)}/${currency}/${toBogDate(from)}/${toBogDate(to)}`);
+  // v2 endpoint — uses YYYY-MM-DD format directly (old /statement used DD.MM.YYYY and is discontinued)
+  return bogGet(cfg, `statement/v2/${cleanIban(iban)}/${currency}/${from}/${to}`);
 }
 
 export async function bogToday(iban: string, currency: string) {
