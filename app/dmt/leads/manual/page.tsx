@@ -476,23 +476,25 @@ export default function ManualLeadsPage() {
       me?.name ||
       me?.email ||
       '';
-    setRows((prev) => [
-      ...prev,
-      {
-        id,
-        company: '',
-        contact: '',
-        phone: '',
-        contract: null,
-        status,
-        role: '',
-        owner: ownerName,
-        period: '',
-        editedBy: actorLabel,
-        editedAt: new Date().toLocaleString('en-GB').replace(',', ''),
-        createdBy: actorLabel
-      }
-    ]);
+    const newRow = {
+      id,
+      company: '',
+      contact: '',
+      phone: '',
+      contract: null,
+      status,
+      role: '' as const,
+      owner: ownerName,
+      period: '',
+      editedBy: actorLabel,
+      editedAt: new Date().toLocaleString('en-GB').replace(',', ''),
+      createdBy: actorLabel
+    };
+    setRows((prev) => {
+      const firstIdx = prev.findIndex((r) => r.status === status);
+      if (firstIdx === -1) return [...prev, newRow];
+      return [...prev.slice(0, firstIdx), newRow, ...prev.slice(firstIdx)];
+    });
     setCollapsed((prev) => ({...prev, [status]: false}));
   };
 
@@ -545,21 +547,13 @@ export default function ManualLeadsPage() {
       searchPlaceholder="ძიება ნებისმიერ ველში…"
       onQueryChange={setQ}
       actions={
-        <>
-          <button
-            onClick={exportCsv}
-            disabled={filtered.length === 0}
-            className="inline-flex items-center gap-1.5 rounded-md border border-bdr bg-sur-2 px-3 py-1.5 text-[12px] font-semibold text-text-2 hover:border-blue hover:text-blue disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <Download size={14} /> Export
-          </button>
-          <button
-            onClick={() => addRow('ახალი')}
-            className="inline-flex items-center gap-1.5 rounded-md border border-blue bg-blue px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-navy-2"
-          >
-            <Plus size={14} /> ახალი
-          </button>
-        </>
+        <button
+          onClick={exportCsv}
+          disabled={filtered.length === 0}
+          className="inline-flex items-center gap-1.5 rounded-md border border-bdr bg-sur-2 px-3 py-1.5 text-[12px] font-semibold text-text-2 hover:border-blue hover:text-blue disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Download size={14} /> Export
+        </button>
       }
     >
       <div className="px-6 py-5 md:px-8">
