@@ -1,6 +1,7 @@
 import {NextResponse} from 'next/server';
 import {getConstructionSession} from '@/lib/construction/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
+import {cleanIban} from '@/lib/construction/bog';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +36,8 @@ export async function POST(req: Request) {
     return NextResponse.json({error: 'client_id, client_secret, account_iban სავალდებულოა'}, {status: 400});
   }
 
+  const safeIban = cleanIban(account_iban);
+
   const db = supabaseAdmin();
   const existing = await db.from('construction_bog_config').select('id').limit(1).maybeSingle();
 
@@ -43,7 +46,7 @@ export async function POST(req: Request) {
     ({error: err} = await db.from('construction_bog_config').update({
       client_id: client_id.trim(),
       client_secret: client_secret.trim(),
-      account_iban: account_iban.trim(),
+      account_iban: safeIban,
       account_currency: account_currency.trim() || 'GEL',
       updated_at: new Date().toISOString(),
       updated_by: session.username,
@@ -52,7 +55,7 @@ export async function POST(req: Request) {
     ({error: err} = await db.from('construction_bog_config').insert({
       client_id: client_id.trim(),
       client_secret: client_secret.trim(),
-      account_iban: account_iban.trim(),
+      account_iban: safeIban,
       account_currency: account_currency.trim() || 'GEL',
       updated_by: session.username,
     }));

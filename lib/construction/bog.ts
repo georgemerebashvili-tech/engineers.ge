@@ -79,21 +79,26 @@ function toBogDate(s: string): string {
   return s;
 }
 
+// Strip accidentally appended currency codes: "GE84BG...GEL" → "GE84BG..."
+export function cleanIban(iban: string): string {
+  return iban.trim().replace(/[A-Z]{2,3}$/, '').trim();
+}
+
 // ── public helpers ────────────────────────────────────────────────────────────
 export async function bogBalance(iban: string, currency: string) {
   const cfg = await getBogConfig();
   if (!cfg) throw new Error('BOG credentials not configured');
-  return bogGet(cfg, `accounts/${iban}/${currency}`);
+  return bogGet(cfg, `accounts/${cleanIban(iban)}/${currency}`);
 }
 
 export async function bogStatement(iban: string, currency: string, from: string, to: string) {
   const cfg = await getBogConfig();
   if (!cfg) throw new Error('BOG credentials not configured');
-  return bogGet(cfg, `statement/${iban}/${currency}/${toBogDate(from)}/${toBogDate(to)}`);
+  return bogGet(cfg, `statement/${cleanIban(iban)}/${currency}/${toBogDate(from)}/${toBogDate(to)}`);
 }
 
 export async function bogToday(iban: string, currency: string) {
   const cfg = await getBogConfig();
   if (!cfg) throw new Error('BOG credentials not configured');
-  return bogGet(cfg, `documents/v2/todayactivities/${iban}/${currency}`);
+  return bogGet(cfg, `documents/v2/todayactivities/${cleanIban(iban)}/${currency}`);
 }
