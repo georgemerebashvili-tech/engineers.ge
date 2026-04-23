@@ -211,7 +211,7 @@ function findUserByOwnerName(users: ManualLeadUser[], owner: string) {
 
 function displayActorLabel(user: ManualLeadUser | null) {
   if (!user) return 'მე';
-  const name = user.name.trim();
+  const name = (user.name || '').trim();
   if (name) return name;
   return user.email.split('@')[0] || user.email || 'მე';
 }
@@ -1049,7 +1049,7 @@ function renderCell(
       ? TAB_COLOR_STYLES[ownerUser.settings.manualLeadsTabColor]
       : TAB_COLOR_STYLES.gray;
     const options = users
-      .map((user) => ({id: user.id, label: user.name.trim() || user.email}))
+      .map((user) => ({id: user.id, label: (user.name || '').trim() || user.email}))
       .filter((user) => user.label.trim());
     const hasUnknownOwner =
       owner.trim() &&

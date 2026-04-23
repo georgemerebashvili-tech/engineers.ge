@@ -21,7 +21,7 @@ export async function GET() {
   const users = await listDmtUsers();
   return NextResponse.json({
     users,
-    me: {id: me.id, email: me.email, role: me.role}
+    me: {id: me.id, name: me.name, email: me.email, role: me.role, settings: me.settings}
   });
 }
 
