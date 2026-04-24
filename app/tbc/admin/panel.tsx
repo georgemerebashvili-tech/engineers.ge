@@ -5,6 +5,7 @@ import {useRouter} from 'next/navigation';
 import Link from 'next/link';
 import type {TbcSession} from '@/lib/tbc/auth';
 import {TbcHelpModal, TbcHelpButton} from '@/components/tbc-help-modal';
+import {WhatsNewButton} from '@/components/tbc/whats-new';
 
 type TbcUser = {
   id: string;
@@ -534,6 +535,7 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
           </span>
         </div>
         <div className="ml-auto flex items-center gap-2 text-xs">
+          <WhatsNewButton />
           <TbcHelpButton onClick={() => setHelpOpen(true)} />
           <span className="hidden text-slate-500 sm:inline">
             {session.displayName || session.username}

@@ -10,6 +10,7 @@ import {
   type DeviceInitial,
   type PhotoValue
 } from '@/components/tbc/device-editor-modal';
+import {WhatsNewButton} from '@/components/tbc/whats-new';
 
 type PhotoMeta = {by?: string; at?: string} | null;
 type Device = {
@@ -235,12 +236,15 @@ export function MobileApp({session}: {session: TbcSession}) {
           <span className="text-slate-300">×</span>
           <img src="/tbc/logos/dmt.png" alt="DMT" className="h-5 w-auto" />
         </div>
-        <button
-          onClick={logout}
-          className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
-        >
-          გასვლა
-        </button>
+        <div className="flex items-center gap-2">
+          <WhatsNewButton />
+          <button
+            onClick={logout}
+            className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
+          >
+            გასვლა
+          </button>
+        </div>
       </header>
 
       {/* Branch picker */}
