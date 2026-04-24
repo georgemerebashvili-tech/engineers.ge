@@ -106,9 +106,13 @@ export function DeviceEditorModal({
   const devicePhotoInput = useRef<HTMLInputElement>(null);
   const situPhotoInput = useRef<HTMLInputElement>(null);
   const pendingDeviceSlot = useRef<number | null>(null);
+  const lastPhotoTap = useRef<{slot: number; at: number} | null>(null);
   const [needInput, setNeedInput] = useState('');
   const [prohibitInput, setProhibitInput] = useState('');
   const [commentInput, setCommentInput] = useState('');
+  const [lightbox, setLightbox] = useState<{src: string; slot: number} | null>(
+    null
+  );
 
   const reset = useCallback(() => {
     const i = initial;
@@ -180,6 +184,17 @@ export function DeviceEditorModal({
     });
   }
 
+  function handlePhotoTap(slot: number, src: string) {
+    const now = Date.now();
+    const last = lastPhotoTap.current;
+    if (last && last.slot === slot && now - last.at < 350) {
+      setLightbox({src, slot});
+      lastPhotoTap.current = null;
+    } else {
+      lastPhotoTap.current = {slot, at: now};
+    }
+  }
+
   function pickSituPhoto() {
     if (situational.length >= SITU_MAX) return;
     if (situPhotoInput.current) {
@@ -212,6 +227,9 @@ export function DeviceEditorModal({
   }
 
   function removeSitu(idx: number) {
+    if (!window.confirm('ეს სიტუაციური ფოტო active view-დან მოიხსნება. გაგრძელება?')) {
+      return;
+    }
     setSituational((s) => s.filter((_, i) => i !== idx));
   }
 
@@ -423,19 +441,19 @@ export function DeviceEditorModal({
                     return (
                       <div key={slot} className="relative aspect-square">
                         {p ? (
-                          <>
+                          <button
+                            type="button"
+                            onClick={() => handlePhotoTap(slot, p)}
+                            onDoubleClick={() => setLightbox({src: p, slot})}
+                            className="h-full w-full overflow-hidden rounded-xl ring-2 ring-[#00AA8D] active:scale-95"
+                          >
                             <img
                               src={p}
                               alt={PHOTO_LABELS[slot]}
-                              className="h-full w-full rounded-xl object-cover ring-2 ring-[#00AA8D]"
+                              className="h-full w-full object-cover"
+                              draggable={false}
                             />
-                            <button
-                              onClick={() => removeDevicePhoto(slot)}
-                              className="absolute -right-2 -top-2 flex h-9 w-9 items-center justify-center rounded-full bg-red-500 text-sm font-bold text-white shadow-lg ring-2 ring-white active:scale-90"
-                            >
-                              ✕
-                            </button>
-                          </>
+                          </button>
                         ) : (
                           <button
                             onClick={() => pickDevicePhoto(slot)}
@@ -592,7 +610,7 @@ export function DeviceEditorModal({
                           onClick={() => removeSitu(idx)}
                           className="min-h-10 self-start rounded-md bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 active:scale-95"
                         >
-                          🗑 წაშლა
+                          🗑 მოხსნა
                         </button>
                       </div>
                     </div>
@@ -806,6 +824,43 @@ export function DeviceEditorModal({
               : '➕ დამატება'}
           </button>
         </div>
+
+        {lightbox && (
+          <div
+            className="fixed inset-0 z-[60] flex flex-col bg-black/90"
+            onClick={() => setLightbox(null)}
+          >
+            <div className="flex min-h-0 flex-1 items-center justify-center p-4">
+              <img
+                src={lightbox.src}
+                alt=""
+                className="max-h-full max-w-full object-contain"
+                onClick={(e) => e.stopPropagation()}
+                draggable={false}
+              />
+            </div>
+            <div
+              className="flex shrink-0 gap-2 border-t border-white/10 bg-black/60 p-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => {
+                  removeDevicePhoto(lightbox.slot);
+                  setLightbox(null);
+                }}
+                className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-base font-bold text-white shadow active:scale-95"
+              >
+                🗑 წაშლა
+              </button>
+              <button
+                onClick={() => setLightbox(null)}
+                className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-white/15 px-4 py-3 text-base font-bold text-white ring-1 ring-white/20 active:scale-95"
+              >
+                ✕ დახურვა
+              </button>
+            </div>
+          </div>
+        )}
 
         <input
           ref={devicePhotoInput}
