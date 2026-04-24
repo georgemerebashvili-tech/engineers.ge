@@ -68,7 +68,7 @@ export function WhatsNewButton({size = 'sm', className = ''}: Props) {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-900">🎁 რა დაემატა</h2>
+              <h2 className="text-base font-bold text-slate-900">🎁 რა გაკეთდა</h2>
               <button
                 onClick={() => setOpen(false)}
                 className="flex h-8 w-8 items-center justify-center rounded-full text-xl text-slate-400 hover:bg-slate-100 hover:text-slate-700"
