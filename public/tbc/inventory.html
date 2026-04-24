@@ -1257,24 +1257,6 @@ table.devices-sheet td:last-child { border-right: none; }
 .device-actions button:hover { background: var(--slate-050); color: var(--slate-900); }
 .device-actions button.danger:hover { background: var(--red-100); color: var(--red-600); border-color: var(--red-500); }
 
-/* Notes */
-.notes-textarea {
-  width: 100%;
-  min-height: 160px;
-  padding: 12px;
-  border: none;
-  border-radius: 0;
-  font-family: inherit;
-  font-size: 13px;
-  background: var(--paper);
-  color: var(--ink);
-  resize: vertical;
-  line-height: 1.6;
-}
-.notes-textarea:focus {
-  outline: none;
-  background: #FFFEF0;
-}
 
 /* Action buttons */
 .btn {
@@ -1887,7 +1869,7 @@ table.devices-sheet td:last-child { border-right: none; }
         <button class="btn sm" onclick="exportProductionXlsx()" style="font-size:12px;background:var(--slate-050);border-color:var(--border);color:var(--slate-700);">⬇ XLSX</button>
       </div>
     </div>
-    <div id="productionWrap" style="padding:0;overflow-x:auto;">
+    <div id="productionWrap" style="padding:0;">
       <div style="padding:24px;text-align:center;color:var(--slate-400);font-size:12px;">იტვირთება…</div>
     </div>
   </div>
@@ -2061,15 +2043,16 @@ table.devices-sheet td:last-child { border-right: none; }
         </div>
       </div>
 
-      <!-- Comments / Announcements -->
+      <!-- Comments / Notes — shared thread (tbc_branch_comments table) -->
       <div class="card" id="commentsCard">
         <div class="card-header">
-          <div class="card-title">განცხადებები · ჩეთი</div>
+          <div class="card-title">შენიშვნები</div>
           <span class="mono" style="font-size:11px;color:var(--slate-500)" id="commentsCountBadge">0</span>
         </div>
+        <div id="commentsLegacyBanner"></div>
         <div id="commentsListWrap" style="max-height:320px;overflow-y:auto;padding:0;">
           <div class="empty-state" style="padding:28px 20px;font-size:12px;">
-            ცარიელია — დაწერე პირველი განცხადება ქვემოთ
+            ცარიელია — დაწერე პირველი შენიშვნა ქვემოთ
           </div>
         </div>
         <div style="padding:12px 14px;border-top:1px solid var(--border);background:var(--slate-050);">
@@ -2080,7 +2063,7 @@ table.devices-sheet td:last-child { border-right: none; }
             <button type="button" data-kind="done" class="chip" onclick="selectCommentKind('done')" style="padding:3px 10px;color:var(--dmt-teal-dark);">✅ დასრულდა</button>
           </div>
           <div style="display:flex;gap:8px;">
-            <textarea id="commentDraft" rows="2" placeholder="დაწერე აქ... (მაგ: მონტაჟი ვერ მოხდა — ამწე მიუდგომელია)" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;resize:vertical;background:var(--paper);"></textarea>
+            <textarea id="commentDraft" rows="2" placeholder="დაამატე შენიშვნები ამ ობიექტის შესახებ..." style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-family:inherit;font-size:13px;resize:vertical;background:var(--paper);"></textarea>
             <button class="btn primary" onclick="postComment()" style="align-self:flex-end;">გაგზავნა</button>
           </div>
         </div>
@@ -2104,14 +2087,6 @@ table.devices-sheet td:last-child { border-right: none; }
         </div>
       </div>
 
-      <!-- Notes -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title">შენიშვნები</div>
-          <span class="mono" style="font-size:11px;color:var(--slate-500)" id="notesCount">0 სიმბოლო</span>
-        </div>
-        <textarea class="notes-textarea" id="f_notes" placeholder="დაამატე შენიშვნები ამ ობიექტის შესახებ..." oninput="updateNotesCount()" onchange="autoSaveNotes()"></textarea>
-      </div>
     </div>
     
     <div class="detail-side">
@@ -3661,9 +3636,7 @@ function openBranch(id) {
   document.getElementById('f_status').value = b.status;
   document.getElementById('f_annotation').value = b.annotation || '';
   document.getElementById('f_act').value = b.act || '';
-  document.getElementById('f_notes').value = b.notes || '';
-  updateNotesCount();
-  
+
   // Restore info card collapsed state
   const infoCollapsed = localStorage.getItem('tbc_info_collapsed') === '1';
   const wrap = document.getElementById('infoSheetWrap');
@@ -4400,8 +4373,8 @@ async function renderProductionTab() {
           ${b.alias ? `<span style="color:var(--slate-400);font-weight:400;font-size:11px;margin-left:6px;">${escapeHtml(b.alias)}</span>` : ''}
         </a>
       </td>
+      <td class="prod-total prod-total-left">${total}</td>
       ${cells}
-      <td class="prod-total">${total}</td>
     </tr>`;
   }).join('');
 
@@ -4409,46 +4382,74 @@ async function renderProductionTab() {
 
   wrap.innerHTML = `
     <style>
-      #tab-production .prod-table { border-collapse:separate; border-spacing:0; width:100%; font-size:12px; }
-      #tab-production .prod-table thead th { position:sticky; top:0; background:var(--slate-050); z-index:2; border-bottom:1px solid var(--border); }
-      #tab-production .prod-num { width:40px; text-align:center; color:var(--slate-400); font-family:var(--font-mono); font-size:11px; padding:6px 6px; border-bottom:1px solid var(--border); }
-      #tab-production .prod-branch { min-width:240px; max-width:320px; padding:6px 10px; border-bottom:1px solid var(--border); position:sticky; left:40px; background:#fff; z-index:1; }
-      #tab-production tbody tr:nth-child(even) .prod-branch { background:var(--slate-025, #fafbfc); }
-      #tab-production thead th.prod-num, #tab-production thead th.prod-branch-h { position:sticky; left:auto; background:var(--slate-050); z-index:3; }
-      #tab-production thead th.prod-num { left:0; width:40px; text-align:center; padding:6px 6px; }
-      #tab-production thead th.prod-branch-h { left:40px; padding:6px 10px; text-align:left; min-width:240px; }
-      #tab-production .prod-col-h { min-width:40px; max-width:44px; padding:0; border-bottom:1px solid var(--border); vertical-align:bottom; background:var(--slate-050); }
-      #tab-production .prod-col-label { writing-mode:vertical-rl; transform:rotate(180deg); height:160px; padding:8px 0; font-size:11px; font-weight:600; color:var(--slate-700); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.1; display:flex; align-items:flex-start; justify-content:center; }
-      #tab-production .prod-col-label span { display:inline-block; max-height:150px; overflow:hidden; text-overflow:ellipsis; }
-      #tab-production .prod-cell { text-align:center; padding:4px 4px; border-bottom:1px solid var(--border); border-left:1px solid var(--border); font-family:var(--font-mono); font-size:12px; min-width:40px; }
-      #tab-production .prod-cell-zero { background:transparent; color:var(--slate-300); }
-      #tab-production tbody tr:hover td { background:#fef9c3; }
+      #tab-production .prod-scroll { max-height: calc(100vh - 240px); overflow: auto; border:1px solid var(--border); border-radius:8px; background:#fff; }
+      #tab-production .prod-table { border-collapse:separate; border-spacing:0; width:max-content; min-width:100%; font-size:12px; }
+      #tab-production .prod-table thead th { position:sticky; top:0; background:var(--slate-050); z-index:5; border-bottom:1px solid var(--border); }
+      #tab-production .prod-num { width:40px; text-align:center; color:var(--slate-400); font-family:var(--font-mono); font-size:11px; padding:6px 6px; border-bottom:1px solid var(--border); background:#fff; }
+      #tab-production .prod-branch { min-width:240px; max-width:320px; padding:6px 10px; border-bottom:1px solid var(--border); background:#fff; }
+      #tab-production tbody tr:nth-child(even) .prod-num,
+      #tab-production tbody tr:nth-child(even) .prod-branch { background:#fafbfc; }
+      #tab-production tbody .prod-num { position:sticky; left:0; z-index:2; }
+      #tab-production tbody .prod-branch { position:sticky; left:40px; z-index:2; border-right:1px solid var(--border); }
+      #tab-production tbody .prod-total-left { position:sticky; left:320px; z-index:2; border-right:2px solid var(--slate-300); }
+      #tab-production thead th.prod-num-h,
+      #tab-production thead th.prod-branch-h,
+      #tab-production thead th.prod-total-left-h { z-index:6; background:var(--slate-050); vertical-align:bottom; }
+      #tab-production thead th.prod-num-h { position:sticky; left:0; width:40px; text-align:center; padding:6px 6px; }
+      #tab-production thead th.prod-branch-h { position:sticky; left:40px; padding:6px 10px; text-align:left; min-width:240px; border-right:1px solid var(--border); }
+      #tab-production thead th.prod-total-left-h { position:sticky; left:320px; padding:6px 8px; text-align:center; min-width:56px; border-right:2px solid var(--slate-300); color:var(--slate-800); font-weight:700; }
+      #tab-production .prod-col-h { min-width:44px; max-width:44px; padding:0; vertical-align:bottom; background:var(--slate-050); }
+      #tab-production .prod-col-label { height:150px; width:44px; display:flex; align-items:flex-end; justify-content:center; padding:6px 0; overflow:visible; position:relative; }
+      #tab-production .prod-col-label span {
+        transform: rotate(-45deg);
+        transform-origin: left bottom;
+        position: absolute;
+        left: 50%;
+        bottom: 6px;
+        white-space: nowrap;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--slate-700);
+        max-width: 210px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding-left: 4px;
+      }
+      #tab-production .prod-cell { text-align:center; padding:4px 4px; border-bottom:1px solid var(--border); border-left:1px solid var(--border); font-family:var(--font-mono); font-size:12px; min-width:44px; background:#fff; }
+      #tab-production tbody tr:nth-child(even) .prod-cell { background:#fafbfc; }
+      #tab-production .prod-cell-zero { color:var(--slate-300); }
+      #tab-production tbody tr:hover .prod-cell,
+      #tab-production tbody tr:hover .prod-num,
+      #tab-production tbody tr:hover .prod-branch,
+      #tab-production tbody tr:hover .prod-total-left { background:#fef9c3; }
       #tab-production .prod-total { text-align:center; padding:4px 8px; border-bottom:1px solid var(--border); border-left:1px solid var(--border); font-weight:700; background:var(--slate-050); color:var(--slate-800); font-family:var(--font-mono); min-width:48px; }
-      #tab-production thead th.prod-total-h, #tab-production tfoot td { background:var(--slate-100, #e5e7eb); font-weight:700; }
-      #tab-production tfoot td { border-top:2px solid var(--slate-300); padding:6px 4px; text-align:center; font-family:var(--font-mono); }
-      #tab-production tfoot td.prod-foot-label { text-align:right; padding:6px 10px; color:var(--slate-700); }
+      #tab-production tfoot td { position:sticky; bottom:0; background:#e5e7eb; font-weight:700; border-top:2px solid var(--slate-300); padding:6px 4px; text-align:center; font-family:var(--font-mono); z-index:3; }
+      #tab-production tfoot td.prod-foot-num { left:0; z-index:4; }
+      #tab-production tfoot td.prod-foot-label { left:40px; padding:6px 10px; text-align:right; color:var(--slate-700); z-index:4; border-right:1px solid var(--border); }
+      #tab-production tfoot td.prod-foot-grand { left:320px; z-index:4; color:var(--slate-900); border-right:2px solid var(--slate-400); }
       #tab-production .prod-status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle; }
     </style>
+    <div class="prod-scroll">
     <table class="prod-table">
       <thead>
         <tr>
-          <th class="prod-num">#</th>
+          <th class="prod-num-h">#</th>
           <th class="prod-branch-h">ფილიალი</th>
+          <th class="prod-total-left-h" title="ჯამი">ჯამი</th>
           ${colHeaders}
-          <th class="prod-col-h prod-total-h" title="ჯამი">
-            <div class="prod-col-label"><span>ჯამი</span></div>
-          </th>
         </tr>
       </thead>
       <tbody>${bodyRows}</tbody>
       <tfoot>
         <tr>
-          <td class="prod-foot-label" colspan="2">სულ ერთეული</td>
+          <td class="prod-foot-num">—</td>
+          <td class="prod-foot-label">სულ ერთეული</td>
+          <td class="prod-foot-grand prod-total">${grandTotal}</td>
           ${colTotals}
-          <td class="prod-total">${grandTotal}</td>
         </tr>
       </tfoot>
     </table>
+    </div>
   `;
 }
 
@@ -4458,13 +4459,14 @@ function exportProductionXlsx() {
   const hideEmpty = !!document.getElementById('productionHideEmpty')?.checked;
   let cols = [..._products].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ka'));
   if (hideEmpty) cols = cols.filter(p => (usageByProduct.get(p.id) || 0) > 0);
-  const header = ['#', 'ფილიალი', ...cols.map(p => p.name || ''), 'ჯამი'];
+  const header = ['#', 'ფილიალი', 'ჯამი', ...cols.map(p => p.name || '')];
   const rows = (state.branches || []).map((b, idx) => {
     const perProduct = usageByBranch.get(b.id) || new Map();
-    return [idx + 1, b.name || '', ...cols.map(p => perProduct.get(p.id) || 0), branchTotals.get(b.id) || 0];
+    return [idx + 1, b.name || '', branchTotals.get(b.id) || 0, ...cols.map(p => perProduct.get(p.id) || 0)];
   });
-  const footer = ['', 'სულ', ...cols.map(p => usageByProduct.get(p.id) || 0),
-    cols.reduce((s, p) => s + (usageByProduct.get(p.id) || 0), 0)];
+  const footer = ['', 'სულ',
+    cols.reduce((s, p) => s + (usageByProduct.get(p.id) || 0), 0),
+    ...cols.map(p => usageByProduct.get(p.id) || 0)];
   const ws = XLSX.utils.aoa_to_sheet([header, ...rows, footer]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'წარმოება');
@@ -5512,17 +5514,6 @@ function closeBranch() {
   updateTabCount();
 }
 
-function updateNotesCount() {
-  const txt = document.getElementById('f_notes').value;
-  document.getElementById('notesCount').textContent = `${txt.length} სიმბოლო`;
-}
-
-function autoSaveNotes() {
-  if (!state.currentBranch) return;
-  state.currentBranch.notes = document.getElementById('f_notes').value;
-  saveState();
-}
-
 function toggleInfoCard() {
   const wrap = document.getElementById('infoSheetWrap');
   const chev = document.getElementById('infoChevron');
@@ -5546,7 +5537,6 @@ function saveBranchInfo() {
   b.status = document.getElementById('f_status').value;
   b.annotation = document.getElementById('f_annotation').value.trim();
   b.act = document.getElementById('f_act').value.trim();
-  b.notes = document.getElementById('f_notes').value;
   // Clear legacy fields
   delete b.manager; delete b.manager_phone; delete b.visit;
   saveState();
@@ -7186,10 +7176,11 @@ function deleteComment(cid) {
 function renderComments() {
   const wrap = document.getElementById('commentsListWrap');
   const badge = document.getElementById('commentsCountBadge');
-  if (badge) badge.textContent = _comments.length + (_comments.length === 1 ? ' განცხადება' : ' განცხადება');
+  if (badge) badge.textContent = _comments.length + (_comments.length === 1 ? ' შენიშვნა' : ' შენიშვნა');
+  renderCommentsLegacyBanner();
   if (!wrap) return;
   if (_comments.length === 0) {
-    wrap.innerHTML = `<div class="empty-state" style="padding:28px 20px;font-size:12px;">ცარიელია — დაწერე პირველი განცხადება ქვემოთ</div>`;
+    wrap.innerHTML = `<div class="empty-state" style="padding:28px 20px;font-size:12px;">ცარიელია — დაწერე პირველი შენიშვნა ქვემოთ</div>`;
     return;
   }
   const me = _apiUser?.username || '';
@@ -7209,6 +7200,20 @@ function renderComments() {
       </div>
     `;
   }).join('');
+}
+
+function renderCommentsLegacyBanner() {
+  const banner = document.getElementById('commentsLegacyBanner');
+  if (!banner) return;
+  const legacy = (state.currentBranch && typeof state.currentBranch.notes === 'string')
+    ? state.currentBranch.notes.trim() : '';
+  if (!legacy) { banner.innerHTML = ''; return; }
+  banner.innerHTML = `
+    <div style="margin:10px 14px 0;padding:10px 12px;border:1px solid var(--amber-200,#FDE68A);background:var(--amber-50,#FFFBEB);border-radius:8px;">
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--amber-800,#92400E);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">📌 არქივირებული შენიშვნა</div>
+      <div style="font-size:13px;color:var(--slate-800);white-space:pre-wrap;line-height:1.5;">${escapeHtml(legacy)}</div>
+    </div>
+  `;
 }
 
 function formatCommentDate(iso) {
