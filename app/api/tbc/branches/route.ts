@@ -23,7 +23,7 @@ export async function GET(req: Request) {
     ? db
         .from('tbc_branches')
         .select(
-          'id, alias, name, type, region, city, address, area_m2, monthly_fee, planned_count, status, dmt_manager, tbc_manager, planned_start, planned_end, updated_at, updated_by'
+          'id, alias, name, type, region, city, address, area_m2, monthly_fee, planned_count, status, dmt_manager, tbc_manager, planned_start, planned_end, notes, updated_at, updated_by'
         )
     : db
         .from('tbc_branches')

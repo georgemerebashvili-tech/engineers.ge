@@ -11,6 +11,7 @@ import {
   type PhotoValue
 } from '@/components/tbc/device-editor-modal';
 import {WhatsNewButton} from '@/components/tbc/whats-new';
+import {BranchCommentsSheet} from '@/components/tbc/branch-comments-sheet';
 
 type PhotoMeta = {by?: string; at?: string} | null;
 type Device = {
@@ -39,6 +40,7 @@ type Branch = {
   city: string | null;
   region: string | null;
   planned_count: number;
+  notes?: string | null;
 };
 
 function cleanBranchLabel(name: string): string {
@@ -67,6 +69,8 @@ export function MobileApp({session}: {session: TbcSession}) {
   const [devicesLoading, setDevicesLoading] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentsCount, setCommentsCount] = useState(0);
 
   const flash = (m: string) => {
     setToast(m);
@@ -129,8 +133,16 @@ export function MobileApp({session}: {session: TbcSession}) {
         localStorage.setItem('tbc_mobile_branch', String(branchId));
       } catch {}
       loadDevices(branchId);
+      // Refresh comments badge in the background
+      fetch(`/api/tbc/branches/${branchId}/comments`)
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (d && Array.isArray(d.comments)) setCommentsCount(d.comments.length);
+        })
+        .catch(() => {});
     } else {
       setDevices([]);
+      setCommentsCount(0);
     }
   }, [branchId, loadDevices]);
 
@@ -293,6 +305,30 @@ export function MobileApp({session}: {session: TbcSession}) {
           🗃 <span>არქივი</span>
         </button>
       </div>
+
+      {/* Branch notes / comments shortcut */}
+      {branchId && (
+        <button
+          type="button"
+          onClick={() => setCommentsOpen(true)}
+          className="flex shrink-0 items-center justify-between gap-2 border-b border-slate-200 bg-white px-3 py-2 text-left active:bg-slate-50"
+        >
+          <span className="flex items-center gap-2 text-xs font-bold text-slate-700">
+            📝 შენიშვნები
+            {commentsCount > 0 && (
+              <span className="rounded-full bg-[#0071CE] px-2 py-0.5 font-mono text-[10px] font-bold text-white">
+                {commentsCount}
+              </span>
+            )}
+            {(selectedBranch?.notes || '').trim() && commentsCount === 0 && (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 font-mono text-[10px] font-bold text-amber-700">
+                📌
+              </span>
+            )}
+          </span>
+          <span className="text-[11px] text-slate-400">გახსნა →</span>
+        </button>
+      )}
 
       {/* Device list */}
       <div className="flex-1 overflow-y-auto bg-slate-50 px-3 py-3">
@@ -556,6 +592,17 @@ export function MobileApp({session}: {session: TbcSession}) {
           </div>
         </div>
       )}
+
+      {/* Branch comments sheet */}
+      <BranchCommentsSheet
+        branchId={branchId}
+        open={commentsOpen}
+        onClose={() => setCommentsOpen(false)}
+        currentUser={session.username}
+        isAdmin={session.role === 'admin'}
+        legacyNote={selectedBranch?.notes || null}
+        onCountChange={setCommentsCount}
+      />
 
       {/* Confirm delete modal */}
       {confirmOpen && (
