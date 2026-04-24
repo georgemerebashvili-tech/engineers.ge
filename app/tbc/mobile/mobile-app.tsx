@@ -61,6 +61,8 @@ export function MobileApp({session}: {session: TbcSession}) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerQuery, setPickerQuery] = useState('');
 
   const flash = (m: string) => {
     setToast(m);
@@ -188,10 +190,10 @@ export function MobileApp({session}: {session: TbcSession}) {
       method: 'DELETE'
     });
     if (r.ok) {
-      flash('🗑 ბოლო წაიშალა');
+      flash('🗃 ბოლო არქივში გადავიდა');
       loadBranches();
     } else {
-      flash('ვერ წაიშალა');
+      flash('არქივში ვერ გადავიდა');
     }
   }
 
@@ -217,25 +219,25 @@ export function MobileApp({session}: {session: TbcSession}) {
         <label className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-slate-500">
           🏢 ფილიალი
         </label>
-        <select
-          value={branchId ?? ''}
-          onChange={(e) => setBranchId(Number(e.target.value) || null)}
+        <button
+          type="button"
+          onClick={() => {
+            if (loading) return;
+            setPickerQuery('');
+            setPickerOpen(true);
+          }}
           disabled={loading}
-          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-base font-semibold text-slate-900 focus:border-[#0071CE] focus:bg-white focus:outline-none"
+          className="flex w-full items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-left text-base font-semibold text-slate-900 active:bg-slate-100 disabled:opacity-60"
         >
-          <option value="">
-            {loading ? 'იტვირთება…' : '— აირჩიე ფილიალი —'}
-          </option>
-          {branches.map((b) => {
-            const label = cleanBranchLabel(b.name).slice(0, 60);
-            return (
-              <option key={b.id} value={b.id}>
-                {b.alias ? `${b.alias} · ` : ''}
-                {label}
-              </option>
-            );
-          })}
-        </select>
+          <span className="truncate">
+            {loading
+              ? 'იტვირთება…'
+              : selectedBranch
+                ? `${selectedBranch.alias ? `${selectedBranch.alias} · ` : ''}${cleanBranchLabel(selectedBranch.name).slice(0, 60)}`
+                : '— აირჩიე ფილიალი —'}
+          </span>
+          <span className="shrink-0 text-slate-400">🔎</span>
+        </button>
       </div>
 
       {/* Action row */}
@@ -255,7 +257,7 @@ export function MobileApp({session}: {session: TbcSession}) {
           disabled={!branchId || devices.length === 0}
           className="flex items-center justify-center gap-2 rounded-2xl bg-red-600 py-4 text-lg font-black text-white shadow-lg ring-2 ring-red-800/30 disabled:opacity-40 active:scale-95"
         >
-          🗑 <span>წაშლა</span>
+          🗃 <span>არქივი</span>
         </button>
       </div>
 
@@ -411,6 +413,105 @@ export function MobileApp({session}: {session: TbcSession}) {
         }
       />
 
+      {/* Branch picker modal — search + select */}
+      {pickerOpen && (
+        <div
+          className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/60 backdrop-blur-sm sm:items-center"
+          onClick={() => setPickerOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="flex max-h-[85vh] w-full max-w-[540px] flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl"
+          >
+            <div className="flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-3 py-2">
+              <span className="text-sm font-bold text-slate-900">
+                🏢 ფილიალის არჩევა
+              </span>
+              <button
+                onClick={() => setPickerOpen(false)}
+                className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
+              >
+                დახურვა
+              </button>
+            </div>
+            <div className="shrink-0 border-b border-slate-200 bg-white px-3 py-2">
+              <input
+                autoFocus
+                type="search"
+                inputMode="search"
+                value={pickerQuery}
+                onChange={(e) => setPickerQuery(e.target.value)}
+                placeholder="ძიება — ქალაქი, alias, სახელი…"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-base text-slate-900 focus:border-[#0071CE] focus:bg-white focus:outline-none"
+              />
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {(() => {
+                const q = pickerQuery.trim().toLowerCase();
+                const filtered = branches.filter((b) => {
+                  if (!q) return true;
+                  const hay = [
+                    b.alias,
+                    b.name,
+                    cleanBranchLabel(b.name),
+                    b.city,
+                    b.region
+                  ]
+                    .filter(Boolean)
+                    .join(' ')
+                    .toLowerCase();
+                  return hay.includes(q);
+                });
+                if (filtered.length === 0) {
+                  return (
+                    <div className="p-6 text-center text-sm text-slate-400">
+                      ვერაფერი მოიძებნა
+                    </div>
+                  );
+                }
+                return (
+                  <ul className="divide-y divide-slate-100">
+                    {filtered.map((b) => {
+                      const label = cleanBranchLabel(b.name).slice(0, 80);
+                      const active = b.id === branchId;
+                      return (
+                        <li key={b.id}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBranchId(b.id);
+                              setPickerOpen(false);
+                            }}
+                            className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-left active:bg-slate-100 ${
+                              active ? 'bg-[#0071CE]/5' : 'bg-white'
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-sm font-bold text-slate-900">
+                                {b.alias ? `${b.alias} · ` : ''}
+                                {label}
+                              </div>
+                              {(b.city || b.region) && (
+                                <div className="truncate text-[11px] text-slate-500">
+                                  {[b.city, b.region].filter(Boolean).join(' · ')}
+                                </div>
+                              )}
+                            </div>
+                            {active && (
+                              <span className="shrink-0 text-[#0071CE]">✓</span>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Confirm delete modal */}
       {confirmOpen && (
         <div
@@ -423,10 +524,10 @@ export function MobileApp({session}: {session: TbcSession}) {
           >
             <div className="mb-2 text-center text-4xl">🗑</div>
             <h2 className="mb-2 text-center text-base font-bold text-slate-900">
-              წავშალო ბოლო დანადგარი?
+              ბოლო დანადგარი არქივში გადავიტანო?
             </h2>
             <p className="mb-4 text-center text-xs text-slate-500">
-              ეს ქმედება შეუქცევადია.
+              აქტიური სიიდან გაქრება, მაგრამ მონაცემი 30 დღე მაინც დარჩება არქივში.
             </p>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -439,7 +540,7 @@ export function MobileApp({session}: {session: TbcSession}) {
                 onClick={doDeleteLast}
                 className="rounded-xl bg-red-600 py-3 text-sm font-bold text-white shadow"
               >
-                🗑 წაშლა
+                🗃 არქივი
               </button>
             </div>
           </div>
@@ -449,4 +550,3 @@ export function MobileApp({session}: {session: TbcSession}) {
     </div>
   );
 }
-
