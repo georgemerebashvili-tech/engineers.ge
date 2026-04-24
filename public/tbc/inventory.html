@@ -4398,31 +4398,33 @@ async function renderProductionTab() {
       #tab-production thead th.prod-num-h { position:sticky; left:0; width:40px; text-align:center; padding:6px 6px; }
       #tab-production thead th.prod-branch-h { position:sticky; left:40px; padding:6px 10px; text-align:left; min-width:240px; border-right:1px solid var(--border); }
       #tab-production thead th.prod-total-left-h { position:sticky; left:320px; padding:6px 8px; text-align:center; min-width:56px; border-right:2px solid var(--slate-300); color:var(--slate-800); font-weight:700; }
-      #tab-production .prod-col-h { min-width:44px; max-width:44px; padding:0; vertical-align:bottom; background:var(--slate-050); }
-      #tab-production .prod-col-label { height:150px; width:44px; display:flex; align-items:flex-end; justify-content:center; padding:6px 0; overflow:visible; position:relative; }
+      #tab-production .prod-col-h { min-width:28px; max-width:28px; width:28px; padding:0; vertical-align:bottom; background:var(--slate-050); overflow:visible; }
+      #tab-production .prod-col-label { height:92px; width:28px; position:relative; overflow:visible; }
       #tab-production .prod-col-label span {
-        transform: rotate(-45deg);
+        transform: rotate(-50deg);
         transform-origin: left bottom;
         position: absolute;
-        left: 50%;
-        bottom: 6px;
+        left: 18px;
+        bottom: 2px;
         white-space: nowrap;
         font-size: 11px;
         font-weight: 600;
         color: var(--slate-700);
-        max-width: 210px;
+        max-width: 140px;
         overflow: hidden;
         text-overflow: ellipsis;
-        padding-left: 4px;
+        display: inline-block;
+        line-height: 1;
       }
-      #tab-production .prod-cell { text-align:center; padding:4px 4px; border-bottom:1px solid var(--border); border-left:1px solid var(--border); font-family:var(--font-mono); font-size:12px; min-width:44px; background:#fff; }
+      #tab-production .prod-cell { text-align:center; padding:4px 2px; border-bottom:1px solid var(--border); border-left:1px solid var(--border); font-family:var(--font-mono); font-size:12px; min-width:28px; background:#fff; }
       #tab-production tbody tr:nth-child(even) .prod-cell { background:#fafbfc; }
       #tab-production .prod-cell-zero { color:var(--slate-300); }
       #tab-production tbody tr:hover .prod-cell,
       #tab-production tbody tr:hover .prod-num,
       #tab-production tbody tr:hover .prod-branch,
       #tab-production tbody tr:hover .prod-total-left { background:#fef9c3; }
-      #tab-production .prod-total { text-align:center; padding:4px 8px; border-bottom:1px solid var(--border); border-left:1px solid var(--border); font-weight:700; background:var(--slate-050); color:var(--slate-800); font-family:var(--font-mono); min-width:48px; }
+      #tab-production .prod-total { text-align:center; padding:4px 4px; border-bottom:1px solid var(--border); border-left:1px solid var(--border); font-weight:700; background:var(--slate-050); color:var(--slate-800); font-family:var(--font-mono); min-width:28px; }
+      #tab-production tfoot td.prod-foot-grand.prod-total { min-width:56px; padding:4px 8px; }
       #tab-production tfoot td { position:sticky; bottom:0; background:#e5e7eb; font-weight:700; border-top:2px solid var(--slate-300); padding:6px 4px; text-align:center; font-family:var(--font-mono); z-index:3; }
       #tab-production tfoot td.prod-foot-num { left:0; z-index:4; }
       #tab-production tfoot td.prod-foot-label { left:40px; padding:6px 10px; text-align:right; color:var(--slate-700); z-index:4; border-right:1px solid var(--border); }
