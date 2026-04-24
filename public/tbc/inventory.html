@@ -1684,7 +1684,7 @@ table.devices-sheet td:last-child { border-right: none; }
   </a>
   <div class="topbar-title" style="font-weight:700;font-size:15px;color:var(--slate-800);">ინვენტარიზაციის პანელი</div>
   <div class="topbar-actions">
-    <button class="tbtn" id="tbcWhatsNewBtn" onclick="openWhatsNew()" title="რა დაემატა"
+    <button class="tbtn" id="tbcWhatsNewBtn" onclick="openWhatsNew()" title="რა გაკეთდა"
       style="position:relative;background:#ECFDF5;color:#065F46;border:1px solid #A7F3D0;">
       🎁 სიახლე
       <span id="tbcWhatsNewDot" style="display:none;position:absolute;top:-3px;right:-3px;width:10px;height:10px;background:#EF4444;border-radius:50%;border:2px solid white;"></span>
@@ -1710,6 +1710,9 @@ table.devices-sheet td:last-child { border-right: none; }
   </button>
   <button class="tab-btn" data-tab="products" onclick="switchTab('products'); renderProductsTab();">
     🧰 მოწყობილობები <span class="count" id="tabCountProducts">0</span>
+  </button>
+  <button class="tab-btn" data-tab="production" onclick="switchTab('production'); renderProductionTab();">
+    🏭 წარმოება
   </button>
 </div>
 
@@ -1868,6 +1871,26 @@ table.devices-sheet td:last-child { border-right: none; }
 <!-- ====== STATS TAB ====== -->
 <div class="tab-panel" id="tab-stats" style="padding:24px;max-width:1400px;margin:0 auto;">
   <div id="statsTabContent"><div style="color:var(--slate-400);padding:40px;text-align:center;">გადადი სტატისტიკის ტაბზე</div></div>
+</div>
+
+<!-- ====== PRODUCTION TAB (pivot: branches × products) ====== -->
+<div class="tab-panel" id="tab-production" data-tag="production_table" style="padding:24px;max-width:100%;margin:0 auto;">
+  <div class="card" style="margin-bottom:0;">
+    <div class="card-header" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <div class="card-title">🏭 წარმოება — ჯამური ცხრილი</div>
+      <span id="productionCountBadge" style="font-size:11px;font-weight:400;color:var(--slate-400);"></span>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+        <input id="productionSearch" type="text" placeholder="ძებნა: ფილიალი…" oninput="renderProductionTab()" style="height:32px;padding:0 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-width:200px;">
+        <label style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--slate-600);cursor:pointer;">
+          <input type="checkbox" id="productionHideEmpty" onchange="renderProductionTab()"> ფარული ცარიელი სვეტები
+        </label>
+        <button class="btn sm" onclick="exportProductionXlsx()" style="font-size:12px;background:var(--slate-050);border-color:var(--border);color:var(--slate-700);">⬇ XLSX</button>
+      </div>
+    </div>
+    <div id="productionWrap" style="padding:0;overflow-x:auto;">
+      <div style="padding:24px;text-align:center;color:var(--slate-400);font-size:12px;">იტვირთება…</div>
+    </div>
+  </div>
 </div>
 
 <!-- ====== PRODUCTS TAB (global product catalog / product_table) ====== -->
@@ -3953,6 +3976,7 @@ async function addProductRow() {
     renderProductsTab();
     // refresh device dropdowns if a branch is open
     if (state.currentBranch) renderDevicesList(state.currentBranch);
+    showToast && showToast('დაემატა — ახალი სვეტი ავტომატურად გამოჩნდება 🏭 წარმოებაში. გამოყენების შემდეგ წაშლა მხოლოდ ინვენტარის კორექტირების შემდეგ შესაძლებელია.', 'ok');
   } catch (e) { console.error('[products] add failed', e); }
 }
 
@@ -3985,10 +4009,55 @@ async function updateProductRow(id, field, value) {
   } catch (e) { console.error('[products] update failed', e); }
 }
 
+function _findProductUsage(productId) {
+  // Returns array of {branch, count} where product is used in inventory.
+  const out = [];
+  (state.branches || []).forEach(b => {
+    let count = 0;
+    (b.devices || []).forEach(d => { if (d && d.product_id === productId) count += 1; });
+    if (count > 0) out.push({ branch: b, count });
+  });
+  return out;
+}
+
 async function deleteProductRow(id) {
   if (!_isAdminUser()) return;
   const p = _products.find(x => x.id === id);
   if (!p) return;
+
+  const usage = _findProductUsage(id);
+  if (usage.length > 0) {
+    const totalDevices = usage.reduce((s, u) => s + u.count, 0);
+    const branchList = usage
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 15)
+      .map(u => `• <b>${escapeHtml(u.branch.name || '')}</b> — ${u.count}`)
+      .join('<br>');
+    const more = usage.length > 15 ? `<br>…და კიდევ ${usage.length - 15} ფილიალი` : '';
+    const msg = `
+      <div style="text-align:left;">
+        <p><b>"${escapeHtml(p.name || '')}"</b> გამოიყენება ინვენტარიზაციაში —
+        <b>${totalDevices}</b> დანადგარი <b>${usage.length}</b> ფილიალში.</p>
+        <p style="color:#b45309;margin-top:8px;">ჯერ დააკორექტირე მონაცემები — ფილიალებში ამოიღე ან შეცვალე ეს მოწყობილობა, შემდეგ სცადე წაშლა.</p>
+        <div style="margin-top:10px;padding:8px 10px;background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;font-size:11px;max-height:180px;overflow:auto;">
+          ${branchList}${more}
+        </div>
+      </div>
+    `;
+    if (typeof showConfirm === 'function') {
+      showConfirm({
+        title: 'წაშლა არ არის შესაძლებელი',
+        text: msg,
+        okText: 'გასაგებია',
+        icon: '🚫',
+        onConfirm: () => {},
+      });
+    } else {
+      alert(`"${p.name}" გამოიყენება ${usage.length} ფილიალში (${totalDevices} დანადგარი). ჯერ დააკორექტირე ინვენტარი.`);
+    }
+    return;
+  }
+
   const doDelete = async () => {
     const r = await fetch('/api/tbc/products/' + encodeURIComponent(id), {method: 'DELETE'});
     if (!r.ok) { showToast && showToast('ვერ წაიშალა', 'warn'); return; }
@@ -4242,6 +4311,165 @@ async function handleProductsXlsxUpload(ev) {
     renderProductsTab();
     if (state.currentBranch) renderDevicesList(state.currentBranch);
   } catch (e) { console.error(e); showToast && showToast('შეცდომა იმპორტზე', 'warn'); }
+}
+
+// ============================================
+// PRODUCTION TAB — pivot: branches × products (live)
+// ============================================
+function _productionBuildUsage() {
+  // returns { usageByProduct: Map<productId, totalCount>,
+  //          usageByBranch: Map<branchId, Map<productId, count>>,
+  //          branchTotals: Map<branchId, number> }
+  const usageByProduct = new Map();
+  const usageByBranch = new Map();
+  const branchTotals = new Map();
+  (state.branches || []).forEach(b => {
+    const perProduct = new Map();
+    let branchTotal = 0;
+    (b.devices || []).forEach(d => {
+      if (!d || !d.product_id) return;
+      perProduct.set(d.product_id, (perProduct.get(d.product_id) || 0) + 1);
+      usageByProduct.set(d.product_id, (usageByProduct.get(d.product_id) || 0) + 1);
+      branchTotal += 1;
+    });
+    usageByBranch.set(b.id, perProduct);
+    branchTotals.set(b.id, branchTotal);
+  });
+  return { usageByProduct, usageByBranch, branchTotals };
+}
+
+async function renderProductionTab() {
+  const wrap = document.getElementById('productionWrap');
+  if (!wrap) return;
+  if (!_productsLoaded) await loadProducts();
+
+  const q = (document.getElementById('productionSearch')?.value || '').trim().toLowerCase();
+  const hideEmpty = !!document.getElementById('productionHideEmpty')?.checked;
+
+  const { usageByProduct, usageByBranch, branchTotals } = _productionBuildUsage();
+
+  // Columns: all products (dynamic). If hideEmpty — only those with usage > 0.
+  let cols = [..._products].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ka'));
+  if (hideEmpty) cols = cols.filter(p => (usageByProduct.get(p.id) || 0) > 0);
+
+  // Rows: branches (filtered by name)
+  const rows = (state.branches || []).filter(b => {
+    if (!q) return true;
+    const hay = `${b.name || ''} ${b.alias || ''} ${b.city || ''} ${b.region || ''}`.toLowerCase();
+    return hay.includes(q);
+  });
+
+  const badge = document.getElementById('productionCountBadge');
+  if (badge) badge.textContent = `(${rows.length} ფილიალი · ${cols.length} მოწყობილობა)`;
+
+  if (!rows.length || !cols.length) {
+    wrap.innerHTML = `<div style="padding:28px;text-align:center;color:var(--slate-400);font-size:12px;">
+      ${!rows.length ? 'ფილიალი არ მოიძებნა' : 'მოწყობილობა არ არის — დაამატე ცნობარში'}
+    </div>`;
+    return;
+  }
+
+  // Grand total
+  const grandTotal = cols.reduce((s, p) => s + (usageByProduct.get(p.id) || 0), 0);
+
+  // Build HTML
+  const colHeaders = cols.map(p => {
+    const total = usageByProduct.get(p.id) || 0;
+    const title = `${p.name || ''}${p.code ? ' · ' + p.code : ''}${p.dimension ? ' · ' + p.dimension : ''} — სულ: ${total}`;
+    return `<th class="prod-col-h" title="${escapeHtml(title)}">
+      <div class="prod-col-label"><span>${escapeHtml(p.name || '')}</span></div>
+    </th>`;
+  }).join('');
+
+  const bodyRows = rows.map((b, idx) => {
+    const perProduct = usageByBranch.get(b.id) || new Map();
+    const total = branchTotals.get(b.id) || 0;
+    const cells = cols.map(p => {
+      const c = perProduct.get(p.id) || 0;
+      const cls = c === 0 ? 'prod-cell prod-cell-zero' : 'prod-cell';
+      return `<td class="${cls}">${c === 0 ? '<span style="color:var(--slate-300);">·</span>' : c}</td>`;
+    }).join('');
+    const statusDot = b.status
+      ? `<span class="prod-status-dot" style="background:var(--st-${b.status});" title="${escapeHtml(b.status)}"></span>`
+      : '';
+    return `<tr>
+      <td class="prod-num">${idx + 1}</td>
+      <td class="prod-branch">
+        <a href="#" onclick="event.preventDefault();switchTab('objects');openBranch('${escapeHtml(b.id)}');" style="text-decoration:none;color:inherit;">
+          ${statusDot}<b>${escapeHtml(b.name || '')}</b>
+          ${b.alias ? `<span style="color:var(--slate-400);font-weight:400;font-size:11px;margin-left:6px;">${escapeHtml(b.alias)}</span>` : ''}
+        </a>
+      </td>
+      ${cells}
+      <td class="prod-total">${total}</td>
+    </tr>`;
+  }).join('');
+
+  const colTotals = cols.map(p => `<td class="prod-total">${usageByProduct.get(p.id) || 0}</td>`).join('');
+
+  wrap.innerHTML = `
+    <style>
+      #tab-production .prod-table { border-collapse:separate; border-spacing:0; width:100%; font-size:12px; }
+      #tab-production .prod-table thead th { position:sticky; top:0; background:var(--slate-050); z-index:2; border-bottom:1px solid var(--border); }
+      #tab-production .prod-num { width:40px; text-align:center; color:var(--slate-400); font-family:var(--font-mono); font-size:11px; padding:6px 6px; border-bottom:1px solid var(--border); }
+      #tab-production .prod-branch { min-width:240px; max-width:320px; padding:6px 10px; border-bottom:1px solid var(--border); position:sticky; left:40px; background:#fff; z-index:1; }
+      #tab-production tbody tr:nth-child(even) .prod-branch { background:var(--slate-025, #fafbfc); }
+      #tab-production thead th.prod-num, #tab-production thead th.prod-branch-h { position:sticky; left:auto; background:var(--slate-050); z-index:3; }
+      #tab-production thead th.prod-num { left:0; width:40px; text-align:center; padding:6px 6px; }
+      #tab-production thead th.prod-branch-h { left:40px; padding:6px 10px; text-align:left; min-width:240px; }
+      #tab-production .prod-col-h { min-width:40px; max-width:44px; padding:0; border-bottom:1px solid var(--border); vertical-align:bottom; background:var(--slate-050); }
+      #tab-production .prod-col-label { writing-mode:vertical-rl; transform:rotate(180deg); height:160px; padding:8px 0; font-size:11px; font-weight:600; color:var(--slate-700); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; line-height:1.1; display:flex; align-items:flex-start; justify-content:center; }
+      #tab-production .prod-col-label span { display:inline-block; max-height:150px; overflow:hidden; text-overflow:ellipsis; }
+      #tab-production .prod-cell { text-align:center; padding:4px 4px; border-bottom:1px solid var(--border); border-left:1px solid var(--border); font-family:var(--font-mono); font-size:12px; min-width:40px; }
+      #tab-production .prod-cell-zero { background:transparent; color:var(--slate-300); }
+      #tab-production tbody tr:hover td { background:#fef9c3; }
+      #tab-production .prod-total { text-align:center; padding:4px 8px; border-bottom:1px solid var(--border); border-left:1px solid var(--border); font-weight:700; background:var(--slate-050); color:var(--slate-800); font-family:var(--font-mono); min-width:48px; }
+      #tab-production thead th.prod-total-h, #tab-production tfoot td { background:var(--slate-100, #e5e7eb); font-weight:700; }
+      #tab-production tfoot td { border-top:2px solid var(--slate-300); padding:6px 4px; text-align:center; font-family:var(--font-mono); }
+      #tab-production tfoot td.prod-foot-label { text-align:right; padding:6px 10px; color:var(--slate-700); }
+      #tab-production .prod-status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+    </style>
+    <table class="prod-table">
+      <thead>
+        <tr>
+          <th class="prod-num">#</th>
+          <th class="prod-branch-h">ფილიალი</th>
+          ${colHeaders}
+          <th class="prod-col-h prod-total-h" title="ჯამი">
+            <div class="prod-col-label"><span>ჯამი</span></div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>${bodyRows}</tbody>
+      <tfoot>
+        <tr>
+          <td class="prod-foot-label" colspan="2">სულ ერთეული</td>
+          ${colTotals}
+          <td class="prod-total">${grandTotal}</td>
+        </tr>
+      </tfoot>
+    </table>
+  `;
+}
+
+function exportProductionXlsx() {
+  if (typeof XLSX === 'undefined') { showToast && showToast('XLSX ბიბლიოთეკა ვერ ჩაიტვირთა', 'warn'); return; }
+  const { usageByProduct, usageByBranch, branchTotals } = _productionBuildUsage();
+  const hideEmpty = !!document.getElementById('productionHideEmpty')?.checked;
+  let cols = [..._products].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ka'));
+  if (hideEmpty) cols = cols.filter(p => (usageByProduct.get(p.id) || 0) > 0);
+  const header = ['#', 'ფილიალი', ...cols.map(p => p.name || ''), 'ჯამი'];
+  const rows = (state.branches || []).map((b, idx) => {
+    const perProduct = usageByBranch.get(b.id) || new Map();
+    return [idx + 1, b.name || '', ...cols.map(p => perProduct.get(p.id) || 0), branchTotals.get(b.id) || 0];
+  });
+  const footer = ['', 'სულ', ...cols.map(p => usageByProduct.get(p.id) || 0),
+    cols.reduce((s, p) => s + (usageByProduct.get(p.id) || 0), 0)];
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows, footer]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'წარმოება');
+  const stamp = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(wb, `tbc-production-${stamp}.xlsx`);
 }
 
 // ============================================
@@ -6530,12 +6758,22 @@ async function runAiFillRow(idx) {
   if (btn) btn.classList.add('loading');
 
   try {
+    // Send a slim copy of the products catalog so Claude can pick a row.
+    const catalog = (_products || []).map(p => ({
+      id: p.id,
+      code: p.code || '',
+      name: p.name,
+      dimension: p.dimension || '',
+      tags: Array.isArray(p.tags) ? p.tags.slice(0, 8) : [],
+    }));
+
     const r = await fetch('/api/tbc/vision/analyze-device', {
       method: 'POST',
       headers: {'content-type': 'application/json'},
       body: JSON.stringify({
         photos,
         hint: d.category || d.subtype ? {category: d.category, subtype: d.subtype} : undefined,
+        catalog: catalog.length ? catalog : undefined,
       }),
     });
     if (r.status === 401) { window.location.href = '/tbc'; return; }
@@ -6555,19 +6793,48 @@ async function runAiFillRow(idx) {
 
     d.ai_attempts = attempts + 1;
     d.ai_missing = res.missing || [];
+    d.ai_georgian_description = res.georgian_description || null;
+
+    // Catalog match handling — only touch product_id if it's empty
+    let matchMsg = '';
+    if (!d.product_id && res.product_id && (res.match_confidence === 'high' || res.match_confidence === 'medium')) {
+      d.product_id = res.product_id;
+      delete d.controller_id;
+      filled++;
+      const prod = (_products || []).find(p => p.id === res.product_id);
+      const label = prod ? (prod.code ? prod.code + ' · ' : '') + prod.name : '';
+      matchMsg = res.match_confidence === 'high'
+        ? `კატალოგიდან ავტომატურად: ${label}`
+        : `კატალოგიდან (შესაცვლელია თუ საჭიროა): ${label}`;
+    }
 
     saveState();
     renderDevicesList(state.currentBranch);
     renderPlannedEquipment(state.currentBranch);
 
-    if (filled === 0) {
+    if (filled === 0 && !res.product_id && (!res.candidates || !res.candidates.length)) {
       showToast(`AI-მ ვერაფერი ამოიცნო (ცდა ${d.ai_attempts}/${AI_FILL_MAX})`, 'error');
-    } else {
+    } else if (filled > 0) {
       const msg = `${filled} ველი შევსდა ✨ (ცდა ${d.ai_attempts}/${AI_FILL_MAX})`;
       showToast(msg, 'success');
     }
-    if ((res.missing || []).length) {
-      setTimeout(() => showToast('ვერ იკითხება: ' + res.missing.join(', '), 'error'), 2000);
+    if (matchMsg) {
+      setTimeout(() => showToast(matchMsg, 'success'), 1200);
+    }
+
+    // If we don't have a confident match yet, open the picker
+    const needsPicker =
+      !d.product_id &&
+      (_products || []).length > 0 &&
+      (res.match_confidence === 'low' || res.match_confidence === 'none' || (!res.product_id && (res.candidates || []).length));
+    if (needsPicker) {
+      showProductPicker(idx, {
+        candidates: res.candidates || [],
+        georgianDescription: res.georgian_description || '',
+        reasoning: res.match_reasoning || '',
+      });
+    } else if ((res.missing || []).length) {
+      setTimeout(() => showToast('ვერ იკითხება: ' + res.missing.join(', '), 'error'), 2400);
     }
   } catch(e) {
     console.error('AI fill failed', e);
@@ -6693,6 +6960,144 @@ async function refreshAiResearch(idx) {
   saveState();
   document.getElementById('aiMetaOverlay').classList.remove('active');
   await runAiResearchRow(idx);
+}
+
+// ============================================
+// AI catalog-match picker (when AI is unsure)
+// ============================================
+let _pickerState = {idx: -1, query: '', candidates: [], description: '', reasoning: ''};
+
+function showProductPicker(idx, opts) {
+  if (!state.currentBranch) return;
+  const d = state.currentBranch.devices[idx];
+  if (!d) return;
+  _pickerState = {
+    idx,
+    query: '',
+    candidates: Array.isArray(opts && opts.candidates) ? opts.candidates : [],
+    description: (opts && opts.georgianDescription) || '',
+    reasoning: (opts && opts.reasoning) || '',
+  };
+
+  let overlay = document.getElementById('productPickerOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'productPickerOverlay';
+    overlay.className = 'modal-overlay';
+    overlay.onclick = (e) => { if (e.target === overlay) closeProductPicker(); };
+    document.body.appendChild(overlay);
+  }
+  renderProductPicker();
+  overlay.classList.add('active');
+  setTimeout(() => {
+    const inp = document.getElementById('productPickerSearch');
+    if (inp) inp.focus();
+  }, 50);
+}
+
+function closeProductPicker() {
+  const o = document.getElementById('productPickerOverlay');
+  if (o) o.classList.remove('active');
+}
+
+function _pickerHandleSearch(v) {
+  _pickerState.query = String(v || '').trim().toLowerCase();
+  renderProductPicker();
+}
+
+function renderProductPicker() {
+  const overlay = document.getElementById('productPickerOverlay');
+  if (!overlay) return;
+  const {idx, query, candidates, description, reasoning} = _pickerState;
+  const d = state.currentBranch && state.currentBranch.devices[idx];
+  if (!d) { closeProductPicker(); return; }
+
+  const products = _products || [];
+  const candidateRows = candidates
+    .map(id => products.find(p => p.id === id))
+    .filter(Boolean);
+  const candidateIds = new Set(candidateRows.map(p => p.id));
+
+  const filtered = !query ? products : products.filter(p => {
+    const tags = Array.isArray(p.tags) ? p.tags : [];
+    const hay = [p.name, p.code, p.dimension, ...tags].map(v => (v||'').toString().toLowerCase()).join(' | ');
+    return hay.includes(query);
+  });
+  // Show suggestions first, then the rest (filtered)
+  const restRows = filtered.filter(p => !candidateIds.has(p.id));
+
+  const deviceLabel = [d.brand, d.model, d.serial].filter(Boolean).join(' · ') || '(უსახელო დანადგარი)';
+
+  const cardHtml = (p, suggested) => `
+    <button type="button" class="picker-row${suggested ? ' is-suggested' : ''}"
+      onclick="confirmProductPick(${idx}, '${escapeHtml(p.id)}')"
+      style="display:flex;width:100%;text-align:left;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:${suggested ? 'var(--tbc-blue-light, #EFF6FF)' : '#fff'};cursor:pointer;margin-bottom:6px;">
+      ${suggested ? '<span style="font-size:11px;font-weight:700;color:var(--tbc-blue, #1565C0);background:#fff;border:1px solid var(--tbc-blue, #1565C0);border-radius:999px;padding:2px 8px;flex:none;">AI</span>' : ''}
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:var(--slate-900);">${escapeHtml(p.name)}${p.dimension ? ' <span style="color:var(--slate-500);font-weight:400;">· '+escapeHtml(p.dimension)+'</span>' : ''}</div>
+        <div style="font-size:11px;color:var(--slate-500);font-family:ui-monospace,monospace;">${escapeHtml(p.code || '—')}</div>
+      </div>
+    </button>
+  `;
+
+  const suggestedHtml = candidateRows.length
+    ? `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--slate-500);font-weight:600;margin:4px 0 6px;">AI-ის ვარიანტები</div>${candidateRows.map(p => cardHtml(p, true)).join('')}`
+    : '';
+  const restHtml = restRows.length
+    ? `<div style="font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--slate-500);font-weight:600;margin:14px 0 6px;">${candidateRows.length ? 'სრული კატალოგი' : 'კატალოგი'} (${restRows.length})</div>${restRows.slice(0, 100).map(p => cardHtml(p, false)).join('')}`
+    : (candidateRows.length ? '' : `<div class="empty-state" style="padding:24px;">ვერაფერი მოიძებნა</div>`);
+
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:640px;">
+      <div class="modal-header">
+        <h2>🤖 აირჩიე მოწყობილობა · ${escapeHtml(deviceLabel)}</h2>
+        <button class="modal-close" onclick="closeProductPicker()">×</button>
+      </div>
+      <div class="modal-body" style="padding: 14px 22px;">
+        ${description ? `<div style="background:var(--slate-050,#F8FAFC);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:12px;">
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.04em;color:var(--slate-500);font-weight:600;margin-bottom:4px;">AI ფიქრობს რომ ეს არის</div>
+          <div style="font-size:13px;color:var(--slate-900);">${escapeHtml(description)}</div>
+          ${reasoning ? `<div style="font-size:11px;color:var(--slate-500);margin-top:6px;font-style:italic;">${escapeHtml(reasoning)}</div>` : ''}
+        </div>` : ''}
+        <input id="productPickerSearch" type="text" value="${escapeHtml(query)}"
+          oninput="_pickerHandleSearch(this.value)"
+          placeholder="ძებნა: სახელი, კოდი, #ტეგი…"
+          style="width:100%;height:34px;padding:0 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;margin-bottom:10px;">
+        <div style="max-height:340px;overflow-y:auto;padding-right:4px;">
+          ${suggestedHtml}${restHtml}
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between;">
+        <button class="btn" onclick="skipProductPick(${idx})" title="ცარიელი დატოვე — შემდეგ აირჩიე ხელით">⤼ გამოტოვე ველი</button>
+        <button class="btn" onclick="closeProductPicker()">დახურვა</button>
+      </div>
+    </div>
+  `;
+}
+
+function confirmProductPick(idx, productId) {
+  if (!state.currentBranch) return;
+  const d = state.currentBranch.devices[idx];
+  if (!d) return;
+  d.product_id = productId;
+  delete d.controller_id;
+  d.ai_picker_skipped = false;
+  saveState();
+  closeProductPicker();
+  renderDevicesList(state.currentBranch);
+  renderPlannedEquipment(state.currentBranch);
+  const p = (_products || []).find(x => x.id === productId);
+  if (p) showToast('მონიშნე: ' + (p.code ? p.code + ' · ' : '') + p.name, 'success');
+}
+
+function skipProductPick(idx) {
+  if (!state.currentBranch) return;
+  const d = state.currentBranch.devices[idx];
+  if (!d) return;
+  d.ai_picker_skipped = true;
+  saveState();
+  closeProductPicker();
+  showToast('ველი გამოტოვებულია — შეგიძლია ხელით აირჩიო კონტრ. სვეტში', 'info');
 }
 
 // ============================================
@@ -6910,7 +7315,7 @@ function openWhatsNew() {
     dialog.style.cssText = 'background:white;border-radius:14px;max-width:560px;width:100%;max-height:85vh;overflow-y:auto;padding:18px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);';
     dialog.innerHTML = [
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">',
-      '  <h2 style="font-size:16px;font-weight:700;color:#0f172a;margin:0;">🎁 რა დაემატა</h2>',
+      '  <h2 style="font-size:16px;font-weight:700;color:#0f172a;margin:0;">🎁 რა გაკეთდა</h2>',
       '  <button onclick="document.getElementById(\'tbcWhatsNewOverlay\').remove()" style="height:30px;width:30px;border-radius:999px;border:none;background:transparent;font-size:22px;color:#94a3b8;cursor:pointer;">×</button>',
       '</div>',
       '<div style="display:flex;flex-direction:column;gap:16px;">',
