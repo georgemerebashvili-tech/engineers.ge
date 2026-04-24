@@ -11,10 +11,14 @@
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
   if (typeof L === 'undefined') document.write('<scr' + 'ipt src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></scr' + 'ipt>');
   if (typeof XLSX === 'undefined') document.write('<scr' + 'ipt src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></scr' + 'ipt>');
   if (typeof Chart === 'undefined') document.write('<scr' + 'ipt src="https://unpkg.com/chart.js@4.4.1/dist/chart.umd.min.js"></scr' + 'ipt>');
+  if (typeof ChartDataLabels === 'undefined') document.write('<scr' + 'ipt src="https://unpkg.com/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></scr' + 'ipt>');
+  if (typeof JSZip === 'undefined') document.write('<scr' + 'ipt src="https://unpkg.com/jszip@3.10.1/dist/jszip.min.js"></scr' + 'ipt>');
 </script>
 <style>
 :root {
@@ -621,14 +625,14 @@ table.branches td {
 
 /* Row "open detail" jump button */
 .row-open-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
   border: 1px solid var(--border);
   background: var(--paper);
   color: var(--slate-500);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 18px;
   font-family: inherit;
   font-weight: 700;
   display: inline-flex;
@@ -696,7 +700,7 @@ table.branches td {
 .detail-header {
   background: var(--paper);
   border-bottom: 1px solid var(--border);
-  padding: 16px 24px;
+  padding: 8px 20px;
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -704,50 +708,52 @@ table.branches td {
 .detail-header-top {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 3px;
 }
 .back-btn {
   background: var(--slate-050);
   border: 1px solid var(--border);
-  padding: 6px 12px;
+  padding: 4px 10px;
   border-radius: 6px;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   color: var(--slate-700);
   transition: all 0.15s;
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex; align-items: center; gap: 5px;
 }
 .back-btn:hover { background: var(--paper); border-color: var(--slate-400); }
 .detail-alias {
   font-family: var(--font-mono);
   font-weight: 700;
   color: var(--tbc-blue);
-  font-size: 13px;
+  font-size: 11px;
   letter-spacing: 0.04em;
-  padding: 4px 10px;
+  padding: 2px 7px;
   background: var(--tbc-blue-light);
   border-radius: 4px;
   border: 1px solid var(--tbc-blue-light);
 }
 .detail-name {
-  font-size: 22px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--slate-900);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   line-height: 1.2;
 }
 .detail-meta {
   display: flex;
-  gap: 20px;
-  font-size: 13px;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
   color: var(--slate-500);
-  margin-top: 6px;
+  margin-top: 2px;
 }
-.detail-meta span { display: inline-flex; align-items: center; gap: 5px; }
+.detail-meta span { display: inline-flex; align-items: center; gap: 4px; }
 .detail-meta .label { color: var(--slate-400); font-weight: 500; }
 .detail-meta .value { color: var(--slate-800); font-weight: 600; }
+.detail-header-top .btn { padding: 4px 10px; font-size: 12px; }
 
 .detail-body {
   max-width: 1600px;
@@ -863,6 +869,89 @@ table.branches td {
   text-align: right;
 }
 
+/* ============ CATALOG LIST ============ */
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+  padding: 12px 16px 14px;
+}
+.catalog-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  position: relative;
+}
+.catalog-photo-wrap {
+  width: 100%;
+  height: 110px;
+  background: var(--slate-100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+}
+.catalog-photo-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.catalog-photo-placeholder {
+  font-size: 28px;
+  color: var(--slate-300);
+}
+.catalog-photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  color: #fff;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.catalog-photo-wrap:hover .catalog-photo-overlay { opacity: 1; }
+.catalog-body {
+  padding: 8px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.catalog-field-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--slate-400);
+  margin-bottom: 1px;
+}
+.catalog-del-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(255,255,255,0.85);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 5px;
+  line-height: 1;
+  color: var(--slate-500);
+  backdrop-filter: blur(2px);
+}
+.catalog-del-btn:hover { color: #DC2626; border-color: #FECACA; background: #FEF2F2; }
+.catalog-limit-note {
+  font-size: 11px;
+  color: var(--slate-400);
+  padding: 0 16px 10px;
+  text-align: center;
+}
+
 /* ============ INFO SHEET (branch info spreadsheet) ============ */
 .info-sheet-wrap {
   overflow: hidden;
@@ -917,7 +1006,8 @@ table.info-sheet tr:last-child td { border-bottom: none; }
 
 /* ============ DEVICES INLINE SPREADSHEET ============ */
 .devices-sheet-wrap {
-  overflow-x: auto;
+  overflow: auto;
+  max-height: 62vh;
   background: var(--paper);
 }
 table.devices-sheet {
@@ -929,6 +1019,7 @@ table.devices-sheet {
 table.devices-sheet thead th {
   position: sticky;
   top: 0;
+  z-index: 3;
   background: var(--slate-050);
   color: var(--slate-600);
   text-align: left;
@@ -980,7 +1071,7 @@ table.devices-sheet td:last-child { border-right: none; }
 .sheet-cell-num { width: 40px; padding: 7px 9px; font-family: var(--font-mono); color: var(--slate-400); font-size: 11px; text-align: center; }
 .sheet-cell-check { width: 44px; padding: 7px 9px; text-align: center; }
 .sheet-cell-check input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--amber-500); }
-.sheet-cell-photo { width: 44px; padding: 4px; text-align: center; }
+.sheet-cell-photo { width: 64px; padding: 4px; text-align: center; }
 .sheet-cell-ai { width: 44px; padding: 4px; text-align: center; }
 .ai-icon-btn {
   width: 34px; height: 34px;
@@ -1022,7 +1113,7 @@ table.devices-sheet td:last-child { border-right: none; }
   50%      { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
 }
 .sheet-photo-slot {
-  width: 36px; height: 36px;
+  width: 52px; height: 52px;
   border: 1px dashed var(--border-strong);
   border-radius: 5px;
   background: var(--slate-050);
@@ -1061,7 +1152,7 @@ table.devices-sheet td:last-child { border-right: none; }
 .sheet-cell-del { width: 40px; padding: 7px 9px; text-align: center; }
 .sheet-cell-del button { background: transparent; border: none; color: var(--slate-400); cursor: pointer; font-size: 14px; padding: 4px 7px; border-radius: 5px; font-family: inherit; }
 .sheet-cell-del button:hover { background: var(--red-100); color: var(--red-600); }
-.sheet-photo-header { text-align: center !important; padding: 4px 0 !important; font-size: 9px !important; width: 44px; }
+.sheet-photo-header { text-align: center !important; padding: 4px 0 !important; font-size: 9px !important; width: 64px; }
 .sheet-add-row td { padding: 10px 12px; background: var(--slate-050); text-align: center; }
 .sheet-add-row button {
   background: var(--paper);
@@ -1580,6 +1671,10 @@ table.devices-sheet td:last-child { border-right: none; }
 </head>
 <body>
 
+<!-- Thin global activity bar (2 px) — activates whenever any /api/tbc/* call is in flight -->
+<div id="tbcGlobalLoader"
+     style="position:fixed;top:0;left:0;height:2px;width:0;background:linear-gradient(90deg,#0071CE,#00AA8D);z-index:9999;opacity:0;transition:width 0.2s ease, opacity 0.15s ease;pointer-events:none;"></div>
+
 <!-- ============ TOP BAR (logos removed — outer frame already has them) ============ -->
 <div class="topbar">
   <a href="/tbc/mobile"
@@ -1604,6 +1699,12 @@ table.devices-sheet td:last-child { border-right: none; }
   </button>
   <button class="tab-btn" data-tab="dashboard" onclick="switchTab('dashboard')">
     📊 დეშბორდი
+  </button>
+  <button class="tab-btn" data-tab="stats" onclick="switchTab('stats'); renderStatsTab();">
+    📈 სტატისტიკა
+  </button>
+  <button class="tab-btn" data-tab="products" onclick="switchTab('products'); renderProductsTab();">
+    🧰 მოწყობილობები <span class="count" id="tabCountProducts">0</span>
   </button>
 </div>
 
@@ -1694,9 +1795,9 @@ table.devices-sheet td:last-child { border-right: none; }
 
     <div class="dash-row" style="display:grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
       <div class="card" style="margin-bottom: 0;">
-        <div class="card-header"><div class="card-title">ქალაქების ტოპ-10</div></div>
+        <div class="card-header"><div class="card-title">ქალაქები</div></div>
         <div class="card-body" style="padding: 14px;">
-          <div style="position: relative; height: 300px;">
+          <div id="citiesChartWrap" style="position: relative; height: 300px;">
             <canvas id="citiesChart"></canvas>
           </div>
         </div>
@@ -1756,6 +1857,34 @@ table.devices-sheet td:last-child { border-right: none; }
   <div class="slide-action-bar">
     <button class="btn" onclick="closeSlidePanel()" style="flex:1;justify-content:center;">დახურვა</button>
     <button class="btn primary" id="slideOpenBtn" style="flex:2;justify-content:center;">დეტალური ხედი →</button>
+  </div>
+</div>
+
+<!-- ====== STATS TAB ====== -->
+<div class="tab-panel" id="tab-stats" style="padding:24px;max-width:1400px;margin:0 auto;">
+  <div id="statsTabContent"><div style="color:var(--slate-400);padding:40px;text-align:center;">გადადი სტატისტიკის ტაბზე</div></div>
+</div>
+
+<!-- ====== PRODUCTS TAB (global product catalog / product_table) ====== -->
+<div class="tab-panel" id="tab-products" data-tag="product_table" style="padding:24px;max-width:1400px;margin:0 auto;">
+  <div class="card" style="margin-bottom:0;">
+    <div class="card-header" style="display:flex;align-items:center;gap:12px;">
+      <div class="card-title">🧰 მოწყობილობების ცნობარი</div>
+      <span id="productsCountBadge" style="font-size:11px;font-weight:400;color:var(--slate-400);"></span>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+        <input id="productsSearch" type="text" placeholder="ძებნა: სახელი, კოდი, #ტეგი…" oninput="renderProductsTab()" style="height:32px;padding:0 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-width:240px;">
+        <button class="btn sm" onclick="document.getElementById('productsXlsxInput').click()" id="productsImportBtn" style="font-size:12px;background:var(--slate-050);border-color:var(--border);color:var(--slate-700);">⬆ XLSX იმპორტი</button>
+        <input type="file" id="productsXlsxInput" style="display:none" accept=".xlsx,.xls" onchange="handleProductsXlsxUpload(event)">
+        <button class="btn sm" onclick="exportProductsXlsx()" id="productsExportBtn" style="font-size:12px;background:var(--slate-050);border-color:var(--border);color:var(--slate-700);">⬇ XLSX ექსპორტი</button>
+        <button class="btn sm primary" onclick="addProductRow()" id="productsAddBtn" style="font-size:12px;">+ პროდუქტი</button>
+      </div>
+    </div>
+    <div id="productsAdminNote" style="padding:8px 16px;font-size:11px;color:var(--slate-500);border-bottom:1px solid var(--border);display:none;">
+      ℹ️ ფასი ხილულია მხოლოდ ადმინისთვის. სხვა მომხმარებლებს ეჩვენებათ <b>***</b>.
+    </div>
+    <div id="productsWrap" style="padding:0;">
+      <div style="padding:24px;text-align:center;color:var(--slate-400);font-size:12px;">იტვირთება…</div>
+    </div>
   </div>
 </div>
 
@@ -1842,14 +1971,65 @@ table.devices-sheet td:last-child { border-right: none; }
           <div class="card-title">დანადგარების ინვენტარი</div>
           <div style="display:flex;gap:8px;align-items:center;">
             <span class="mono" style="font-size:11px;color:var(--slate-500)" id="deviceCountBadge">0 დანადგარი</span>
+            <button class="btn sm" onclick="exportBranchXlsx()" title="ცხრილი XLSX-ად (ფოტოების URL)" style="background:var(--slate-050);border-color:var(--border);color:var(--slate-600);">⬇ XLSX</button>
+            <button class="btn sm" onclick="exportBranchZipServer()" title="ცხრილი + ყველა ფოტო ZIP-ად" style="background:var(--slate-050);border-color:var(--border);color:var(--slate-600);">⬇ ZIP+ფოტო</button>
+            <button class="btn sm" id="archivePanelBtn" onclick="toggleArchivePanel()" title="არქივი — 360 დღის ვადით შენახული ჩანაწერები" style="background:var(--slate-050);border-color:var(--border);color:var(--slate-600);">🗃 არქივი</button>
             <button class="btn sm primary" onclick="addNewDevice()">+ დამატება</button>
           </div>
+        </div>
+        <div id="archivedDevicesPanel" style="display:none;border-bottom:1px solid var(--border);background:var(--slate-050);padding:12px 16px;">
+          <div id="archivedDevicesWrap" style="font-size:12px;color:var(--slate-500);">იტვირთება...</div>
         </div>
         <div id="devicesListWrap">
           <div class="empty-state" style="padding:40px 20px;">
             <div class="empty-state-icon">📦</div>
             <div>ჯერ არ არის აღრიცხული დანადგარი<br>დააჭირე "+ დამატება" ღილაკს</div>
           </div>
+        </div>
+      </div>
+
+      <!-- Controllers card -->
+      <div class="card" id="controllersCard">
+        <div class="card-header" style="cursor:pointer;user-select:none;" onclick="toggleCard('controllersBody','controllersChev')">
+          <div class="card-title" style="display:flex;align-items:center;gap:8px;">
+            <span id="controllersChev">▼</span> 🎛 კონტროლერები
+            <span style="font-size:11px;font-weight:400;color:var(--slate-400);" id="controllersCountBadge"></span>
+          </div>
+          <button class="btn sm primary" onclick="event.stopPropagation();addController()" style="font-size:11px;">+ კონტროლერი</button>
+        </div>
+        <div id="controllersBody">
+          <div id="controllersWrap" style="padding:8px 16px 12px;font-size:12px;color:var(--slate-400);">ჯერ კონტროლერი არ არის</div>
+        </div>
+      </div>
+
+      <!-- Catalog list card -->
+      <div class="card" id="catalogCard">
+        <div class="card-header" style="cursor:pointer;user-select:none;" onclick="toggleCard('catalogBody','catalogChev')">
+          <div class="card-title" style="display:flex;align-items:center;gap:8px;">
+            <span id="catalogChev">▼</span> 📦 სია
+            <span style="font-size:11px;font-weight:400;color:var(--slate-400);" id="catalogCountBadge"></span>
+          </div>
+          <button class="btn sm primary" onclick="event.stopPropagation();addCatalogItem()" style="font-size:11px;">+ დამატება</button>
+        </div>
+        <div id="catalogBody">
+          <div id="catalogGrid" class="catalog-grid"></div>
+          <div id="catalogLimitNote" class="catalog-limit-note" style="display:none;">მაქს 20 ერთეული</div>
+        </div>
+      </div>
+      <!-- hidden file input for catalog photo upload -->
+      <input type="file" id="catalogPhotoInput" accept="image/*" style="display:none;" onchange="onCatalogPhotoSelected(this)">
+
+      <!-- Tracking card -->
+      <div class="card" id="trackingCard">
+        <div class="card-header" style="cursor:pointer;user-select:none;" onclick="toggleCard('trackingBody','trackingChev')">
+          <div class="card-title" style="display:flex;align-items:center;gap:8px;">
+            <span id="trackingChev">▼</span> 📋 ტრეკინგი — სასაქონლო სია
+          </div>
+          <button class="btn sm primary" onclick="event.stopPropagation();addTrackingItem('device')" style="font-size:11px;">+ დანადგარი</button>
+          <button class="btn sm" onclick="event.stopPropagation();addTrackingItem('consumable')" style="font-size:11px;margin-left:4px;">+ სახარჯი</button>
+        </div>
+        <div id="trackingBody">
+          <div id="trackingWrap" style="padding:8px 16px 12px;"></div>
         </div>
       </div>
 
@@ -2087,8 +2267,8 @@ table.devices-sheet td:last-child { border-right: none; }
           <label style="display:flex;gap:10px;padding:8px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:var(--paper);">
             <input type="radio" name="mergeMode" value="replace" style="margin-top:2px;">
             <div>
-              <div style="font-weight:600;color:var(--red-600);font-size:13px;">სრული ჩანაცვლება (Replace)</div>
-              <div style="font-size:11px;color:var(--slate-500);">წაშლის ყველაფერს და შექმნის ახალ მონაცემს. <b style="color:var(--red-600);">ყველა ინვენტარიზაციის მონაცემი დაიკარგება!</b></div>
+              <div style="font-weight:600;color:var(--amber-600);font-size:13px;">უსაფრთხო განახლება (Archive-safe refresh)</div>
+              <div style="font-size:11px;color:var(--slate-500);">განაახლებს master სიას და შეინარჩუნებს არსებულ დანადგარებს, შენიშვნებს და ოპერატიულ ველებს. destructive wipe აღარ მოხდება.</div>
             </div>
           </label>
         </div>
@@ -2132,8 +2312,11 @@ table.devices-sheet td:last-child { border-right: none; }
 
 <div class="photo-viewer" id="photoViewer" onclick="closePhotoViewer()">
   <button class="photo-viewer-close" onclick="closePhotoViewer()">×</button>
+  <button id="photoViewerPrev" onclick="event.stopPropagation();_viewerStep(-1)" style="position:absolute;left:18px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.45);border:none;color:#fff;font-size:32px;line-height:1;width:48px;height:64px;border-radius:8px;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:10;">‹</button>
   <img id="photoViewerImg" src="" alt="">
+  <button id="photoViewerNext" onclick="event.stopPropagation();_viewerStep(1)" style="position:absolute;right:18px;top:50%;transform:translateY(-50%);background:rgba(0,0,0,0.45);border:none;color:#fff;font-size:32px;line-height:1;width:48px;height:64px;border-radius:8px;cursor:pointer;display:none;align-items:center;justify-content:center;z-index:10;">›</button>
   <div class="photo-viewer-meta" id="photoViewerMeta"></div>
+  <div id="photoViewerCounter" style="position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.5);color:#fff;font-size:12px;padding:3px 10px;border-radius:20px;display:none;"></div>
 </div>
 
 <!-- Confirm dialog -->
@@ -2182,6 +2365,109 @@ const PHOTO_LABELS = ['ბირკა', 'ახლო ხედი', 'მსხ
 function _uploaderName() {
   return _apiUser?.displayName || _apiUser?.username || 'უცნობი';
 }
+
+// ============================================
+// PHOTO VALUE HELPERS (accept legacy string OR new {url, thumb_url})
+// ============================================
+function _photoFull(p) {
+  if (!p) return null;
+  if (typeof p === 'string') return p;
+  return p.url || p.thumb_url || null;
+}
+function _photoThumb(p) {
+  if (!p) return null;
+  if (typeof p === 'string') return p;
+  return p.thumb_url || p.url || null;
+}
+
+// Resize once, produce {full, thumb}. Two canvases, one read.
+function _fileToResizedPair(file, fullDim = 1024, fullQ = 0.82, thumbDim = 256, thumbQ = 0.7) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('read_error'));
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('image_error'));
+      img.onload = () => {
+        const draw = (maxDim, quality) => {
+          let {width, height} = img;
+          if (width > maxDim || height > maxDim) {
+            const s = maxDim / Math.max(width, height);
+            width = Math.round(width * s); height = Math.round(height * s);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          canvas.getContext('2d')?.drawImage(img, 0, 0, width, height);
+          return canvas.toDataURL('image/jpeg', quality);
+        };
+        resolve({full: draw(fullDim, fullQ), thumb: draw(thumbDim, thumbQ)});
+      };
+      img.src = ev.target?.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Upload {full, thumb} → Storage via /api/tbc/photos/upload. Returns {url, thumb_url} or null.
+function _uploadPhotoToStorage(full, thumb, kind, branchId, onProgress) {
+  return new Promise((resolve) => {
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/tbc/photos/upload');
+      xhr.setRequestHeader('content-type', 'application/json');
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded/e.total)*100));
+      };
+      xhr.onerror = () => resolve(null);
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const d = JSON.parse(xhr.responseText);
+            if (d && d.ok && d.url && d.thumb_url) { resolve({url: d.url, thumb_url: d.thumb_url}); return; }
+          } catch {}
+        }
+        resolve(null);
+      };
+      xhr.send(JSON.stringify({full_b64: full, thumb_b64: thumb, kind, branch_id: branchId}));
+    } catch { resolve(null); }
+  });
+}
+
+// Global fetch interceptor — increments a counter while any /api/tbc/* call is in flight;
+// drives the thin 2-px progress bar at top of the page.
+(function installFetchLoader(){
+  if (window.__tbcFetchLoaderInstalled) return;
+  window.__tbcFetchLoaderInstalled = true;
+  let inFlight = 0;
+  const tick = () => {
+    const bar = document.getElementById('tbcGlobalLoader');
+    if (!bar) return;
+    bar.style.opacity = inFlight > 0 ? '1' : '0';
+    bar.style.width = inFlight > 0 ? '80%' : '0%';
+  };
+  const orig = window.fetch.bind(window);
+  window.fetch = function(url, init) {
+    const isTbc = typeof url === 'string' && url.includes('/api/tbc/');
+    if (isTbc) { inFlight++; tick(); }
+    const done = () => { if (isTbc) { inFlight = Math.max(0, inFlight - 1); tick(); } };
+    return orig(url, init).then(r => { done(); return r; }, e => { done(); throw e; });
+  };
+  // XHR too — upload endpoint uses XHR for progress
+  const XHR = window.XMLHttpRequest;
+  window.XMLHttpRequest = function() {
+    const x = new XHR();
+    const origOpen = x.open;
+    x.open = function(m, u) {
+      const isTbc = typeof u === 'string' && u.includes('/api/tbc/');
+      if (isTbc) {
+        inFlight++; tick();
+        x.addEventListener('loadend', () => { inFlight = Math.max(0, inFlight - 1); tick(); });
+      }
+      return origOpen.apply(x, arguments);
+    };
+    return x;
+  };
+})();
 function _fmtPhotoMeta(meta) {
   if (!meta || !meta.at) return '';
   const d = new Date(meta.at);
@@ -2189,6 +2475,22 @@ function _fmtPhotoMeta(meta) {
   const dateStr = d.toLocaleDateString('ka-GE', { day: '2-digit', month: '2-digit', year: '2-digit' });
   const timeStr = d.toLocaleTimeString('ka-GE', { hour: '2-digit', minute: '2-digit' });
   return `${meta.by || 'უცნობი'} · ${dateStr} ${timeStr}`;
+}
+function _archiveExpiryIso() {
+  return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+}
+function _archivePhotoRef(target, slotIdx, src, meta) {
+  if (!target || !src) return;
+  if (!Array.isArray(target.archived_photos)) target.archived_photos = [];
+  target.archived_photos.push({
+    slot: slotIdx,
+    src,
+    meta: meta || null,
+    archived_at: new Date().toISOString(),
+    archived_by: _uploaderName(),
+    archive_expires_at: _archiveExpiryIso(),
+    archive_reason: 'manual_photo_remove',
+  });
 }
 const STATUS_LABELS = {
   done: 'დასრულებული',
@@ -2251,6 +2553,9 @@ function _apiSerializeBranch(b) {
     act: b.act || null,
     notes: b.notes || null,
     devices: b.devices || [],
+    controllers: b.controllers || [],
+    tracking_items: b.tracking_items || [],
+    catalog_items: b.catalog_items || [],
   };
 }
 
@@ -2320,6 +2625,9 @@ function migrateBranch(b) {
   b.planned_end = b.planned_end || '';
   b.devices = b.devices || [];
   b.inventory_items = b.inventory_items || [];
+  b.controllers = b.controllers || [];
+  b.tracking_items = b.tracking_items || [];
+  b.catalog_items = b.catalog_items || [];
   return b;
 }
 
@@ -2444,12 +2752,19 @@ async function init() {
   state.equipmentTypes = DATA.equipment_types;
 
   await loadState();
+  await loadProducts();
   populateFilters();
   populateEquipmentTypes();
   updateTabCount();
   renderTable();
   setupStatusChips();
   setupSlideResize();
+  // Deep link: #products / #product_table opens the products tab directly
+  const h = (window.location.hash || '').replace(/^#/, '').toLowerCase();
+  if (h === 'products' || h === 'product_table') {
+    switchTab('products');
+    renderProductsTab();
+  }
 }
 
 function updateTabCount() {
@@ -2542,7 +2857,7 @@ function renderStats() {
       <div class="stat-sub">დანადგარი</div>
     </div>
     <div class="stat accent">
-      <div class="stat-label">დამონტაჟებული</div>
+      <div class="stat-label">აღწერილი</div>
       <div class="stat-value">${totalInstalled}</div>
       <div class="stat-sub">${pct}% პროგრესი</div>
     </div>
@@ -2618,7 +2933,7 @@ function renderTable() {
     return `
       <tr data-id="${b.id}" class="${state.selectedId === b.id ? 'selected' : ''}" onclick="openSlidePanel(${b.id})">
         <td style="padding: 6px 4px 6px 8px;">
-          <button class="row-open-btn" onclick="event.stopPropagation(); openBranch(${b.id})" title="პირადი გვერდის გახსნა">↗</button>
+          <button class="row-open-btn" onclick="event.stopPropagation(); openBranch(${b.id})" title="პირადი გვერდის გახსნა">📋</button>
         </td>
         <td class="cell-id mono">${b.id}</td>
         <td>
@@ -3101,9 +3416,18 @@ function renderRegionChart() {
       labels: sorted.map(([k]) => k),
       datasets: [{ data: sorted.map(([,v]) => v), backgroundColor: '#0071CE', borderRadius: 4, barThickness: 14 }],
     },
+    plugins: [ChartDataLabels],
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          anchor: 'end', align: 'right',
+          color: '#334155', font: { size: 10, weight: '600' },
+          formatter: v => v,
+        },
+      },
+      layout: { padding: { right: 28 } },
       scales: {
         x: { grid: { color: '#F1F5F9' }, ticks: { font: { size: 10 }, precision: 0 } },
         y: { grid: { display: false }, ticks: { font: { size: 11 } } },
@@ -3120,16 +3444,28 @@ function renderCitiesChart() {
   destroyChart('cities');
   const counts = {};
   state.branches.forEach(b => { if (b.city) counts[b.city] = (counts[b.city] || 0) + 1; });
-  const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 10);
+  const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]);
+  const dynHeight = Math.max(200, sorted.length * 28);
+  const wrap = document.getElementById('citiesChartWrap');
+  if (wrap) wrap.style.height = dynHeight + 'px';
   charts.cities = new Chart(canvas, {
     type: 'bar',
     data: {
       labels: sorted.map(([k]) => k),
       datasets: [{ data: sorted.map(([,v]) => v), backgroundColor: '#00AA8D', borderRadius: 4, barThickness: 18 }],
     },
+    plugins: [ChartDataLabels],
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          anchor: 'end', align: 'right',
+          color: '#334155', font: { size: 11, weight: '600' },
+          formatter: v => v,
+        },
+      },
+      layout: { padding: { right: 32 } },
       scales: {
         x: { grid: { color: '#F1F5F9' }, ticks: { font: { size: 10 }, precision: 0 } },
         y: { grid: { display: false }, ticks: { font: { size: 11 } } },
@@ -3161,9 +3497,18 @@ function renderEquipmentChart() {
       labels: sorted.map(([k]) => k),
       datasets: [{ data: sorted.map(([,v]) => v), backgroundColor: '#8B5CF6', borderRadius: 4, barThickness: 18 }],
     },
+    plugins: [ChartDataLabels],
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          anchor: 'end', align: 'right',
+          color: '#334155', font: { size: 11, weight: '600' },
+          formatter: v => v,
+        },
+      },
+      layout: { padding: { right: 40 } },
       scales: {
         x: { grid: { color: '#F1F5F9' }, ticks: { font: { size: 10 }, precision: 0 } },
         y: { grid: { display: false }, ticks: { font: { size: 10 } } },
@@ -3197,12 +3542,21 @@ function renderProgressChart() {
       labels: rows.map(r => r.name),
       datasets: [
         { label: 'დაგეგმილი', data: rows.map(r => r.planned), backgroundColor: '#CBD5E1', borderRadius: 3, barThickness: 10 },
-        { label: 'დამონტაჟებული', data: rows.map(r => r.installed), backgroundColor: '#00AA8D', borderRadius: 3, barThickness: 10 },
+        { label: 'აღწერილი', data: rows.map(r => r.installed), backgroundColor: '#00AA8D', borderRadius: 3, barThickness: 10 },
       ],
     },
+    plugins: [ChartDataLabels],
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } } },
+      plugins: {
+        legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
+        datalabels: {
+          anchor: 'end', align: 'right',
+          color: '#475569', font: { size: 9, weight: '600' },
+          formatter: v => v || '',
+        },
+      },
+      layout: { padding: { right: 28 } },
       scales: {
         x: { grid: { color: '#F1F5F9' }, ticks: { font: { size: 10 }, precision: 0 } },
         y: { grid: { display: false }, ticks: { font: { size: 10 } } },
@@ -3300,12 +3654,1151 @@ function openBranch(id) {
     window.open(`https://www.google.com/maps/search/?api=1&query=${q}`, '_blank');
   };
   
+  // Reset archive panel on branch switch
+  _archivePanelOpen = false;
+  const _ap = document.getElementById('archivedDevicesPanel');
+  const _ab = document.getElementById('archivePanelBtn');
+  if (_ap) _ap.style.display = 'none';
+  if (_ab) { _ab.style.background = ''; _ab.style.borderColor = ''; _ab.style.color = ''; }
+
   renderPlannedEquipment(b);
   renderProgressSummary(b);
   renderDevicesList(b);
   setupDetailMap(b);
   loadEstimate(b.id);
   loadComments(b.id);
+  _loadArchiveCount(b.id);
+  renderControllers(b);
+  renderCatalog(b);
+  renderTracking(b);
+}
+
+// ============================================
+// HELPERS
+// ============================================
+function toggleCard(bodyId, chevId) {
+  const body = document.getElementById(bodyId);
+  const chev = document.getElementById(chevId);
+  if (!body) return;
+  const collapsed = body.style.display === 'none';
+  body.style.display = collapsed ? '' : 'none';
+  if (chev) chev.textContent = collapsed ? '▼' : '▶';
+}
+
+// ============================================
+// CONTROLLERS
+// ============================================
+function _ctrlId() { return 'c' + Date.now() + Math.random().toString(36).slice(2,5); }
+
+function renderControllers(b) {
+  const controllers = b.controllers || [];
+  const badge = document.getElementById('controllersCountBadge');
+  if (badge) badge.textContent = controllers.length ? `(${controllers.length})` : '';
+  const wrap = document.getElementById('controllersWrap');
+  if (!wrap) return;
+  if (controllers.length === 0) {
+    wrap.innerHTML = '<div style="color:var(--slate-400);font-size:12px;padding:4px 0;">ჯერ კონტროლერი არ არის — დაამატე ზემოთ</div>';
+    return;
+  }
+  // Count devices per controller
+  const devices = (b.devices || []);
+  const devCount = {};
+  devices.forEach(d => { if (d.controller_id) devCount[d.controller_id] = (devCount[d.controller_id]||0)+1; });
+
+  wrap.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:4px;">
+    <thead><tr style="background:var(--slate-050);">
+      <th style="padding:6px 8px;text-align:left;font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;border-bottom:1px solid var(--border);">კოდი</th>
+      <th style="padding:6px 8px;text-align:left;font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;border-bottom:1px solid var(--border);">სახელი</th>
+      <th style="padding:6px 8px;text-align:left;font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;border-bottom:1px solid var(--border);">განმარტება</th>
+      <th style="padding:6px 8px;text-align:center;font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;border-bottom:1px solid var(--border);">დანადგარი</th>
+      <th style="padding:6px 8px;border-bottom:1px solid var(--border);"></th>
+    </tr></thead>
+    <tbody>
+    ${controllers.map(c => `<tr style="border-bottom:1px solid var(--border);">
+      <td style="padding:5px 8px;"><input class="sheet-input mono" value="${escapeHtml(c.code||'')}" style="width:80px;font-size:11px;" onchange="updateController('${c.id}','code',this.value)"></td>
+      <td style="padding:5px 8px;"><input class="sheet-input" value="${escapeHtml(c.name||'')}" style="width:140px;font-size:12px;" onchange="updateController('${c.id}','name',this.value)"></td>
+      <td style="padding:5px 8px;"><input class="sheet-input" value="${escapeHtml(c.description||'')}" style="width:200px;font-size:11px;" onchange="updateController('${c.id}','description',this.value)"></td>
+      <td style="padding:5px 8px;text-align:center;font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--tbc-blue);">${devCount[c.id]||0}</td>
+      <td style="padding:5px 8px;"><button onclick="deleteController('${c.id}')" style="background:transparent;border:none;color:var(--slate-400);cursor:pointer;font-size:14px;" title="წაშლა">🗑</button></td>
+    </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function addController() {
+  if (!state.currentBranch) return;
+  const b = state.currentBranch;
+  b.controllers = b.controllers || [];
+  b.controllers.push({id: _ctrlId(), code: '', name: 'კონტროლერი ' + (b.controllers.length+1), description: ''});
+  saveState();
+  renderControllers(b);
+  renderCatalog(b);
+  // rebuild device dropdowns
+  renderDevicesList(b);
+}
+
+function updateController(id, field, value) {
+  if (!state.currentBranch) return;
+  const b = state.currentBranch;
+  const ctrl = (b.controllers||[]).find(c => c.id === id);
+  if (ctrl) { ctrl[field] = value; saveState(); }
+  const badge = document.getElementById('controllersCountBadge');
+  if (badge) badge.textContent = b.controllers.length ? `(${b.controllers.length})` : '';
+  if (field === 'name' || field === 'code') renderCatalog(b);
+}
+
+function deleteController(id) {
+  if (!state.currentBranch) return;
+  const b = state.currentBranch;
+  // Check if used in catalog_items
+  const catalogUsing = (b.catalog_items || []).filter(it => it.controller_id === id);
+  if (catalogUsing.length > 0) {
+    const names = catalogUsing.map(it => it.name || it.serial || it.id).join(', ');
+    showToast(`ვერ წაიშლება — სიაში მიბმულია: ${names}`, 'warn');
+    return;
+  }
+  // Check if used in devices
+  const devUsing = (b.devices || []).filter(d => d.controller_id === id);
+  showConfirm({
+    title: 'კონტროლერის წაშლა',
+    text: devUsing.length
+      ? `კონტროლერი მიბმულია ${devUsing.length} დანადგარზე. მინიჭება გაუუქმდებათ.`
+      : 'კონტროლერი წაიშლება.',
+    okText: '🗑 წაშლა',
+    icon: '⚠️',
+    onConfirm: () => {
+      b.controllers = (b.controllers||[]).filter(c => c.id !== id);
+      (b.devices||[]).forEach(d => { if (d.controller_id === id) delete d.controller_id; });
+      saveState();
+      renderControllers(b);
+      renderDevicesList(b);
+    }
+  });
+}
+
+// ============================================
+// GLOBAL PRODUCT CATALOG (tag: product_table)
+// ============================================
+let _products = [];
+let _productsLoaded = false;
+
+async function loadProducts() {
+  try {
+    const r = await fetch('/api/tbc/products');
+    if (r.status === 401) { window.location.href = '/tbc'; return; }
+    if (!r.ok) throw new Error('load_failed');
+    const d = await r.json();
+    _products = Array.isArray(d.products) ? d.products : [];
+    _productsLoaded = true;
+    const badge = document.getElementById('tabCountProducts');
+    if (badge) badge.textContent = String(_products.length);
+    const countBadge = document.getElementById('productsCountBadge');
+    if (countBadge) countBadge.textContent = _products.length ? `(${_products.length})` : '';
+  } catch (e) {
+    console.error('[products] load failed', e);
+  }
+}
+
+function _isAdminUser() { return _apiUser && _apiUser.role === 'admin'; }
+
+function _fmtPrice(p) {
+  if (p === null || p === undefined || p === '') return '—';
+  const n = Number(p);
+  if (!isFinite(n)) return '—';
+  return n.toLocaleString('ka-GE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ₾';
+}
+
+async function renderProductsTab() {
+  const wrap = document.getElementById('productsWrap');
+  const addBtn = document.getElementById('productsAddBtn');
+  const note = document.getElementById('productsAdminNote');
+  if (!wrap) return;
+
+  const isAdmin = _isAdminUser();
+  if (note) note.style.display = isAdmin ? 'block' : 'none';
+  if (addBtn) addBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+  const importBtn = document.getElementById('productsImportBtn');
+  if (importBtn) importBtn.style.display = isAdmin ? 'inline-flex' : 'none';
+
+  if (!_productsLoaded) {
+    await loadProducts();
+  }
+
+  const q = (document.getElementById('productsSearch')?.value || '').trim().toLowerCase();
+  const qTag = q.startsWith('#') ? q.slice(1) : null;
+  const items = _products.filter(p => {
+    if (!q) return true;
+    const tags = Array.isArray(p.tags) ? p.tags : [];
+    if (qTag) return tags.some(t => (t||'').toLowerCase().includes(qTag));
+    const hay = [p.name, p.code, p.dimension, ...tags].map(v => (v||'').toString().toLowerCase()).join(' | ');
+    return hay.includes(q);
+  });
+
+  if (items.length === 0) {
+    wrap.innerHTML = `<div style="padding:28px;text-align:center;color:var(--slate-400);font-size:12px;">
+      ${_products.length === 0 ? 'ჯერ არცერთი პროდუქტი არ არის' + (isAdmin ? ' — დააჭირე + პროდუქტი' : '') : 'ვერ მოიძებნა ფილტრით'}
+    </div>`;
+    return;
+  }
+
+  const priceCell = (p) => {
+    if (isAdmin) {
+      const v = (p.price === null || p.price === undefined) ? '' : p.price;
+      return `<input class="sheet-input mono" type="number" step="0.01" min="0" value="${escapeHtml(String(v))}" placeholder="0.00"
+                style="width:110px;font-size:12px;text-align:right;"
+                onchange="updateProductRow('${p.id}','price',this.value)">`;
+    }
+    // Non-admin: show a masked placeholder so the column still renders.
+    return `<span class="mono" style="color:var(--slate-400);font-weight:700;letter-spacing:2px;" title="ფასი დამალულია">***</span>`;
+  };
+
+  const adminHeader = isAdmin
+    ? '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;border-bottom:1px solid var(--border);width:140px;">ფასი</th>'
+    : '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;border-bottom:1px solid var(--border);width:80px;">ფასი</th>';
+  const actionHeader = isAdmin
+    ? '<th style="padding:8px 6px;border-bottom:1px solid var(--border);width:36px;"></th>'
+    : '';
+
+  const tagPill = (text, idx, pid) => {
+    const t = escapeHtml(text);
+    const closeBtn = isAdmin
+      ? `<button type="button" onclick="event.stopPropagation();removeProductTag('${pid}',${idx})" title="წაშლა"
+           style="margin-left:4px;border:none;background:transparent;color:#6366f1;cursor:pointer;font-size:11px;line-height:1;padding:0;">×</button>`
+      : '';
+    return `<span class="prod-tag-pill" style="display:inline-flex;align-items:center;margin:1px 3px 1px 0;padding:2px 8px;border-radius:999px;background:#eef2ff;color:#4338ca;font-size:10px;font-weight:700;font-family:var(--font-mono);white-space:nowrap;">
+      #${t}${closeBtn}
+    </span>`;
+  };
+
+  const renderTagsCell = (p) => {
+    const tags = Array.isArray(p.tags) ? p.tags : [];
+    if (!isAdmin) {
+      if (tags.length === 0) return `<span style="color:var(--slate-400);">—</span>`;
+      return tags.map((t, i) => tagPill(t, i, p.id)).join('');
+    }
+    const pills = tags.map((t, i) => tagPill(t, i, p.id)).join('');
+    return `<div class="prod-tag-editor" onclick="this.querySelector('input').focus()"
+              style="display:flex;flex-wrap:wrap;align-items:center;gap:2px;min-height:28px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;background:#fff;cursor:text;">
+      ${pills}
+      <input type="text" class="prod-tag-input"
+             placeholder="${tags.length ? '' : '#ვრცელი #ძველი …'}"
+             data-pid="${p.id}"
+             onkeydown="onProductTagKey(event, '${p.id}')"
+             onblur="onProductTagBlur(event, '${p.id}')"
+             onpaste="onProductTagPaste(event, '${p.id}')"
+             style="flex:1;min-width:80px;border:none;outline:none;font-size:11px;padding:2px 2px;background:transparent;font-family:var(--font-mono);">
+    </div>`;
+  };
+
+  wrap.innerHTML = `
+    <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+      <thead><tr style="background:var(--slate-050);">
+        <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;border-bottom:1px solid var(--border);min-width:220px;">დასახელება</th>
+        <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;border-bottom:1px solid var(--border);width:140px;">კოდი</th>
+        <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;border-bottom:1px solid var(--border);width:120px;">განზ</th>
+        <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--slate-500);text-transform:uppercase;border-bottom:1px solid var(--border);min-width:180px;">ტეგები</th>
+        ${adminHeader}
+        ${actionHeader}
+      </tr></thead>
+      <tbody>
+      ${items.map(p => `<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:5px 8px;">
+          ${isAdmin
+            ? `<input class="sheet-input" value="${escapeHtml(p.name||'')}" style="width:100%;font-size:12px;font-weight:600;" onchange="updateProductRow('${p.id}','name',this.value)">`
+            : `<span style="font-weight:600;color:var(--slate-800);">${escapeHtml(p.name||'')}</span>`}
+        </td>
+        <td style="padding:5px 8px;">
+          ${isAdmin
+            ? `<input class="sheet-input mono" value="${escapeHtml(p.code||'')}" style="width:100%;font-size:11px;" onchange="updateProductRow('${p.id}','code',this.value)">`
+            : `<span class="mono" style="color:var(--slate-600);">${escapeHtml(p.code||'—')}</span>`}
+        </td>
+        <td style="padding:5px 8px;">
+          ${isAdmin
+            ? `<input class="sheet-input" value="${escapeHtml(p.dimension||'')}" placeholder="9000 BTU" style="width:100%;font-size:11px;" onchange="updateProductRow('${p.id}','dimension',this.value)">`
+            : `<span style="color:var(--slate-600);">${escapeHtml(p.dimension||'—')}</span>`}
+        </td>
+        <td style="padding:5px 8px;">${renderTagsCell(p)}</td>
+        <td style="padding:5px 8px;text-align:right;">${priceCell(p)}</td>
+        ${isAdmin ? `<td style="padding:5px 6px;text-align:center;"><button onclick="deleteProductRow('${p.id}')" style="background:transparent;border:none;color:var(--slate-400);cursor:pointer;font-size:14px;" title="წაშლა">🗑</button></td>` : ''}
+      </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>
+  `;
+}
+
+async function addProductRow() {
+  if (!_isAdminUser()) return;
+  const n = (_products.length || 0) + 1;
+  try {
+    const r = await fetch('/api/tbc/products', {
+      method: 'POST',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({name: 'პროდუქტი ' + n, code: '', dimension: '', price: null})
+    });
+    if (!r.ok) { showToast && showToast('ვერ დაემატა', 'warn'); return; }
+    const d = await r.json();
+    if (d.product) _products.push(d.product);
+    _products.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+    const badge = document.getElementById('tabCountProducts');
+    if (badge) badge.textContent = String(_products.length);
+    const countBadge = document.getElementById('productsCountBadge');
+    if (countBadge) countBadge.textContent = `(${_products.length})`;
+    renderProductsTab();
+    // refresh device dropdowns if a branch is open
+    if (state.currentBranch) renderDevicesList(state.currentBranch);
+  } catch (e) { console.error('[products] add failed', e); }
+}
+
+async function updateProductRow(id, field, value) {
+  if (!_isAdminUser()) return;
+  const payload = {};
+  if (field === 'price') {
+    const trimmed = (value||'').trim();
+    payload.price = trimmed === '' ? null : Number(trimmed);
+    if (trimmed !== '' && !isFinite(payload.price)) return;
+  } else {
+    payload[field] = value;
+  }
+  try {
+    const r = await fetch('/api/tbc/products/' + encodeURIComponent(id), {
+      method: 'PATCH',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok) { showToast && showToast('ვერ შეინახა', 'warn'); return; }
+    const d = await r.json();
+    if (d.product) {
+      const i = _products.findIndex(p => p.id === id);
+      if (i >= 0) _products[i] = d.product;
+    }
+    if (field === 'name' || field === 'code') {
+      _products.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+      if (state.currentBranch) renderDevicesList(state.currentBranch);
+    }
+  } catch (e) { console.error('[products] update failed', e); }
+}
+
+async function deleteProductRow(id) {
+  if (!_isAdminUser()) return;
+  const p = _products.find(x => x.id === id);
+  if (!p) return;
+  const doDelete = async () => {
+    const r = await fetch('/api/tbc/products/' + encodeURIComponent(id), {method: 'DELETE'});
+    if (!r.ok) { showToast && showToast('ვერ წაიშალა', 'warn'); return; }
+    _products = _products.filter(x => x.id !== id);
+    const badge = document.getElementById('tabCountProducts');
+    if (badge) badge.textContent = String(_products.length);
+    const countBadge = document.getElementById('productsCountBadge');
+    if (countBadge) countBadge.textContent = _products.length ? `(${_products.length})` : '';
+    renderProductsTab();
+    if (state.currentBranch) renderDevicesList(state.currentBranch);
+  };
+  if (typeof showConfirm === 'function') {
+    showConfirm({
+      title: 'პროდუქტის წაშლა',
+      text: `წაიშლება "${p.name}"${p.code ? ' ('+p.code+')' : ''}.`,
+      okText: '🗑 წაშლა',
+      icon: '⚠️',
+      onConfirm: doDelete
+    });
+  } else if (confirm('წაიშალოს პროდუქტი "' + p.name + '"?')) {
+    doDelete();
+  }
+}
+
+// Strict parser: only accepts tokens that start with '#'. Bare words are rejected.
+// Returns {tags: string[], rejected: number}
+function _parseTagsStrict(raw) {
+  const tokens = String(raw||'').split(/[,\s]+/).map(s => s.trim()).filter(Boolean);
+  const out = [];
+  const seen = new Set();
+  let rejected = 0;
+  for (const t of tokens) {
+    if (!t.startsWith('#')) { rejected++; continue; }
+    const clean = t.replace(/^#+/, '').trim().slice(0, 48);
+    if (!clean) { rejected++; continue; }
+    const key = clean.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(clean);
+    if (out.length >= 16) break;
+  }
+  return {tags: out, rejected};
+}
+
+// Legacy entry point kept for XLSX import — strict there too.
+function _parseTagsInput(raw) { return _parseTagsStrict(raw).tags; }
+
+async function _saveProductTags(id, tags) {
+  try {
+    const r = await fetch('/api/tbc/products/' + encodeURIComponent(id), {
+      method: 'PATCH',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({tags})
+    });
+    if (!r.ok) { showToast && showToast('ტეგები ვერ შეინახა', 'warn'); return false; }
+    const d = await r.json();
+    if (d.product) {
+      const i = _products.findIndex(p => p.id === id);
+      if (i >= 0) _products[i] = d.product;
+    }
+    if (state.currentBranch) renderDevicesList(state.currentBranch);
+    return true;
+  } catch (e) { console.error('[products] tags save failed', e); return false; }
+}
+
+function _flashTagInputErr(input, msg) {
+  if (!input) return;
+  input.style.background = '#fef2f2';
+  setTimeout(() => { input.style.background = 'transparent'; }, 500);
+  if (msg && typeof showToast === 'function') showToast(msg, 'warn');
+}
+
+async function _commitNewTags(pid, newNames) {
+  const p = _products.find(x => x.id === pid);
+  if (!p) return;
+  const existing = Array.isArray(p.tags) ? p.tags : [];
+  const merged = [...existing];
+  const seen = new Set(merged.map(t => t.toLowerCase()));
+  for (const n of newNames) {
+    const key = n.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(n);
+    if (merged.length >= 16) break;
+  }
+  if (merged.length === existing.length) return; // no change
+  const ok = await _saveProductTags(pid, merged);
+  if (ok) renderProductsTab();
+}
+
+async function removeProductTag(pid, idx) {
+  const p = _products.find(x => x.id === pid);
+  if (!p || !Array.isArray(p.tags)) return;
+  const next = p.tags.slice();
+  if (idx < 0 || idx >= next.length) return;
+  next.splice(idx, 1);
+  const ok = await _saveProductTags(pid, next);
+  if (ok) renderProductsTab();
+}
+
+function onProductTagKey(e, pid) {
+  const input = e.target;
+  const raw = input.value;
+  if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab' || e.key === ' ') {
+    const trimmed = raw.trim();
+    if (!trimmed) {
+      if (e.key === 'Enter' || e.key === ',') e.preventDefault();
+      return;
+    }
+    const {tags, rejected} = _parseTagsStrict(trimmed);
+    if (rejected > 0 && tags.length === 0) {
+      e.preventDefault();
+      _flashTagInputErr(input, 'ტეგი უნდა იწყებოდეს #-ით');
+      return;
+    }
+    e.preventDefault();
+    input.value = '';
+    _commitNewTags(pid, tags);
+    return;
+  }
+  if (e.key === 'Backspace' && raw === '') {
+    const p = _products.find(x => x.id === pid);
+    if (p && Array.isArray(p.tags) && p.tags.length > 0) {
+      e.preventDefault();
+      removeProductTag(pid, p.tags.length - 1);
+    }
+  }
+}
+
+function onProductTagBlur(e, pid) {
+  const input = e.target;
+  const raw = input.value.trim();
+  if (!raw) return;
+  const {tags, rejected} = _parseTagsStrict(raw);
+  input.value = '';
+  if (tags.length === 0 && rejected > 0) {
+    _flashTagInputErr(input, 'ტეგი უნდა იწყებოდეს #-ით');
+    return;
+  }
+  if (tags.length > 0) _commitNewTags(pid, tags);
+}
+
+function onProductTagPaste(e, pid) {
+  const text = (e.clipboardData || window.clipboardData)?.getData('text');
+  if (!text) return;
+  e.preventDefault();
+  const input = e.target;
+  const {tags, rejected} = _parseTagsStrict(text);
+  if (tags.length === 0 && rejected > 0) {
+    _flashTagInputErr(input, 'ვერცერთი ტეგი არ იწყებოდა #-ით');
+    return;
+  }
+  input.value = '';
+  _commitNewTags(pid, tags);
+}
+
+// --- XLSX export (products) -------------------------------------------------
+function exportProductsXlsx() {
+  if (typeof XLSX === 'undefined') { showToast && showToast('XLSX ბიბლიოთეკა არაა ჩატვირთული', 'warn'); return; }
+  const isAdmin = _isAdminUser();
+  const rows = _products.map(p => {
+    const row = {
+      'დასახელება': p.name || '',
+      'კოდი': p.code || '',
+      'განზ': p.dimension || '',
+      'ტეგები': Array.isArray(p.tags) ? p.tags.map(t => '#' + t).join(' ') : ''
+    };
+    if (isAdmin) row['ფასი'] = (p.price === null || p.price === undefined) ? '' : Number(p.price);
+    return row;
+  });
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'მოწყობილობები');
+  const today = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `tbc-products-${today}.xlsx`);
+}
+
+// --- XLSX import (products, admin only) -------------------------------------
+async function handleProductsXlsxUpload(ev) {
+  if (!_isAdminUser()) return;
+  const file = ev.target?.files?.[0];
+  ev.target.value = '';
+  if (!file) return;
+  if (typeof XLSX === 'undefined') { showToast && showToast('XLSX ბიბლიოთეკა არაა ჩატვირთული', 'warn'); return; }
+
+  let wb;
+  try {
+    const buf = await file.arrayBuffer();
+    wb = XLSX.read(buf, {type: 'array'});
+  } catch (e) { console.error(e); showToast && showToast('ვერ წავიკითხე ფაილი', 'warn'); return; }
+  if (!wb.SheetNames.length) { showToast && showToast('ფაილი ცარიელია', 'warn'); return; }
+
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const raw = XLSX.utils.sheet_to_json(sheet, {defval: '', raw: false});
+  if (!raw.length) { showToast && showToast('ცხრილი ცარიელია', 'warn'); return; }
+
+  // Try to map headers flexibly: Georgian or English.
+  const pickKey = (obj, candidates) => {
+    const keys = Object.keys(obj);
+    for (const c of candidates) {
+      const k = keys.find(x => String(x).trim().toLowerCase() === c.toLowerCase());
+      if (k) return k;
+    }
+    return null;
+  };
+  const first = raw[0];
+  const kName = pickKey(first, ['დასახელება', 'name', 'title']);
+  const kCode = pickKey(first, ['კოდი', 'code', 'sku']);
+  const kDim  = pickKey(first, ['განზ', 'განზომილება', 'dimension', 'size']);
+  const kPrice = pickKey(first, ['ფასი', 'price', 'cost']);
+  const kTags  = pickKey(first, ['ტეგები', 'ტეგი', 'tags', 'tag', 'hint']);
+  if (!kName) { showToast && showToast('არ მოიძებნა სვეტი "დასახელება"', 'warn'); return; }
+
+  const rows = [];
+  for (const r of raw) {
+    const name = String(r[kName] || '').trim();
+    if (!name) continue;
+    const priceRaw = kPrice ? String(r[kPrice] ?? '').toString().replace(/[^\d.\-]/g, '').trim() : '';
+    const price = priceRaw === '' ? null : Number(priceRaw);
+    const tagsStr = kTags ? String(r[kTags] || '') : '';
+    rows.push({
+      name: name.slice(0, 200),
+      code: kCode ? String(r[kCode] || '').trim().slice(0, 64) : null,
+      dimension: kDim ? String(r[kDim] || '').trim().slice(0, 64) : null,
+      price: (price === null || !isFinite(price)) ? null : price,
+      tags: _parseTagsInput(tagsStr)
+    });
+    if (rows.length >= 2000) break;
+  }
+  if (!rows.length) { showToast && showToast('ვერ ვიპოვე ვალიდური სტრიქონი', 'warn'); return; }
+
+  const ok = window.confirm(`იმპორტდება ${rows.length} პროდუქტი. გაგრძელდეს?`);
+  if (!ok) return;
+
+  try {
+    const res = await fetch('/api/tbc/products', {
+      method: 'PUT',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({rows})
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error('[products] bulk import failed', err);
+      showToast && showToast('იმპორტი ვერ მოხერხდა', 'warn');
+      return;
+    }
+    const d = await res.json();
+    showToast && showToast(`დაემატა ${d.inserted} პროდუქტი`, 'ok');
+    _productsLoaded = false;
+    await loadProducts();
+    renderProductsTab();
+    if (state.currentBranch) renderDevicesList(state.currentBranch);
+  } catch (e) { console.error(e); showToast && showToast('შეცდომა იმპორტზე', 'warn'); }
+}
+
+// ============================================
+// CATALOG LIST (photo + name + serial + controller)
+// ============================================
+const CATALOG_MAX = 20;
+let _catalogPhotoTargetId = null;
+
+function _catId() { return 'ci' + Date.now() + Math.random().toString(36).slice(2,5); }
+
+function renderCatalog(b) {
+  const items = b.catalog_items || [];
+  const controllers = b.controllers || [];
+  const badge = document.getElementById('catalogCountBadge');
+  if (badge) badge.textContent = items.length ? `(${items.length})` : '';
+  const grid = document.getElementById('catalogGrid');
+  const note = document.getElementById('catalogLimitNote');
+  if (!grid) return;
+
+  const ctrlOpts = `<option value="">— კონტროლერი —</option>` +
+    controllers.map(c => `<option value="${c.id}">${escapeHtml(c.name||c.code||c.id)}</option>`).join('');
+
+  if (items.length === 0) {
+    grid.innerHTML = '<div style="color:var(--slate-400);font-size:12px;padding:16px;text-align:center;grid-column:1/-1;">ჯერ ერთეული არ არის — დაამატე ზემოთ</div>';
+    if (note) note.style.display = 'none';
+    return;
+  }
+
+  grid.innerHTML = items.map(it => {
+    const catThumb = _photoThumb(it.photo_b64);
+    const photoHtml = catThumb
+      ? `<img src="${catThumb}" alt="" loading="lazy" decoding="async">`
+      : `<div class="catalog-photo-placeholder">📷</div>`;
+    const ctrlSelected = controllers.find(c => c.id === it.controller_id);
+    const ctrlOptsForItem = `<option value="">— კონტროლერი —</option>` +
+      controllers.map(c => `<option value="${c.id}"${c.id === it.controller_id ? ' selected' : ''}>${escapeHtml(c.name||c.code||c.id)}</option>`).join('');
+    return `
+    <div class="catalog-card" id="catcard-${it.id}">
+      <div class="catalog-photo-wrap" onclick="triggerCatalogPhoto('${it.id}')">
+        ${photoHtml}
+        <div class="catalog-photo-overlay">📷 ფოტოს ცვლილება</div>
+      </div>
+      <button class="catalog-del-btn" title="წაშლა" onclick="deleteCatalogItem('${it.id}')">🗑</button>
+      <div class="catalog-body">
+        <div>
+          <div class="catalog-field-label">სახელი</div>
+          <input class="sheet-input" value="${escapeHtml(it.name||'')}" placeholder="დასახელება" style="width:100%;font-size:12px;"
+            onchange="updateCatalogItem('${it.id}','name',this.value)">
+        </div>
+        <div>
+          <div class="catalog-field-label">სერიული ნომერი</div>
+          <input class="sheet-input mono" value="${escapeHtml(it.serial||'')}" placeholder="S/N" style="width:100%;font-size:11px;"
+            onchange="updateCatalogItem('${it.id}','serial',this.value)">
+        </div>
+        <div>
+          <div class="catalog-field-label">კონტროლერი</div>
+          <select class="sheet-input" style="width:100%;font-size:11px;"
+            onchange="updateCatalogItem('${it.id}','controller_id',this.value)">
+            ${ctrlOptsForItem}
+          </select>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  if (note) note.style.display = items.length >= CATALOG_MAX ? 'block' : 'none';
+}
+
+function addCatalogItem() {
+  if (!state.currentBranch) return;
+  const b = state.currentBranch;
+  b.catalog_items = b.catalog_items || [];
+  if (b.catalog_items.length >= CATALOG_MAX) {
+    showToast('მაქსიმუმი 20 ერთეული — ადგილი არ არის', 'warn');
+    return;
+  }
+  b.catalog_items.push({ id: _catId(), name: '', serial: '', photo_b64: null, controller_id: '' });
+  saveState();
+  renderCatalog(b);
+}
+
+function updateCatalogItem(id, field, value) {
+  if (!state.currentBranch) return;
+  const it = (state.currentBranch.catalog_items || []).find(x => x.id === id);
+  if (it) { it[field] = value; saveState(); }
+}
+
+function deleteCatalogItem(id) {
+  if (!state.currentBranch) return;
+  const b = state.currentBranch;
+  b.catalog_items = (b.catalog_items || []).filter(x => x.id !== id);
+  saveState();
+  renderCatalog(b);
+}
+
+function triggerCatalogPhoto(itemId) {
+  _catalogPhotoTargetId = itemId;
+  const inp = document.getElementById('catalogPhotoInput');
+  if (inp) inp.click();
+}
+
+function onCatalogPhotoSelected(input) {
+  const file = input.files && input.files[0];
+  if (!file || !_catalogPhotoTargetId || !state.currentBranch) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const it = (state.currentBranch.catalog_items || []).find(x => x.id === _catalogPhotoTargetId);
+    if (it) {
+      it.photo_b64 = e.target.result;
+      saveState();
+      renderCatalog(state.currentBranch);
+    }
+    input.value = '';
+    _catalogPhotoTargetId = null;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ============================================
+// TRACKING
+// ============================================
+function _trackId() { return 't' + Date.now() + Math.random().toString(36).slice(2,5); }
+
+function renderTracking(b) {
+  const items = b.tracking_items || [];
+  const wrap = document.getElementById('trackingWrap');
+  if (!wrap) return;
+  const devices = items.filter(i => i.item_type === 'device');
+  const consumables = items.filter(i => i.item_type === 'consumable');
+
+  function trackSection(title, list, type) {
+    return `<div style="margin-bottom:16px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--slate-500);margin-bottom:6px;">${title}</div>
+      ${list.length === 0 ? `<div style="font-size:12px;color:var(--slate-300);padding:4px 0;">ცარიელია</div>` : ''}
+      ${list.map(it => `<div class="track-row" style="display:grid;grid-template-columns:80px 1fr 70px 60px 1fr 28px;gap:4px;margin-bottom:4px;align-items:center;">
+        <input class="sheet-input mono" value="${escapeHtml(it.code||'')}" placeholder="კოდი" style="font-size:11px;" onchange="updateTracking('${it.id}','code',this.value)">
+        <input class="sheet-input" value="${escapeHtml(it.name||'')}" placeholder="სახელი" style="font-size:12px;" onchange="updateTracking('${it.id}','name',this.value)">
+        <input class="sheet-input mono" type="number" min="0" value="${it.qty||0}" style="font-size:12px;text-align:right;" onchange="updateTracking('${it.id}','qty',+this.value)">
+        <input class="sheet-input" value="${escapeHtml(it.unit||'ც.')}" placeholder="განზ." style="font-size:11px;" onchange="updateTracking('${it.id}','unit',this.value)">
+        <input class="sheet-input" value="${escapeHtml(it.note||'')}" placeholder="შენიშვნა" style="font-size:11px;" onchange="updateTracking('${it.id}','note',this.value)">
+        <button onclick="deleteTrackingItem('${it.id}')" style="background:transparent;border:none;color:var(--slate-300);cursor:pointer;font-size:13px;padding:0;">🗑</button>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  wrap.innerHTML = `
+    <div style="padding:8px 16px 12px;">
+      <div style="display:grid;grid-template-columns:80px 1fr 70px 60px 1fr 28px;gap:4px;margin-bottom:4px;">
+        <span style="font-size:10px;color:var(--slate-400);">კოდი</span>
+        <span style="font-size:10px;color:var(--slate-400);">სახელი</span>
+        <span style="font-size:10px;color:var(--slate-400);">რაოდ.</span>
+        <span style="font-size:10px;color:var(--slate-400);">განზ.</span>
+        <span style="font-size:10px;color:var(--slate-400);">შენიშვნა</span>
+        <span></span>
+      </div>
+      ${trackSection('🔧 დანადგარები', devices, 'device')}
+      ${trackSection('📦 სახარჯი მასალა', consumables, 'consumable')}
+    </div>`;
+}
+
+function addTrackingItem(type) {
+  if (!state.currentBranch) return;
+  const b = state.currentBranch;
+  b.tracking_items = b.tracking_items || [];
+  b.tracking_items.push({id: _trackId(), item_type: type, code: '', name: '', qty: 1, unit: 'ც.', note: ''});
+  saveState();
+  renderTracking(b);
+}
+
+function updateTracking(id, field, value) {
+  if (!state.currentBranch) return;
+  const it = (state.currentBranch.tracking_items||[]).find(x => x.id === id);
+  if (it) { it[field] = value; saveState(); }
+}
+
+function deleteTrackingItem(id) {
+  if (!state.currentBranch) return;
+  const b = state.currentBranch;
+  b.tracking_items = (b.tracking_items||[]).filter(x => x.id !== id);
+  saveState();
+  renderTracking(b);
+}
+
+// ============================================
+// STATS TAB
+// ============================================
+function renderStatsTab() {
+  const el = document.getElementById('statsTabContent');
+  if (!el) return;
+  const branches = state.branches || [];
+  if (branches.length === 0) {
+    el.innerHTML = '<div style="color:var(--slate-400);padding:40px;text-align:center;">მონაცემები იტვირთება...</div>';
+    return;
+  }
+
+  let totalDevices = 0, totalPlanned = 0;
+  const catCount = {}, branchRows = [];
+
+  branches.forEach(b => {
+    const devs = b.devices || [];
+    const devCount = devs.length;
+    const planned = b.planned_count || 0;
+    totalDevices += devCount;
+    totalPlanned += planned;
+    devs.forEach(d => {
+      const cat = d.category || 'სხვა';
+      catCount[cat] = (catCount[cat]||0) + 1;
+    });
+    branchRows.push({alias: b.alias||('#'+b.id), name: b.name||'', planned, actual: devCount, city: b.city||''});
+  });
+
+  const pct = totalPlanned ? Math.round(totalDevices / totalPlanned * 100) : 0;
+  const cats = Object.entries(catCount).sort((a,b) => b[1]-a[1]);
+
+  el.innerHTML = `
+    <!-- Summary tiles -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;">
+      ${[
+        {label:'ფილიალი',value:branches.length,color:'var(--tbc-blue)'},
+        {label:'დანადგარი აღწერილი',value:totalDevices,color:'#16a34a'},
+        {label:'დაგეგმილი',value:totalPlanned,color:'#d97706'},
+        {label:'შესრულება',value:(totalPlanned?pct+'%':'—'),color: pct>=80?'#16a34a':pct>=50?'#d97706':'#dc2626'},
+      ].map(t=>`<div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:16px 20px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--slate-500);margin-bottom:6px;">${t.label}</div>
+        <div style="font-size:28px;font-weight:800;font-family:var(--font-mono);color:${t.color};">${t.value}</div>
+      </div>`).join('')}
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <!-- Category breakdown -->
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:16px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--slate-500);margin-bottom:12px;">კატეგორიების გავრცელება</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr>
+            <th style="text-align:left;padding:4px 6px;font-size:10px;color:var(--slate-400);border-bottom:1px solid var(--border);">კატეგორია</th>
+            <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--slate-400);border-bottom:1px solid var(--border);">რაოდ.</th>
+            <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--slate-400);border-bottom:1px solid var(--border);">%</th>
+          </tr></thead>
+          <tbody>
+            ${cats.map(([cat,cnt])=>`<tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:5px 6px;color:var(--slate-700);">${escapeHtml(cat)}</td>
+              <td style="padding:5px 6px;text-align:right;font-family:var(--font-mono);font-weight:700;">${cnt}</td>
+              <td style="padding:5px 6px;text-align:right;color:var(--slate-400);">${totalDevices?Math.round(cnt/totalDevices*100):'0'}%</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Per-branch table -->
+      <div style="background:var(--paper);border:1px solid var(--border);border-radius:10px;padding:16px;overflow:auto;max-height:420px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--slate-500);margin-bottom:12px;">ფილიალების მიხედვით</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr style="position:sticky;top:0;background:var(--paper);">
+            <th style="text-align:left;padding:4px 6px;font-size:10px;color:var(--slate-400);border-bottom:1px solid var(--border);">ფილიალი</th>
+            <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--slate-400);border-bottom:1px solid var(--border);">დაგეგ.</th>
+            <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--slate-400);border-bottom:1px solid var(--border);">ფაქტ.</th>
+            <th style="text-align:right;padding:4px 6px;font-size:10px;color:var(--slate-400);border-bottom:1px solid var(--border);">%</th>
+          </tr></thead>
+          <tbody>
+            ${branchRows.sort((a,b)=>b.actual-a.actual).map(r=>{
+              const p = r.planned ? Math.round(r.actual/r.planned*100) : 0;
+              const color = p>=80?'#16a34a':p>=50?'#d97706':'#dc2626';
+              return `<tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:5px 6px;"><span style="font-family:var(--font-mono);font-size:10px;font-weight:700;color:var(--tbc-blue);">${escapeHtml(r.alias)}</span> <span style="font-size:11px;color:var(--slate-500);">${escapeHtml(r.name.slice(0,30))}</span></td>
+                <td style="padding:5px 6px;text-align:right;font-family:var(--font-mono);">${r.planned||'—'}</td>
+                <td style="padding:5px 6px;text-align:right;font-family:var(--font-mono);font-weight:700;">${r.actual}</td>
+                <td style="padding:5px 6px;text-align:right;font-family:var(--font-mono);font-weight:700;color:${color};">${r.planned?p+'%':'—'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+let _archivePanelOpen = false;
+
+async function toggleArchivePanel() {
+  const panel = document.getElementById('archivedDevicesPanel');
+  const btn = document.getElementById('archivePanelBtn');
+  _archivePanelOpen = !_archivePanelOpen;
+  panel.style.display = _archivePanelOpen ? 'block' : 'none';
+  btn.style.background = _archivePanelOpen ? 'var(--amber-100, #FEF3C7)' : 'var(--slate-050)';
+  btn.style.borderColor = _archivePanelOpen ? 'var(--amber-400, #F59E0B)' : 'var(--border)';
+  btn.style.color = _archivePanelOpen ? 'var(--amber-700, #B45309)' : 'var(--slate-600)';
+  if (!_archivePanelOpen) return;
+  if (!state.currentBranch) return;
+  const wrap = document.getElementById('archivedDevicesWrap');
+  wrap.innerHTML = '<div style="padding:8px 0;color:var(--slate-400);font-size:12px;">იტვირთება...</div>';
+  try {
+    const r = await fetch(`/api/tbc/branches/${state.currentBranch.id}/devices`);
+    if (r.status === 401) { window.location.href = '/tbc'; return; }
+    const data = await r.json();
+    const devices = data.devices || [];
+    if (devices.length === 0) {
+      wrap.innerHTML = '<div style="padding:12px 0;color:var(--slate-400);font-size:12px;text-align:center;">არქივი ცარიელია</div>';
+      return;
+    }
+    wrap.innerHTML = `
+      <div style="margin-bottom:8px;font-size:11px;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.05em;">
+        🗃 ${devices.length} არქივირებული დანადგარი
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="background:var(--slate-100);">
+            <th style="padding:6px 8px;text-align:left;font-weight:700;font-size:10px;color:var(--slate-500);text-transform:uppercase;border-bottom:1px solid var(--border);">კატეგორია</th>
+            <th style="padding:6px 8px;text-align:left;font-weight:700;font-size:10px;color:var(--slate-500);text-transform:uppercase;border-bottom:1px solid var(--border);">მოდელი / S/N</th>
+            <th style="padding:6px 8px;text-align:left;font-weight:700;font-size:10px;color:var(--slate-500);text-transform:uppercase;border-bottom:1px solid var(--border);">არქივის თარიღი</th>
+            <th style="padding:6px 8px;text-align:left;font-weight:700;font-size:10px;color:var(--slate-500);text-transform:uppercase;border-bottom:1px solid var(--border);">ვადა</th>
+            <th style="padding:6px 8px;text-align:left;font-weight:700;font-size:10px;color:var(--slate-500);text-transform:uppercase;border-bottom:1px solid var(--border);">ვინ</th>
+            <th style="padding:6px 8px;border-bottom:1px solid var(--border);"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${devices.map(d => {
+            const archivedAt = d.archived_at ? new Date(d.archived_at).toLocaleDateString('ka-GE') : '—';
+            const expiresAt = d.archive_expires_at ? new Date(d.archive_expires_at).toLocaleDateString('ka-GE') : '—';
+            const label = [d.category, d.subtype].filter(Boolean).join(' / ') || '—';
+            const model = [d.brand, d.model, d.serial ? `S/N ${d.serial}` : ''].filter(Boolean).join(' · ') || '—';
+            const rawIdx = d._raw_idx ?? '';
+            return `
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px 8px;color:var(--slate-700);">${escapeHtml(label)}</td>
+                <td style="padding:6px 8px;color:var(--slate-600);font-family:var(--font-mono);font-size:11px;">${escapeHtml(model)}</td>
+                <td style="padding:6px 8px;color:var(--slate-500);">${archivedAt}</td>
+                <td style="padding:6px 8px;color:#B45309;font-size:11px;">${expiresAt}-მდე</td>
+                <td style="padding:6px 8px;color:var(--slate-400);font-size:11px;">${escapeHtml(d.archived_by || '—')}</td>
+                <td style="padding:4px 8px;">
+                  <button onclick="restoreDevice(${rawIdx})" style="background:#D1FAE5;border:1px solid #6EE7B7;color:#065F46;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:600;cursor:pointer;" title="აქტიურ სიაში დაბრუნება">↩ დაბრუნება</button>
+                </td>
+              </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch(e) {
+    wrap.innerHTML = '<div style="padding:8px 0;color:var(--red-600,#dc2626);font-size:12px;">ჩატვირთვის შეცდომა</div>';
+  }
+}
+
+async function restoreDevice(rawIdx) {
+  if (!state.currentBranch) return;
+  showConfirm({
+    title: 'დაბრუნება არქივიდან',
+    text: 'დანადგარი არქივიდან გამოვა და <b>აქტიური სიაში</b> დაბრუნდება.',
+    okText: '↩ დაბრუნება',
+    icon: '↩',
+    onConfirm: async () => {
+      const branchId = state.currentBranch.id;
+      try {
+        const r = await fetch(`/api/tbc/branches/${branchId}/devices/${rawIdx}/restore`, {method: 'POST'});
+        if (r.status === 401) { window.location.href = '/tbc'; return; }
+        if (!r.ok) { showToast('დაბრუნება ვერ მოხერხდა', 'error'); return; }
+        await loadState();
+        renderDevicesList(state.currentBranch);
+        updateTabCount();
+        refreshDashboard();
+        // refresh archive panel
+        _archivePanelOpen = false;
+        await toggleArchivePanel();
+        await _loadArchiveCount(branchId);
+        showToast('დანადგარი აქტიურ სიაში დაბრუნდა', 'success');
+      } catch(e) {
+        showToast('შეცდომა', 'error');
+      }
+    }
+  });
+}
+
+// ============================================
+// XLSX + ZIP BRANCH EXPORT
+// ============================================
+function _xlsxBlob(wb) {
+  const data = XLSX.write(wb, {type: 'array', bookType: 'xlsx'});
+  return new Blob([data], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+function _triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+function _buildInventoryWb(b, devices) {
+  const SLOT_NAMES = ['birka', 'axlo', 'maxelgo', 'gare', 'damat'];
+  const SLOT_GE    = ['ბირკა', 'ახლო ხედი', 'მახ. ხედი', 'გარე ბლოკი', 'დამატ.'];
+
+  const rows = devices.map((d, idx) => {
+    const num = String(idx + 1).padStart(3, '0');
+    const photos = Array.isArray(d.photos) ? d.photos : [null,null,null,null,null];
+    const row = {
+      '№': idx + 1,
+      'კატეგორია': d.category || '',
+      'ქვეტიპი': d.subtype || '',
+      'მწარმოებელი': d.brand || '',
+      'მოდელი': d.model || '',
+      'S/N': d.serial || '',
+      'მდებარეობა': d.location || '',
+      'მონტაჟის თარიღი': d.install_date || '',
+      'დაუგეგმავი': d.unplanned ? 'კი' : '',
+      'სპეციფიკაცია': d.specs || '',
+    };
+    SLOT_GE.forEach((lbl, i) => {
+      row[lbl] = photos[i] ? `photos/device_${num}/${SLOT_NAMES[i]}.jpg` : '';
+    });
+    if (Array.isArray(d.situational_photos) && d.situational_photos.length > 0) {
+      row['სიტ. ფოტოები'] = d.situational_photos.map((p, si) => `photos/device_${num}/sit_${si+1}.jpg`).join(', ');
+    }
+    return row;
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:4},{wch:14},{wch:18},{wch:14},{wch:16},{wch:20},{wch:24},{wch:14},{wch:6},{wch:20},{wch:36},{wch:36},{wch:36},{wch:36},{wch:36}];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'ინვენტარი');
+
+  const infoRows = [
+    {ველი:'ფილიალი', მნიშვნელობა: b.name||''},
+    {ველი:'ალიასი',  მნიშვნელობა: b.alias||''},
+    {ველი:'რეგიონი', მნიშვნელობა: b.region||''},
+    {ველი:'ქალაქი',  მნიშვნელობა: b.city||''},
+    {ველი:'მისამართი', მნიშვნელობა: b.address||''},
+    {ველი:'ფართობი მ²', მნიშვნელობა: b.area_m2||''},
+    {ველი:'ტიპი',    მნიშვნელობა: b.type||''},
+    {ველი:'სტატუსი', მნიშვნელობა: b.status||''},
+    {ველი:'DMT მენეჯერი', მნიშვნელობა: b.dmt_manager||''},
+    {ველი:'TBC მენეჯერი', მნიშვნელობა: b.tbc_manager||''},
+    {ველი:'დირექტორი', მნიშვნელობა: b.director||''},
+    {ველი:'სულ დანადგარი', მნიშვნელობა: devices.length},
+    {ველი:'ექსპ. თარიღი', მნიშვნელობა: new Date().toLocaleDateString('ka-GE')},
+  ];
+  const wsInfo = XLSX.utils.json_to_sheet(infoRows);
+  wsInfo['!cols'] = [{wch:20},{wch:40}];
+  XLSX.utils.book_append_sheet(wb, wsInfo, 'ინფო');
+  return wb;
+}
+
+// ── Export XLSX only (no photos) ──────────────────────────────
+function exportBranchXlsx() {
+  if (!state.currentBranch) return;
+  if (typeof XLSX === 'undefined') { showToast('XLSX ვერ ჩაიტვირთა', 'error'); return; }
+  const b = state.currentBranch;
+  const devices = b.devices || [];
+  const wb = _buildInventoryWb(b, devices);
+  const safeName = (b.alias || b.name || 'branch').replace(/[^\wა-ჿ]/g, '_');
+  const date = new Date().toISOString().slice(0,10);
+  _triggerDownload(_xlsxBlob(wb), `tbc_${safeName}_${date}.xlsx`);
+  showToast(`XLSX: ${devices.length} დანადგარი`, 'success');
+}
+
+// ── Server-side ZIP (XLSX + real photos fetched server-side) ──
+async function exportBranchZipServer() {
+  if (!state.currentBranch) return;
+  const branchId = state.currentBranch.id;
+  const btn = event?.currentTarget;
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ მზადდება...'; }
+  showToast('ფოტოები იტვირთება სერვერზე...', 'success');
+  try {
+    const r = await fetch(`/api/tbc/branches/${branchId}/export`);
+    if (r.status === 401) { window.location.href = '/tbc'; return; }
+    if (!r.ok) { showToast('სერვერის შეცდომა', 'error'); return; }
+    const blob = await r.blob();
+    const cd = r.headers.get('content-disposition') || '';
+    const match = cd.match(/filename="([^"]+)"/);
+    const filename = match ? match[1] : `tbc_${branchId}_export.zip`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    const mb = (blob.size / 1024 / 1024).toFixed(1);
+    showToast(`ZIP ჩამოიტვირთა (${mb} MB)`, 'success');
+  } catch(e) {
+    showToast('ჩამოტვირთვის შეცდომა', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '⬇ ZIP+ფოტო'; }
+  }
+}
+
+// ── Export ZIP (XLSX + real photos) ──────────────────────────
+async function exportBranchZip() {
+  if (!state.currentBranch) return;
+  if (typeof XLSX === 'undefined') { showToast('XLSX ვერ ჩაიტვირთა', 'error'); return; }
+  if (typeof JSZip === 'undefined') { showToast('JSZip ვერ ჩაიტვირთა', 'error'); return; }
+
+  const b = state.currentBranch;
+  const devices = b.devices || [];
+  const safeName = (b.alias || b.name || 'branch').replace(/[^\wა-ჿ]/g, '_');
+  const date = new Date().toISOString().slice(0,10);
+  const SLOT_NAMES = ['birka', 'axlo', 'maxelgo', 'gare', 'damat'];
+
+  showToast(`ფოტოები იტვირთება... (${devices.length} დანადგარი)`, 'success');
+
+  const zip = new JSZip();
+  const photosFolder = zip.folder('photos');
+  let fetched = 0, failed = 0;
+
+  // Fetch all photos concurrently in batches of 5
+  const jobs = [];
+  devices.forEach((d, idx) => {
+    const num = String(idx + 1).padStart(3, '0');
+    const folder = photosFolder.folder(`device_${num}`);
+    const photos = Array.isArray(d.photos) ? d.photos : [];
+    photos.forEach((url, slotIdx) => {
+      if (url) jobs.push({url, folder, name: `${SLOT_NAMES[slotIdx]}.jpg`});
+    });
+    if (Array.isArray(d.situational_photos)) {
+      d.situational_photos.forEach((sp, si) => {
+        if (sp && sp.src) jobs.push({url: sp.src, folder, name: `sit_${si+1}.jpg`});
+      });
+    }
+  });
+
+  function _dataUrlToBlob(url) {
+    const [header, b64] = url.split(',');
+    const mime = (header.match(/:(.*?);/) || [])[1] || 'image/jpeg';
+    const bin = atob(b64);
+    const arr = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+    return new Blob([arr], {type: mime});
+  }
+
+  const BATCH = 6;
+  for (let i = 0; i < jobs.length; i += BATCH) {
+    await Promise.all(jobs.slice(i, i + BATCH).map(async ({url, folder, name}) => {
+      try {
+        const blob = url.startsWith('data:')
+          ? _dataUrlToBlob(url)
+          : await fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.blob(); });
+        folder.file(name, blob);
+        fetched++;
+      } catch { failed++; }
+    }));
+  }
+
+  // Add XLSX
+  zip.file(`${safeName}_${date}.xlsx`, _xlsxBlob(_buildInventoryWb(b, devices)));
+
+  const zipBlob = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
+  _triggerDownload(zipBlob, `tbc_${safeName}_${date}.zip`);
+  showToast(`ZIP: ${devices.length} დანადგარი · ${fetched} ფოტო${failed ? ` · ${failed} გამოტ.` : ''}`, 'success');
+}
+
+async function _loadArchiveCount(branchId) {
+  const btn = document.getElementById('archivePanelBtn');
+  if (!btn) return;
+  try {
+    const r = await fetch(`/api/tbc/branches/${branchId}/devices`);
+    if (!r.ok) return;
+    const data = await r.json();
+    const count = data.count || 0;
+    if (count > 0) {
+      btn.innerHTML = `🗃 არქივი <span style="background:#FDE68A;color:#92400E;border-radius:10px;padding:0 6px;font-size:10px;font-weight:800;margin-left:2px;">${count}</span>`;
+    } else {
+      btn.textContent = '🗃 არქივი';
+    }
+  } catch(e) {}
 }
 
 function setupDetailMap(b) {
@@ -3395,7 +4888,7 @@ function renderProgressSummary(b) {
   
   document.getElementById('progressSummary').innerHTML = `
     <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
-      <span style="font-size:12px;color:var(--slate-500);">დამონტაჟებული</span>
+      <span style="font-size:12px;color:var(--slate-500);">აღწერილი</span>
       <span class="mono" style="font-weight:600;">${installed} / ${planned}</span>
     </div>
     <div class="progress-bar" style="width:100%;height:8px;margin-bottom:14px;"><div style="width:${pct}%;"></div></div>
@@ -3410,6 +4903,46 @@ function renderProgressSummary(b) {
       </div>
     </div>
   `;
+}
+
+function _initialsOf(raw) {
+  const parts = String(raw||'').trim().split(/[\s_.\-]+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return '?';
+}
+
+// Pastel palette keyed by user hash — same user always gets same color.
+function _colorForUser(raw) {
+  const palette = [
+    {bg:'#e0f2fe', fg:'#075985'}, // sky
+    {bg:'#dcfce7', fg:'#166534'}, // green
+    {bg:'#fef3c7', fg:'#92400e'}, // amber
+    {bg:'#fce7f3', fg:'#9d174d'}, // pink
+    {bg:'#ede9fe', fg:'#5b21b6'}, // violet
+    {bg:'#ffedd5', fg:'#9a3412'}, // orange
+    {bg:'#ccfbf1', fg:'#115e59'}, // teal
+    {bg:'#fee2e2', fg:'#991b1b'}  // red
+  ];
+  const s = String(raw||'');
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return palette[h % palette.length];
+}
+
+function _deviceUploaderCell(d) {
+  let who = d.added_by || null;
+  let when = d.added_at || null;
+  if (!who && Array.isArray(d.photo_meta)) {
+    for (const m of d.photo_meta) {
+      if (m && m.by) { who = m.by; when = m.at || null; break; }
+    }
+  }
+  if (!who) return `<span style="color:var(--slate-300);font-size:11px;" title="უცნობია">—</span>`;
+  const initials = _initialsOf(who);
+  const color = _colorForUser(who);
+  const tip = when ? `${who} · ${new Date(when).toLocaleString('ka-GE')}` : String(who);
+  return `<span title="${escapeHtml(tip)}" style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:999px;background:${color.bg};color:${color.fg};font-size:10px;font-weight:800;font-family:var(--font-mono);letter-spacing:0.5px;">${escapeHtml(initials)}</span>`;
 }
 
 function renderDevicesList(b) {
@@ -3445,20 +4978,22 @@ function renderDevicesList(b) {
   
   const renderPhotoSlot = (devIdx, slotIdx, photo, meta) => {
     const label = PHOTO_LABELS[slotIdx];
-    if (photo) {
+    const thumb = _photoThumb(photo);
+    const full = _photoFull(photo);
+    if (thumb) {
       const metaStr = _fmtPhotoMeta(meta);
       const tooltip = metaStr ? `${label} — ${metaStr}` : label;
       const metaArg = metaStr ? encodeURIComponent(`${label} — ${metaStr}`) : '';
       return `
-        <div class="sheet-photo-slot has-image" title="${escapeHtml(tooltip)}" onclick="viewPhoto('${encodeURIComponent(photo)}', '${metaArg}')">
-          <img src="${photo}" alt="${escapeHtml(label)}" loading="lazy">
+        <div class="sheet-photo-slot has-image" data-slot="${slotIdx}" title="${escapeHtml(tooltip)}" onclick="viewPhoto('${encodeURIComponent(full)}', '${metaArg}', ${devIdx}, ${slotIdx})">
+          <img src="${thumb}" alt="${escapeHtml(label)}" loading="lazy" decoding="async">
           ${metaStr ? '<span class="sheet-photo-dot" aria-hidden="true"></span>' : ''}
           <button class="photo-del" onclick="event.stopPropagation(); clearDevicePhoto(${devIdx}, ${slotIdx})" title="წაშლა">×</button>
         </div>
       `;
     }
     return `
-      <div class="sheet-photo-slot" title="${escapeHtml(label)}" onclick="pickDevicePhoto(${devIdx}, ${slotIdx})">
+      <div class="sheet-photo-slot" data-slot="${slotIdx}" title="${escapeHtml(label)}" onclick="pickDevicePhoto(${devIdx}, ${slotIdx})">
         <span class="plus">+</span>
       </div>
     `;
@@ -3469,9 +5004,27 @@ function renderDevicesList(b) {
     const photoMetaArr = d.photo_meta || [null, null, null, null, null];
     const isCustomCat = d.category === 'სხვა' || (d.category && !categories.includes(d.category));
     const isCustomSub = d.subtype === 'სხვა' || (d.subtype && !subtypesByCategory[d.category]?.includes(d.subtype));
+    const controllers = b.controllers || [];
+    const products = _products || [];
+    const currentKontrValue = d.product_id ? 'p:' + d.product_id : (d.controller_id ? 'c:' + d.controller_id : '');
+    const ctrlOptionsHtml = controllers.map(c =>
+      `<option value="c:${escapeHtml(c.id)}"${currentKontrValue==='c:'+c.id?' selected':''}>${escapeHtml(c.code?c.code+' · ':'')}${escapeHtml(c.name)}</option>`
+    ).join('');
+    const prodOptionsHtml = products.map(p =>
+      `<option value="p:${escapeHtml(p.id)}"${currentKontrValue==='p:'+p.id?' selected':''}>${escapeHtml(p.code?p.code+' · ':'')}${escapeHtml(p.name)}${p.dimension?' · '+escapeHtml(p.dimension):''}</option>`
+    ).join('');
+    const ctrlOpts =
+      `<option value="">—</option>` +
+      (ctrlOptionsHtml ? `<optgroup label="🎛 კონტროლერები">${ctrlOptionsHtml}</optgroup>` : '') +
+      (prodOptionsHtml ? `<optgroup label="🧰 მოწყობილობები">${prodOptionsHtml}</optgroup>` : '');
+
     return `
       <tr class="${d.unplanned ? 'is-unplanned' : ''}" data-idx="${idx}">
         <td class="sheet-cell-num">${idx + 1}</td>
+        <td style="text-align:center;padding:2px 4px;">${_deviceUploaderCell(d)}</td>
+        <td style="min-width:100px;">
+          <select class="sheet-select" style="font-size:11px;max-width:120px;" onchange="updateDeviceKontr(${idx}, this.value)" title="კონტროლერი / მოწყობილობა">${ctrlOpts}</select>
+        </td>
         <td>
           ${isCustomCat
             ? `<input class="sheet-input" type="text" value="${escapeHtml(d.category || '')}" placeholder="კატეგორია..." onchange="updateDeviceField(${idx}, 'category', this.value)" style="font-weight:600;color:var(--amber-600);">`
@@ -3500,7 +5053,7 @@ function renderDevicesList(b) {
         <td class="sheet-cell-ai">${renderAiFillBtn(idx, d)}</td>
         <td class="sheet-cell-ai">${renderAiMetaBtn(idx, d)}</td>
         <td class="sheet-cell-del">
-          <button onclick="deleteDevice(${idx})" title="წაშლა">🗑</button>
+          <button onclick="deleteDevice(${idx})" title="არქივში გადატანა (360 დღე ინახება)">🗃</button>
         </td>
       </tr>
     `;
@@ -3508,7 +5061,7 @@ function renderDevicesList(b) {
   
   const emptyStateRow = devices.length === 0 ? `
     <tr>
-      <td colspan="17" style="padding: 30px; text-align: center; color: var(--slate-400); font-style: italic;">
+      <td colspan="18" style="padding: 30px; text-align: center; color: var(--slate-400); font-style: italic;">
         ჯერ არ არის აღრიცხული დანადგარი — დააჭირე ქვემოთ "+ დამატება"
       </td>
     </tr>
@@ -3520,6 +5073,8 @@ function renderDevicesList(b) {
         <thead>
           <tr>
             <th class="sheet-cell-num">#</th>
+            <th style="min-width:48px;font-size:10px;text-align:center;" title="ვინ ატვირთა (ინიციალები)">👤</th>
+            <th style="min-width:100px;font-size:10px;" title="კონტროლერი">🎛 კონტრ.</th>
             <th style="min-width: 120px;">კატეგორია</th>
             <th style="min-width: 140px;">ქვეტიპი</th>
             <th style="min-width: 110px;">მწარმოებელი</th>
@@ -3542,7 +5097,7 @@ function renderDevicesList(b) {
           ${emptyStateRow}
           ${rows}
           <tr class="sheet-add-row">
-            <td colspan="17">
+            <td colspan="19">
               <button onclick="addNewDevice()">+ დამატე დანადგარი</button>
             </td>
           </tr>
@@ -3586,6 +5141,24 @@ function addNewDevice() {
       if (firstSel) firstSel.focus();
     }
   }, 50);
+}
+
+function updateDeviceKontr(idx, raw) {
+  if (!state.currentBranch) return;
+  const d = state.currentBranch.devices[idx];
+  if (!d) return;
+  const v = String(raw || '');
+  if (v.startsWith('p:')) {
+    d.product_id = v.slice(2);
+    delete d.controller_id;
+  } else if (v.startsWith('c:')) {
+    d.controller_id = v.slice(2);
+    delete d.product_id;
+  } else {
+    delete d.product_id;
+    delete d.controller_id;
+  }
+  saveState();
 }
 
 function updateDeviceField(idx, field, value) {
@@ -3639,47 +5212,63 @@ function pickDevicePhoto(devIdx, slotIdx) {
   input.click();
 }
 
-function handleSheetPhotoUpload(e, devIdx, slotIdx) {
+async function handleSheetPhotoUpload(e, devIdx, slotIdx) {
   const file = e.target.files[0];
   if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const img = new Image();
-    img.onload = () => {
-      const maxDim = 1024;
-      let { width, height } = img;
-      if (width > maxDim || height > maxDim) {
-        const scale = maxDim / Math.max(width, height);
-        width = Math.round(width * scale);
-        height = Math.round(height * scale);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-      const d = state.currentBranch.devices[devIdx];
-      if (!d) return;
-      if (!d.photos) d.photos = [null, null, null, null, null];
-      d.photos[slotIdx] = dataUrl;
-      if (!d.photo_meta) d.photo_meta = [null, null, null, null, null];
-      d.photo_meta[slotIdx] = { by: _uploaderName(), at: new Date().toISOString() };
-      saveState();
-      renderDevicesList(state.currentBranch);
-    };
-    img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
+  const d = state.currentBranch?.devices?.[devIdx];
+  if (!d) return;
+  if (!d.photos) d.photos = [null, null, null, null, null];
+  if (!d.photo_meta) d.photo_meta = [null, null, null, null, null];
+
+  // Optimistic thumbnail preview — shows something immediately while upload runs.
+  let pair;
+  try {
+    pair = await _fileToResizedPair(file);
+  } catch (err) {
+    console.error('[tbc photos] resize failed', err);
+    return;
+  }
+  d.photos[slotIdx] = pair.thumb;
+  d.photo_meta[slotIdx] = { by: _uploaderName(), at: new Date().toISOString(), _uploading: true };
+  renderDevicesList(state.currentBranch);
+
+  const branchId = state.currentBranch?.id;
+  const ref = await _uploadPhotoToStorage(pair.full, pair.thumb, 'device', branchId, (pct) => {
+    // update progress badge via DOM attribute on the slot
+    const cell = document.querySelector(`.devices-sheet tbody tr[data-idx="${devIdx}"] .sheet-photo-slot[data-slot="${slotIdx}"]`);
+    if (cell) cell.setAttribute('data-progress', String(pct));
+  });
+  if (ref) {
+    d.photos[slotIdx] = ref;
+  } else {
+    // Upload failed: keep data URL as fallback. Backfill script will sweep it later.
+    d.photos[slotIdx] = pair.full;
+  }
+  const meta = d.photo_meta[slotIdx] || {};
+  delete meta._uploading;
+  d.photo_meta[slotIdx] = meta;
+  saveState();
+  renderDevicesList(state.currentBranch);
 }
 
 function clearDevicePhoto(devIdx, slotIdx) {
   if (!state.currentBranch) return;
   const d = state.currentBranch.devices[devIdx];
   if (!d || !d.photos) return;
-  d.photos[slotIdx] = null;
-  if (d.photo_meta) d.photo_meta[slotIdx] = null;
-  saveState();
-  renderDevicesList(state.currentBranch);
+  const src = d.photos[slotIdx];
+  if (!src) return;
+  showConfirm({
+    title: 'ფოტოს არქივი',
+    text: 'ეს ფოტო active view-დან მოიხსნება. ჩანაწერი archive trail-ში დარჩება.',
+    okText: '🗃 მოხსნა',
+    onConfirm: () => {
+      _archivePhotoRef(d, slotIdx, src, d.photo_meta?.[slotIdx] || null);
+      d.photos[slotIdx] = null;
+      if (d.photo_meta) d.photo_meta[slotIdx] = null;
+      saveState();
+      renderDevicesList(state.currentBranch);
+    }
+  });
 }
 
 function closeBranch() {
@@ -3800,6 +5389,7 @@ function editDevice(idx) {
   document.getElementById('dev_unplanned').checked = !!d.unplanned;
   state.pendingDevice.photos = [...(d.photos || [null, null, null, null, null])];
   state.pendingDevice.photo_meta = [...(d.photo_meta || [null, null, null, null, null])];
+  state.pendingDevice.archived_photos = [...(d.archived_photos || [])];
   renderPhotoSlots();
   document.getElementById('deviceModal').classList.add('active');
 }
@@ -3808,19 +5398,41 @@ function deleteDevice(idx) {
   const d = state.currentBranch?.devices[idx];
   const name = d ? `${d.category || 'დანადგარი'} ${d.subtype ? '/ ' + d.subtype : ''} ${d.serial ? '(' + d.serial + ')' : ''}`.trim() : 'ეს დანადგარი';
   showConfirm({
-    title: 'დანადგარის წაშლა',
-    text: `ნამდვილად წავშალოთ <b>${escapeHtml(name)}</b>?<br>ყველა მისი ფოტო და მონაცემი შეუქცევადად წაიშლება.`,
-    okText: '🗑 წაშლა',
-    onConfirm: () => {
-      state.currentBranch.devices.splice(idx, 1);
-      saveState();
-      renderDevicesList(state.currentBranch);
-      renderPlannedEquipment(state.currentBranch);
-      renderProgressSummary(state.currentBranch);
-      refreshDashboard();
-      showToast('დანადგარი წაიშალა', 'success');
-    },
+    title: 'დანადგარის არქივი',
+    text: `ნამდვილად გადავიტანოთ <b>${escapeHtml(name)}</b> არქივში?<br>აქტიური სიიდან გაქრება, მაგრამ მონაცემი მინიმუმ 360 დღე დარჩება არქივში.`,
+    okText: '🗃 არქივი',
+    onConfirm: () => { void archiveDeviceRow(idx); },
   });
+}
+
+async function archiveDeviceRow(idx) {
+  if (!state.currentBranch) return;
+  const branchId = state.currentBranch.id;
+  try {
+    if (_apiSaveTimer) {
+      clearTimeout(_apiSaveTimer);
+      _apiSaveTimer = null;
+    }
+    await _apiFlush();
+    const r = await fetch(`/api/tbc/branches/${branchId}/devices/${idx}`, {
+      method: 'DELETE',
+    });
+    if (r.status === 401) { window.location.href = '/tbc'; return; }
+    if (!r.ok) {
+      showToast('დანადგარი არქივში ვერ გადავიდა', 'error');
+      return;
+    }
+    await loadState();
+    populateFilters();
+    updateTabCount();
+    renderTable();
+    refreshDashboard();
+    openBranch(branchId);
+    showToast('დანადგარი არქივში გადავიდა', 'success');
+  } catch (e) {
+    console.error('device archive failed', e);
+    showToast('დანადგარი არქივში ვერ გადავიდა', 'error');
+  }
 }
 
 // ============================================
@@ -3856,6 +5468,7 @@ function resetDeviceForm() {
   document.getElementById('dev_unplanned').checked = false;
   state.pendingDevice.photos = [null, null, null, null, null];
   state.pendingDevice.photo_meta = [null, null, null, null, null];
+  state.pendingDevice.archived_photos = [];
   renderPhotoSlots();
 }
 
@@ -3883,10 +5496,15 @@ function saveDevice() {
     unplanned: document.getElementById('dev_unplanned').checked,
     photos: [...state.pendingDevice.photos],
     photo_meta: [...(state.pendingDevice.photo_meta || [null, null, null, null, null])],
+    archived_photos: [...(state.pendingDevice.archived_photos || [])],
     added_at: new Date().toISOString(),
   };
   if (!state.currentBranch.devices) state.currentBranch.devices = [];
   if (editingDeviceIdx !== null) {
+    const existing = state.currentBranch.devices[editingDeviceIdx] || {};
+    if (Array.isArray(existing.archived_photos) && !dev.archived_photos.length) {
+      dev.archived_photos = [...existing.archived_photos];
+    }
     state.currentBranch.devices[editingDeviceIdx] = dev;
   } else {
     state.currentBranch.devices.push(dev);
@@ -3911,43 +5529,48 @@ function pickPhoto(slotIdx) {
   input.click();
 }
 
-function handlePhotoFile(e) {
+async function handlePhotoFile(e) {
   const file = e.target.files[0];
   if (!file) return;
-  
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    // Resize image
-    const img = new Image();
-    img.onload = () => {
-      const maxDim = 1024;
-      let { width, height } = img;
-      if (width > maxDim || height > maxDim) {
-        const scale = maxDim / Math.max(width, height);
-        width = Math.round(width * scale);
-        height = Math.round(height * scale);
-      }
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0, width, height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-      state.pendingDevice.photos[state.currentPhotoSlot] = dataUrl;
-      if (!state.pendingDevice.photo_meta) state.pendingDevice.photo_meta = [null, null, null, null, null];
-      state.pendingDevice.photo_meta[state.currentPhotoSlot] = { by: _uploaderName(), at: new Date().toISOString() };
-      renderPhotoSlots();
-    };
-    img.src = ev.target.result;
-  };
-  reader.readAsDataURL(file);
+  const slot = state.currentPhotoSlot;
+  let pair;
+  try {
+    pair = await _fileToResizedPair(file);
+  } catch (err) {
+    console.error('[tbc photos] resize failed', err);
+    return;
+  }
+  if (!state.pendingDevice.photo_meta) state.pendingDevice.photo_meta = [null, null, null, null, null];
+  state.pendingDevice.photos[slot] = pair.thumb; // optimistic preview
+  state.pendingDevice.photo_meta[slot] = { by: _uploaderName(), at: new Date().toISOString() };
+  renderPhotoSlots();
+
+  const branchId = state.currentBranch?.id;
+  const ref = await _uploadPhotoToStorage(pair.full, pair.thumb, 'device', branchId);
+  state.pendingDevice.photos[slot] = ref || pair.full;
+  renderPhotoSlots();
 }
 
 function removePhoto(e, slotIdx) {
   e.stopPropagation();
-  state.pendingDevice.photos[slotIdx] = null;
-  if (state.pendingDevice.photo_meta) state.pendingDevice.photo_meta[slotIdx] = null;
-  renderPhotoSlots();
+  const src = state.pendingDevice.photos[slotIdx];
+  if (!src) return;
+  showConfirm({
+    title: 'ფოტოს არქივი',
+    text: 'ეს ფოტო active view-დან მოიხსნება. ჩანაწერი archive trail-ში დარჩება.',
+    okText: '🗃 მოხსნა',
+    onConfirm: () => {
+      _archivePhotoRef(
+        state.pendingDevice,
+        slotIdx,
+        src,
+        state.pendingDevice.photo_meta?.[slotIdx] || null
+      );
+      state.pendingDevice.photos[slotIdx] = null;
+      if (state.pendingDevice.photo_meta) state.pendingDevice.photo_meta[slotIdx] = null;
+      renderPhotoSlots();
+    }
+  });
 }
 
 function renderPhotoSlots() {
@@ -3960,10 +5583,13 @@ function renderPhotoSlots() {
     if (existingImg) existingImg.remove();
     const existingChip = slot.querySelector('.photo-meta-chip');
     if (existingChip) existingChip.remove();
-    if (photo) {
+    const thumb = _photoThumb(photo);
+    if (thumb) {
       slot.classList.add('has-image');
       const img = document.createElement('img');
-      img.src = photo;
+      img.src = thumb;
+      img.loading = 'lazy';
+      img.decoding = 'async';
       slot.insertBefore(img, slot.firstChild);
       const metaStr = _fmtPhotoMeta(metaArr[i]);
       if (metaStr) {
@@ -3982,17 +5608,56 @@ function renderPhotoSlots() {
   });
 }
 
-function viewPhoto(src, metaStr) {
-  document.getElementById('photoViewerImg').src = decodeURIComponent(src);
-  const metaEl = document.getElementById('photoViewerMeta');
-  if (metaEl) metaEl.textContent = metaStr ? decodeURIComponent(metaStr) : '';
+let _viewerPhotos = [];
+let _viewerIdx = 0;
+
+function viewPhoto(src, metaStr, devIdx, slotIdx) {
+  _viewerPhotos = [];
+  _viewerIdx = 0;
+  if (devIdx !== undefined && state.currentBranch) {
+    const d = state.currentBranch.devices[devIdx];
+    if (d && Array.isArray(d.photos)) {
+      d.photos.forEach((p, i) => {
+        const full = _photoFull(p);
+        if (full) _viewerPhotos.push({src: full, meta: d.photo_meta?.[i] ? _fmtPhotoMeta(d.photo_meta[i]) : '', slot: i});
+      });
+      _viewerIdx = _viewerPhotos.findIndex(x => x.slot === slotIdx);
+      if (_viewerIdx < 0) _viewerIdx = 0;
+    }
+  }
+  if (_viewerPhotos.length === 0) {
+    _viewerPhotos = [{src: decodeURIComponent(src), meta: metaStr ? decodeURIComponent(metaStr) : ''}];
+  }
+  _viewerRender();
   document.getElementById('photoViewer').classList.add('active');
+}
+
+function _viewerRender() {
+  const p = _viewerPhotos[_viewerIdx];
+  if (!p) return;
+  document.getElementById('photoViewerImg').src = p.src;
+  const metaEl = document.getElementById('photoViewerMeta');
+  if (metaEl) metaEl.textContent = p.meta || '';
+  const multi = _viewerPhotos.length > 1;
+  const counter = document.getElementById('photoViewerCounter');
+  const prev = document.getElementById('photoViewerPrev');
+  const next = document.getElementById('photoViewerNext');
+  if (counter) { counter.textContent = `${_viewerIdx + 1} / ${_viewerPhotos.length}`; counter.style.display = multi ? 'block' : 'none'; }
+  if (prev) prev.style.display = multi ? 'flex' : 'none';
+  if (next) next.style.display = multi ? 'flex' : 'none';
+}
+
+function _viewerStep(dir) {
+  if (_viewerPhotos.length < 2) return;
+  _viewerIdx = (_viewerIdx + dir + _viewerPhotos.length) % _viewerPhotos.length;
+  _viewerRender();
 }
 
 function closePhotoViewer() {
   document.getElementById('photoViewer').classList.remove('active');
   const metaEl = document.getElementById('photoViewerMeta');
   if (metaEl) metaEl.textContent = '';
+  _viewerPhotos = [];
 }
 
 // ============================================
@@ -4022,16 +5687,26 @@ function importData(e) {
     try {
       const data = JSON.parse(ev.target.result);
       if (!data.branches) throw new Error('invalid');
-      if (!confirm('მიმდინარე მონაცემები გადაიწერება. გააგრძელო?')) return;
-      const byId = new Map(data.branches.map(b => [b.id, b]));
-      state.branches.forEach(b => {
-        const imp = byId.get(b.id);
-        if (imp) Object.assign(b, imp);
+      showConfirm({
+        title: 'JSON იმპორტი',
+        text: 'ფილიალების საბაზო ველები (სახელი, მისამართი, სტატუსი...) განახლდება.<br><b>მოწყობილობების სია და ოპერატიული ჩანაწერები შეუცვლელი დარჩება.</b>',
+        okText: '📥 იმპორტი',
+        icon: '⚠️',
+        onConfirm: () => {
+          const byId = new Map(data.branches.map(b => [b.id, b]));
+          state.branches.forEach(b => {
+            const imp = byId.get(b.id);
+            if (imp) {
+              const { devices: _skipDevices, ...rest } = imp;
+              Object.assign(b, rest);
+            }
+          });
+          saveState();
+          refreshDashboard();
+          renderTable();
+          showToast('იმპორტი შესრულდა', 'success');
+        }
       });
-      saveState();
-      refreshDashboard();
-      renderTable();
-      showToast('იმპორტი შესრულდა', 'success');
     } catch(err) {
       showToast('შეცდომა იმპორტში: ' + err.message, 'error');
     }
@@ -4451,73 +6126,113 @@ function renderParsePreview(result) {
 function applyParsedData() {
   if (!parsedPayload) return;
   const mode = document.querySelector('input[name="mergeMode"]:checked').value;
-  
+
+  const mergeImportedBranch = (existing, fresh, fallbackId) => ({
+    ...(existing || {}),
+    ...fresh,
+    id: fresh.id || existing?.id || fallbackId,
+    status: existing?.status || fresh.status || 'general',
+    director: existing?.director || fresh.director || '',
+    director_phone: existing?.director_phone || fresh.director_phone || '',
+    manager: existing?.manager || '',
+    manager_phone: existing?.manager_phone || '',
+    visit: existing?.visit || '',
+    dmt_manager: existing?.dmt_manager || fresh.dmt_manager || '',
+    dmt_manager_phone: existing?.dmt_manager_phone || fresh.dmt_manager_phone || '',
+    tbc_manager: existing?.tbc_manager || fresh.tbc_manager || '',
+    tbc_manager_phone: existing?.tbc_manager_phone || fresh.tbc_manager_phone || '',
+    planned_start: existing?.planned_start || fresh.planned_start || '',
+    planned_end: existing?.planned_end || fresh.planned_end || '',
+    annotation: existing?.annotation || fresh.annotation || '',
+    act: existing?.act || fresh.act || '',
+    notes: existing?.notes || fresh.notes || '',
+    comment: existing?.comment || fresh.comment || '',
+    devices: Array.isArray(existing?.devices) ? existing.devices : (Array.isArray(fresh.devices) ? fresh.devices : []),
+  });
+
+  function _commit() {
+    // Refresh equipment dropdown
+    const sel = document.getElementById('dev_type');
+    sel.innerHTML = '<option value="">აირჩიე კატეგორია</option>';
+    const cats = [...new Set(state.equipmentTypes.map(e => e.category))];
+    cats.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c; opt.textContent = c;
+      sel.appendChild(opt);
+    });
+
+    // Refresh region/type filters
+    const regSel = document.getElementById('regionFilter');
+    const typeSel = document.getElementById('typeFilter');
+    const currentReg = regSel.value, currentType = typeSel.value;
+    regSel.innerHTML = '<option value="">ყველა რეგიონი</option>';
+    typeSel.innerHTML = '<option value="">ყველა ტიპი</option>';
+    const regions = [...new Set(state.branches.map(b => b.region).filter(Boolean))].sort();
+    const types = [...new Set(state.branches.map(b => b.type).filter(Boolean))].sort();
+    regions.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; regSel.appendChild(o); });
+    types.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; typeSel.appendChild(o); });
+    regSel.value = currentReg; typeSel.value = currentType;
+
+    saveState();
+    renderTable();
+    updateTabCount();
+
+    // Reset dashboard map so it re-renders with updated data
+    if (state.dashMap) {
+      state.dashMap.remove();
+      state.dashMap = null;
+    }
+    if (currentTab === 'dashboard') {
+      renderDashboard();
+    }
+
+    closeDataModal();
+    const msg = mode === 'replace' ? 'განახლება დასრულდა' : 'მონაცემები განახლდა';
+    showToast(msg + ` — ${parsedPayload.branches.length} ფილიალი`, 'success');
+  }
+
   if (mode === 'replace') {
-    if (!confirm('ნამდვილად სრული ჩანაცვლება? ყველა არსებული ინვენტარიზაცია, შენიშვნა, ფოტო დაიკარგება!')) return;
-    // Full replace
-    state.branches = parsedPayload.branches.map(b => ({
-      ...b,
-      status: 'general',
-      director: '',
-      director_phone: '',
-      manager: '',
-      manager_phone: '',
-      visit: '',
-      annotation: '',
-      act: '',
-      notes: '',
-      devices: [],
-    }));
-    state.equipmentTypes = parsedPayload.equipment_types;
+    showConfirm({
+      title: '📥 XLSX – ბაზის განახლება',
+      text: `<b>${parsedPayload.branches.length} ფილიალის</b> სტრუქტურული მონაცემები განახლდება XLSX-ის მიხედვით.<br>მოწყობილობების სია, შენიშვნები და ოპერატიული ჩანაწერები <b>შენარჩუნდება</b>.`,
+      okText: '📥 განახლება',
+      icon: '⚠️',
+      onConfirm: () => {
+        const existingById = new Map(state.branches.map(b => [b.id, b]));
+        state.branches = parsedPayload.branches.map((b, index) =>
+          mergeImportedBranch(existingById.get(b.id), b, index + 1)
+        );
+        state.equipmentTypes = parsedPayload.equipment_types;
+        _commit();
+      }
+    });
   } else {
     // Merge mode: match by normalized name, update planned data, keep user data
     const parsedByKey = new Map();
     parsedPayload.branches.forEach(b => {
       parsedByKey.set(normalizeKey(b.name), b);
     });
-    
+
     // Update existing branches
     const matchedKeys = new Set();
     state.branches.forEach(existing => {
       const key = normalizeKey(existing.name);
       const fresh = parsedByKey.get(key);
       if (fresh) {
-        existing.inventory_items = fresh.inventory_items;
-        existing.planned_count = fresh.planned_count;
-        // Also refresh static metadata if changed
-        if (fresh.address) existing.address = fresh.address;
-        if (fresh.city) existing.city = fresh.city;
-        if (fresh.region) existing.region = fresh.region;
-        if (fresh.area_m2) existing.area_m2 = fresh.area_m2;
-        if (fresh.monthly_fee) existing.monthly_fee = fresh.monthly_fee;
-        if (fresh.alias) existing.alias = fresh.alias;
-        if (fresh.type) existing.type = fresh.type;
+        Object.assign(existing, mergeImportedBranch(existing, fresh, existing.id));
         matchedKeys.add(key);
       }
     });
-    
+
     // Add new branches not in existing
     const maxId = Math.max(0, ...state.branches.map(b => b.id || 0));
     let nextId = maxId + 1;
     parsedByKey.forEach((fresh, key) => {
       if (!matchedKeys.has(key)) {
-        state.branches.push({
-          ...fresh,
-          id: fresh.id || nextId++,
-          status: 'general',
-          director: '',
-          director_phone: '',
-          manager: '',
-          manager_phone: '',
-          visit: '',
-          annotation: '',
-          act: '',
-          notes: '',
-          devices: [],
-        });
+        state.branches.push(mergeImportedBranch(null, fresh, fresh.id || nextId++));
       }
     });
-    
+
     // Merge equipment types
     const existingTypeKeys = new Set(state.equipmentTypes.map(t => `${t.category}||${t.subtype}`));
     parsedPayload.equipment_types.forEach(t => {
@@ -4526,46 +6241,9 @@ function applyParsedData() {
         state.equipmentTypes.push(t);
       }
     });
+
+    _commit();
   }
-  
-  // Refresh equipment dropdown
-  const sel = document.getElementById('dev_type');
-  sel.innerHTML = '<option value="">აირჩიე კატეგორია</option>';
-  const cats = [...new Set(state.equipmentTypes.map(e => e.category))];
-  cats.forEach(c => {
-    const opt = document.createElement('option');
-    opt.value = c; opt.textContent = c;
-    sel.appendChild(opt);
-  });
-  
-  // Refresh region/type filters
-  const regSel = document.getElementById('regionFilter');
-  const typeSel = document.getElementById('typeFilter');
-  const currentReg = regSel.value, currentType = typeSel.value;
-  regSel.innerHTML = '<option value="">ყველა რეგიონი</option>';
-  typeSel.innerHTML = '<option value="">ყველა ტიპი</option>';
-  const regions = [...new Set(state.branches.map(b => b.region).filter(Boolean))].sort();
-  const types = [...new Set(state.branches.map(b => b.type).filter(Boolean))].sort();
-  regions.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; regSel.appendChild(o); });
-  types.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; typeSel.appendChild(o); });
-  regSel.value = currentReg; typeSel.value = currentType;
-  
-  saveState();
-  renderTable();
-  updateTabCount();
-  
-  // Reset dashboard map so it re-renders with updated data
-  if (state.dashMap) {
-    state.dashMap.remove();
-    state.dashMap = null;
-  }
-  if (currentTab === 'dashboard') {
-    renderDashboard();
-  }
-  
-  closeDataModal();
-  const msg = mode === 'replace' ? 'ყველა მონაცემი ჩაინაცვლა' : 'მონაცემები განახლდა';
-  showToast(msg + ` — ${parsedPayload.branches.length} ფილიალი`, 'success');
 }
 
 // ============================================
@@ -4648,10 +6326,18 @@ function updateEstimateField(idx, field, value) {
 }
 
 function deleteEstimateRow(idx) {
-  _estimateItems.splice(idx, 1);
-  _estimateDirty = true;
-  renderEstimateRows();
-  scheduleEstimateSave();
+  showConfirm({
+    title: 'ხარჯთაღრიცხვის პოზიციის არქივი',
+    text: 'ეს პოზიცია აქტიური სიიდან გაქრება და შენახვისას გადავა 360-დღიან არქივში.',
+    okText: '🗃 არქივი',
+    onConfirm: () => {
+      _estimateItems.splice(idx, 1);
+      _estimateDirty = true;
+      renderEstimateRows();
+      scheduleEstimateSave();
+      showToast('პოზიცია მოინიშნა არქივისთვის', 'success');
+    }
+  });
 }
 
 function scheduleEstimateSave() {
@@ -4727,7 +6413,7 @@ function renderEstimateRows(opts) {
       <td><input class="sheet-input mono" type="number" min="0" step="0.01" value="${it.qty}" onchange="updateEstimateField(${idx}, 'qty', this.value)" style="text-align:right;" ${ro}></td>
       <td><input class="sheet-input mono" type="number" min="0" step="0.01" value="${it.price}" onchange="updateEstimateField(${idx}, 'price', this.value)" style="text-align:right;" ${ro}></td>
       <td class="mono est-total" style="padding: 7px 9px; text-align:right; font-weight:600; color: var(--slate-900);">${(it.qty*it.price).toFixed(2)}</td>
-      <td class="sheet-cell-del">${canEdit ? `<button onclick="deleteEstimateRow(${idx})" title="წაშლა">🗑</button>` : ''}</td>
+      <td class="sheet-cell-del">${canEdit ? `<button onclick="deleteEstimateRow(${idx})" title="არქივში გადატანა (360 დღე ინახება)">🗃</button>` : ''}</td>
     </tr>
   `).join('');
 
@@ -4828,7 +6514,7 @@ async function runAiFillRow(idx) {
     showToast('ლიმიტი ამოწურულია — შეიყვანე ხელით', 'error');
     return;
   }
-  const photos = (d.photos || []).filter(Boolean);
+  const photos = (d.photos || []).map(_photoFull).filter(Boolean);
   if (!photos.length) {
     showToast('ჯერ დაამატე ფოტო', 'error');
     return;
@@ -4916,7 +6602,7 @@ async function runAiResearchRow(idx) {
         brand: d.brand || '',
         model: d.model || '',
         serial: d.serial || '',
-        photos: (d.photos || []).filter(Boolean).slice(0, 2),
+        photos: (d.photos || []).map(_photoFull).filter(Boolean).slice(0, 2),
       }),
     });
     if (r.status === 401) { window.location.href = '/tbc'; return; }
@@ -5062,20 +6748,29 @@ async function postComment() {
   } catch(e) { console.error('comment post failed', e); }
 }
 
-async function deleteComment(cid) {
+function deleteComment(cid) {
   if (!_commentsCurrentId) return;
-  if (!confirm('წავშალო განცხადება?')) return;
-  try {
-    const r = await fetch(`/api/tbc/branches/${_commentsCurrentId}/comments/${cid}`, {
-      method: 'DELETE',
-    });
-    if (r.ok) {
-      _comments = _comments.filter(c => c.id !== cid);
-      renderComments();
-    } else {
-      showToast('ვერ წაიშალა', 'error');
+  const branchId = _commentsCurrentId;
+  showConfirm({
+    title: 'კომენტარის არქივი',
+    text: 'კომენტარი active view-დან მოიხსნება.<br>მონაცემი მინიმუმ 360 დღე მაინც დარჩება არქივში.',
+    okText: '🗃 არქივი',
+    icon: '🗃',
+    onConfirm: async () => {
+      try {
+        const r = await fetch(`/api/tbc/branches/${branchId}/comments/${cid}`, {
+          method: 'DELETE',
+        });
+        if (r.ok) {
+          _comments = _comments.filter(c => c.id !== cid);
+          renderComments();
+          showToast('კომენტარი არქივში გადავიდა', 'success');
+        } else {
+          showToast('კომენტარი არქივში ვერ გადავიდა', 'error');
+        }
+      } catch(e) { console.error('comment delete failed', e); }
     }
-  } catch(e) { console.error('comment delete failed', e); }
+  });
 }
 
 function renderComments() {
@@ -5098,7 +6793,7 @@ function renderComments() {
           <span style="background:${meta.bg};color:${meta.color};padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">${meta.emoji} ${meta.label}</span>
           <span style="font-size:12px;font-weight:600;color:var(--slate-900);">${escapeHtml(c.author)}</span>
           <span class="mono" style="font-size:11px;color:var(--slate-400);margin-left:auto;">${formatCommentDate(c.created_at)}</span>
-          ${canDelete ? `<button onclick="deleteComment(${c.id})" title="წაშლა" style="background:transparent;border:none;color:var(--slate-400);cursor:pointer;font-size:13px;padding:2px 6px;">🗑</button>` : ''}
+          ${canDelete ? `<button onclick="deleteComment(${c.id})" title="არქივი" style="background:transparent;border:none;color:var(--slate-400);cursor:pointer;font-size:13px;padding:2px 6px;">🗃</button>` : ''}
         </div>
         <div style="font-size:13px;color:var(--slate-800);white-space:pre-wrap;line-height:1.5;">${escapeHtml(c.body)}</div>
       </div>
@@ -5124,7 +6819,25 @@ function formatCommentDate(iso) {
 // ============================================
 // START
 // ============================================
-document.addEventListener('DOMContentLoaded', init);
+document.addEventListener('DOMContentLoaded', () => {
+  init();
+  // Photo viewer — mouse wheel scroll through photos
+  const viewer = document.getElementById('photoViewer');
+  if (viewer) {
+    viewer.addEventListener('wheel', (e) => {
+      if (!viewer.classList.contains('active') || _viewerPhotos.length < 2) return;
+      e.preventDefault();
+      _viewerStep(e.deltaY > 0 ? 1 : -1);
+    }, {passive: false});
+    // Arrow keys
+    document.addEventListener('keydown', (e) => {
+      if (!viewer.classList.contains('active')) return;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); _viewerStep(1); }
+      else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); _viewerStep(-1); }
+      else if (e.key === 'Escape') closePhotoViewer();
+    });
+  }
+});
 if (document.readyState !== 'loading') init();
 
 </script>

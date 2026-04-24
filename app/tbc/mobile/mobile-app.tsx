@@ -5,8 +5,10 @@ import {useRouter} from 'next/navigation';
 import type {TbcSession} from '@/lib/tbc/auth';
 import {
   DeviceEditorModal,
+  photoThumbSrc,
   type DevicePayload,
-  type DeviceInitial
+  type DeviceInitial,
+  type PhotoValue
 } from '@/components/tbc/device-editor-modal';
 
 type PhotoMeta = {by?: string; at?: string} | null;
@@ -18,9 +20,9 @@ type Device = {
   model?: string;
   serial?: string;
   location?: string;
-  photos?: (string | null)[];
+  photos?: (PhotoValue | null)[];
   photo_meta?: PhotoMeta[];
-  situational_photos?: {src: string; caption: string}[];
+  situational_photos?: {src: PhotoValue; caption: string}[];
   needs?: {text: string; done: boolean}[];
   prohibitions?: {text: string; done: boolean}[];
   comments?: {text: string; at: string; by?: string}[];
@@ -36,7 +38,6 @@ type Branch = {
   city: string | null;
   region: string | null;
   planned_count: number;
-  devices: Device[] | null;
 };
 
 function cleanBranchLabel(name: string): string {
@@ -61,6 +62,8 @@ export function MobileApp({session}: {session: TbcSession}) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [devicesLoading, setDevicesLoading] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerQuery, setPickerQuery] = useState('');
 
@@ -72,7 +75,7 @@ export function MobileApp({session}: {session: TbcSession}) {
   const loadBranches = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch('/api/tbc/branches');
+      const r = await fetch('/api/tbc/branches?lite=1');
       if (r.status === 401) {
         router.replace('/tbc');
         return;
@@ -91,6 +94,30 @@ export function MobileApp({session}: {session: TbcSession}) {
     }
   }, [router]);
 
+  const loadDevices = useCallback(
+    async (id: number) => {
+      setDevicesLoading(true);
+      try {
+        const r = await fetch(`/api/tbc/branches/${id}/devices?mode=active`);
+        if (r.status === 401) {
+          router.replace('/tbc');
+          return;
+        }
+        if (r.ok) {
+          const body = (await r.json()) as {devices?: Device[]};
+          setDevices(body.devices || []);
+        } else {
+          setDevices([]);
+        }
+      } catch {
+        setDevices([]);
+      } finally {
+        setDevicesLoading(false);
+      }
+    },
+    [router]
+  );
+
   useEffect(() => {
     loadBranches();
   }, [loadBranches]);
@@ -100,11 +127,13 @@ export function MobileApp({session}: {session: TbcSession}) {
       try {
         localStorage.setItem('tbc_mobile_branch', String(branchId));
       } catch {}
+      loadDevices(branchId);
+    } else {
+      setDevices([]);
     }
-  }, [branchId]);
+  }, [branchId, loadDevices]);
 
   const selectedBranch = branches.find((b) => b.id === branchId) || null;
-  const devices = selectedBranch?.devices || [];
 
   async function logout() {
     await fetch('/api/tbc/logout', {method: 'POST'});
@@ -151,7 +180,7 @@ export function MobileApp({session}: {session: TbcSession}) {
       }
       setEditorOpen(false);
       setEditing(null);
-      loadBranches();
+      if (branchId) loadDevices(branchId);
     } finally {
       setSaving(false);
     }
@@ -159,7 +188,7 @@ export function MobileApp({session}: {session: TbcSession}) {
 
   function openEditor(deviceIdx: number, d: Device) {
     const srcPhotos = Array.isArray(d.photos) ? d.photos : [];
-    const photos: (string | null)[] = [null, null, null, null, null];
+    const photos: (PhotoValue | null)[] = [null, null, null, null, null];
     for (let i = 0; i < 5; i++) photos[i] = srcPhotos[i] ?? null;
     setEditing({
       deviceIdx,
@@ -191,7 +220,7 @@ export function MobileApp({session}: {session: TbcSession}) {
     });
     if (r.ok) {
       flash('🗃 ბოლო არქივში გადავიდა');
-      loadBranches();
+      if (branchId) loadDevices(branchId);
     } else {
       flash('არქივში ვერ გადავიდა');
     }
@@ -272,6 +301,14 @@ export function MobileApp({session}: {session: TbcSession}) {
           <div className="mt-10 text-center text-sm text-slate-400">
             ჯერ აირჩიე ფილიალი ზემოდან
           </div>
+        ) : devicesLoading ? (
+          <div className="mt-10 flex flex-col items-center gap-3 text-sm text-slate-500">
+            <span
+              className="inline-block h-8 w-8 animate-spin rounded-full border-[3px] border-slate-300 border-t-[#00AA8D]"
+              aria-hidden
+            />
+            <span>იტვირთება დანადგარები…</span>
+          </div>
         ) : devices.length === 0 ? (
           <div className="mt-10 text-center text-sm text-slate-400">
             ცარიელია — დაამატე პირველი დანადგარი
@@ -284,7 +321,7 @@ export function MobileApp({session}: {session: TbcSession}) {
               .map((d, revIdx) => {
                 const idx = devices.length - 1 - revIdx;
                 const isLast = idx === devices.length - 1;
-                const thumb = (d.photos || []).find(Boolean);
+                const thumb = photoThumbSrc((d.photos || []).find(Boolean) || null);
                 const title =
                   d.name ||
                   [d.brand, d.model, d.serial].filter(Boolean).join(' · ');
@@ -318,6 +355,10 @@ export function MobileApp({session}: {session: TbcSession}) {
                       <img
                         src={thumb}
                         alt=""
+                        width={48}
+                        height={48}
+                        loading="lazy"
+                        decoding="async"
                         className="h-12 w-12 shrink-0 rounded-lg object-cover"
                       />
                     ) : (

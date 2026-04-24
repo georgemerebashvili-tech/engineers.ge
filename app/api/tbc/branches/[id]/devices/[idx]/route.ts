@@ -2,12 +2,19 @@ import {NextResponse} from 'next/server';
 import {z} from 'zod';
 import {canAccessTbcBranch, getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
-import {writeAudit} from '@/lib/tbc/audit';
+import {
+  archiveDevice,
+  findActiveDeviceEntry,
+  getTbcArchiveExpiry,
+  writeAudit
+} from '@/lib/tbc/audit';
+import {PhotoValueSchema} from '@/lib/tbc/photo-schema';
+import {photoFullSrc} from '@/lib/tbc/photo-storage';
 
 export const dynamic = 'force-dynamic';
 
 const SituationalPhoto = z.object({
-  src: z.string().min(1),
+  src: PhotoValueSchema,
   caption: z.string().max(500).optional().default('')
 });
 
@@ -33,7 +40,7 @@ const PatchSchema = z.object({
   install_date: z.string().max(64).nullable().optional(),
   specs: z.string().max(2000).nullable().optional(),
   unplanned: z.boolean().optional(),
-  photos: z.array(z.string().nullable()).length(5).optional(),
+  photos: z.array(PhotoValueSchema.nullable()).length(5).optional(),
   situational_photos: z.array(SituationalPhoto).max(50).optional(),
   needs: z.array(TodoItem).max(100).optional(),
   prohibitions: z.array(TodoItem).max(100).optional(),
@@ -41,9 +48,12 @@ const PatchSchema = z.object({
   ai_missing: z.array(z.string().max(64)).max(16).optional()
 });
 
+type PhotoSlot = string | {url: string; thumb_url: string} | null;
+
 type DeviceRow = Record<string, unknown> & {
-  photos?: (string | null)[];
+  photos?: PhotoSlot[];
   photo_meta?: (null | {by?: string; at?: string})[];
+  archived_photos?: Array<Record<string, unknown>>;
 };
 
 export async function PATCH(
@@ -84,10 +94,11 @@ export async function PATCH(
   const devices = Array.isArray(branch.data.devices)
     ? branch.data.devices.slice()
     : [];
-  if (deviceIdx >= devices.length)
+  const target = findActiveDeviceEntry(devices, deviceIdx);
+  if (!target)
     return NextResponse.json({error: 'not_found'}, {status: 404});
 
-  const prev = {...devices[deviceIdx]} as DeviceRow;
+  const prev = {...target.device} as DeviceRow;
   const now = new Date().toISOString();
   const next: DeviceRow = {...prev};
 
@@ -117,14 +128,32 @@ export async function PATCH(
       Array.isArray(prev.photo_meta) && prev.photo_meta.length === 5
         ? prev.photo_meta
         : [null, null, null, null, null];
+    const archivedPhotos = Array.isArray(prev.archived_photos)
+      ? [...prev.archived_photos]
+      : [];
     const nextPhotos = parsed.data.photos;
     const nextMeta = nextPhotos.map((p, i) => {
       if (!p) return null;
-      if (p === prevPhotos[i]) return prevMeta[i] ?? null;
+      // Compare by resolved full src so string↔object round-trip still reads as "unchanged"
+      if (photoFullSrc(p) === photoFullSrc(prevPhotos[i] as unknown)) return prevMeta[i] ?? null;
       return {by: session.username, at: now};
+    });
+    nextPhotos.forEach((photo, i) => {
+      if (!photo && prevPhotos[i]) {
+        archivedPhotos.push({
+          slot: i,
+          src: prevPhotos[i],
+          meta: prevMeta[i] ?? null,
+          archived_at: now,
+          archived_by: session.username,
+          archive_expires_at: getTbcArchiveExpiry(new Date(now)),
+          archive_reason: 'manual_photo_remove'
+        });
+      }
     });
     next.photos = nextPhotos;
     next.photo_meta = nextMeta;
+    if (archivedPhotos.length > 0) next.archived_photos = archivedPhotos;
   }
 
   if (parsed.data.situational_photos)
@@ -141,7 +170,7 @@ export async function PATCH(
   if (parsed.data.ai_missing !== undefined)
     next.ai_missing = parsed.data.ai_missing;
 
-  devices[deviceIdx] = next;
+  devices[target.rawIndex] = next;
 
   const upd = await db
     .from('tbc_branches')
@@ -173,10 +202,93 @@ export async function PATCH(
       branch_id: branchId,
       device_idx: deviceIdx,
       photo_count: Array.isArray(next.photos)
-        ? (next.photos as (string | null)[]).filter(Boolean).length
+        ? (next.photos as PhotoSlot[]).filter(Boolean).length
         : 0
     }
   });
 
   return NextResponse.json({ok: true});
+}
+
+export async function DELETE(
+  _req: Request,
+  {params}: {params: Promise<{id: string; idx: string}>}
+) {
+  const session = await getTbcSession();
+  if (!session) return NextResponse.json({error: 'unauthorized'}, {status: 401});
+
+  const {id, idx} = await params;
+  const branchId = Number(id);
+  const deviceIdx = Number(idx);
+  if (!Number.isFinite(branchId) || !Number.isFinite(deviceIdx) || deviceIdx < 0)
+    return NextResponse.json({error: 'bad_request'}, {status: 400});
+
+  const db = supabaseAdmin();
+  if (!(await canAccessTbcBranch(db, session, branchId)))
+    return NextResponse.json({error: 'forbidden'}, {status: 403});
+
+  const branch = await db
+    .from('tbc_branches')
+    .select('id, devices')
+    .eq('id', branchId)
+    .maybeSingle<{id: number; devices: DeviceRow[]}>();
+  if (!branch.data)
+    return NextResponse.json({error: 'not_found'}, {status: 404});
+
+  const devices = Array.isArray(branch.data.devices)
+    ? branch.data.devices.slice()
+    : [];
+  const target = findActiveDeviceEntry(devices, deviceIdx);
+  if (!target)
+    return NextResponse.json({error: 'not_found'}, {status: 404});
+
+  const archivedAt = new Date().toISOString();
+  const archived = archiveDevice(
+    target.device,
+    session.username,
+    'manual_archive',
+    archivedAt
+  );
+  devices[target.rawIndex] = archived;
+
+  const upd = await db
+    .from('tbc_branches')
+    .update({
+      devices,
+      updated_at: archivedAt,
+      updated_by: session.username
+    })
+    .eq('id', branchId)
+    .select('id')
+    .single();
+
+  if (upd.error) {
+    console.error('[tbc] device archive', upd.error);
+    return NextResponse.json({error: 'db_error'}, {status: 500});
+  }
+
+  await writeAudit({
+    actor: session.username,
+    action: 'device.archive',
+    targetType: 'branch',
+    targetId: branchId,
+    summary: `არქივში გადაიტანა დანადგარი (ფილიალი #${branchId} · #${
+      deviceIdx + 1
+    }): ${[
+      target.device.category,
+      target.device.subtype,
+      target.device.brand,
+      target.device.model,
+      target.device.serial
+    ]
+      .filter(Boolean)
+      .join(' · ') || '(empty)'}`,
+    metadata: {
+      branch_id: branchId,
+      device_idx: deviceIdx,
+      archive_expires_at: getTbcArchiveExpiry(new Date(archivedAt))
+    }
+  });
+
+  return NextResponse.json({ok: true, archived: true});
 }

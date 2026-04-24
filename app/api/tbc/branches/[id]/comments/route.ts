@@ -26,6 +26,7 @@ export async function GET(
     .from('tbc_branch_comments')
     .select('id, author, kind, body, created_at')
     .eq('branch_id', branchId)
+    .is('archived_at', null)
     .order('created_at', {ascending: false})
     .limit(200);
 

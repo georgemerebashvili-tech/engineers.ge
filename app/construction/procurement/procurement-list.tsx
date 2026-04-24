@@ -81,14 +81,17 @@ export function ProcurementList({session}: {session: ConstructionSession}) {
       {/* Header */}
       <header className="flex items-center gap-4 border-b border-slate-200 bg-white px-4 py-2.5 text-sm">
         <div className="flex items-center gap-3">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md text-white" style={{background: P}}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg text-white" style={{background: P}}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
               <path d="M2 22 12 2l10 20H2z"/><path d="M10 14h4v8h-4z"/>
             </svg>
           </div>
-          <span className="font-bold text-slate-900">KAYA Construction</span>
-          <span className="text-slate-300">·</span>
-          <span className="font-semibold" style={{color: P}}>შესყიდვები</span>
+          <div className="flex flex-col leading-tight">
+            <span className="text-[13px] font-extrabold tracking-tight text-slate-900">KAYA Construction</span>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">× DMT</span>
+          </div>
+          <div className="mx-1 h-5 w-px bg-slate-200 hidden sm:block"></div>
+          <span className="hidden font-semibold text-sm sm:inline" style={{color: P}}>შესყიდვები</span>
         </div>
         <div className="ml-auto flex items-center gap-2 text-xs">
           <span className="hidden text-slate-500 sm:inline">{session.displayName || session.username}</span>

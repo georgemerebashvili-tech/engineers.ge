@@ -49,17 +49,39 @@ async function ensureStaticAdmin(username: string, password: string) {
   const db = supabaseAdmin();
   const existing = await db
     .from('tbc_users')
-    .select('id, username, role, display_name, password_hash, active')
+    .select('id, username, role, display_name, password_hash, active, archived_at')
     .eq('username', username)
     .maybeSingle();
 
   if (existing.data) {
-    if (!existing.data.active) return null;
+    if (existing.data.archived_at) {
+      await db
+        .from('tbc_users')
+        .update({
+          active: true,
+          archived_at: null,
+          archived_by: null,
+          archive_expires_at: null,
+          archive_reason: null
+        })
+        .eq('id', existing.data.id);
+    } else if (!existing.data.active) {
+      return null;
+    }
     // keep hash in sync with env (rotate via env)
     if (existing.data.password_hash !== hash) {
       await db
         .from('tbc_users')
-        .update({password_hash: hash, role: 'admin', is_static: true})
+        .update({
+          password_hash: hash,
+          role: 'admin',
+          is_static: true,
+          active: true,
+          archived_at: null,
+          archived_by: null,
+          archive_expires_at: null,
+          archive_reason: null
+        })
         .eq('id', existing.data.id);
     }
     return {
@@ -104,11 +126,12 @@ export async function verifyLogin(username: string, password: string) {
   const db = supabaseAdmin();
   const row = await db
     .from('tbc_users')
-    .select('id, username, role, display_name, password_hash, active')
+    .select('id, username, role, display_name, password_hash, active, archived_at')
     .eq('username', cleaned)
     .maybeSingle();
 
   if (row.error || !row.data) return null;
+  if (row.data.archived_at) return null;
   if (!row.data.active) return null;
   const ok = await bcrypt.compare(password, row.data.password_hash as string);
   if (!ok) return null;
@@ -159,14 +182,32 @@ export async function getTbcSession(): Promise<TbcSession | null> {
   if (!token) return null;
   try {
     const {payload} = await jwtVerify(token, secret());
-    const role = payload.role === 'admin' ? 'admin' : 'user';
-    return {
+    const session = {
       uid: payload.uid as string,
       username: payload.sub as string,
-      role,
+      role: payload.role === 'admin' ? 'admin' as const : 'user' as const,
       displayName: (payload.name as string) || null
     };
+
+    const row = await supabaseAdmin()
+      .from('tbc_users')
+      .select('id, role, display_name, active, archived_at')
+      .eq('id', session.uid)
+      .maybeSingle();
+
+    if (row.error || !row.data || row.data.archived_at || !row.data.active) {
+      store.delete(COOKIE_NAME);
+      return null;
+    }
+
+    return {
+      uid: session.uid,
+      username: session.username,
+      role: row.data.role === 'admin' ? 'admin' : 'user',
+      displayName: (row.data.display_name as string) || session.displayName
+    };
   } catch {
+    store.delete(COOKIE_NAME);
     return null;
   }
 }
@@ -295,6 +336,16 @@ export async function canAccessTbcBranch(
   session: TbcSession,
   branchId: number
 ) {
+  if (session.role === 'admin') {
+    const activeBranch = await db
+      .from('tbc_branches')
+      .select('id')
+      .eq('id', branchId)
+      .is('archived_at', null)
+      .maybeSingle();
+    return Boolean(activeBranch.data);
+  }
+
   const {seeAll, allowedIds} = await getTbcBranchAccess(db, session);
   if (seeAll || allowedIds.has(branchId)) return true;
 
@@ -302,6 +353,7 @@ export async function canAccessTbcBranch(
     .from('tbc_branches')
     .select('id, dmt_manager, tbc_manager')
     .eq('id', branchId)
+    .is('archived_at', null)
     .maybeSingle<TbcResponsibleBranch & {id: number}>();
 
   if (!branch.data) return false;

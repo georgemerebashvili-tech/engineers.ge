@@ -24,6 +24,7 @@ export async function GET() {
     .select(
       'id, username, email, display_name, role, is_static, active, created_at, created_by, last_login_at'
     )
+    .is('archived_at', null)
     .order('created_at', {ascending: false});
 
   if (res.error) return NextResponse.json({error: 'db_error'}, {status: 500});
@@ -86,6 +87,10 @@ export async function POST(req: Request) {
       role: parsed.data.role || 'user',
       is_static: false,
       active: true,
+      archived_at: null,
+      archived_by: null,
+      archive_expires_at: null,
+      archive_reason: null,
       created_by: session.username
     })
     .select('id, username, email, display_name, role, active, created_at')

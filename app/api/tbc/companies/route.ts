@@ -17,6 +17,7 @@ export async function GET() {
     .select(
       'id, name, type, contact_person, phone, email, address, tax_id, notes, active, created_at, created_by, updated_at, updated_by'
     )
+    .is('archived_at', null)
     .order('name');
 
   // Admins see everything. Non-admins: filter to their allowed set.
@@ -77,6 +78,10 @@ export async function POST(req: Request) {
     tax_id: parsed.data.tax_id || null,
     notes: parsed.data.notes || null,
     active: true,
+    archived_at: null,
+    archived_by: null,
+    archive_expires_at: null,
+    archive_reason: null,
     created_by: session.username,
     updated_by: session.username
   };

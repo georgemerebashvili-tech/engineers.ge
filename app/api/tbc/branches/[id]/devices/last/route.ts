@@ -1,7 +1,13 @@
 import {NextResponse} from 'next/server';
 import {canAccessTbcBranch, getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
-import {writeAudit} from '@/lib/tbc/audit';
+import {
+  archiveDevice,
+  findActiveDeviceEntry,
+  getTbcArchiveExpiry,
+  listActiveDevices,
+  writeAudit
+} from '@/lib/tbc/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,17 +38,28 @@ export async function DELETE(
   const devices = Array.isArray(branch.data.devices)
     ? branch.data.devices
     : [];
-  if (devices.length === 0)
+  const activeDevices = listActiveDevices(devices);
+  if (activeDevices.length === 0)
     return NextResponse.json({error: 'empty'}, {status: 400});
 
-  const removed = devices[devices.length - 1];
-  const next = devices.slice(0, -1);
+  const target = findActiveDeviceEntry(devices, activeDevices.length - 1);
+  if (!target)
+    return NextResponse.json({error: 'not_found'}, {status: 404});
+  const archivedAt = new Date().toISOString();
+  const removed = target.device;
+  const next = devices.slice();
+  next[target.rawIndex] = archiveDevice(
+    target.device,
+    session.username,
+    'manual_archive',
+    archivedAt
+  );
 
   const upd = await db
     .from('tbc_branches')
     .update({
       devices: next,
-      updated_at: new Date().toISOString(),
+      updated_at: archivedAt,
       updated_by: session.username
     })
     .eq('id', branchId)
@@ -56,12 +73,16 @@ export async function DELETE(
 
   await writeAudit({
     actor: session.username,
-    action: 'device.delete_last',
+    action: 'device.archive_last',
     targetType: 'branch',
     targetId: branchId,
-    summary: `წაშალა ბოლო მოწყობილობა (ფილიალი #${branchId}): ${[removed.category, removed.subtype, removed.brand, removed.model, removed.serial].filter(Boolean).join(' · ') || '(empty)'}`,
-    metadata: {branch_id: branchId, removed}
+    summary: `არქივში გადაიტანა ბოლო მოწყობილობა (ფილიალი #${branchId}): ${[removed.category, removed.subtype, removed.brand, removed.model, removed.serial].filter(Boolean).join(' · ') || '(empty)'}`,
+    metadata: {
+      branch_id: branchId,
+      removed,
+      archive_expires_at: getTbcArchiveExpiry(new Date(archivedAt))
+    }
   });
 
-  return NextResponse.json({ok: true, count: next.length, removed});
+  return NextResponse.json({ok: true, count: activeDevices.length - 1, removed, archived: true});
 }

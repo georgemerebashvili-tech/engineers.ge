@@ -2,7 +2,7 @@ import {NextResponse} from 'next/server';
 import {z} from 'zod';
 import {getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
-import {writeAudit} from '@/lib/tbc/audit';
+import {getTbcArchiveExpiry, writeAudit} from '@/lib/tbc/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,6 +56,7 @@ export async function PATCH(
     .from('tbc_companies')
     .update(update)
     .eq('id', id)
+    .is('archived_at', null)
     .select('*')
     .single();
 
@@ -89,21 +90,39 @@ export async function DELETE(
     .from('tbc_companies')
     .select('id, name, type')
     .eq('id', id)
+    .is('archived_at', null)
     .maybeSingle();
   if (!target.data)
     return NextResponse.json({error: 'not_found'}, {status: 404});
 
-  const del = await db.from('tbc_companies').delete().eq('id', id);
+  const archivedAt = new Date().toISOString();
+  const archiveExpiresAt = getTbcArchiveExpiry(new Date(archivedAt));
+  const del = await db
+    .from('tbc_companies')
+    .update({
+      active: false,
+      updated_at: archivedAt,
+      updated_by: session.username,
+      archived_at: archivedAt,
+      archived_by: session.username,
+      archive_expires_at: archiveExpiresAt,
+      archive_reason: 'manual_archive'
+    })
+    .eq('id', id)
+    .is('archived_at', null);
   if (del.error) return NextResponse.json({error: 'db_error'}, {status: 500});
 
   await writeAudit({
     actor: session.username,
-    action: 'company.delete',
+    action: 'company.archive',
     targetType: 'company',
     targetId: id,
-    summary: `წაშალა კომპანია "${target.data.name}"`,
-    metadata: target.data
+    summary: `არქივში გადაიტანა კომპანია "${target.data.name}"`,
+    metadata: {
+      ...target.data,
+      archive_expires_at: archiveExpiresAt
+    }
   });
 
-  return NextResponse.json({ok: true});
+  return NextResponse.json({ok: true, archived: true});
 }

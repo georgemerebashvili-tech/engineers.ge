@@ -7,7 +7,7 @@ import type {ConstructionSession} from '@/lib/construction/auth';
 
 // ── constants ──────────────────────────────────────────────────────────────
 const P = '#1565C0';
-const SUP_COLORS = ['#1a4fa0','#e67e22','#27ae60','#8e44ad','#c0392b','#16a085','#d35400','#2980b9'];
+const SUP_COLORS = ['#1565C0','#e67e22','#27ae60','#8e44ad','#c0392b','#16a085','#d35400','#2980b9'];
 const VKEYS = ['bestProductTotal','selProductTotal','bestInstallTotal','selInstallTotal','selCombinedTotal','profitPct','overheadPct','discountPct','vatPct'];
 const VKEY_LABELS: Record<string,string> = {
   bestProductTotal:'საუკ. პრ.',selProductTotal:'არჩ. პრ.',bestInstallTotal:'საუკ. მო.',
@@ -401,12 +401,12 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
             <table className="w-full border-collapse text-[12px]" style={{minWidth:160+visPart.length*110}}>
               <thead>
                 <tr>
-                  <th className="sticky left-0 z-10 border-b border-r border-slate-100 bg-[#1a4fa0] px-2 py-2 text-center text-[10px] font-bold text-white" style={{width:28}}>#</th>
-                  <th className="sticky left-7 z-10 border-b border-r border-slate-100 bg-[#1a4fa0] px-3 py-2 text-left text-[10px] font-bold text-white" style={{minWidth:160}}>დასახელება</th>
-                  <th className="border-b border-r border-slate-100 bg-[#1a4fa0] px-1 py-2 text-center text-[10px] font-bold text-white" style={{width:42}}>ერთ.</th>
-                  <th className="border-b border-r border-slate-100 bg-[#1a4fa0] px-1 py-2 text-center text-[10px] font-bold text-white" style={{width:52}}>რაოდ.</th>
-                  <th className="border-b border-r border-slate-100 bg-[#1a4fa0] px-2 py-2 text-left text-[10px] font-bold text-white" style={{minWidth:80}}>სამ.სახ.</th>
-                  {colVis.files&&<th className="border-b border-r border-slate-100 bg-[#1a4fa0] px-2 py-2 text-center text-[10px] font-bold text-white" style={{width:48}}>📎</th>}
+                  <th className="sticky left-0 z-10 border-b border-r border-slate-100 bg-[#1565C0] px-2 py-2 text-center text-[10px] font-bold text-white" style={{width:28}}>#</th>
+                  <th className="sticky left-7 z-10 border-b border-r border-slate-100 bg-[#1565C0] px-3 py-2 text-left text-[10px] font-bold text-white" style={{minWidth:160}}>დასახელება</th>
+                  <th className="border-b border-r border-slate-100 bg-[#1565C0] px-1 py-2 text-center text-[10px] font-bold text-white" style={{width:42}}>ერთ.</th>
+                  <th className="border-b border-r border-slate-100 bg-[#1565C0] px-1 py-2 text-center text-[10px] font-bold text-white" style={{width:52}}>რაოდ.</th>
+                  <th className="border-b border-r border-slate-100 bg-[#1565C0] px-2 py-2 text-left text-[10px] font-bold text-white" style={{minWidth:80}}>სამ.სახ.</th>
+                  {colVis.files&&<th className="border-b border-r border-slate-100 bg-[#1565C0] px-2 py-2 text-center text-[10px] font-bold text-white" style={{width:48}}>📎</th>}
                   {colVis.best&&<th className="border-b border-r border-slate-100 bg-green-700 px-2 py-2 text-right text-[10px] font-bold text-white" style={{minWidth:76}}>საუკ. ფასი</th>}
                   {colVis.mysel&&<th className="border-b border-r border-slate-100 bg-amber-700 px-2 py-2 text-right text-[10px] font-bold text-white" style={{minWidth:76}}>ჩემი არჩ.</th>}
                   {colVis.supsel&&<th className="border-b border-r border-slate-100 bg-amber-700 px-2 py-2 text-center text-[10px] font-bold text-white" style={{minWidth:105}}>მომწოდ.</th>}
@@ -415,7 +415,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                       {project?.winner_contact_id===p.contact_id?'⭐ ':''}{p.contact.name}
                     </th>
                   ))}
-                  {isAdmin&&<th className="border-b border-slate-100 bg-[#1a4fa0]" style={{width:28}}></th>}
+                  {isAdmin&&<th className="border-b border-slate-100 bg-[#1565C0]" style={{width:28}}></th>}
                 </tr>
               </thead>
               <tbody>
@@ -434,10 +434,10 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                         ):<span className="font-medium text-slate-900">{item.name}</span>}
                       </td>
                       <td className="border-r border-slate-100 px-1 py-1.5 text-center">
-                        {isAdmin?<input className="w-10 rounded border border-transparent text-center text-[11px] hover:border-slate-200 focus:border-[#1a4fa0] focus:outline-none" value={item.unit} onChange={e=>updateItemLocal(item.id,'unit',e.target.value)}/>:item.unit}
+                        {isAdmin?<input className="w-10 rounded border border-transparent text-center text-[11px] hover:border-slate-200 focus:border-[#1565C0] focus:outline-none" value={item.unit} onChange={e=>updateItemLocal(item.id,'unit',e.target.value)}/>:item.unit}
                       </td>
                       <td className="border-r border-slate-100 px-1 py-1.5 text-right">
-                        {isAdmin?<input type="number" className="w-12 rounded border border-transparent text-right text-[11px] hover:border-slate-200 focus:border-[#1a4fa0] focus:outline-none" value={item.qty} onChange={e=>updateItemLocal(item.id,'qty',parseFloat(e.target.value)||1)}/>:item.qty}
+                        {isAdmin?<input type="number" className="w-12 rounded border border-transparent text-right text-[11px] hover:border-slate-200 focus:border-[#1565C0] focus:outline-none" value={item.qty} onChange={e=>updateItemLocal(item.id,'qty',parseFloat(e.target.value)||1)}/>:item.qty}
                       </td>
                       <td className="border-r border-slate-100 px-2 py-1.5">
                         {isAdmin?<input className="w-full border-0 bg-transparent text-[11px] text-slate-500 focus:outline-none" value={item.labor_note??''} placeholder="სამ.სახ." onChange={e=>updateItemLocal(item.id,'labor_note',e.target.value)}/>:<span className="text-slate-400 text-[11px]">{item.labor_note??'—'}</span>}
@@ -445,7 +445,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                       {colVis.files&&(
                         <td className="border-r border-slate-100 px-1 py-1.5 text-center">
                           {item.drive_url?(
-                            <a href={item.drive_url} target="_blank" rel="noopener noreferrer" className="text-[#1a4fa0] hover:underline text-xs">📁</a>
+                            <a href={item.drive_url} target="_blank" rel="noopener noreferrer" className="text-[#1565C0] hover:underline text-xs">📁</a>
                           ):(isAdmin?<button onClick={()=>{const u=prompt('Drive URL:','');if(u)updateItemLocal(item.id,'drive_url',u);}} className="text-slate-200 hover:text-slate-400 text-xs">+</button>:null)}
                         </td>
                       )}
@@ -462,7 +462,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                             {isAdmin?(
                               <div className="flex items-center gap-0.5 justify-end">
                                 <input type="number" step="0.01" min="0"
-                                  className={`w-20 rounded border px-1 py-0.5 text-right text-[11px] focus:outline-none focus:border-[#1a4fa0] ${isBest?'border-green-200 bg-green-50 font-bold text-green-700':isSel?'border-amber-200 bg-amber-50 font-semibold':'border-transparent hover:border-slate-200'}`}
+                                  className={`w-20 rounded border px-1 py-0.5 text-right text-[11px] focus:outline-none focus:border-[#1565C0] ${isBest?'border-green-200 bg-green-50 font-bold text-green-700':isSel?'border-amber-200 bg-amber-50 font-semibold':'border-transparent hover:border-slate-200'}`}
                                   value={price??''} placeholder="—"
                                   onChange={e=>onBidChange(item.id,p.contact_id,field,e.target.value)}
                                 />
@@ -485,7 +485,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                 })}
               </tbody>
               <tfoot>
-                <tr className="border-t-2 border-[#1a4fa0] bg-[#eef3fb] font-bold">
+                <tr className="border-t-2 border-[#1565C0] bg-[#eef3fb] font-bold">
                   <td colSpan={5+(colVis.files?1:0)} className="px-3 py-2 text-right text-[11px] text-slate-500">სულ</td>
                   {colVis.best&&<td className="border-r border-slate-200 px-2 py-2 text-right text-green-700">
                     {fmt(items.reduce((a,item)=>{const c=bestCid(bids,item.id,field,visPart);const b=c?getBid(bids,item.id,c):null;return a+(b?b[field]??0:0)*item.qty;},0))}
@@ -522,34 +522,34 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
       <div className="flex w-[230px] flex-shrink-0 flex-col overflow-hidden border-r border-slate-200 bg-white">
         {/* Project info */}
         <div className="border-b border-slate-100 px-3 py-2.5">
-          <div className="mb-2 text-[9px] font-bold uppercase tracking-widest text-[#1a4fa0]">პროექტის ინფო</div>
+          <div className="mb-2 text-[9px] font-bold uppercase tracking-widest text-[#1565C0]">პროექტის ინფო</div>
           <div className="mb-2">
             <div className="mb-0.5 text-[10px] text-slate-400">თარიღი</div>
-            <input type="date" className="w-full rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] focus:border-[#1a4fa0] focus:outline-none"
+            <input type="date" className="w-full rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] focus:border-[#1565C0] focus:outline-none"
               value={hDate} onChange={e=>{setHDate(e.target.value);clearTimeout(timers.current['hdr-date']);timers.current['hdr-date']=setTimeout(async()=>{await fetch(`/api/construction/procurement/projects/${projectId}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({project_date:e.target.value||null})});},800);}}/>
           </div>
           <div>
             <div className="mb-0.5 text-[10px] text-slate-400">შენიშვნები</div>
-            <textarea className="w-full resize-none rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] focus:border-[#1a4fa0] focus:outline-none" rows={3}
+            <textarea className="w-full resize-none rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] focus:border-[#1565C0] focus:outline-none" rows={3}
               value={hNotes} onChange={e=>{setHNotes(e.target.value);clearTimeout(timers.current['hdr-notes']);timers.current['hdr-notes']=setTimeout(async()=>{await fetch(`/api/construction/procurement/projects/${projectId}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({notes:e.target.value})});},800);}}/>
           </div>
         </div>
         {/* Drive */}
         <div className="border-b border-slate-100 px-3 py-2">
-          <div className="mb-1.5 text-[9px] font-bold uppercase tracking-widest text-[#1a4fa0]">პროექტის ფაილები</div>
+          <div className="mb-1.5 text-[9px] font-bold uppercase tracking-widest text-[#1565C0]">პროექტის ფაილები</div>
           <div className="flex items-center gap-1.5">
-            <input className="flex-1 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] focus:border-[#1a4fa0] focus:outline-none"
+            <input className="flex-1 rounded border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] focus:border-[#1565C0] focus:outline-none"
               value={hDrive} placeholder="Google Drive ბმული..."
               onChange={e=>{setHDrive(e.target.value);clearTimeout(timers.current['hdr-drive']);timers.current['hdr-drive']=setTimeout(async()=>{await fetch(`/api/construction/procurement/projects/${projectId}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({drive_url:e.target.value||null})});},800);}}/>
-            {hDrive&&<a href={hDrive} target="_blank" rel="noopener noreferrer" className="text-[#1a4fa0] hover:text-blue-900 text-base">📁</a>}
+            {hDrive&&<a href={hDrive} target="_blank" rel="noopener noreferrer" className="text-[#1565C0] hover:text-blue-900 text-base">📁</a>}
           </div>
         </div>
         {/* Column toggles */}
         <div className="border-b border-slate-100 px-3 py-2">
-          <div className="mb-1.5 text-[9px] font-bold uppercase tracking-widest text-[#1a4fa0]">სვეტები</div>
+          <div className="mb-1.5 text-[9px] font-bold uppercase tracking-widest text-[#1565C0]">სვეტები</div>
           {([['best','საუკ. ფასი'],['mysel','ჩემი არჩ.'],['supsel','მომწ. სვეტი'],['files','📎 ფაილები']] as const).map(([k,lbl])=>(
-            <div key={k} className="flex cursor-pointer items-center gap-1.5 py-0.5 hover:text-[#1a4fa0]" onClick={()=>setColVis(p=>({...p,[k]:!p[k as keyof typeof p]}))}>
-              <div className={`flex h-3 w-3 flex-shrink-0 items-center justify-center rounded-sm border transition ${colVis[k as keyof typeof colVis]?'border-[#1a4fa0] bg-[#1a4fa0]':'border-slate-300'}`}>
+            <div key={k} className="flex cursor-pointer items-center gap-1.5 py-0.5 hover:text-[#1565C0]" onClick={()=>setColVis(p=>({...p,[k]:!p[k as keyof typeof p]}))}>
+              <div className={`flex h-3 w-3 flex-shrink-0 items-center justify-center rounded-sm border transition ${colVis[k as keyof typeof colVis]?'border-[#1565C0] bg-[#1565C0]':'border-slate-300'}`}>
                 {colVis[k as keyof typeof colVis]&&<span className="text-white text-[8px] font-bold">✓</span>}
               </div>
               <span className="text-[11px]">{lbl}</span>
@@ -558,13 +558,13 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
         </div>
         {/* Suppliers */}
         <div className="border-b border-slate-100 px-3 py-2">
-          <div className="text-[9px] font-bold uppercase tracking-widest text-[#1a4fa0]">მონაწილეები</div>
+          <div className="text-[9px] font-bold uppercase tracking-widest text-[#1565C0]">მონაწილეები</div>
         </div>
         <div className="flex-1 overflow-y-auto">
           {participants.map((p,idx)=>(
             <div key={p.contact_id} className="flex items-center gap-1.5 border-b border-slate-50 px-2 py-1.5 hover:bg-slate-50">
               <div className="h-2 w-2 flex-shrink-0 rounded-full" style={{background:sc(idx)}}></div>
-              <input type="checkbox" className="h-3 w-3 flex-shrink-0 cursor-pointer accent-[#1a4fa0]"
+              <input type="checkbox" className="h-3 w-3 flex-shrink-0 cursor-pointer accent-[#1565C0]"
                 checked={supVis[p.contact_id]!==false}
                 onChange={e=>setSupVis(prev=>({...prev,[p.contact_id]:e.target.checked}))}/>
               <span className={`flex-1 min-w-0 truncate text-[11px] font-semibold ${supVis[p.contact_id]===false?'text-slate-300 line-through':''}`}>{p.contact.name}</span>
@@ -590,13 +590,13 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
           <div className="px-2 py-1.5 border-t border-slate-100">
             <div className="flex gap-1">
               <select value={addCid} onChange={e=>setAddCid(e.target.value)}
-                className="flex-1 rounded border border-dashed border-slate-300 bg-transparent px-1 py-1 text-[10px] text-slate-500 focus:border-[#1a4fa0] focus:outline-none">
+                className="flex-1 rounded border border-dashed border-slate-300 bg-transparent px-1 py-1 text-[10px] text-slate-500 focus:border-[#1565C0] focus:outline-none">
                 <option value="">+ მომწოდ. დამატება</option>
                 {allContacts.filter(c=>!participants.find(p=>p.contact_id===c.id)).map(c=>(
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
-              {addCid&&<button onClick={addParticipant} className="rounded bg-[#1a4fa0] px-2 text-[10px] font-bold text-white">+</button>}
+              {addCid&&<button onClick={addParticipant} className="rounded bg-[#1565C0] px-2 text-[10px] font-bold text-white">+</button>}
             </div>
           </div>
         )}
@@ -614,30 +614,30 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
     return(
       <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50" onClick={()=>setFmodal(false)}>
         <div className="flex max-h-[88vh] w-[560px] max-w-[95vw] flex-col overflow-hidden rounded-xl bg-white shadow-2xl" onClick={e=>e.stopPropagation()}>
-          <div className="flex flex-shrink-0 items-center justify-between px-4 py-3 text-white" style={{background:'#1a4fa0'}}>
+          <div className="flex flex-shrink-0 items-center justify-between px-4 py-3 text-white" style={{background:'#1565C0'}}>
             <h2 className="text-[14px] font-bold">{fEditIdx!==null?'ფორმ. რედ.':'ახალი ფორმ.'}</h2>
             <button onClick={()=>setFmodal(false)} className="text-xl leading-none">✕</button>
           </div>
           <div className="flex-1 overflow-y-auto p-4">
             <div className="mb-3">
               <div className="mb-1 text-[10px] uppercase tracking-wider text-slate-400">სახელი</div>
-              <input className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[13px] focus:border-[#1a4fa0] focus:outline-none"
+              <input className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[13px] focus:border-[#1565C0] focus:outline-none"
                 value={fLabel} onChange={e=>setFLabel(e.target.value)}/>
             </div>
             <div className="mb-1 text-[10px] uppercase tracking-wider text-slate-400">ფორმულა</div>
             <div className="mb-3 min-h-[40px] cursor-text rounded-lg border border-[#c8d8f0] bg-slate-50 px-3 py-2 font-mono text-[13px] break-all">
               {fToks.map((tk,i)=>(
-                <span key={i} className={tk.t==='var'?'rounded bg-blue-100 px-1 text-[#1a4fa0]':isNaN(Number(tk.v))&&tk.v!=='('&&tk.v!==')'?'font-bold text-amber-700':'text-green-700'}>
+                <span key={i} className={tk.t==='var'?'rounded bg-blue-100 px-1 text-[#1565C0]':isNaN(Number(tk.v))&&tk.v!=='('&&tk.v!==')'?'font-bold text-amber-700':'text-green-700'}>
                   {tk.v}
                 </span>
               ))}
-              <span className="inline-block h-3.5 w-0.5 animate-pulse bg-[#1a4fa0] align-middle"></span>
+              <span className="inline-block h-3.5 w-0.5 animate-pulse bg-[#1565C0] align-middle"></span>
             </div>
             <div className="mb-3 grid grid-cols-2 gap-1.5">
               {VKEYS.map(k=>(
                 <button key={k} onClick={()=>pushTok('var',k)}
-                  className="rounded-lg border border-blue-200 bg-blue-50 px-2 py-1.5 text-left transition hover:border-[#1a4fa0] hover:bg-[#1a4fa0]  group">
-                  <div className="font-mono text-[10px] font-bold text-[#1a4fa0] group-hover:text-white">{k}</div>
+                  className="rounded-lg border border-blue-200 bg-blue-50 px-2 py-1.5 text-left transition hover:border-[#1565C0] hover:bg-[#1565C0]  group">
+                  <div className="font-mono text-[10px] font-bold text-[#1565C0] group-hover:text-white">{k}</div>
                   <div className="text-[9px] text-slate-400 group-hover:text-blue-200">{VKEY_LABELS[k]}</div>
                 </button>
               ))}
@@ -646,7 +646,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
             <div className="flex flex-wrap gap-1.5 mb-3">
               {OPS.map(op=>(
                 <button key={op} onClick={()=>pushTok('op',op)}
-                  className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-[13px] font-semibold hover:border-[#1a4fa0] hover:bg-[#1a4fa0] hover:text-white">
+                  className="rounded border border-slate-200 bg-white px-2.5 py-1.5 text-[13px] font-semibold hover:border-[#1565C0] hover:bg-[#1565C0] hover:text-white">
                   {op}
                 </button>
               ))}
@@ -655,7 +655,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
             </div>
             <div className="flex items-center gap-2 text-[12px] text-slate-500">
               <span>შედეგი:</span>
-              <span className={`text-[17px] font-bold ${preview.ok?'text-[#1a4fa0]':'text-red-500'}`}>
+              <span className={`text-[17px] font-bold ${preview.ok?'text-[#1565C0]':'text-red-500'}`}>
                 {preview.ok?fmt(preview.val):'—'}
               </span>
             </div>
@@ -664,7 +664,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
             <button onClick={()=>setFToks([])} className="rounded-lg border border-slate-200 px-4 py-1.5 text-[12px]">გასუფ.</button>
             <div className="flex gap-2">
               <button onClick={()=>setFmodal(false)} className="rounded-lg border border-slate-200 px-4 py-1.5 text-[12px]">გაუქ.</button>
-              <button onClick={saveFml} className="rounded-lg px-5 py-1.5 text-[12px] font-semibold text-white" style={{background:'#1a4fa0'}}>შენახვა</button>
+              <button onClick={saveFml} className="rounded-lg px-5 py-1.5 text-[12px] font-semibold text-white" style={{background:'#1565C0'}}>შენახვა</button>
             </div>
           </div>
         </div>
@@ -703,35 +703,40 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
   return(
     <div className="flex h-screen flex-col bg-slate-50 text-slate-900" style={{fontFamily:'system-ui,sans-serif'}}>
       {/* ── TOPBAR ── */}
-      <div className="flex flex-shrink-0 items-center gap-2 border-b border-slate-200 bg-[#1a4fa0] px-3 py-0" style={{height:44}}>
-        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-white/20 flex-shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M2 22 12 2l10 20H2z"/><path d="M10 14h4v8h-4z"/></svg>
+      <header className="flex flex-shrink-0 items-center gap-4 border-b border-slate-200 bg-white px-4 py-2 text-sm">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-[#1565C0] text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M2 22 12 2l10 20H2z"/><path d="M10 14h4v8h-4z"/></svg>
+          </div>
+          <div className="flex flex-col leading-tight">
+            <span className="text-[13px] font-extrabold tracking-tight text-slate-900">KAYA Construction</span>
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">× DMT</span>
+          </div>
+          <div className="mx-1 h-5 w-px bg-slate-200"></div>
+          {editHdr?(
+            <>
+              <input className="w-24 rounded border border-slate-300 bg-slate-50 px-2 py-1 text-[11px] text-slate-900 placeholder:text-slate-400 focus:border-[#1565C0] focus:outline-none" value={hNo} onChange={e=>setHNo(e.target.value)} placeholder="PRJ-NO"/>
+              <input className="flex-1 min-w-0 max-w-xs rounded border border-slate-300 bg-slate-50 px-2 py-1 text-[11px] text-slate-900 placeholder:text-slate-400 focus:border-[#1565C0] focus:outline-none" value={hName} onChange={e=>setHName(e.target.value)} placeholder="სახელი"/>
+              <select className="rounded border border-slate-300 bg-slate-50 px-1 py-1 text-[11px] text-slate-900 focus:border-[#1565C0] focus:outline-none" value={hStatus} onChange={e=>setHStatus(e.target.value)}>
+                {Object.entries(STATUS_LABEL).map(([k,v])=><option key={k} value={k}>{v}</option>)}
+              </select>
+              <button onClick={saveHeader} className="rounded-md bg-[#1565C0] px-3 py-1 text-[11px] font-bold text-white transition hover:bg-[#0D47A1]">შენახვა</button>
+              <button onClick={()=>setEditHdr(false)} className="rounded-md border border-slate-200 px-2 py-1 text-[11px] text-slate-600 hover:bg-slate-50">გაუქ.</button>
+            </>
+          ):(
+            <>
+              {project.project_no&&<span className="font-mono text-[11px] text-slate-400">{project.project_no}</span>}
+              <span className="font-bold text-[13px] text-slate-900 truncate max-w-xs">{project.name}</span>
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold flex-shrink-0 ${STATUS_COLOR[project.status]??STATUS_COLOR.draft}`}>{STATUS_LABEL[project.status]??project.status}</span>
+              {isAdmin&&<button onClick={()=>setEditHdr(true)} className="rounded border border-slate-200 px-2 py-0.5 text-[10px] text-slate-500 hover:bg-slate-50">✏️ რედ.</button>}
+            </>
+          )}
         </div>
-        <span className="text-[13px] font-bold text-white">🏗️ შესყიდვის მოდული</span>
-        <div className="mx-2 h-5 w-px bg-white/20"></div>
-        {editHdr?(
-          <>
-            <input className="rounded border border-white/30 bg-white/10 px-2 py-0.5 text-[11px] text-white placeholder:text-white/40 focus:outline-none focus:bg-white/20 w-24" value={hNo} onChange={e=>setHNo(e.target.value)} placeholder="PRJ-NO"/>
-            <input className="rounded border border-white/30 bg-white/10 px-2 py-0.5 text-[11px] text-white placeholder:text-white/40 focus:outline-none focus:bg-white/20 flex-1 min-w-0 max-w-xs" value={hName} onChange={e=>setHName(e.target.value)} placeholder="სახელი"/>
-            <select className="rounded border border-white/30 bg-white/10 px-1 py-0.5 text-[11px] text-white focus:outline-none" value={hStatus} onChange={e=>setHStatus(e.target.value)}>
-              {Object.entries(STATUS_LABEL).map(([k,v])=><option key={k} value={k} className="text-slate-900">{v}</option>)}
-            </select>
-            <button onClick={saveHeader} className="rounded bg-white px-3 py-0.5 text-[11px] font-bold text-[#1a4fa0]">შენახვა</button>
-            <button onClick={()=>setEditHdr(false)} className="rounded border border-white/30 px-2 py-0.5 text-[11px] text-white">გაუქ.</button>
-          </>
-        ):(
-          <>
-            {project.project_no&&<span className="font-mono text-[11px] text-white/60">{project.project_no}</span>}
-            <span className="font-bold text-[13px] text-white truncate max-w-xs">{project.name}</span>
-            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold flex-shrink-0 ${STATUS_COLOR[project.status]??STATUS_COLOR.draft}`}>{STATUS_LABEL[project.status]??project.status}</span>
-            {isAdmin&&<button onClick={()=>setEditHdr(true)} className="rounded border border-white/30 px-2 py-0.5 text-[10px] text-white/70 hover:bg-white/10">✏️ რედ.</button>}
-          </>
-        )}
-        <div className="ml-auto flex flex-shrink-0 items-center gap-2">
-          <button onClick={()=>window.print()} className="rounded border border-white/30 bg-transparent px-2 py-0.5 text-[11px] text-white hover:bg-white/10">🖨 Print</button>
-          <Link href="/construction/procurement" className="rounded border border-white/30 px-2 py-0.5 text-[11px] text-white hover:bg-white/10">← სია</Link>
+        <div className="ml-auto flex flex-shrink-0 items-center gap-2 text-xs">
+          <button onClick={()=>window.print()} className="rounded-md border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">🖨 Print</button>
+          <Link href="/construction/procurement" className="rounded-md border border-slate-200 bg-white px-3 py-1.5 font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-50">← სია</Link>
         </div>
-      </div>
+      </header>
 
       {/* ── BODY ── */}
       <div className="flex flex-1 overflow-hidden">
@@ -744,7 +749,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
               ['summary','📋 შეჯამ.'],['invoices','📨 ინვოის.'],['qa','💬 Q&A'],['supview','🏢 მომწ. ხედი']
             ] as const).map(([k,l])=>(
               <button key={k} onClick={()=>setTab(k)}
-                className={`whitespace-nowrap border-b-2 px-3 py-2.5 text-[12px] font-semibold transition-colors ${tab===k?'border-[#1a4fa0] text-[#1a4fa0]':'border-transparent text-slate-500 hover:text-slate-700'}`}
+                className={`whitespace-nowrap border-b-2 px-3 py-2.5 text-[12px] font-semibold transition-colors ${tab===k?'border-[#1565C0] text-[#1565C0]':'border-transparent text-slate-500 hover:text-slate-700'}`}
                 style={{marginBottom:-2}}>
                 {l}
               </button>
@@ -764,10 +769,10 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                 <table className="w-full border-collapse text-[12px]">
                   <thead>
                     <tr>
-                      <th className="border-b border-r border-slate-100 bg-[#1a4fa0] px-2 py-2 text-left text-[10px] font-bold text-white" style={{width:28}}>#</th>
-                      <th className="border-b border-r border-slate-100 bg-[#1a4fa0] px-3 py-2 text-left text-[10px] font-bold text-white" style={{minWidth:160}}>დასახელება</th>
-                      <th className="border-b border-r border-slate-100 bg-[#1a4fa0] px-2 py-2 text-center text-[10px] font-bold text-white" style={{width:44}}>ერთ.</th>
-                      <th className="border-b border-r border-slate-100 bg-[#1a4fa0] px-2 py-2 text-center text-[10px] font-bold text-white" style={{width:52}}>რაოდ.</th>
+                      <th className="border-b border-r border-slate-100 bg-[#1565C0] px-2 py-2 text-left text-[10px] font-bold text-white" style={{width:28}}>#</th>
+                      <th className="border-b border-r border-slate-100 bg-[#1565C0] px-3 py-2 text-left text-[10px] font-bold text-white" style={{minWidth:160}}>დასახელება</th>
+                      <th className="border-b border-r border-slate-100 bg-[#1565C0] px-2 py-2 text-center text-[10px] font-bold text-white" style={{width:44}}>ერთ.</th>
+                      <th className="border-b border-r border-slate-100 bg-[#1565C0] px-2 py-2 text-center text-[10px] font-bold text-white" style={{width:52}}>რაოდ.</th>
                       <th className="border-b border-r border-slate-100 bg-green-700 px-2 py-2 text-center text-[10px] font-bold text-white">პ. მომწ.</th>
                       <th className="border-b border-r border-slate-100 bg-green-700 px-2 py-2 text-right text-[10px] font-bold text-white">პ. ფასი</th>
                       <th className="border-b border-r border-slate-100 bg-amber-600 px-2 py-2 text-center text-[10px] font-bold text-white">მ. მომწ.</th>
@@ -798,22 +803,22 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                           <td className="border-r border-slate-100 bg-amber-50 px-2 py-1.5 text-center text-[11px] text-amber-700">{iPart?.contact.name??'—'}</td>
                           <td className="border-r border-slate-100 bg-amber-50 px-2 py-1.5 text-right font-bold text-amber-700">{ip!=null?fmt(ip):'—'}</td>
                           <td className="border-r border-slate-100 px-2 py-1.5 text-right font-semibold text-slate-700">{comb>0?fmt(comb):'—'}</td>
-                          <td className="px-2 py-1.5 text-right font-bold text-[#1a4fa0]">{comb>0?fmt(comb*item.qty):'—'}</td>
+                          <td className="px-2 py-1.5 text-right font-bold text-[#1565C0]">{comb>0?fmt(comb*item.qty):'—'}</td>
                         </tr>
                       );
                     })}
                   </tbody>
                   <tfoot>
-                    <tr className="border-t-2 border-[#1a4fa0] bg-blue-50 font-bold">
+                    <tr className="border-t-2 border-[#1565C0] bg-blue-50 font-bold">
                       <td colSpan={9} className="px-3 py-2 text-right text-[11px] text-slate-500">სულ ჯამი</td>
-                      <td className="px-2 py-2 text-right text-[14px] text-[#1a4fa0]">{fmt(v.selCombinedTotal)}</td>
+                      <td className="px-2 py-2 text-right text-[14px] text-[#1565C0]">{fmt(v.selCombinedTotal)}</td>
                     </tr>
                   </tfoot>
                 </table>
               </div>
               {/* Formula chips bar */}
-              <div className="flex-shrink-0 border-t-2 border-[#1a4fa0] bg-white px-4 py-2.5">
-                <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#1a4fa0]">ფორმ. შედეგები</div>
+              <div className="flex-shrink-0 border-t-2 border-[#1565C0] bg-white px-4 py-2.5">
+                <div className="mb-1.5 text-[10px] font-bold uppercase tracking-wider text-[#1565C0]">ფორმ. შედეგები</div>
                 <div className="flex flex-wrap gap-2">
                   {formulas.length===0?(
                     <span className="text-[11px] text-slate-300">ფორმ. არ არის — გადადი შეჯამ. tab-ში</span>
@@ -822,7 +827,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                     return(
                       <div key={f.id} className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 min-w-[120px]">
                         <div className="text-[10px] text-slate-500">{f.label}</div>
-                        <div className="text-[14px] font-bold text-[#1a4fa0]">{r.ok?fmt(r.val):'—'}</div>
+                        <div className="text-[14px] font-bold text-[#1565C0]">{r.ok?fmt(r.val):'—'}</div>
                       </div>
                     );
                   })}
@@ -834,7 +839,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
           {/* ── summary ── */}
           {tab==='summary'&&(
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-              <div className="flex justify-between items-center rounded-xl p-4 text-white" style={{background:'#1a4fa0'}}>
+              <div className="flex justify-between items-center rounded-xl p-4 text-white" style={{background:'#1565C0'}}>
                 <div><div className="text-[11px] opacity-70 mb-0.5">არჩეული კომბინ.</div><div className="text-[26px] font-bold">{fmt(v.selCombinedTotal)}</div></div>
                 <div className="text-right"><div className="text-[11px] opacity-70 mb-0.5">საბოლ. ფასი (+დღგ)</div><div className="text-[22px] font-bold">{fmt(finalPrice)}</div></div>
               </div>
@@ -858,21 +863,21 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
               </div>
               {/* params */}
               <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <div className="mb-3 text-[10px] font-bold uppercase tracking-wider text-[#1a4fa0]">პარამეტრები</div>
+                <div className="mb-3 text-[10px] font-bold uppercase tracking-wider text-[#1565C0]">პარამეტრები</div>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   {[['მოგება %',profitPct,setProfitPct],['ადმინ. %',overheadPct,setOverheadPct],['ფასდ. %',discountPct,setDiscountPct],['დღგ %',vatPct,setVatPct]].map(([l,val,set])=>(
                     <div key={l as string}>
                       <div className="mb-1 text-[10px] text-slate-500">{l as string}</div>
                       <input type="number" min="0" step="0.5" value={val as number}
                         onChange={e=>(set as (v:number)=>void)(Number(e.target.value))}
-                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-right text-[12px] focus:border-[#1a4fa0] focus:outline-none"/>
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-right text-[12px] focus:border-[#1565C0] focus:outline-none"/>
                     </div>
                   ))}
                 </div>
               </div>
               {/* formulas */}
               <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <div className="mb-3 text-[10px] font-bold uppercase tracking-wider text-[#1a4fa0]">ფორმულები</div>
+                <div className="mb-3 text-[10px] font-bold uppercase tracking-wider text-[#1565C0]">ფორმულები</div>
                 {formulas.length===0?(
                   <p className="text-[11px] text-slate-300 py-2">ფორმ. არ არის</p>
                 ):formulas.map((f,fi)=>{
@@ -881,29 +886,29 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                     <div key={f.id} className="mb-2 grid items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2" style={{gridTemplateColumns:'1fr 1fr auto auto auto'}}>
                       <div className="text-[12px] font-semibold truncate">{f.label}</div>
                       <div className="font-mono text-[10px] text-slate-400 truncate">{f.formula}</div>
-                      <div className={`text-right text-[14px] font-bold ${r.ok?'text-[#1a4fa0]':'text-red-400'}`}>{r.ok?fmt(r.val):'—'}</div>
-                      <button onClick={()=>openFModal(fi)} className="rounded border border-slate-200 px-2 py-0.5 text-[10px] hover:border-[#1a4fa0]">✏️</button>
+                      <div className={`text-right text-[14px] font-bold ${r.ok?'text-[#1565C0]':'text-red-400'}`}>{r.ok?fmt(r.val):'—'}</div>
+                      <button onClick={()=>openFModal(fi)} className="rounded border border-slate-200 px-2 py-0.5 text-[10px] hover:border-[#1565C0]">✏️</button>
                       <button onClick={()=>deleteFml(fi)} className="rounded px-1.5 py-0.5 text-[11px] text-slate-300 hover:text-red-400">✕</button>
                     </div>
                   );
                 })}
-                <button onClick={()=>openFModal(null)} className="mt-2 rounded-lg border border-dashed border-slate-300 px-4 py-1.5 text-[11px] text-slate-400 hover:border-[#1a4fa0] hover:text-[#1a4fa0]">+ ფორმ. დამატება</button>
+                <button onClick={()=>openFModal(null)} className="mt-2 rounded-lg border border-dashed border-slate-300 px-4 py-1.5 text-[11px] text-slate-400 hover:border-[#1565C0] hover:text-[#1565C0]">+ ფორმ. დამატება</button>
               </div>
               {/* invoice actions */}
               <div className="rounded-xl border border-slate-200 bg-white p-4">
-                <div className="mb-3 text-[10px] font-bold uppercase tracking-wider text-[#1a4fa0]">ინვოისი</div>
+                <div className="mb-3 text-[10px] font-bold uppercase tracking-wider text-[#1565C0]">ინვოისი</div>
                 <div className="flex flex-wrap gap-2">
                   <button onClick={()=>sendInvoice('best')} className="rounded-lg bg-green-700 px-4 py-2 text-[12px] font-semibold text-white hover:bg-green-800">📩 ინვოის (საუკ.)</button>
-                  <button onClick={()=>sendInvoice('selected')} className="rounded-lg px-4 py-2 text-[12px] font-semibold text-white hover:opacity-90" style={{background:'#1a4fa0'}}>📩 ინვოის (არჩ.)</button>
+                  <button onClick={()=>sendInvoice('selected')} className="rounded-lg px-4 py-2 text-[12px] font-semibold text-white hover:opacity-90" style={{background:'#1565C0'}}>📩 ინვოის (არჩ.)</button>
                 </div>
               </div>
               {/* announce */}
               {isAdmin&&participants.length>0&&(
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
-                  <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#1a4fa0]">📨 ტენდერის გამოცხადება</div>
+                  <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#1565C0]">📨 ტენდერის გამოცხადება</div>
                   {!announceOpen?(
                     <button onClick={()=>{setAnnounceOpen(true);setAnnounceSel(participants.filter(p=>p.contact.email).map(p=>p.contact_id));setAnnounceRes(null);}}
-                      className="rounded-lg border border-dashed border-slate-300 px-4 py-2 text-[12px] text-slate-500 hover:border-[#1a4fa0] hover:text-[#1a4fa0]">
+                      className="rounded-lg border border-dashed border-slate-300 px-4 py-2 text-[12px] text-slate-500 hover:border-[#1565C0] hover:text-[#1565C0]">
                       ✉️ ელ-ფოსტები გაგზავნა...
                     </button>
                   ):(
@@ -911,7 +916,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                       <div className="mb-3 space-y-1.5">
                         {participants.map((p,idx)=>(
                           <label key={p.contact_id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-100 px-3 py-2 hover:bg-slate-50">
-                            <input type="checkbox" className="accent-[#1a4fa0]" checked={announceSel.includes(p.contact_id)}
+                            <input type="checkbox" className="accent-[#1565C0]" checked={announceSel.includes(p.contact_id)}
                               onChange={e=>setAnnounceSel(prev=>e.target.checked?[...prev,p.contact_id]:prev.filter(id=>id!==p.contact_id))}/>
                             <div className="h-5 w-5 flex-shrink-0 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{background:sc(idx)}}>{p.contact.name.slice(0,2).toUpperCase()}</div>
                             <span className="flex-1 text-[12px] font-medium">{p.contact.name}</span>
@@ -933,7 +938,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                       )}
                       <div className="flex gap-2">
                         <button onClick={sendAnnounce} disabled={announcing||announceSel.length===0}
-                          className="flex-1 rounded-lg py-2 text-[12px] font-semibold text-white disabled:opacity-50" style={{background:'#1a4fa0'}}>
+                          className="flex-1 rounded-lg py-2 text-[12px] font-semibold text-white disabled:opacity-50" style={{background:'#1565C0'}}>
                           {announcing?'იგზ....':`📨 გაგზავნა (${announceSel.length})`}
                         </button>
                         <button onClick={()=>setAnnounceOpen(false)} className="rounded-lg border border-slate-200 px-3 py-2 text-[12px]">გაუქ.</button>
@@ -949,12 +954,12 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
           {tab==='invoices'&&(
             <div className="flex flex-1 flex-col overflow-hidden">
               <div className="flex flex-shrink-0 items-center gap-2 border-b border-slate-200 bg-white px-4 py-2">
-                <span className="text-[12px] font-semibold text-[#1a4fa0]">გაგზავნილი ინვოისები</span>
+                <span className="text-[12px] font-semibold text-[#1565C0]">გაგზავნილი ინვოისები</span>
                 <div className="ml-auto flex gap-1">
                   {(['all','seen','unseen'] as const).map(f=>(
                     <button key={f} onClick={()=>setInvFilt(f)}
                       className={`rounded px-2 py-1 text-[11px] font-semibold ${invFilt===f?'text-white':'text-slate-500 hover:bg-slate-100'}`}
-                      style={invFilt===f?{background:'#1a4fa0'}:{}}>
+                      style={invFilt===f?{background:'#1565C0'}:{}}>
                       {f==='all'?'ყველა':f==='seen'?'ნანახი':'უნახავი'}
                     </button>
                   ))}
@@ -966,15 +971,15 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                 ):(
                   invs.filter(i=>invFilt==='seen'?i.seen:invFilt==='unseen'?!i.seen:true).map(inv=>(
                     <div key={inv.id} onClick={()=>setInvs(p=>p.map(x=>x.id===inv.id?{...x,seen:true}:x))}
-                      className="mb-2 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 hover:border-[#1a4fa0] hover:bg-blue-50/30">
-                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-[12px] font-bold text-[#1a4fa0]">{inv.name.slice(0,2).toUpperCase()}</div>
+                      className="mb-2 flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 hover:border-[#1565C0] hover:bg-blue-50/30">
+                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 text-[12px] font-bold text-[#1565C0]">{inv.name.slice(0,2).toUpperCase()}</div>
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-[13px]">{inv.name}</div>
                         <div className="text-[11px] text-slate-400">{inv.type==='best'?'საუკ. ფასი':'არჩეული'} · {inv.date}</div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${inv.seen?'bg-green-50 text-green-700':'bg-amber-50 text-amber-700'}`}>{inv.seen?'✓ ნანახი':'● უნახავი'}</span>
-                        <span className="font-bold text-[13px] text-[#1a4fa0]">{fmt(inv.amount)}</span>
+                        <span className="font-bold text-[13px] text-[#1565C0]">{fmt(inv.amount)}</span>
                       </div>
                     </div>
                   ))
@@ -989,20 +994,20 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
               {/* left list */}
               <div className="flex w-64 flex-shrink-0 flex-col border-r border-slate-200 bg-white">
                 <div className="flex flex-shrink-0 items-center border-b border-slate-200 px-3 py-2">
-                  <span className="text-[12px] font-semibold text-[#1a4fa0]">კითხვები</span>
-                  {isAdmin&&<button onClick={()=>setQaAddOpen(p=>!p)} className="ml-auto rounded border border-[#1a4fa0] px-2 py-0.5 text-[11px] font-bold text-[#1a4fa0] hover:bg-blue-50">+ ახალი</button>}
+                  <span className="text-[12px] font-semibold text-[#1565C0]">კითხვები</span>
+                  {isAdmin&&<button onClick={()=>setQaAddOpen(p=>!p)} className="ml-auto rounded border border-[#1565C0] px-2 py-0.5 text-[11px] font-bold text-[#1565C0] hover:bg-blue-50">+ ახალი</button>}
                 </div>
                 {qaAddOpen&&isAdmin&&(
                   <div className="flex-shrink-0 border-b border-slate-100 bg-slate-50 px-3 py-2 space-y-1.5">
                     <select value={qaSupSel} onChange={e=>setQaSupSel(e.target.value)}
-                      className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-[11px] focus:border-[#1a4fa0] focus:outline-none">
+                      className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-[11px] focus:border-[#1565C0] focus:outline-none">
                       <option value="">— მომწოდ. —</option>
                       {participants.map(p=><option key={p.contact_id} value={p.contact_id}>{p.contact.name}</option>)}
                     </select>
                     <input value={qaQuestion} onChange={e=>setQaQuestion(e.target.value)} placeholder="კითხვა..."
-                      className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-[11px] focus:border-[#1a4fa0] focus:outline-none"/>
+                      className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-[11px] focus:border-[#1565C0] focus:outline-none"/>
                     <div className="flex gap-1">
-                      <button onClick={submitQuestion} className="flex-1 rounded py-1 text-[11px] font-semibold text-white" style={{background:'#1a4fa0'}}>გაგ.</button>
+                      <button onClick={submitQuestion} className="flex-1 rounded py-1 text-[11px] font-semibold text-white" style={{background:'#1565C0'}}>გაგ.</button>
                       <button onClick={()=>setQaAddOpen(false)} className="rounded border px-2 py-1 text-[11px]">გაუქ.</button>
                     </div>
                   </div>
@@ -1014,7 +1019,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                     const pIdx=participants.findIndex(p=>p.contact_id===q.contact_id);
                     return(
                       <div key={q.id} onClick={()=>setQaSelId(q.id)}
-                        className={`mb-1.5 cursor-pointer rounded-lg border px-2.5 py-2 transition ${qaSelId===q.id?'border-[#1a4fa0] bg-blue-50':'border-slate-100 hover:border-[#1a4fa0]/40 hover:bg-slate-50'}`}>
+                        className={`mb-1.5 cursor-pointer rounded-lg border px-2.5 py-2 transition ${qaSelId===q.id?'border-[#1565C0] bg-blue-50':'border-slate-100 hover:border-[#1565C0]/40 hover:bg-slate-50'}`}>
                         <div className="flex items-center gap-1.5 mb-0.5">
                           <span className="text-[10px] font-bold" style={{color:pIdx>=0?sc(pIdx):'#888'}}>{q.contact?.name??'?'}</span>
                           <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-bold ${q.answers.length>0?'bg-green-50 text-green-700':'bg-amber-50 text-amber-700'}`}>
@@ -1044,7 +1049,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                           <div className="text-[13px]">{q.question}</div>
                         </div>
                         {q.answers.map(a=>(
-                          <div key={a.id} className="ml-auto max-w-[80%] rounded-xl px-4 py-3 text-white" style={{background:'#1a4fa0'}}>
+                          <div key={a.id} className="ml-auto max-w-[80%] rounded-xl px-4 py-3 text-white" style={{background:'#1565C0'}}>
                             <div className="mb-1 text-[10px] text-blue-200">{a.answered_by} · {new Date(a.created_at).toLocaleString('ka')}</div>
                             <div className="text-[13px]">{a.answer}</div>
                           </div>
@@ -1053,8 +1058,8 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                       {isAdmin&&(
                         <div className="flex flex-shrink-0 gap-2 border-t border-slate-200 bg-white p-3">
                           <textarea value={qaAnswer} onChange={e=>setQaAnswer(e.target.value)} placeholder="პასუხი..."
-                            className="flex-1 resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[12px] focus:border-[#1a4fa0] focus:outline-none" rows={3}/>
-                          <button onClick={()=>submitAnswer(q.id)} className="rounded-lg px-4 py-2 text-[12px] font-semibold text-white self-end" style={{background:'#1a4fa0'}}>↩ გაგ.</button>
+                            className="flex-1 resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[12px] focus:border-[#1565C0] focus:outline-none" rows={3}/>
+                          <button onClick={()=>submitAnswer(q.id)} className="rounded-lg px-4 py-2 text-[12px] font-semibold text-white self-end" style={{background:'#1565C0'}}>↩ გაგ.</button>
                         </div>
                       )}
                     </>
@@ -1068,9 +1073,9 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
           {tab==='supview'&&(
             <div className="flex flex-1 flex-col overflow-hidden">
               <div className="flex flex-shrink-0 items-center gap-3 border-b border-slate-200 bg-white px-4 py-2">
-                <span className="text-[12px] font-semibold text-[#1a4fa0]">მომწოდ. ხედი →</span>
+                <span className="text-[12px] font-semibold text-[#1565C0]">მომწოდ. ხედი →</span>
                 <select value={svSup} onChange={e=>setSvSup(e.target.value)}
-                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] focus:border-[#1a4fa0] focus:outline-none">
+                  className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[12px] focus:border-[#1565C0] focus:outline-none">
                   <option value="">— მომწოდ. ირჩიე —</option>
                   {participants.map(p=><option key={p.contact_id} value={p.contact_id}>{p.contact.name}</option>)}
                 </select>
@@ -1087,24 +1092,24 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                   const totInst=items.reduce((a,item)=>{const b=getBid(bids,item.id,svSup);return a+(b?.install_price??0)*item.qty;},0);
                   return(
                     <div className="mx-auto max-w-3xl overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-                      <div className="flex items-center gap-3 px-5 py-4 text-white" style={{background:'#1a4fa0'}}>
+                      <div className="flex items-center gap-3 px-5 py-4 text-white" style={{background:'#1565C0'}}>
                         <div className="flex h-10 w-10 items-center justify-center rounded-full text-[13px] font-bold" style={{background:sc(pIdx)+'33',color:'#fff'}}>{part.contact.name.slice(0,2).toUpperCase()}</div>
                         <div><div className="text-[15px] font-bold">შესყიდვის მოთხოვნა</div><div className="text-[12px] text-blue-200">გთხოვთ შეავსოთ თქვენი ფასები</div></div>
                       </div>
                       <div className="grid grid-cols-2 gap-4 border-b border-slate-100 bg-slate-50 px-5 py-3">
                         <div><div className="text-[10px] text-slate-400">პროექტი</div><div className="font-semibold text-[13px]">{project.project_no} · {project.name}</div></div>
-                        <div><div className="text-[10px] text-slate-400">კომპანია</div><div className="font-semibold text-[13px] text-[#1a4fa0]">{part.contact.name}</div></div>
-                        {project.drive_url&&<div><div className="text-[10px] text-slate-400">Drive</div><a href={project.drive_url} target="_blank" rel="noopener noreferrer" className="text-[#1a4fa0] text-[12px] hover:underline">📁 გახსნა</a></div>}
+                        <div><div className="text-[10px] text-slate-400">კომპანია</div><div className="font-semibold text-[13px] text-[#1565C0]">{part.contact.name}</div></div>
+                        {project.drive_url&&<div><div className="text-[10px] text-slate-400">Drive</div><a href={project.drive_url} target="_blank" rel="noopener noreferrer" className="text-[#1565C0] text-[12px] hover:underline">📁 გახსნა</a></div>}
                       </div>
                       <div className="overflow-x-auto">
                         <table className="w-full border-collapse text-[12px]">
                           <thead>
                             <tr>
-                              <th className="border-b-2 border-[#1a4fa0] bg-blue-50 px-3 py-2 text-left text-[10px] font-bold text-[#1a4fa0]" style={{width:28}}>#</th>
-                              <th className="border-b-2 border-[#1a4fa0] bg-blue-50 px-3 py-2 text-left text-[10px] font-bold text-[#1a4fa0]">დასახელება</th>
-                              <th className="border-b-2 border-[#1a4fa0] bg-blue-50 px-2 py-2 text-center text-[10px] font-bold text-[#1a4fa0]">ერთ.</th>
-                              <th className="border-b-2 border-[#1a4fa0] bg-blue-50 px-2 py-2 text-center text-[10px] font-bold text-[#1a4fa0]">რაოდ.</th>
-                              <th className="border-b-2 border-[#1a4fa0] bg-blue-50 px-2 py-2 text-left text-[10px] font-bold text-[#1a4fa0]">სამ.სახ.</th>
+                              <th className="border-b-2 border-[#1565C0] bg-blue-50 px-3 py-2 text-left text-[10px] font-bold text-[#1565C0]" style={{width:28}}>#</th>
+                              <th className="border-b-2 border-[#1565C0] bg-blue-50 px-3 py-2 text-left text-[10px] font-bold text-[#1565C0]">დასახელება</th>
+                              <th className="border-b-2 border-[#1565C0] bg-blue-50 px-2 py-2 text-center text-[10px] font-bold text-[#1565C0]">ერთ.</th>
+                              <th className="border-b-2 border-[#1565C0] bg-blue-50 px-2 py-2 text-center text-[10px] font-bold text-[#1565C0]">რაოდ.</th>
+                              <th className="border-b-2 border-[#1565C0] bg-blue-50 px-2 py-2 text-left text-[10px] font-bold text-[#1565C0]">სამ.სახ.</th>
                               <th className="border-b-2 border-amber-400 bg-amber-50 px-2 py-2 text-center text-[10px] font-bold text-amber-700" style={{minWidth:110}}>თქვენი ფასი (პ.)</th>
                               <th className="border-b-2 border-amber-400 bg-amber-50 px-2 py-2 text-center text-[10px] font-bold text-amber-700" style={{minWidth:110}}>თქვენი ფასი (მ.)</th>
                             </tr>
@@ -1127,9 +1132,9 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                           </tbody>
                           <tfoot>
                             <tr className="border-t-2 border-slate-200 bg-slate-50 font-bold">
-                              <td colSpan={5} className="px-3 py-2 text-right text-[11px] text-[#1a4fa0]">სულ</td>
-                              <td className="border-r border-amber-100 bg-amber-50 px-2 py-2 text-right font-bold text-[#1a4fa0]">{fmt(totProd)}</td>
-                              <td className="bg-amber-50 px-2 py-2 text-right font-bold text-[#1a4fa0]">{fmt(totInst)}</td>
+                              <td colSpan={5} className="px-3 py-2 text-right text-[11px] text-[#1565C0]">სულ</td>
+                              <td className="border-r border-amber-100 bg-amber-50 px-2 py-2 text-right font-bold text-[#1565C0]">{fmt(totProd)}</td>
+                              <td className="bg-amber-50 px-2 py-2 text-right font-bold text-[#1565C0]">{fmt(totInst)}</td>
                             </tr>
                           </tfoot>
                         </table>
@@ -1150,7 +1155,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
 
       {/* ── TOAST ── */}
       {toast&&(
-        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white shadow-lg z-[300]" style={{background:'#1a4fa0'}}>
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 rounded-xl px-5 py-2.5 text-[13px] font-semibold text-white shadow-lg z-[300]" style={{background:'#1565C0'}}>
           {toast}
         </div>
       )}

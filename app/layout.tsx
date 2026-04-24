@@ -1,5 +1,6 @@
 import type {Metadata} from 'next';
 import {Plus_Jakarta_Sans, IBM_Plex_Mono} from 'next/font/google';
+import Script from 'next/script';
 import NextTopLoader from 'nextjs-toploader';
 import {NextIntlClientProvider} from 'next-intl';
 import {getLocale, getMessages} from 'next-intl/server';
@@ -12,6 +13,7 @@ import {WebVitalsReporter} from '@/components/web-vitals-reporter';
 import {getFeatureFlags} from '@/lib/feature-flags';
 import {hasAnalyticsConsent} from '@/lib/cookie-consent';
 import {ORGANIZATION_JSONLD, WEBSITE_JSONLD, jsonLdScript} from '@/lib/structured-data';
+import {TagModeInjector} from '@/components/tag-mode-injector';
 import './globals.css';
 
 const jakarta = Plus_Jakarta_Sans({
@@ -93,7 +95,11 @@ export default async function RootLayout({
       className={`${jakarta.variable} ${plexMono.variable} h-full antialiased`}
     >
       <head>
-        <script dangerouslySetInnerHTML={{__html: THEME_INIT_SCRIPT}} />
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{__html: THEME_INIT_SCRIPT}}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -120,6 +126,7 @@ export default async function RootLayout({
               <VerifyEmailFlash />
             </Suspense>
             {children}
+            <TagModeInjector />
             <WebVitalsReporter enabled={webVitalsEnabled} />
             {flags['site.cookie-consent'] !== 'hidden' && <CookieConsent />}
           </ThemeProvider>

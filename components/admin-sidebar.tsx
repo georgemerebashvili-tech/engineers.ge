@@ -6,6 +6,7 @@ import {usePathname} from 'next/navigation';
 import {
   Pin,
   PinOff,
+  Tag,
   LayoutDashboard,
   Zap,
   Mail,
@@ -353,6 +354,14 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
           }
         },
         {
+          key: 'tbc-products',
+          label: 'TBC · მოწყობილობები',
+          icon: Building2,
+          onClick: () => {
+            window.open('/tbc/app#products', '_blank', 'noopener,noreferrer');
+          }
+        },
+        {
           key: 'construction-project',
           label: 'KAYA Construction',
           icon: Building2,
@@ -409,6 +418,12 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
           href: '/dmt',
           icon: FolderKanban,
           flagKey: 'admin.dmt'
+        },
+        {
+          key: 'tag-console',
+          label: 'Tag Console',
+          href: '/tag-console',
+          icon: Tag
         },
         {
           key: 'logout',

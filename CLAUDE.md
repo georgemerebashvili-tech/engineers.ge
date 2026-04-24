@@ -102,3 +102,20 @@ npm run dev        # port 3000
 - http://localhost:3000/calc/hvac — HVAC generic
 
 **შემოწმება task-ის დასრულების წინ:** გახსენი დაზიანებული გვერდი ბრაუზერში და დარწმუნდი, რომ რეალურად მუშაობს (type-check / lint ≠ feature works).
+
+---
+
+## 📖 TBC Help Modal — სავალდებულო განახლების წესი (persistent · 2026-04-24)
+
+**ფაილი:** [`components/tbc-help-modal.tsx`](./components/tbc-help-modal.tsx)
+
+**წესი:** TBC (`/tbc`) განყოფილებაში **ყოველი ახალი ფიჩერის** დამატებისას — UI, API, ან workflow — **ამავე task-ის ფარგლებში** უნდა განახლდეს help modal, ახალი section-ით ან არსებულის ცვლილებით.
+
+**რას ვამატებ:**
+- ახალი `Section` object-ი `SECTIONS` array-ში (id, emoji, title, body)
+- თუ admin-only ფიჩერია — `adminOnly: true`
+- ყოველი section: **რა არის + სად ვნახო + როგორ გამოვიყენო**
+
+**მაგალითი:** დავამატე კონტროლერები → help-ში გამოჩნდა `{ id: 'controllers', emoji: '🎛', title: 'კონტროლერები', body: ... }`
+
+**არ გადავდო შემდგომ session-ზე.** Help modal ყოველი სესიის ბოლოს deployed სახით უნდა ასახავდეს მიმდინარე feature set-ს.

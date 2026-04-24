@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import {z} from 'zod';
 import {getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
-import {writeAudit} from '@/lib/tbc/audit';
+import {getTbcArchiveExpiry, writeAudit} from '@/lib/tbc/audit';
 
 const PatchBody = z.object({
   display_name: z.string().max(128).nullable().optional(),
@@ -39,6 +39,7 @@ export async function PATCH(
     .from('tbc_users')
     .select('id, username, is_static, role')
     .eq('id', id)
+    .is('archived_at', null)
     .maybeSingle();
   if (!target.data) return NextResponse.json({error: 'not_found'}, {status: 404});
 
@@ -108,28 +109,41 @@ export async function DELETE(
     .from('tbc_users')
     .select('id, username, is_static, role, email, display_name')
     .eq('id', id)
+    .is('archived_at', null)
     .maybeSingle();
   if (!target.data) return NextResponse.json({error: 'not_found'}, {status: 404});
   if (target.data.is_static) {
     return NextResponse.json({error: 'static_admin_locked'}, {status: 403});
   }
 
-  const res = await db.from('tbc_users').delete().eq('id', id);
+  const archivedAt = new Date().toISOString();
+  const res = await db
+    .from('tbc_users')
+    .update({
+      active: false,
+      archived_at: archivedAt,
+      archived_by: session.username,
+      archive_expires_at: getTbcArchiveExpiry(new Date(archivedAt)),
+      archive_reason: 'manual_archive'
+    })
+    .eq('id', id)
+    .is('archived_at', null);
   if (res.error) return NextResponse.json({error: 'db_error'}, {status: 500});
 
   await writeAudit({
     actor: session.username,
-    action: 'user.delete',
+    action: 'user.archive',
     targetType: 'user',
     targetId: id,
-    summary: `წაშალა მომხმარებელი "${target.data.username}"`,
+    summary: `არქივში გადაიტანა მომხმარებელი "${target.data.username}"`,
     metadata: {
       username: target.data.username,
       role: target.data.role,
       email: target.data.email,
-      display_name: target.data.display_name
+      display_name: target.data.display_name,
+      archive_expires_at: getTbcArchiveExpiry(new Date(archivedAt))
     }
   });
 
-  return NextResponse.json({ok: true});
+  return NextResponse.json({ok: true, archived: true});
 }

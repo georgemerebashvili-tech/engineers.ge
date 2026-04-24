@@ -4,6 +4,23 @@
 
 ---
 
+## 2026-04-23 — TBC destructive actions switch to archive-first (360-day retention marker)
+`/tbc` workspace-ში hard delete-ები იცვლება archive-first flow-ით: users,
+companies, branch comments, device removals და estimate row replacements
+აღარ შლიან ჩანაწერს ფიზიკურად. ამის ნაცვლად ვინახავთ `archived_at`,
+`archived_by`, `archive_expires_at`, `archive_reason` metadata-ს და აქტიურ
+სიებში მხოლოდ `archived_at is null` ჩანაწერები ჩანს.
+
+მიზეზი:
+- user-მა პირდაპირ მოითხოვა, რომ TBC-ზე მონაცემი აღარ დაიკარგოს, რადგან უკვე
+  გვქონდა დაკარგული ჩანაწერები.
+- delete-ზე UI ჯერ confirm/modal-ს აჩვენებს და მხოლოდ ამის შემდეგ გადაჰყავს
+  ჩანაწერი არქივში.
+- 360-დღიანი retention marker ფიქსირდება metadata-ში, მაგრამ auto-purge არ
+  გავუშვით, რათა დამატებითი მონაცემის დაკარგვის რისკი არ შევიტანოთ.
+- `tbc_jwt` session ახლაც ბაზასთან მოწმდება, ამიტომ archived/inactive user
+  ძველი cookie-თ ვეღარ გააგრძელებს მუშაობას.
+
 ## 2026-04-22 — DMT per-user UI preferences live in `dmt_users.settings`
 `/dmt/leads/manual`-ისთვის tab color აღარ ინახება browser-only state-ში. თითო
 DMT მომხმარებელს აქვს persisted `settings` JSONB `dmt_users`-ზე, სადაც ახლა

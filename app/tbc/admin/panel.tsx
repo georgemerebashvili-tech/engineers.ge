@@ -76,7 +76,7 @@ type RegionReport = {
 export function TbcAdminPanel({session}: {session: TbcSession}) {
   const router = useRouter();
   const [tab, setTab] = useState<
-    'users' | 'companies' | 'tables' | 'activity' | 'events'
+    'users' | 'companies' | 'tables' | 'activity' | 'events' | 'archive'
   >('users');
   const [users, setUsers] = useState<TbcUser[]>([]);
   const [events, setEvents] = useState<LoginEvent[]>([]);
@@ -98,6 +98,15 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [confirmArchive, setConfirmArchive] = useState<{
+    label: string;
+    onConfirm: () => void;
+  } | null>(null);
+
+  // archive workspace
+  const [archiveType, setArchiveType] = useState<'users' | 'companies' | 'branches' | 'comments' | 'devices' | 'estimates'>('users');
+  const [archiveItems, setArchiveItems] = useState<Record<string, unknown>[]>([]);
+  const [archiveLoading, setArchiveLoading] = useState(false);
 
   // new user form
   const [newUsername, setNewUsername] = useState('');
@@ -141,6 +150,16 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
   const loadReport = useCallback(async () => {
     const r = await fetch('/api/tbc/reports/categories');
     if (r.ok) setReport(await r.json());
+  }, []);
+
+  const loadArchive = useCallback(async (type: string) => {
+    setArchiveLoading(true);
+    try {
+      const r = await fetch(`/api/tbc/archive?type=${type}`);
+      if (r.ok) setArchiveItems((await r.json()).items || []);
+    } finally {
+      setArchiveLoading(false);
+    }
   }, []);
 
   const loadAll = useCallback(async () => {
@@ -270,19 +289,24 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
     loadAll();
   }
 
-  async function deleteUser(u: TbcUser) {
+  function deleteUser(u: TbcUser) {
     if (u.is_static) {
       flashToast('სტატიკური ადმინი ვერ წაიშლება');
       return;
     }
-    if (!confirm(`წავშალო მომხმარებელი "${u.username}"?`)) return;
-    const res = await fetch(`/api/tbc/users/${u.id}`, {method: 'DELETE'});
-    if (!res.ok) {
-      flashToast('წაშლა ვერ მოხერხდა');
-      return;
-    }
-    flashToast('წაიშალა');
-    loadAll();
+    setConfirmArchive({
+      label: `მომხმარებელი "${u.username}"`,
+      onConfirm: async () => {
+        setConfirmArchive(null);
+        const res = await fetch(`/api/tbc/users/${u.id}`, {method: 'DELETE'});
+        if (!res.ok) {
+          flashToast('არქივში გადატანა ვერ მოხერხდა');
+          return;
+        }
+        flashToast('არქივში გადავიდა');
+        loadAll();
+      }
+    });
   }
 
   async function setEmail(u: TbcUser) {
@@ -462,6 +486,12 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
     if (users.length > 0) loadAccessSummaries(users);
   }, [users, loadAccessSummaries]);
 
+  useEffect(() => {
+    if (tab === 'archive' && archiveItems.length === 0 && !archiveLoading) {
+      loadArchive(archiveType);
+    }
+  }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function sendResetEmail(u: TbcUser) {
     if (!u.email) {
       flashToast('ჯერ დააყენე ელფოსტა');
@@ -531,7 +561,8 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
               ['companies', 'კომპანიები'],
               ['tables', 'ცხრილი'],
               ['activity', 'მოქმედებათა ლოგი'],
-              ['events', 'შესვლის ლოგი']
+              ['events', 'შესვლის ლოგი'],
+              ['archive', '🗃 არქივი']
             ] as const
           ).map(([k, label]) => (
             <button
@@ -818,11 +849,14 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
         )}
 
         {tab === 'tables' && (
-          <TablesPanel
-            data={report}
-            loading={loading}
-            reload={loadReport}
-          />
+          <div className="space-y-6">
+            <ExportCard branchList={branchList} setBranchList={setBranchList} flash={flashToast} />
+            <TablesPanel
+              data={report}
+              loading={loading}
+              reload={loadReport}
+            />
+          </div>
         )}
 
         {tab === 'activity' && (
@@ -907,6 +941,17 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
             </div>
           </div>
         )}
+
+        {tab === 'archive' && (
+          <ArchivePanel
+            type={archiveType}
+            items={archiveItems}
+            loading={archiveLoading}
+            onTypeChange={(t) => { setArchiveType(t); loadArchive(t); }}
+            onLoad={() => loadArchive(archiveType)}
+            flash={flashToast}
+          />
+        )}
       </main>
 
       {toast && (
@@ -982,6 +1027,37 @@ export function TbcAdminPanel({session}: {session: TbcSession}) {
           onClose={() => setAccessUser(null)}
           onSave={saveCompanyAccess}
         />
+      )}
+
+      {confirmArchive && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+            <div className="mb-3 text-center text-3xl">🗃</div>
+            <h3 className="mb-1 text-center text-base font-semibold text-slate-900">
+              არქივში გადატანა
+            </h3>
+            <p className="mb-1 text-center text-sm text-slate-700">
+              <strong>{confirmArchive.label}</strong> არქივში გადავიტანო?
+            </p>
+            <p className="mb-5 text-center text-xs text-slate-400">
+              აქტიური სიიდან გაქრება, მაგრამ მონაცემი მინიმუმ 360 დღე დარჩება არქივში.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmArchive(null)}
+                className="flex-1 rounded-lg border border-slate-200 bg-white py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                გაუქმება
+              </button>
+              <button
+                onClick={() => confirmArchive.onConfirm()}
+                className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              >
+                🗃 არქივი
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1464,13 +1540,22 @@ const ACTION_META: Record<
   'logout': {emoji: '🚪', label: 'გავიდა', color: '#64748B', bg: '#F1F5F9'},
   'branch.create': {emoji: '🏢', label: 'ფილიალი.შექმნა', color: '#0071CE', bg: '#E6F2FB'},
   'branch.update': {emoji: '✏️', label: 'ფილიალი.ცვლილება', color: '#0071CE', bg: '#E6F2FB'},
+  'branch.restore': {emoji: '↩', label: 'ფილიალი.აღდგენა', color: '#008A73', bg: '#E0F7F3'},
   'device.add': {emoji: '➕', label: 'მოწყობ.დამატება', color: '#00AA8D', bg: '#E0F7F3'},
+  'device.archive': {emoji: '🗃', label: 'მოწყობ.არქივი', color: '#D97706', bg: '#FEF3C7'},
+  'device.archive_last': {emoji: '🗃', label: 'ბოლო.არქივი', color: '#D97706', bg: '#FEF3C7'},
+  'device.restore': {emoji: '↩', label: 'მოწყობ.აღდგენა', color: '#008A73', bg: '#E0F7F3'},
   'comment.post': {emoji: '💬', label: 'განცხად.დაწერა', color: '#8B5CF6', bg: '#EDE9FE'},
-  'comment.delete': {emoji: '🗑', label: 'განცხად.წაშლა', color: '#DC2626', bg: '#FEE2E2'},
+  'comment.archive': {emoji: '🗃', label: 'განცხად.არქივი', color: '#D97706', bg: '#FEF3C7'},
+  'comment.restore': {emoji: '↩', label: 'განცხად.აღდგენა', color: '#008A73', bg: '#E0F7F3'},
   'estimate.save': {emoji: '💰', label: 'ხარჯთა.შენახვა', color: '#D97706', bg: '#FEF3C7'},
+  'estimate.restore': {emoji: '↩', label: 'ხარჯთა.აღდგენა', color: '#008A73', bg: '#E0F7F3'},
   'user.create': {emoji: '👤', label: 'user.შექმნა', color: '#0071CE', bg: '#E6F2FB'},
   'user.update': {emoji: '📝', label: 'user.ცვლილება', color: '#0071CE', bg: '#E6F2FB'},
-  'user.delete': {emoji: '🗑', label: 'user.წაშლა', color: '#DC2626', bg: '#FEE2E2'},
+  'user.archive': {emoji: '🗃', label: 'user.არქივი', color: '#D97706', bg: '#FEF3C7'},
+  'user.restore': {emoji: '↩', label: 'user.აღდგენა', color: '#008A73', bg: '#E0F7F3'},
+  'company.archive': {emoji: '🗃', label: 'კომპ.არქივი', color: '#D97706', bg: '#FEF3C7'},
+  'company.restore': {emoji: '↩', label: 'კომპ.აღდგენა', color: '#008A73', bg: '#E0F7F3'},
   'user.reset_password': {emoji: '🔑', label: 'პაროლი შეიცვალა', color: '#D97706', bg: '#FEF3C7'},
   'password_reset.request': {emoji: '📧', label: 'reset.მოთხოვნა', color: '#8B5CF6', bg: '#EDE9FE'},
   'password_reset.confirm': {emoji: '✅', label: 'reset.შესრულდა', color: '#008A73', bg: '#E0F7F3'},
@@ -1660,6 +1745,7 @@ function CompaniesPanel({
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmDel, setConfirmDel] = useState<{label: string; onConfirm: () => void} | null>(null);
 
   function reset() {
     setForm({
@@ -1716,14 +1802,19 @@ function CompaniesPanel({
     window.scrollTo({top: 0, behavior: 'smooth'});
   }
 
-  async function del(c: Company) {
-    if (!confirm(`წავშალო კომპანია "${c.name}"?`)) return;
-    const r = await fetch(`/api/tbc/companies/${c.id}`, {method: 'DELETE'});
-    if (!r.ok) flash('ვერ წაიშალა');
-    else {
-      flash('წაიშალა');
-      reload();
-    }
+  function del(c: Company) {
+    setConfirmDel({
+      label: `კომპანია "${c.name}"`,
+      onConfirm: async () => {
+        setConfirmDel(null);
+        const r = await fetch(`/api/tbc/companies/${c.id}`, {method: 'DELETE'});
+        if (!r.ok) flash('არქივში ვერ გადავიდა');
+        else {
+          flash('არქივში გადავიდა');
+          reload();
+        }
+      }
+    });
   }
 
   return (
@@ -1923,6 +2014,37 @@ function CompaniesPanel({
           </table>
         </div>
       </div>
+
+      {confirmDel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+            <div className="mb-3 text-center text-3xl">🗃</div>
+            <h3 className="mb-1 text-center text-base font-semibold text-slate-900">
+              არქივში გადატანა
+            </h3>
+            <p className="mb-1 text-center text-sm text-slate-700">
+              <strong>{confirmDel.label}</strong> არქივში გადავიტანო?
+            </p>
+            <p className="mb-5 text-center text-xs text-slate-400">
+              აქტიური სიიდან გაქრება, მაგრამ მონაცემი მინიმუმ 360 დღე დარჩება არქივში.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDel(null)}
+                className="flex-1 rounded-lg border border-slate-200 bg-white py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                გაუქმება
+              </button>
+              <button
+                onClick={() => confirmDel.onConfirm()}
+                className="flex-1 rounded-lg bg-red-600 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              >
+                🗃 არქივი
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2152,6 +2274,285 @@ function PctBar({pct}: {pct: number}) {
       <span className="font-mono text-xs font-semibold text-slate-700">
         {pct}%
       </span>
+    </div>
+  );
+}
+
+// ── ExportCard ────────────────────────────────────────────────────────────────
+function ExportCard({
+  branchList,
+  setBranchList,
+  flash
+}: {
+  branchList: Array<{id: number; name: string; alias: string | null; region: string | null; city: string | null}>;
+  setBranchList: (v: Array<{id: number; name: string; alias: string | null; region: string | null; city: string | null}>) => void;
+  flash: (m: string) => void;
+}) {
+  const [selectedId, setSelectedId] = useState<number | ''>('');
+  const [busy, setBusy] = useState(false);
+  const [loadingBranches, setLoadingBranches] = useState(false);
+
+  useEffect(() => {
+    if (branchList.length === 0) {
+      setLoadingBranches(true);
+      fetch('/api/tbc/branches')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.branches) setBranchList(d.branches); })
+        .finally(() => setLoadingBranches(false));
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function doExport() {
+    if (!selectedId) { flash('ფილიალი ვერ შეირჩა'); return; }
+    setBusy(true);
+    try {
+      const r = await fetch(`/api/tbc/branches/${selectedId}/export`);
+      if (!r.ok) { flash('ექსპ. ვერ მოხდა'); return; }
+      const blob = await r.blob();
+      const cd = r.headers.get('Content-Disposition') || '';
+      const fname = cd.match(/filename="([^"]+)"/)?.[1] || `tbc_branch_${selectedId}.zip`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = fname; a.click();
+      URL.revokeObjectURL(url);
+      flash('ჩამოიტვირთა ✓');
+    } catch {
+      flash('ექსპ. შეცდომა');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+        ფილიალის ექსპორტი (ZIP + XLSX)
+      </h2>
+      <div className="flex flex-wrap items-center gap-3">
+        {loadingBranches ? (
+          <span className="text-sm text-slate-400">ფილიალები იტვირთება…</span>
+        ) : (
+          <select
+            value={selectedId}
+            onChange={e => setSelectedId(e.target.value ? Number(e.target.value) : '')}
+            className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm focus:border-[#0071CE] focus:bg-white focus:outline-none min-w-[260px]"
+          >
+            <option value="">— ფილიალის შერჩევა —</option>
+            {branchList.map(b => (
+              <option key={b.id} value={b.id}>
+                {b.alias || b.name}{b.city ? ` · ${b.city}` : ''}{b.region ? ` (${b.region})` : ''}
+              </option>
+            ))}
+          </select>
+        )}
+        <button
+          onClick={doExport}
+          disabled={!selectedId || busy}
+          className="rounded-md bg-[#0071CE] px-4 py-2 text-sm font-semibold text-white hover:bg-[#005BA8] disabled:opacity-50 flex items-center gap-2"
+        >
+          {busy ? '…' : '⬇ ZIP ჩამოტვირთვა'}
+        </button>
+        <span className="text-[11px] text-slate-400">ფოტოები + ინვენტარის XLSX ერთ არქივში · მაქს. 60 წამი</span>
+      </div>
+    </div>
+  );
+}
+
+// ── ArchivePanel ──────────────────────────────────────────────────────────────
+type ArchiveType = 'users' | 'companies' | 'branches' | 'comments' | 'devices' | 'estimates';
+
+const ARCHIVE_TABS: [ArchiveType, string][] = [
+  ['users', 'მომხმარებლები'],
+  ['companies', 'კომპანიები'],
+  ['branches', 'ფილიალები'],
+  ['comments', 'კომენტარები'],
+  ['devices', 'დანადგარები'],
+  ['estimates', 'ხარჯთაღრიცხვა']
+];
+
+function ArchivePanel({
+  type,
+  items,
+  loading,
+  onTypeChange,
+  onLoad,
+  flash
+}: {
+  type: ArchiveType;
+  items: Record<string, unknown>[];
+  loading: boolean;
+  onTypeChange: (t: ArchiveType) => void;
+  onLoad: () => void;
+  flash: (m: string) => void;
+}) {
+  const [busy, setBusy] = useState<unknown>(null);
+  const [q, setQ] = useState('');
+
+  const filtered = items.filter(item => {
+    if (!q.trim()) return true;
+    return JSON.stringify(item).toLowerCase().includes(q.toLowerCase());
+  });
+  const hasBranchColumn = type === 'devices' || type === 'estimates';
+  const columnCount = hasBranchColumn ? 6 : 5;
+
+  async function restore(item: Record<string, unknown>) {
+    const key = item.id ?? item.raw_idx;
+    setBusy(key);
+    try {
+      let ok = false;
+      if (type === 'devices') {
+        const r = await fetch(`/api/tbc/branches/${item.branch_id}/devices/${item.raw_idx}/restore`, {method: 'POST'});
+        ok = r.ok;
+      } else {
+        const typeMap: Record<ArchiveType, string> = {
+          users: 'user',
+          companies: 'company',
+          branches: 'branch',
+          comments: 'comment',
+          devices: 'device',
+          estimates: 'estimate'
+        };
+        const r = await fetch('/api/tbc/archive', {
+          method: 'POST',
+          headers: {'content-type': 'application/json'},
+          body: JSON.stringify({type: typeMap[type], id: item.id})
+        });
+        ok = r.ok;
+      }
+      if (ok) { flash('აღდგა ✓'); onLoad(); }
+      else flash('ვერ აღდგა');
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  function fmtDate(s: unknown) {
+    if (!s || typeof s !== 'string') return '—';
+    return new Date(s).toLocaleDateString('ka-GE', {day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit'});
+  }
+
+  function itemLabel(item: Record<string, unknown>): string {
+    if (type === 'users') return `${item.username}` + (item.display_name ? ` (${item.display_name})` : '');
+    if (type === 'companies') return `${item.name}`;
+    if (type === 'branches') return `${item.alias || item.name}${item.city ? ` · ${item.city}` : ''}`;
+    if (type === 'comments') return `branch #${item.branch_id} · ${item.author} — "${String(item.body ?? '').slice(0, 50)}"`;
+    if (type === 'devices') return [item.category, item.subtype, item.brand, item.model, item.serial].filter(Boolean).join(' · ') || '(empty)';
+    if (type === 'estimates') {
+      const qty = Number(item.qty ?? 0);
+      const total = Number(item.total ?? 0);
+      return [
+        item.name,
+        item.item_type,
+        qty > 0 ? `${qty}${item.unit ? ` ${item.unit}` : ''}` : null,
+        total > 0 ? `₾${total.toFixed(2)}` : null
+      ]
+        .filter(Boolean)
+        .join(' · ');
+    }
+    return String(item.id ?? '');
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Sub-tabs */}
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-3">
+          <div className="flex gap-1">
+            {ARCHIVE_TABS.map(([k, label]) => (
+              <button
+                key={k}
+                onClick={() => { setQ(''); onTypeChange(k); }}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                  type === k
+                    ? 'bg-amber-100 text-amber-800'
+                    : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              value={q}
+              onChange={e => setQ(e.target.value)}
+              placeholder="🔍 ძებნა"
+              className="w-48 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs focus:border-[#0071CE] focus:bg-white focus:outline-none"
+            />
+            <button
+              onClick={onLoad}
+              className="rounded-md border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            >
+              🔄 განახლება
+            </button>
+            <span className="font-mono text-xs text-slate-400">{filtered.length}</span>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-2 text-left">ჩანაწერი</th>
+                {hasBranchColumn && <th className="px-4 py-2 text-left">ფილიალი</th>}
+                <th className="px-4 py-2 text-left">არქივში</th>
+                <th className="px-4 py-2 text-left">ვინ</th>
+                <th className="px-4 py-2 text-left">ვადა</th>
+                <th className="px-4 py-2 text-right">მოქმედება</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan={columnCount} className="px-4 py-10 text-center text-slate-400">იტვირთება…</td></tr>
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={columnCount} className="px-4 py-10 text-center text-slate-400">
+                  {q ? 'ვერ მოიძებნა' : 'არქივი ცარიელია'}
+                </td></tr>
+              ) : (
+                filtered.map((item, idx) => {
+                  const itemKey = item.id ?? idx;
+                  const isBusy = busy === (item.id ?? item.raw_idx);
+                  return (
+                    <tr key={String(itemKey)} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="px-4 py-2.5 font-medium text-slate-900 max-w-xs truncate" title={itemLabel(item)}>
+                        {itemLabel(item)}
+                      </td>
+                      {hasBranchColumn && (
+                        <td className="px-4 py-2.5 text-xs text-slate-500">
+                          {String(item.branch_alias ?? item.branch_id ?? '')}
+                        </td>
+                      )}
+                      <td className="px-4 py-2.5 font-mono text-xs text-amber-700">
+                        {fmtDate(item.archived_at)}
+                      </td>
+                      <td className="px-4 py-2.5 font-mono text-xs text-slate-500">
+                        {String(item.archived_by ?? '—')}
+                      </td>
+                      <td className="px-4 py-2.5 font-mono text-xs text-slate-400">
+                        {fmtDate(item.archive_expires_at)}
+                      </td>
+                      <td className="px-4 py-2.5 text-right">
+                        <button
+                          onClick={() => restore(item)}
+                          disabled={!!isBusy}
+                          className="rounded-md bg-[#E0F7F3] px-3 py-1 text-xs font-semibold text-[#008A73] hover:bg-[#008A73] hover:text-white disabled:opacity-50 transition-colors"
+                        >
+                          {isBusy ? '…' : '↩ აღდგენა'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 text-xs text-amber-800">
+        🗃 <strong>360-დღიანი marker:</strong> `archive_expires_at` სვეტი გაჩვენებს დაცვის ვადას.
+        auto-delete ამ ეტაპზე გამორთულია, ამიტომ მონაცემი თავისით არ იკარგება და აღდგენა admin-იდან შეგიძლია.
+      </div>
     </div>
   );
 }

@@ -1,9 +1,15 @@
 import {NextResponse} from 'next/server';
 import {getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
-import {writeAudit} from '@/lib/tbc/audit';
+import {getTbcArchiveExpiry, mergeBranchDevices, writeAudit} from '@/lib/tbc/audit';
 
 export const dynamic = 'force-dynamic';
+
+function keepExistingText(current: unknown, incoming: unknown): string | null {
+  if (typeof current === 'string' && current.trim()) return current;
+  if (typeof incoming === 'string' && incoming.trim()) return incoming.trim();
+  return null;
+}
 
 /**
  * Bulk-seeds branches + equipment types. Admin only.
@@ -29,6 +35,7 @@ export async function POST(req: Request) {
 
   const db = supabaseAdmin();
   const mode = body.mode === 'replace' ? 'replace' : 'merge';
+  const now = new Date().toISOString();
 
   // Equipment types
   if (Array.isArray(body.equipment_types) && body.equipment_types.length) {
@@ -47,6 +54,19 @@ export async function POST(req: Request) {
 
   // Branches
   if (Array.isArray(body.branches) && body.branches.length) {
+    const existingRes = await db
+      .from('tbc_branches')
+      .select(
+        'id, comment, status, director, director_phone, dmt_manager, dmt_manager_phone, tbc_manager, tbc_manager_phone, planned_start, planned_end, annotation, act, notes, devices, archived_at'
+      );
+    if (existingRes.error) {
+      console.error('[tbc] seed existing load', existingRes.error);
+      return NextResponse.json({error: 'db_error'}, {status: 500});
+    }
+    const existingById = new Map(
+      (existingRes.data || []).map((branch) => [Number(branch.id), branch])
+    );
+
     const rows = body.branches
       .filter((b) => typeof b.id === 'number' && typeof b.name === 'string')
       .map((b) => ({
@@ -59,28 +79,86 @@ export async function POST(req: Request) {
         address: (b.address as string) || null,
         area_m2: (b.area_m2 as number) ?? null,
         monthly_fee: (b.monthly_fee as number) ?? null,
-        comment: (b.comment as string) || null,
+        comment: keepExistingText(
+          existingById.get(b.id as number)?.comment,
+          b.comment
+        ),
         inventory_items: b.inventory_items ?? [],
         planned_count: (b.planned_count as number) ?? 0,
-        status: (b.status as string) || 'general',
-        director: (b.director as string) || null,
-        director_phone: (b.director_phone as string) || null,
-        dmt_manager: (b.dmt_manager as string) || null,
-        dmt_manager_phone: (b.dmt_manager_phone as string) || null,
-        tbc_manager: (b.tbc_manager as string) || null,
-        tbc_manager_phone: (b.tbc_manager_phone as string) || null,
-        planned_start: (b.planned_start as string) || null,
-        planned_end: (b.planned_end as string) || null,
-        annotation: (b.annotation as string) || null,
-        act: (b.act as string) || null,
-        notes: (b.notes as string) || null,
-        devices: b.devices ?? [],
-        updated_at: new Date().toISOString(),
+        status:
+          (existingById.get(b.id as number)?.status as string | null) ||
+          ((b.status as string) || 'general'),
+        director: keepExistingText(
+          existingById.get(b.id as number)?.director,
+          b.director
+        ),
+        director_phone: keepExistingText(
+          existingById.get(b.id as number)?.director_phone,
+          b.director_phone
+        ),
+        dmt_manager: keepExistingText(
+          existingById.get(b.id as number)?.dmt_manager,
+          b.dmt_manager
+        ),
+        dmt_manager_phone: keepExistingText(
+          existingById.get(b.id as number)?.dmt_manager_phone,
+          b.dmt_manager_phone
+        ),
+        tbc_manager: keepExistingText(
+          existingById.get(b.id as number)?.tbc_manager,
+          b.tbc_manager
+        ),
+        tbc_manager_phone: keepExistingText(
+          existingById.get(b.id as number)?.tbc_manager_phone,
+          b.tbc_manager_phone
+        ),
+        planned_start: keepExistingText(
+          existingById.get(b.id as number)?.planned_start,
+          b.planned_start
+        ),
+        planned_end: keepExistingText(
+          existingById.get(b.id as number)?.planned_end,
+          b.planned_end
+        ),
+        annotation: keepExistingText(
+          existingById.get(b.id as number)?.annotation,
+          b.annotation
+        ),
+        act: keepExistingText(existingById.get(b.id as number)?.act, b.act),
+        notes: keepExistingText(existingById.get(b.id as number)?.notes, b.notes),
+        devices: mergeBranchDevices(
+          b.devices as unknown[],
+          existingById.get(b.id as number)?.devices as unknown[]
+        ),
+        archived_at: null,
+        archived_by: null,
+        archive_expires_at: null,
+        archive_reason: null,
+        updated_at: now,
         updated_by: session.username
       }));
 
     if (mode === 'replace') {
-      await db.from('tbc_branches').delete().neq('id', -1);
+      const incomingIds = new Set(rows.map((row) => Number(row.id)));
+      const missingIds = (existingRes.data || [])
+        .filter((branch) => !branch.archived_at && !incomingIds.has(Number(branch.id)))
+        .map((branch) => Number(branch.id))
+        .filter(Number.isFinite);
+      if (missingIds.length > 0) {
+        const archiveRes = await db
+          .from('tbc_branches')
+          .update({
+            archived_at: now,
+            archived_by: session.username,
+            archive_expires_at: getTbcArchiveExpiry(new Date(now)),
+            archive_reason: 'seed_replace_missing'
+          })
+          .in('id', missingIds);
+        if (archiveRes.error) {
+          console.error('[tbc] seed archive missing', archiveRes.error);
+          return NextResponse.json({error: 'db_error'}, {status: 500});
+        }
+      }
     }
 
     // Supabase has a 1000-row limit per insert; chunk just in case.
@@ -100,7 +178,8 @@ export async function POST(req: Request) {
 
   const count = await db
     .from('tbc_branches')
-    .select('id', {count: 'exact', head: true});
+    .select('id', {count: 'exact', head: true})
+    .is('archived_at', null);
 
   await writeAudit({
     actor: session.username,

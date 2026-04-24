@@ -2,7 +2,7 @@ import {NextResponse} from 'next/server';
 import {z} from 'zod';
 import {canAccessTbcBranch, getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
-import {writeAudit} from '@/lib/tbc/audit';
+import {getTbcArchiveExpiry, writeAudit} from '@/lib/tbc/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +34,7 @@ export async function GET(
     .from('tbc_estimate_items')
     .select('id, sort_order, name, item_type, unit, qty, price, total, note, updated_at, updated_by')
     .eq('branch_id', branchId)
+    .is('archived_at', null)
     .order('sort_order', {ascending: true});
 
   if (rows.error)
@@ -93,11 +94,49 @@ export async function PUT(
   if (session.role !== 'admin')
     return NextResponse.json({error: 'forbidden'}, {status: 403});
 
-  // Replace-all strategy: delete then bulk insert (consistent snapshot).
-  await db.from('tbc_estimate_items').delete().eq('branch_id', branchId);
+  const existing = await db
+    .from('tbc_estimate_items')
+    .select('id')
+    .eq('branch_id', branchId)
+    .is('archived_at', null)
+    .order('sort_order', {ascending: true});
+  if (existing.error)
+    return NextResponse.json({error: 'db_error'}, {status: 500});
+
+  const previousIds = (existing.data || []).map((row) => Number(row.id)).filter(Number.isFinite);
+  const archivedAt = new Date().toISOString();
+  const archiveExpiresAt = getTbcArchiveExpiry(new Date(archivedAt));
 
   if (parsed.data.items.length === 0) {
-    return NextResponse.json({ok: true, items: []});
+    if (previousIds.length > 0) {
+      const archiveRes = await db
+        .from('tbc_estimate_items')
+        .update({
+          archived_at: archivedAt,
+          archived_by: session.username,
+          archive_expires_at: archiveExpiresAt,
+          archive_reason: 'estimate_replace'
+        })
+        .in('id', previousIds);
+      if (archiveRes.error)
+        return NextResponse.json({error: 'db_error'}, {status: 500});
+    }
+    await writeAudit({
+      actor: session.username,
+      action: 'estimate.save',
+      targetType: 'branch',
+      targetId: branchId,
+      summary: `გაასუფთავა აქტიური ხარჯთაღრიცხვა ფილიალი #${branchId} და გადაიტანა არქივში ${previousIds.length} პოზიცია`,
+      metadata: {
+        branch_id: branchId,
+        count: 0,
+        total: 0,
+        archived_previous_count: previousIds.length,
+        archive_expires_at: previousIds.length ? archiveExpiresAt : null,
+        items: []
+      }
+    });
+    return NextResponse.json({ok: true, items: [], archived_previous_count: previousIds.length});
   }
 
   const now = new Date().toISOString();
@@ -124,6 +163,22 @@ export async function PUT(
     return NextResponse.json({error: 'db_error'}, {status: 500});
   }
 
+  if (previousIds.length > 0) {
+    const archiveRes = await db
+      .from('tbc_estimate_items')
+      .update({
+        archived_at: archivedAt,
+        archived_by: session.username,
+        archive_expires_at: archiveExpiresAt,
+        archive_reason: 'estimate_replace'
+      })
+      .in('id', previousIds);
+    if (archiveRes.error) {
+      console.error('[tbc] estimate archive previous', archiveRes.error);
+      return NextResponse.json({error: 'db_error'}, {status: 500});
+    }
+  }
+
   const total = (ins.data || []).reduce(
     (s, r) => s + Number((r as {total?: number}).total || 0),
     0
@@ -138,6 +193,8 @@ export async function PUT(
       branch_id: branchId,
       count: ins.data?.length || 0,
       total,
+      archived_previous_count: previousIds.length,
+      archive_expires_at: previousIds.length ? archiveExpiresAt : null,
       items: (ins.data || []).map((r) => {
         const row = r as {
           name: string;
@@ -159,5 +216,9 @@ export async function PUT(
     }
   });
 
-  return NextResponse.json({ok: true, items: ins.data || []});
+  return NextResponse.json({
+    ok: true,
+    items: ins.data || [],
+    archived_previous_count: previousIds.length
+  });
 }

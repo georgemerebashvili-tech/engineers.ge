@@ -81,8 +81,8 @@ Return a single JSON object with these fields (set to null if unknown). TEXT FIE
   > = [];
 
   const photos = parsed.data.photos || [];
-  for (const p of photos) {
-    const parsedImg = parseDataUrl(p);
+  const resolved = await Promise.all(photos.map(resolvePhotoSource));
+  for (const parsedImg of resolved) {
     if (parsedImg)
       content.push({
         type: 'image',
@@ -147,6 +147,25 @@ Return a single JSON object with these fields (set to null if unknown). TEXT FIE
   });
 
   return NextResponse.json({ok: true, result: extracted});
+}
+
+async function resolvePhotoSource(
+  s: string
+): Promise<{mediaType: string; data: string} | null> {
+  if (!s) return null;
+  if (s.startsWith('data:')) return parseDataUrl(s);
+  if (!/^https?:\/\//i.test(s)) return null;
+  try {
+    const r = await fetch(s, {cache: 'no-store'});
+    if (!r.ok) return null;
+    const mediaType = r.headers.get('content-type')?.split(';')[0].trim() || 'image/jpeg';
+    if (!mediaType.startsWith('image/')) return null;
+    const buf = Buffer.from(await r.arrayBuffer());
+    return {mediaType, data: buf.toString('base64')};
+  } catch (e) {
+    console.warn('[tbc vision research] fetch photo failed', e);
+    return null;
+  }
 }
 
 function parseDataUrl(s: string): {mediaType: string; data: string} | null {

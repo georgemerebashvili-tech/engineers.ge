@@ -3,8 +3,21 @@
 import {useCallback, useEffect, useRef, useState} from 'react';
 
 export type TodoItem = {text: string; done: boolean};
-export type SituationalPhoto = {src: string; caption: string};
+export type PhotoRef = {url: string; thumb_url: string};
+export type PhotoValue = string | PhotoRef;
+export type SituationalPhoto = {src: PhotoValue; caption: string};
 export type CommentItem = {text: string; at: string; by?: string};
+
+export function photoFullSrc(p: PhotoValue | null | undefined): string | null {
+  if (!p) return null;
+  if (typeof p === 'string') return p;
+  return p.url || p.thumb_url || null;
+}
+export function photoThumbSrc(p: PhotoValue | null | undefined): string | null {
+  if (!p) return null;
+  if (typeof p === 'string') return p;
+  return p.thumb_url || p.url || null;
+}
 
 export type DevicePayload = {
   name: string;
@@ -14,7 +27,7 @@ export type DevicePayload = {
   model: string;
   serial: string;
   location: string;
-  photos: (string | null)[];
+  photos: (PhotoValue | null)[];
   situational_photos: SituationalPhoto[];
   needs: TodoItem[];
   prohibitions: TodoItem[];
@@ -27,7 +40,7 @@ export type DeviceInitial = Partial<DevicePayload> & {
 };
 
 const PHOTO_LABELS = ['ბირკა', 'ახლო', 'მსხვ.', 'გარე', 'დამატ.'];
-const EMPTY_PHOTOS: (string | null)[] = [null, null, null, null, null];
+const EMPTY_PHOTOS: (PhotoValue | null)[] = [null, null, null, null, null];
 const SITU_RECOMMENDED = 10;
 const SITU_MAX = 50;
 
@@ -74,6 +87,87 @@ async function fileToDataUrl(
   });
 }
 
+// Resize once to the larger dim, then downsample again for the thumbnail — one read, two outputs.
+async function fileToResizedPair(
+  file: File,
+  opts: {fullDim?: number; fullQ?: number; thumbDim?: number; thumbQ?: number} = {}
+): Promise<{full: string; thumb: string}> {
+  const {fullDim = 1024, fullQ = 0.82, thumbDim = 256, thumbQ = 0.7} = opts;
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('read_error'));
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('image_error'));
+      img.onload = () => {
+        const draw = (maxDim: number, quality: number) => {
+          let {width, height} = img;
+          if (width > maxDim || height > maxDim) {
+            const scale = maxDim / Math.max(width, height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext('2d')?.drawImage(img, 0, 0, width, height);
+          return canvas.toDataURL('image/jpeg', quality);
+        };
+        resolve({full: draw(fullDim, fullQ), thumb: draw(thumbDim, thumbQ)});
+      };
+      img.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadToStorage(
+  full: string,
+  thumb: string,
+  kind: 'device' | 'situational' | 'catalog',
+  branchId?: number | string,
+  onProgress?: (pct: number) => void
+): Promise<PhotoRef | null> {
+  return new Promise((resolve) => {
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', '/api/tbc/photos/upload');
+      xhr.setRequestHeader('content-type', 'application/json');
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && onProgress)
+          onProgress(Math.round((e.loaded / e.total) * 100));
+      };
+      xhr.onerror = () => resolve(null);
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const d = JSON.parse(xhr.responseText) as {
+              ok?: boolean;
+              url?: string;
+              thumb_url?: string;
+            };
+            if (d.ok && d.url && d.thumb_url) {
+              resolve({url: d.url, thumb_url: d.thumb_url});
+              return;
+            }
+          } catch {}
+        }
+        resolve(null);
+      };
+      xhr.send(
+        JSON.stringify({
+          full_b64: full,
+          thumb_b64: thumb,
+          kind,
+          branch_id: branchId
+        })
+      );
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
 export function DeviceEditorModal({
   open,
   onClose,
@@ -92,8 +186,10 @@ export function DeviceEditorModal({
   const [model, setModel] = useState('');
   const [serial, setSerial] = useState('');
   const [location, setLocation] = useState('');
-  const [photos, setPhotos] = useState<(string | null)[]>(EMPTY_PHOTOS);
+  const [photos, setPhotos] = useState<(PhotoValue | null)[]>(EMPTY_PHOTOS);
   const [situational, setSituational] = useState<SituationalPhoto[]>([]);
+  const [uploadingSlots, setUploadingSlots] = useState<Record<number, number>>({}); // slot → %
+  const [situProgress, setSituProgress] = useState<{done: number; total: number; pct: number} | null>(null);
   const [needs, setNeeds] = useState<TodoItem[]>([]);
   const [prohibitions, setProhibitions] = useState<TodoItem[]>([]);
   const [comments, setComments] = useState<CommentItem[]>([]);
@@ -125,7 +221,7 @@ export function DeviceEditorModal({
     setSerial(i?.serial ?? '');
     setLocation(i?.location ?? '');
     if (i?.photos && i.photos.length) {
-      const next: (string | null)[] = [null, null, null, null, null];
+      const next: (PhotoValue | null)[] = [null, null, null, null, null];
       for (let k = 0; k < 5; k++) next[k] = i.photos[k] ?? null;
       setPhotos(next);
     } else {
@@ -149,7 +245,9 @@ export function DeviceEditorModal({
 
   if (!open) return null;
 
-  const filledPhotos = photos.filter(Boolean) as string[];
+  const filledPhotos = photos
+    .map((p) => photoFullSrc(p))
+    .filter((v): v is string => !!v);
   const photoCount = filledPhotos.length;
 
   function pickDevicePhoto(slot: number) {
@@ -164,15 +262,46 @@ export function DeviceEditorModal({
     const file = e.target.files?.[0];
     const slot = pendingDeviceSlot.current;
     if (!file || slot === null) return;
+    setUploadingSlots((s) => ({...s, [slot]: 0}));
     try {
-      const dataUrl = await fileToDataUrl(file, 1024, 0.82);
+      const pair = await fileToResizedPair(file, {
+        fullDim: 1024,
+        fullQ: 0.82,
+        thumbDim: 256,
+        thumbQ: 0.7
+      });
+      // Optimistic preview while uploading — shows the local full as thumb so the user sees something instantly
       setPhotos((p) => {
         const n = [...p];
-        n[slot] = dataUrl;
+        n[slot] = pair.thumb;
         return n;
       });
+      const ref = await uploadToStorage(pair.full, pair.thumb, 'device', undefined, (pct) => {
+        setUploadingSlots((s) => ({...s, [slot]: pct}));
+      });
+      if (ref) {
+        setPhotos((p) => {
+          const n = [...p];
+          n[slot] = ref;
+          return n;
+        });
+      } else {
+        // Upload failed: keep the data URL as fallback so the user doesn't lose the photo.
+        // It will get migrated by the backfill script on next sweep.
+        setPhotos((p) => {
+          const n = [...p];
+          n[slot] = pair.full;
+          return n;
+        });
+      }
     } catch (err) {
-      console.error('device photo read failed', err);
+      console.error('device photo failed', err);
+    } finally {
+      setUploadingSlots((s) => {
+        const n = {...s};
+        delete n[slot];
+        return n;
+      });
     }
   }
 
@@ -208,16 +337,27 @@ export function DeviceEditorModal({
     if (!files.length) return;
     const remaining = SITU_MAX - situational.length;
     const toProcess = files.slice(0, remaining);
-    const added: SituationalPhoto[] = [];
-    for (const f of toProcess) {
+    setSituProgress({done: 0, total: toProcess.length, pct: 0});
+    for (let i = 0; i < toProcess.length; i++) {
+      const f = toProcess[i];
       try {
-        const src = await fileToDataUrl(f, 900, 0.75);
-        added.push({src, caption: ''});
+        const pair = await fileToResizedPair(f, {
+          fullDim: 900,
+          fullQ: 0.75,
+          thumbDim: 256,
+          thumbQ: 0.7
+        });
+        const ref = await uploadToStorage(pair.full, pair.thumb, 'situational', undefined, (pct) => {
+          setSituProgress({done: i, total: toProcess.length, pct});
+        });
+        const src: PhotoValue = ref ?? pair.full;
+        setSituational((s) => [...s, {src, caption: ''}]);
       } catch (err) {
         console.error('situ photo failed', err);
       }
+      setSituProgress({done: i + 1, total: toProcess.length, pct: 100});
     }
-    if (added.length) setSituational((s) => [...s, ...added]);
+    setSituProgress(null);
   }
 
   function updateSituCaption(idx: number, caption: string) {
@@ -438,20 +578,25 @@ export function DeviceEditorModal({
                 <div className="grid grid-cols-5 gap-1.5">
                   {[0, 1, 2, 3, 4].map((slot) => {
                     const p = photos[slot];
+                    const thumb = photoThumbSrc(p);
+                    const full = photoFullSrc(p);
+                    const uploadPct = uploadingSlots[slot];
                     return (
                       <div key={slot} className="relative aspect-square">
-                        {p ? (
+                        {thumb ? (
                           <button
                             type="button"
-                            onClick={() => handlePhotoTap(slot, p)}
-                            onDoubleClick={() => setLightbox({src: p, slot})}
+                            onClick={() => full && handlePhotoTap(slot, full)}
+                            onDoubleClick={() => full && setLightbox({src: full, slot})}
                             className="h-full w-full overflow-hidden rounded-xl ring-2 ring-[#00AA8D] active:scale-95"
                           >
                             <img
-                              src={p}
+                              src={thumb}
                               alt={PHOTO_LABELS[slot]}
                               className="h-full w-full object-cover"
                               draggable={false}
+                              loading="lazy"
+                              decoding="async"
                             />
                           </button>
                         ) : (
@@ -464,6 +609,23 @@ export function DeviceEditorModal({
                               {PHOTO_LABELS[slot]}
                             </span>
                           </button>
+                        )}
+                        {uploadPct !== undefined && (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-xl bg-slate-900/55 text-white backdrop-blur-[1px]">
+                            <span
+                              className="inline-block h-6 w-6 animate-spin rounded-full border-[3px] border-white/30 border-t-white"
+                              aria-hidden
+                            />
+                            <span className="text-[10px] font-bold leading-none">
+                              {uploadPct}%
+                            </span>
+                            <div className="mt-0.5 h-1 w-4/5 overflow-hidden rounded bg-white/25">
+                              <div
+                                className="h-full bg-white transition-[width] duration-150"
+                                style={{width: `${uploadPct}%`}}
+                              />
+                            </div>
+                          </div>
                         )}
                       </div>
                     );
@@ -575,11 +737,25 @@ export function DeviceEditorModal({
 
               <button
                 onClick={pickSituPhoto}
-                disabled={situational.length >= SITU_MAX}
+                disabled={situational.length >= SITU_MAX || !!situProgress}
                 className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#00AA8D] px-4 py-3.5 text-base font-bold text-white shadow disabled:opacity-40 active:scale-95"
               >
-                📷 დამატება
+                {situProgress
+                  ? `⬆ ${situProgress.done}/${situProgress.total} · ${situProgress.pct}%`
+                  : '📷 დამატება'}
               </button>
+              {situProgress && (
+                <div className="h-1 w-full overflow-hidden rounded bg-slate-200">
+                  <div
+                    className="h-full bg-[#00AA8D] transition-[width] duration-150"
+                    style={{
+                      width: `${Math.round(
+                        ((situProgress.done * 100 + situProgress.pct) / situProgress.total) || 0
+                      )}%`
+                    }}
+                  />
+                </div>
+              )}
 
               {situational.length === 0 ? (
                 <div className="py-8 text-center text-xs text-slate-400">
@@ -593,9 +769,11 @@ export function DeviceEditorModal({
                       className="flex gap-2 rounded-xl bg-white p-2 shadow-sm ring-1 ring-slate-200"
                     >
                       <img
-                        src={s.src}
+                        src={photoThumbSrc(s.src) || ''}
                         alt=""
                         className="h-24 w-24 shrink-0 rounded-lg object-cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                       <div className="flex min-w-0 flex-1 flex-col gap-2">
                         <input

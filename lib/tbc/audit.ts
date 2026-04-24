@@ -11,6 +11,94 @@ export type AuditInput = {
   metadata?: Record<string, unknown>;
 };
 
+export const TBC_ARCHIVE_RETENTION_DAYS = 360;
+
+export type TbcArchivableRow = Record<string, unknown> & {
+  archived_at?: string | null;
+};
+
+export type TbcDeviceRow = Record<string, unknown> & {
+  archived_at?: string | null;
+  archived_by?: string | null;
+  archive_expires_at?: string | null;
+  archive_reason?: string | null;
+};
+
+export function getTbcArchiveExpiry(archivedAt = new Date()): string {
+  const next = new Date(archivedAt);
+  next.setDate(next.getDate() + TBC_ARCHIVE_RETENTION_DAYS);
+  return next.toISOString();
+}
+
+export function isArchivedRow(row: TbcArchivableRow | null | undefined): boolean {
+  return typeof row?.archived_at === 'string' && row.archived_at.length > 0;
+}
+
+export function listActiveDevices(devices: unknown[] | null | undefined): TbcDeviceRow[] {
+  return Array.isArray(devices)
+    ? devices.filter((device): device is TbcDeviceRow => {
+        return Boolean(device && typeof device === 'object' && !isArchivedRow(device as TbcArchivableRow));
+      })
+    : [];
+}
+
+export function listArchivedDevices(devices: unknown[] | null | undefined): TbcDeviceRow[] {
+  return Array.isArray(devices)
+    ? devices.filter((device): device is TbcDeviceRow => {
+        return Boolean(device && typeof device === 'object' && isArchivedRow(device as TbcArchivableRow));
+      })
+    : [];
+}
+
+export function findActiveDeviceEntry(
+  devices: unknown[] | null | undefined,
+  activeIndex: number
+): {rawIndex: number; device: TbcDeviceRow} | null {
+  if (!Array.isArray(devices) || activeIndex < 0) return null;
+  let seen = -1;
+  for (let rawIndex = 0; rawIndex < devices.length; rawIndex += 1) {
+    const candidate = devices[rawIndex];
+    if (!candidate || typeof candidate !== 'object') continue;
+    if (isArchivedRow(candidate as TbcArchivableRow)) continue;
+    seen += 1;
+    if (seen === activeIndex) {
+      return {rawIndex, device: candidate as TbcDeviceRow};
+    }
+  }
+  return null;
+}
+
+export function archiveDevice(
+  device: TbcDeviceRow,
+  actor: string,
+  reason: string,
+  archivedAt = new Date().toISOString()
+): TbcDeviceRow {
+  return {
+    ...device,
+    archived_at: archivedAt,
+    archived_by: actor,
+    archive_expires_at: getTbcArchiveExpiry(new Date(archivedAt)),
+    archive_reason: reason
+  };
+}
+
+export function mergeBranchDevices(
+  incomingDevices: unknown[] | null | undefined,
+  existingDevices: unknown[] | null | undefined
+): TbcDeviceRow[] {
+  const activeIncoming = listActiveDevices(incomingDevices);
+  const archivedMerged = [...listArchivedDevices(existingDevices), ...listArchivedDevices(incomingDevices)];
+  const archivedSeen = new Set<string>();
+  const dedupedArchived = archivedMerged.filter((device) => {
+    const key = JSON.stringify(device);
+    if (archivedSeen.has(key)) return false;
+    archivedSeen.add(key);
+    return true;
+  });
+  return [...activeIncoming, ...dedupedArchived];
+}
+
 export async function writeAudit(input: AuditInput) {
   try {
     const h = await headers();

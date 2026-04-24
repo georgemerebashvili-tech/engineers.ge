@@ -8,6 +8,10 @@
 
 ---
 
+## 🟡 TBC archive safety — follow-up
+
+- [x] 2026-04-23 — TBC admin-ში დავამატოთ archive/restore workspace, რომ `users / companies / comments / devices / estimate` archived ჩანაწერები გამოჩნდეს, ფილტრდებოდეს და საჭიროების შემთხვევაში დაბრუნდეს active სიაში. (done 2026-04-24)
+
 ## 🟢 audit.sazeo workspace — done (2026-04-22)
 
 Scaffold: `/audit.sazeo` live. Left sidebar → 3 groups (Blueprints / Reports / Decisions). Auth-gated (`/admin` redirect). Content rendered via iframe.

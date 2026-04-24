@@ -48,9 +48,9 @@ export async function POST(req: Request) {
 
   const model = await resolveAiModel();
 
-  // Parse each data URL into {mediaType, data} for Claude API
-  const images = parsed.data.photos
-    .map(parseDataUrl)
+  // Resolve every photo to {mediaType, data}. Accepts data URLs (legacy) or http(s) URLs (Supabase Storage).
+  const resolved = await Promise.all(parsed.data.photos.map(resolvePhotoSource));
+  const images = resolved
     .filter((x): x is {mediaType: string; data: string} => x !== null)
     .slice(0, 5);
 
@@ -148,6 +148,25 @@ function parseDataUrl(
   const m = s.match(/^data:(image\/[a-z+]+);base64,(.+)$/i);
   if (!m) return null;
   return {mediaType: m[1], data: m[2]};
+}
+
+async function resolvePhotoSource(
+  s: string
+): Promise<{mediaType: string; data: string} | null> {
+  if (!s) return null;
+  if (s.startsWith('data:')) return parseDataUrl(s);
+  if (!/^https?:\/\//i.test(s)) return null;
+  try {
+    const r = await fetch(s, {cache: 'no-store'});
+    if (!r.ok) return null;
+    const mediaType = r.headers.get('content-type')?.split(';')[0].trim() || 'image/jpeg';
+    if (!mediaType.startsWith('image/')) return null;
+    const buf = Buffer.from(await r.arrayBuffer());
+    return {mediaType, data: buf.toString('base64')};
+  } catch (e) {
+    console.warn('[tbc vision] fetch photo failed', e);
+    return null;
+  }
 }
 
 function parseVisionJson(text: string): VisionResult | null {

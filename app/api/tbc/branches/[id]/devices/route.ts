@@ -2,12 +2,59 @@ import {NextResponse} from 'next/server';
 import {z} from 'zod';
 import {canAccessTbcBranch, getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
-import {writeAudit} from '@/lib/tbc/audit';
+import {listArchivedDevices, writeAudit} from '@/lib/tbc/audit';
+import {PhotoValueSchema} from '@/lib/tbc/photo-schema';
+
+export async function GET(
+  req: Request,
+  {params}: {params: Promise<{id: string}>}
+) {
+  const session = await getTbcSession();
+  if (!session) return NextResponse.json({error: 'unauthorized'}, {status: 401});
+
+  const {id} = await params;
+  const branchId = Number(id);
+  if (!Number.isFinite(branchId))
+    return NextResponse.json({error: 'bad_request'}, {status: 400});
+
+  const db = supabaseAdmin();
+  if (!(await canAccessTbcBranch(db, session, branchId)))
+    return NextResponse.json({error: 'forbidden'}, {status: 403});
+
+  const branch = await db
+    .from('tbc_branches')
+    .select('devices')
+    .eq('id', branchId)
+    .maybeSingle<{devices: unknown[]}>();
+
+  if (!branch.data)
+    return NextResponse.json({error: 'not_found'}, {status: 404});
+
+  const allDevices = Array.isArray(branch.data.devices) ? branch.data.devices : [];
+  const url = new URL(req.url);
+  const mode = url.searchParams.get('mode'); // 'active' | 'archived' | null=archived (legacy)
+
+  if (mode === 'active') {
+    const active = allDevices.filter(
+      (d) =>
+        !!d &&
+        typeof d === 'object' &&
+        !(typeof (d as {archived_at?: string}).archived_at === 'string' && ((d as {archived_at?: string}).archived_at as string).length > 0)
+    );
+    return NextResponse.json({devices: active, count: active.length});
+  }
+
+  type DeviceRow = Record<string, unknown> & {_raw_idx: number};
+  const archived: DeviceRow[] = allDevices
+    .map((d, rawIdx): DeviceRow => ({...(d as Record<string, unknown>), _raw_idx: rawIdx}))
+    .filter((d) => typeof (d as Record<string,unknown>).archived_at === 'string' && ((d as Record<string,unknown>).archived_at as string).length > 0);
+  return NextResponse.json({devices: archived, count: archived.length});
+}
 
 export const dynamic = 'force-dynamic';
 
 const SituationalPhoto = z.object({
-  src: z.string().min(1),
+  src: PhotoValueSchema,
   caption: z.string().max(500).optional().default('')
 });
 
@@ -34,7 +81,7 @@ const DeviceSchema = z.object({
   specs: z.string().max(2000).nullable().optional(),
   unplanned: z.boolean().default(false),
   photos: z
-    .array(z.string().nullable())
+    .array(PhotoValueSchema.nullable())
     .max(5)
     .default([null, null, null, null, null]),
   photo_meta: z

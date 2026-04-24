@@ -2,7 +2,9 @@ import {NextResponse} from 'next/server';
 import {z} from 'zod';
 import {canAccessTbcBranch, getTbcSession} from '@/lib/tbc/auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
-import {writeAudit} from '@/lib/tbc/audit';
+import {findActiveDeviceEntry, getTbcArchiveExpiry, writeAudit} from '@/lib/tbc/audit';
+import {PhotoValueSchema} from '@/lib/tbc/photo-schema';
+import {photoFullSrc} from '@/lib/tbc/photo-storage';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,13 +16,16 @@ const PhotoMetaItem = z
   .nullable();
 
 const PatchSchema = z.object({
-  photos: z.array(z.string().nullable()).length(5),
+  photos: z.array(PhotoValueSchema.nullable()).length(5),
   photo_meta: z.array(PhotoMetaItem).length(5).optional()
 });
 
+type PhotoSlot = string | {url: string; thumb_url: string} | null;
+
 type DeviceRow = Record<string, unknown> & {
-  photos?: (string | null)[];
+  photos?: PhotoSlot[];
   photo_meta?: (null | {by?: string; at?: string})[];
+  archived_photos?: Array<Record<string, unknown>>;
 };
 
 export async function PATCH(
@@ -61,10 +66,11 @@ export async function PATCH(
   const devices = Array.isArray(branch.data.devices)
     ? branch.data.devices.slice()
     : [];
-  if (deviceIdx >= devices.length)
+  const target = findActiveDeviceEntry(devices, deviceIdx);
+  if (!target)
     return NextResponse.json({error: 'not_found'}, {status: 404});
 
-  const device = {...devices[deviceIdx]} as DeviceRow;
+  const device = {...target.device} as DeviceRow;
   const prevPhotos =
     Array.isArray(device.photos) && device.photos.length === 5
       ? device.photos
@@ -73,22 +79,39 @@ export async function PATCH(
     Array.isArray(device.photo_meta) && device.photo_meta.length === 5
       ? device.photo_meta
       : [null, null, null, null, null];
+  const archivedPhotos = Array.isArray(device.archived_photos)
+    ? [...device.archived_photos]
+    : [];
 
   const nextPhotos = parsed.data.photos;
   const now = new Date().toISOString();
   const nextMeta = nextPhotos.map((p, i) => {
     if (!p) return null;
-    if (p === prevPhotos[i]) return prevMeta[i] ?? null;
+    if (photoFullSrc(p) === photoFullSrc(prevPhotos[i] as unknown)) return prevMeta[i] ?? null;
     const incoming = parsed.data.photo_meta?.[i];
     return {
       by: incoming?.by || session.username,
       at: incoming?.at || now
     };
   });
+  nextPhotos.forEach((photo, i) => {
+    if (!photo && prevPhotos[i]) {
+      archivedPhotos.push({
+        slot: i,
+        src: prevPhotos[i],
+        meta: prevMeta[i] ?? null,
+        archived_at: now,
+        archived_by: session.username,
+        archive_expires_at: getTbcArchiveExpiry(new Date(now)),
+        archive_reason: 'manual_photo_remove'
+      });
+    }
+  });
 
   device.photos = nextPhotos;
   device.photo_meta = nextMeta;
-  devices[deviceIdx] = device;
+  if (archivedPhotos.length > 0) device.archived_photos = archivedPhotos;
+  devices[target.rawIndex] = device;
 
   const upd = await db
     .from('tbc_branches')
