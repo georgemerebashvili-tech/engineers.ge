@@ -185,19 +185,34 @@ Create [scripts/migrate-tbc-photos-to-storage.mjs](../../scripts/migrate-tbc-pho
 
 ## Acceptance criteria
 
-- [ ] Migration 0055 applied prod; bucket exists; backup table exists.
-- [ ] Upload route returns `{url, thumb_url}`; both URLs 200.
-- [ ] New photo in mobile modal → stored as `{url, thumb_url}`; `/api/tbc/branches` payload for that device contains object not data URL.
-- [ ] Desktop sheet: same.
-- [ ] Existing legacy devices still render (string data URLs accepted by rendering helpers).
-- [ ] Vision AI (`analyze-device`, `research-device`) works on: (a) a legacy device with data URL, (b) a migrated device with Storage URL.
-- [ ] Archival: archiving a device preserves all photos; restore brings them back intact. Removing a single photo → it lands in `archived_photos` with the same shape (string or object) as it was active.
-- [ ] XLSX/ZIP export: photos actually get into the ZIP (both legacy + new paths).
-- [ ] Upload progress bar visible during slot fill (with %).
-- [ ] Global fetch bar at top of `/tbc/app`.
-- [ ] Backfill script runs on prod (after snapshot); `select count(*) from tbc_branches_photos_backup` > 0; spot-check 3 branches — `devices->0->photos->0` is now an object.
-- [ ] `tsc --noEmit` clean.
+- [x] Migration 0055 applied prod; bucket exists; backup table exists. *(2026-04-24)*
+- [x] Upload route returns `{url, thumb_url}`; both URLs 200.
+- [x] New photo in mobile modal → stored as `{url, thumb_url}`; `/api/tbc/branches` payload for that device contains object not data URL.
+- [x] Desktop sheet: same.
+- [x] Existing legacy devices still render (string data URLs accepted by rendering helpers).
+- [x] Vision AI (`analyze-device`, `research-device`) works on: (a) a legacy device with data URL, (b) a migrated device with Storage URL.
+- [x] Archival: archiving a device preserves all photos; restore brings them back intact. Removing a single photo → it lands in `archived_photos` with the same shape (string or object) as it was active.
+- [x] XLSX/ZIP export: photos actually get into the ZIP (both legacy + new paths).
+- [x] Upload progress bar visible during slot fill (with %).
+- [x] Global fetch bar at top of `/tbc/app`.
+- [x] Backfill script runs on prod (after snapshot); `select count(*) from tbc_branches_photos_backup` > 0; spot-check 3 branches — `devices->0->photos->0` is now an object. *(209 photos migrated 2026-04-24)*
+- [x] `tsc --noEmit` clean.
 - [ ] Deploy preview + smoke test + promote to prod.
+
+## 2026-04-24 performance follow-up
+
+Beyond the base task above, added two optimizations to keep `/tbc/` mobile fast
+even when branches grow:
+
+- `?lite=1` mode on `/api/tbc/branches` — drops `devices` entirely from the
+  response. Mobile uses this for the initial branch list.
+- `?mode=active` on `/api/tbc/branches/[id]/devices` — returns only active
+  devices of a single branch. Mobile calls this when a branch is picked.
+- Mobile list thumbnails use `loading="lazy" decoding="async"` so browser
+  fetches thumbs on-demand.
+- Slot upload progress got a full-overlay spinner + % (previously a thin bar
+  at the bottom was easy to miss on slow mobile networks).
+- Backfill migrated 209 legacy base64 photos to Storage `{url, thumb_url}`.
 
 ## Non-goals
 
