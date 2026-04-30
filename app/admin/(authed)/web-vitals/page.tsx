@@ -133,9 +133,24 @@ export default async function AdminWebVitalsPage() {
                         return (
                           <tr key={i} className="border-t border-bdr hover:bg-sur-2">
                             <td className="px-3 py-2 font-mono text-[11px] text-navy max-w-[30ch] truncate" title={s.pathname}>
-                              <Link href={s.pathname} target="_blank" className="hover:text-blue hover:underline">
-                                {s.pathname}
-                              </Link>
+                              <div className="flex items-center gap-1.5">
+                                <Link
+                                  href={`/admin/stats?path=${encodeURIComponent(s.pathname)}`}
+                                  className="truncate hover:text-blue hover:underline"
+                                  title="ნახე trafic-ი ამ გვერდზე"
+                                >
+                                  {s.pathname}
+                                </Link>
+                                <Link
+                                  href={s.pathname}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="shrink-0 text-[10px] text-text-3 hover:text-blue"
+                                  title="გახსენი გვერდი"
+                                >
+                                  ↗
+                                </Link>
+                              </div>
                             </td>
                             <td className="px-3 py-2">
                               <span className="inline-flex h-5 items-center rounded-full border border-bdr bg-sur-2 px-2 font-mono text-[10px]">

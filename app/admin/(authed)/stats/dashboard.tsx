@@ -1,6 +1,6 @@
 'use client';
 
-import {useMemo, useState, useSyncExternalStore} from 'react';
+import {Fragment, useMemo, useState, useSyncExternalStore} from 'react';
 import {
   Area,
   AreaChart,
@@ -103,7 +103,7 @@ export function StatsDashboard({rows}: {rows: PageViewRow[]}) {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card title="ტოპ გვერდები">
-          <TopPagesTable rows={topPages} />
+          <TopPagesTable rows={topPages} allRows={filtered} />
         </Card>
 
         <Card title="ტრაფიკის წყარო">
@@ -205,7 +205,14 @@ function LiveBadge({count}: {count: number}) {
   );
 }
 
-function TopPagesTable({rows}: {rows: {path: string; views: number; uniques: number; avgDurationMs: number}[]}) {
+function TopPagesTable({
+  rows,
+  allRows,
+}: {
+  rows: {path: string; views: number; uniques: number; avgDurationMs: number}[];
+  allRows: PageViewRow[];
+}) {
+  const [expanded, setExpanded] = useState<string | null>(null);
   if (rows.length === 0) return <EmptyState />;
   return (
     <div className="overflow-hidden rounded-lg border">
@@ -216,19 +223,126 @@ function TopPagesTable({rows}: {rows: {path: string; views: number; uniques: num
             <th className="px-3 py-2 text-right font-medium">Views</th>
             <th className="px-3 py-2 text-right font-medium">Uniq</th>
             <th className="px-3 py-2 text-right font-medium">Avg</th>
+            <th className="w-8 px-2 py-2"></th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((r) => (
-            <tr key={r.path} className="border-t">
-              <td className="max-w-[240px] truncate px-3 py-2 font-mono text-xs">{r.path}</td>
-              <td className="px-3 py-2 text-right tabular-nums">{r.views.toLocaleString()}</td>
-              <td className="px-3 py-2 text-right tabular-nums">{r.uniques.toLocaleString()}</td>
-              <td className="px-3 py-2 text-right tabular-nums text-fg-muted">{formatDuration(r.avgDurationMs)}</td>
-            </tr>
-          ))}
+          {rows.map((r) => {
+            const isOpen = expanded === r.path;
+            return (
+              <Fragment key={r.path}>
+                <tr
+                  className="cursor-pointer border-t hover:bg-surface-alt/60"
+                  onClick={() => setExpanded(isOpen ? null : r.path)}
+                >
+                  <td className="max-w-[240px] truncate px-3 py-2 font-mono text-xs">{r.path}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{r.views.toLocaleString()}</td>
+                  <td className="px-3 py-2 text-right tabular-nums">{r.uniques.toLocaleString()}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-fg-muted">{formatDuration(r.avgDurationMs)}</td>
+                  <td className="px-2 py-2 text-center text-fg-muted">{isOpen ? '−' : '+'}</td>
+                </tr>
+                {isOpen && (
+                  <tr className="bg-surface-alt/30">
+                    <td colSpan={5} className="px-3 py-3">
+                      <PageDrillDown path={r.path} rows={allRows.filter((row) => row.path === r.path)} />
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            );
+          })}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function PageDrillDown({path, rows}: {path: string; rows: PageViewRow[]}) {
+  const countries = useMemo(() => computeTop(rows, 'country', 5), [rows]);
+  const devices = useMemo(() => computeTop(rows, 'device', 4), [rows]);
+  const browsers = useMemo(() => computeTop(rows, 'browser', 4), [rows]);
+  const sources = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of rows) {
+      const s = r.utm_source ? `utm:${r.utm_source}` : r.referrer_domain ?? 'Direct';
+      m.set(s, (m.get(s) ?? 0) + 1);
+    }
+    return Array.from(m.entries()).map(([label, value]) => ({label, value})).sort((a, b) => b.value - a.value).slice(0, 5);
+  }, [rows]);
+
+  const durations = rows.map((r) => r.duration_ms).filter((d): d is number => typeof d === 'number' && d > 0).sort((a, b) => a - b);
+  const median = durations.length ? durations[Math.floor(durations.length / 2)] : 0;
+  const p90 = durations.length ? durations[Math.floor(durations.length * 0.9)] : 0;
+  const firstSeen = rows.length ? rows[rows.length - 1].entered_at : null;
+  const lastSeen = rows.length ? rows[0].entered_at : null;
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <MiniStat label="Median time" value={formatDuration(median)} />
+        <MiniStat label="P90 time" value={formatDuration(p90)} />
+        <MiniStat label="First seen" value={firstSeen ? new Date(firstSeen).toLocaleDateString('ka-GE') : '—'} />
+        <MiniStat label="Last seen" value={lastSeen ? new Date(lastSeen).toLocaleDateString('ka-GE') : '—'} />
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <DrillBlock title="ქვეყნები" data={countries} />
+        <DrillBlock title="მოწყობილობა" data={devices} />
+        <DrillBlock title="ბრაუზერი" data={browsers} />
+        <DrillBlock title="წყარო" data={sources} />
+      </div>
+      <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
+        <a
+          href={`/admin/web-vitals?path=${encodeURIComponent(path)}`}
+          className="rounded border bg-white px-2 py-1 hover:bg-surface-alt"
+        >
+          📊 Web Vitals →
+        </a>
+        <a
+          href={path}
+          target="_blank"
+          rel="noreferrer"
+          className="rounded border bg-white px-2 py-1 hover:bg-surface-alt"
+        >
+          ↗ ნახე გვერდი
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function MiniStat({label, value}: {label: string; value: string}) {
+  return (
+    <div className="rounded border bg-white p-2">
+      <div className="text-[10px] uppercase tracking-wider text-fg-muted">{label}</div>
+      <div className="mt-1 text-sm font-semibold tabular-nums">{value}</div>
+    </div>
+  );
+}
+
+function DrillBlock({title, data}: {title: string; data: {label: string; value: number}[]}) {
+  if (data.length === 0) {
+    return (
+      <div className="rounded border bg-white p-2">
+        <div className="text-[10px] uppercase tracking-wider text-fg-muted">{title}</div>
+        <div className="mt-1 text-xs text-fg-muted">—</div>
+      </div>
+    );
+  }
+  const max = data[0]?.value || 1;
+  return (
+    <div className="rounded border bg-white p-2">
+      <div className="mb-1.5 text-[10px] uppercase tracking-wider text-fg-muted">{title}</div>
+      <ul className="space-y-1">
+        {data.map((d) => (
+          <li key={d.label} className="flex items-center gap-2 text-[11px]">
+            <span className="w-16 shrink-0 truncate">{d.label}</span>
+            <div className="relative h-1.5 flex-1 overflow-hidden rounded-full bg-surface-alt">
+              <div className="absolute inset-y-0 left-0 rounded-full bg-blue-500" style={{width: `${(d.value / max) * 100}%`}} />
+            </div>
+            <span className="w-6 shrink-0 text-right tabular-nums text-fg-muted">{d.value}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

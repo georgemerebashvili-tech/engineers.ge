@@ -87,3 +87,29 @@ export async function getNotFoundStats(sinceDays = 30): Promise<{
     return {total: 0, top_paths: [], top_referrers: [], recent: []};
   }
 }
+
+// For each broken path, fetch how many real page_views it had in the last 30 days.
+// Non-zero traffic = the URL used to work, then broke (high priority for redirect).
+// Zero traffic = the URL never existed (low priority — probably a bad inbound link).
+export async function getPathTrafficCounts(paths: string[]): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (paths.length === 0) return out;
+  for (const p of paths) out.set(p, 0);
+  try {
+    const since = new Date(Date.now() - 30 * 86400_000).toISOString();
+    const {data, error} = await supabaseAdmin()
+      .from('page_views')
+      .select('path')
+      .in('path', paths)
+      .gte('entered_at', since)
+      .eq('bot', false)
+      .limit(5000);
+    if (error) throw error;
+    for (const row of (data ?? []) as {path: string}[]) {
+      out.set(row.path, (out.get(row.path) ?? 0) + 1);
+    }
+  } catch {
+    // table not available — leave zeros
+  }
+  return out;
+}

@@ -1,8 +1,8 @@
 import {AdminPageHeader, AdminSection} from '@/components/admin-page-header';
 import {IssueTabs} from '@/components/admin/issues/tabs-nav';
-import {getNotFoundStats} from '@/lib/not-found-events';
+import {getNotFoundStats, getPathTrafficCounts} from '@/lib/not-found-events';
 import Link from 'next/link';
-import {ExternalLink, FileQuestion, TrendingDown, Globe2, ArrowRight} from 'lucide-react';
+import {ExternalLink, FileQuestion, TrendingDown, Globe2, ArrowRight, Activity} from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 export const metadata = {title: '404 tracking · Admin · engineers.ge'};
@@ -20,6 +20,7 @@ function relativeTime(iso: string): string {
 
 export default async function AdminNotFoundsPage() {
   const stats = await getNotFoundStats(30);
+  const trafficCounts = await getPathTrafficCounts(stats.top_paths.map((p) => p.pathname));
 
   return (
     <>
@@ -78,12 +79,16 @@ export default async function AdminNotFoundsPage() {
                     <tr>
                       <th className="px-3 py-2 text-left">pathname</th>
                       <th className="px-3 py-2 text-right">hits</th>
+                      <th className="px-3 py-2 text-right" title="რეალური ვიზიტები ბოლო 30 დღეში">traffic</th>
                       <th className="px-3 py-2 text-left">latest</th>
                       <th className="px-3 py-2"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {stats.top_paths.map((p) => (
+                    {stats.top_paths.map((p) => {
+                      const traffic = trafficCounts.get(p.pathname) ?? 0;
+                      const hadTraffic = traffic > 0;
+                      return (
                       <tr key={p.pathname} className="border-t border-bdr hover:bg-sur-2">
                         <td className="px-3 py-2 font-mono text-[11px] text-navy truncate max-w-[40ch]" title={p.pathname}>
                           {p.pathname}
@@ -92,6 +97,20 @@ export default async function AdminNotFoundsPage() {
                           <span className="inline-flex h-5 items-center rounded-full border border-red-200 bg-red-50 px-2 font-mono text-[10px] font-bold text-red-700">
                             ×{p.count}
                           </span>
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          {hadTraffic ? (
+                            <Link
+                              href={`/admin/stats?path=${encodeURIComponent(p.pathname)}`}
+                              className="inline-flex h-5 items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 font-mono text-[10px] font-bold text-amber-800 hover:bg-amber-100"
+                              title="გვერდი მუშაობდა — გადასაყვანი მაღალი პრიორიტეტია"
+                            >
+                              <Activity size={9} />
+                              {traffic}
+                            </Link>
+                          ) : (
+                            <span className="font-mono text-[10px] text-text-3" title="ეს URL არასოდეს მუშაობდა">—</span>
+                          )}
                         </td>
                         <td className="px-3 py-2 font-mono text-[10px] text-text-3">
                           {relativeTime(p.latest_at)}
@@ -114,7 +133,8 @@ export default async function AdminNotFoundsPage() {
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
