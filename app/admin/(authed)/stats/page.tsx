@@ -2,6 +2,7 @@ import {supabaseAdmin} from '@/lib/supabase/admin';
 import {getCalcStats} from '@/lib/calc-stats';
 import {StatsDashboard} from './dashboard';
 import {CalcStatsPanel} from './calc-stats-panel';
+import {LivePanel} from './live-panel';
 import type {PageViewRow} from './types';
 import {AdminPageHeader, AdminSection} from '@/components/admin-page-header';
 
@@ -67,7 +68,12 @@ export default async function StatsPage() {
       />
       <AdminSection>
         <div className="space-y-6">
-          <CalcStatsPanel rows={calcStats} />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+            <div className="lg:col-span-3">
+              <CalcStatsPanel rows={calcStats} />
+            </div>
+            <LivePanel />
+          </div>
           <StatsDashboard rows={rows} />
         </div>
       </AdminSection>

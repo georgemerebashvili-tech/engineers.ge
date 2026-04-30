@@ -389,6 +389,8 @@ export type QuickCounts = {
   features_test: number;
   features_hidden: number;
   errors_open: number;
+  today_views: number;
+  today_uniques: number;
 };
 
 export async function getQuickCounts(): Promise<QuickCounts> {
@@ -396,11 +398,16 @@ export async function getQuickCounts(): Promise<QuickCounts> {
     bug_reports_open: 0,
     features_test: 0,
     features_hidden: 0,
-    errors_open: 0
+    errors_open: 0,
+    today_views: 0,
+    today_uniques: 0,
   };
   try {
     const client = supabaseAdmin();
-    const [bugs, flags, errors] = await Promise.all([
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const [bugs, flags, errors, todayViews] = await Promise.all([
       client
         .from('bug_reports')
         .select('id', {count: 'exact', head: true})
@@ -409,7 +416,12 @@ export async function getQuickCounts(): Promise<QuickCounts> {
       client
         .from('error_events')
         .select('id', {count: 'exact', head: true})
-        .eq('resolved', false)
+        .eq('resolved', false),
+      client
+        .from('page_views')
+        .select('visitor_id')
+        .gte('entered_at', todayStart.toISOString())
+        .eq('bot', false),
     ]);
     if (!bugs.error) out.bug_reports_open = bugs.count ?? 0;
     if (!flags.error) {
@@ -419,6 +431,10 @@ export async function getQuickCounts(): Promise<QuickCounts> {
       }
     }
     if (!errors.error) out.errors_open = errors.count ?? 0;
+    if (!todayViews.error && todayViews.data) {
+      out.today_views = todayViews.data.length;
+      out.today_uniques = new Set(todayViews.data.map((r: {visitor_id: string}) => r.visitor_id)).size;
+    }
   } catch {
     // Tables may not exist yet — return zeros.
   }

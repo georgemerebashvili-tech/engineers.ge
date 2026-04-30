@@ -3,6 +3,11 @@
 import {usePathname} from 'next/navigation';
 import {useEffect, useRef} from 'react';
 
+function getVisitorId(): string | null {
+  const m = document.cookie.match(/(?:^|;\s*)eng_vid=([^;]+)/);
+  return m ? m[1] : null;
+}
+
 export function Tracker() {
   const pathname = usePathname();
   const currentId = useRef<number | null>(null);
@@ -44,6 +49,24 @@ export function Tracker() {
       .catch(() => {});
 
     return () => controller.abort();
+  }, [pathname]);
+
+  // Heartbeat: keep visitor_sessions table up-to-date every 30s
+  useEffect(() => {
+    if (!pathname) return;
+    const send = () => {
+      const vid = getVisitorId();
+      if (!vid) return;
+      fetch('/api/heartbeat', {
+        method: 'POST',
+        headers: {'content-type': 'application/json'},
+        body: JSON.stringify({visitor_id: vid, path: pathname}),
+        keepalive: true
+      }).catch(() => {});
+    };
+    send(); // immediate on navigation
+    const id = setInterval(send, 30_000);
+    return () => clearInterval(id);
   }, [pathname]);
 
   useEffect(() => {

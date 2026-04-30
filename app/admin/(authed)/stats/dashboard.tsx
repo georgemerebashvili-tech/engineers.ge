@@ -49,6 +49,12 @@ export function StatsDashboard({rows}: {rows: PageViewRow[]}) {
   const devices = useMemo(() => computeTop(filtered, 'device', 5), [filtered]);
   const browsers = useMemo(() => computeTop(filtered, 'browser', 6), [filtered]);
   const live = useMemo(() => computeLive(rows, now), [rows, now]);
+  const dau = useMemo(() => computeDau(filtered, range), [filtered, range]);
+  const categories = useMemo(() => computeCategories(filtered), [filtered]);
+  const dailyDigest = useMemo(
+    () => (range !== '24h' && now ? computeDailyDigest(filtered, range, now) : []),
+    [filtered, range, now]
+  );
 
   return (
     <div className="space-y-6">
@@ -65,11 +71,13 @@ export function StatsDashboard({rows}: {rows: PageViewRow[]}) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <KpiCard label="ვიზიტები" value={kpi.views.toLocaleString()} />
-        <KpiCard label="უნიკალური ვიზიტორი" value={kpi.uniques.toLocaleString()} />
+        <KpiCard label="უნიკ. ვიზიტორი" value={kpi.uniques.toLocaleString()} />
+        <KpiCard label="საშ. DAU" value={dau.avgDau.toLocaleString()} hint="განს. ვიზ./დღეში" />
+        <KpiCard label="საშ. დღ. ვიზიტები" value={dau.avgDailyViews.toLocaleString()} hint="გვ. ნახვა/დღეში" />
         <KpiCard label="საშ. დრო გვერდზე" value={formatDuration(kpi.avgDurationMs)} />
-        <KpiCard label="Bounce მზომი" value={`${kpi.bouncePct}%`} hint="ერთ გვერდიანი ვიზიტები" />
+        <KpiCard label="Bounce" value={`${kpi.bouncePct}%`} hint="ერთ გვ. ვიზიტები" />
       </div>
 
       <Card title="ვიზიტების დინამიკა">
@@ -128,6 +136,16 @@ export function StatsDashboard({rows}: {rows: PageViewRow[]}) {
           <PieBlock data={browsers} />
         </Card>
       </div>
+
+      <Card title="კატეგორიები">
+        <CategoryBar data={categories} />
+      </Card>
+
+      {dailyDigest.length > 0 && (
+        <Card title="დღიური დინამიკა">
+          <DailyDigestTable rows={dailyDigest} />
+        </Card>
+      )}
     </div>
   );
 }
@@ -416,4 +434,138 @@ function computeLive(rows: PageViewRow[], now: number) {
     if (new Date(r.entered_at).getTime() >= cutoff) seen.add(r.visitor_id);
   }
   return seen.size;
+}
+
+function computeDau(rows: PageViewRow[], range: Range) {
+  const days = range === '24h' ? 1 : range === '7d' ? 7 : 30;
+  const byDay = new Map<string, Set<string>>();
+  for (const r of rows) {
+    const day = r.entered_at.slice(0, 10);
+    if (!byDay.has(day)) byDay.set(day, new Set());
+    byDay.get(day)!.add(r.visitor_id);
+  }
+  const dailyUniques = Array.from(byDay.values()).map((s) => s.size);
+  const avgDau = dailyUniques.length
+    ? Math.round(dailyUniques.reduce((a, b) => a + b, 0) / dailyUniques.length)
+    : 0;
+  const avgDailyViews = Math.round(rows.length / days);
+  return {avgDau, avgDailyViews};
+}
+
+function categorize(path: string): string {
+  if (path === '/') return 'მთავარი';
+  const seg = path.split('/')[1] ?? '';
+  if (seg === 'calculators') return 'კალკულატორები';
+  if (seg === 'construction') return 'მშენებლობა';
+  if (seg === 'tbc') return 'TBC';
+  if (seg === 'regulations') return 'რეგულაციები';
+  if (seg === 'dashboard') return 'Dashboard';
+  if (['about', 'contact', 'faq', 'terms', 'privacy', 'feed'].includes(seg)) return 'ინფო';
+  return 'სხვა';
+}
+
+function computeCategories(rows: PageViewRow[]) {
+  const map = new Map<string, number>();
+  for (const r of rows) {
+    const cat = categorize(r.path);
+    map.set(cat, (map.get(cat) ?? 0) + 1);
+  }
+  return Array.from(map.entries())
+    .map(([label, value]) => ({label, value}))
+    .sort((a, b) => b.value - a.value);
+}
+
+function computeDailyDigest(rows: PageViewRow[], range: Range, now: number) {
+  const days = range === '7d' ? 7 : 30;
+  const firstSeen = new Map<string, string>();
+  for (const r of rows) {
+    const day = r.entered_at.slice(0, 10);
+    const cur = firstSeen.get(r.visitor_id);
+    if (!cur || day < cur) firstSeen.set(r.visitor_id, day);
+  }
+
+  type DayBucket = {views: number; visitors: Set<string>; newV: Set<string>; durSum: number; durN: number};
+  const byDay = new Map<string, DayBucket>();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(now - i * 24 * 60 * 60 * 1000);
+    byDay.set(d.toISOString().slice(0, 10), {views: 0, visitors: new Set(), newV: new Set(), durSum: 0, durN: 0});
+  }
+
+  for (const r of rows) {
+    const day = r.entered_at.slice(0, 10);
+    const b = byDay.get(day);
+    if (!b) continue;
+    b.views++;
+    b.visitors.add(r.visitor_id);
+    if (firstSeen.get(r.visitor_id) === day) b.newV.add(r.visitor_id);
+    if (r.duration_ms && r.duration_ms > 0) {
+      b.durSum += r.duration_ms;
+      b.durN++;
+    }
+  }
+
+  return Array.from(byDay.entries())
+    .sort(([a], [b]) => b.localeCompare(a))
+    .map(([day, b]) => ({
+      day,
+      views: b.views,
+      uniques: b.visitors.size,
+      newVisitors: b.newV.size,
+      avgDurationMs: b.durN ? Math.round(b.durSum / b.durN) : 0,
+    }));
+}
+
+function CategoryBar({data}: {data: {label: string; value: number}[]}) {
+  if (data.length === 0) return <EmptyState />;
+  const total = data.reduce((s, d) => s + d.value, 0);
+  const max = data[0]?.value || 1;
+  return (
+    <div className="space-y-2">
+      {data.map((d, i) => (
+        <div key={d.label} className="flex items-center gap-3 text-sm">
+          <span className="w-28 shrink-0 truncate text-xs font-medium">{d.label}</span>
+          <div className="relative h-5 flex-1 overflow-hidden rounded bg-surface-alt">
+            <div
+              className="absolute inset-y-0 left-0 rounded"
+              style={{width: `${(d.value / max) * 100}%`, background: COLORS[i % COLORS.length]}}
+            />
+          </div>
+          <span className="w-10 shrink-0 text-right tabular-nums text-xs text-fg-muted">{d.value}</span>
+          <span className="w-10 shrink-0 text-right tabular-nums text-xs text-fg-muted">
+            {total ? `${Math.round((d.value / total) * 100)}%` : ''}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DailyDigestTable({rows}: {rows: {day: string; views: number; uniques: number; newVisitors: number; avgDurationMs: number}[]}) {
+  if (rows.length === 0) return <EmptyState />;
+  return (
+    <div className="overflow-hidden rounded-lg border">
+      <table className="w-full text-sm">
+        <thead className="bg-surface-alt text-xs uppercase text-fg-muted">
+          <tr>
+            <th className="px-3 py-2 text-left font-medium">თარიღი</th>
+            <th className="px-3 py-2 text-right font-medium">ნახვები</th>
+            <th className="px-3 py-2 text-right font-medium">უნიკ.</th>
+            <th className="px-3 py-2 text-right font-medium">ახალი</th>
+            <th className="px-3 py-2 text-right font-medium">საშ. დრო</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.day} className="border-t hover:bg-surface-alt/50">
+              <td className="px-3 py-2 font-mono text-xs">{r.day}</td>
+              <td className="px-3 py-2 text-right tabular-nums">{r.views.toLocaleString()}</td>
+              <td className="px-3 py-2 text-right tabular-nums">{r.uniques.toLocaleString()}</td>
+              <td className="px-3 py-2 text-right tabular-nums text-emerald-600">{r.newVisitors || '—'}</td>
+              <td className="px-3 py-2 text-right tabular-nums text-fg-muted">{formatDuration(r.avgDurationMs)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }

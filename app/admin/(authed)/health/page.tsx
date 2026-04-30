@@ -182,7 +182,7 @@ export default async function HealthPage() {
         </section>
 
         {/* Quick operational counts */}
-        <div className="mb-6 grid gap-3 md:grid-cols-3">
+        <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <HealthTile
             title="Bug reports (open)"
             value={counts.bug_reports_open === 0 ? 'არ არის' : String(counts.bug_reports_open)}
@@ -200,6 +200,20 @@ export default async function HealthPage() {
             value={counts.features_hidden === 0 ? 'არც ერთი' : String(counts.features_hidden)}
             ok={true}
             icon={<ToggleRight size={14} />}
+          />
+          <HealthTile
+            title="დღ. ვიზიტები"
+            value={counts.today_views === 0 ? '0' : String(counts.today_views)}
+            ok={true}
+            icon={<Gauge size={14} />}
+            href="/admin/stats"
+          />
+          <HealthTile
+            title="დღ. უნიკ. ვიზ."
+            value={counts.today_uniques === 0 ? '0' : String(counts.today_uniques)}
+            ok={true}
+            icon={<Gauge size={14} />}
+            href="/admin/stats"
           />
         </div>
 
@@ -375,14 +389,16 @@ function HealthTile({
   title,
   value,
   ok,
-  icon
+  icon,
+  href
 }: {
   title: string;
   value: string;
   ok: boolean;
   icon: React.ReactNode;
+  href?: string;
 }) {
-  return (
+  const inner = (
     <div className="rounded-[var(--radius-card)] border bg-sur p-3">
       <div className="flex items-center gap-1 font-mono text-[10px] font-semibold uppercase tracking-wider text-text-3">
         {icon}
@@ -397,4 +413,6 @@ function HealthTile({
       </div>
     </div>
   );
+  if (href) return <a href={href} className="block hover:opacity-80">{inner}</a>;
+  return inner;
 }
