@@ -32,9 +32,12 @@ import {
   COLORS,
   DEFAULT_SETS,
   DEFAULT_PAGES,
-  STORE_KEY,
-  PAGES_KEY,
+  importLocalVariablesOnce,
+  loadPages,
+  loadSets,
   randomId,
+  savePages,
+  saveSets,
   type ColumnKind,
   type ColumnScope,
   type PageColumn,
@@ -90,34 +93,32 @@ export default function VariablesPage() {
   const pagePickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORE_KEY);
-      if (raw) {
-        const p = JSON.parse(raw) as VarSet[];
-        if (Array.isArray(p) && p.length) {
-          setSets(p);
-          setActiveSetId(p[0].id);
-        }
+    let cancelled = false;
+    (async () => {
+      try {
+        await importLocalVariablesOnce();
+        const [nextSets, nextPages] = await Promise.all([loadSets(), loadPages()]);
+        if (cancelled) return;
+        setSets(nextSets);
+        setActiveSetId(nextSets[0]?.id ?? '');
+        setPages(nextPages);
+        setPageId(nextPages[0]?.id ?? '');
+        setTableId(nextPages[0]?.tables[0]?.id ?? '');
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (!cancelled) setHydrated(true);
       }
-      const rawPages = localStorage.getItem(PAGES_KEY);
-      if (rawPages) {
-        const pp = JSON.parse(rawPages) as PageScope[];
-        if (Array.isArray(pp) && pp.length) {
-          setPages(pp);
-          setPageId(pp[0].id);
-          setTableId(pp[0].tables[0]?.id ?? '');
-        }
-      }
-    } catch {}
-    setHydrated(true);
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
-    try {
-      localStorage.setItem(STORE_KEY, JSON.stringify(sets));
-      localStorage.setItem(PAGES_KEY, JSON.stringify(pages));
-    } catch {}
+    const t = window.setTimeout(() => {
+      void Promise.all([saveSets(sets), savePages(pages)]).catch(console.error);
+    }, 350);
+    return () => window.clearTimeout(t);
   }, [sets, pages, hydrated]);
 
   useEffect(() => {
@@ -507,7 +508,7 @@ export default function VariablesPage() {
           <div className="flex-1 overflow-y-auto bg-sur-2/40 px-5 py-5">
             {!table ? (
               <div className="flex h-full items-center justify-center text-[12px] text-text-3">
-                ცხრილი არ არის — დააჭირე "+ ცხრილი"
+                ცხრილი არ არის — დააჭირე &quot;+ ცხრილი&quot;
               </div>
             ) : (
               <div className="mx-auto max-w-[960px]">
@@ -714,7 +715,7 @@ export default function VariablesPage() {
                 <div className="flex-1 overflow-y-auto px-2 py-2">
                   {activeSet.options.length === 0 ? (
                     <div className="px-2 py-4 text-center text-[11px] text-text-3">
-                      ცარიელია. დააჭირე "+"
+                      ცარიელია. დააჭირე &quot;+&quot;
                     </div>
                   ) : (
                     <div className="space-y-1">
@@ -1165,7 +1166,7 @@ function ColumnCard(props: {
                   </div>
                   {(column.options?.length ?? 0) === 0 ? (
                     <div className="px-4 py-6 text-center text-[11.5px] text-text-3">
-                      ცარიელია — დააჭირე "+ ოფცია"
+                      ცარილია — დააჭირე &quot;+ ოფცია&quot;
                     </div>
                   ) : (
                     <div className="p-2">
@@ -1264,3 +1265,4 @@ function MiniOptionRow({
     </div>
   );
 }
+

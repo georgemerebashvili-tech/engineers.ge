@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {DmtPageShell} from '@/components/dmt/page-shell';
 import Link from 'next/link';
 import {
@@ -24,6 +24,7 @@ import {
   Palette,
   Columns3,
   Download,
+  Eraser,
   GripVertical,
   Check,
   LoaderCircle
@@ -139,6 +140,44 @@ const EXTRA_VALS_KEY = 'dmt_manual_extra_vals_v1';
 const COL_WIDTHS_KEY = 'dmt_manual_col_widths_v1';
 const COL_ORDER_KEY = 'dmt_manual_col_order_v1';
 const STATUS_ORDER_KEY = 'dmt_manual_status_order_v1';
+const MANUAL_MIGRATED_KEY = 'dmt_manual_pg_migrated_v1';
+
+async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    ...init,
+    headers: {'content-type': 'application/json', ...(init?.headers ?? {})},
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(String(body?.error ?? `Request failed: ${res.status}`));
+  }
+  return res.json() as Promise<T>;
+}
+
+function valsListToMap(values: Array<{leadId: string; colId: string; value: string}>): ExtraVals {
+  return values.reduce<ExtraVals>((acc, row) => {
+    acc[row.leadId] = {...(acc[row.leadId] ?? {}), [row.colId]: row.value};
+    return acc;
+  }, {});
+}
+
+async function importLocalManualOnce() {
+  if (typeof window === 'undefined') return;
+  if (localStorage.getItem(MANUAL_MIGRATED_KEY)) return;
+  const rows = JSON.parse(localStorage.getItem(STORE_KEY) || '[]') as Row[];
+  const extraCols = JSON.parse(localStorage.getItem(EXTRA_COLS_KEY) || '[]') as ExtraCol[];
+  const extraVals = JSON.parse(localStorage.getItem(EXTRA_VALS_KEY) || '{}') as ExtraVals;
+  if (rows.length || extraCols.length || Object.keys(extraVals).length) {
+    await apiJson('/api/dmt/manual-leads/bulk-import', {
+      method: 'POST',
+      body: JSON.stringify({rows, extraCols, extraVals}),
+    });
+    localStorage.removeItem(STORE_KEY);
+    localStorage.removeItem(EXTRA_COLS_KEY);
+    localStorage.removeItem(EXTRA_VALS_KEY);
+  }
+  localStorage.setItem(MANUAL_MIGRATED_KEY, '1');
+}
 
 // ~10 characters at the grid font — minimum width when user dbl-clicks resize handle
 const MIN_COL_WIDTH = 90;
@@ -162,7 +201,7 @@ type BaseColDef = {
   icon: React.ComponentType<{size?: number; className?: string; strokeWidth?: number}>;
   width: number;
   align?: 'right';
-  kind?: 'text' | 'number' | 'status' | 'role' | 'owner' | 'date' | 'author';
+  kind?: 'text' | 'number' | 'status' | 'role' | 'owner' | 'date' | 'date-edit' | 'author';
 };
 
 const COLS: BaseColDef[] = [
@@ -173,7 +212,7 @@ const COLS: BaseColDef[] = [
   {key: 'status',   label: 'სტატუსი',      icon: Star,      width: 180, kind: 'status'},
   {key: 'role',     label: 'როლი',         icon: Shuffle,   width: 120, kind: 'role'},
   {key: 'owner',    label: 'პრ. მენ.',     icon: UserCog,   width: 140, kind: 'owner'},
-  {key: 'period',   label: 'პერიოდი',      icon: Calendar,  width: 100},
+  {key: 'period',   label: 'პერიოდი',      icon: Calendar,  width: 130, kind: 'date-edit'},
   {key: 'editedBy', label: 'ბოლო რედაქტ.', icon: UserRound, width: 140, kind: 'author'},
   {key: 'editedAt', label: 'ბოლო დრო',     icon: Clock,     width: 150, kind: 'date'},
   {key: 'createdBy',label: 'ჩანაწ. ავტ.',  icon: UserRound, width: 140, kind: 'author'}
@@ -242,13 +281,8 @@ export default function ManualLeadsPage() {
   const [statusDragOverKey, setStatusDragOverKey] = useState<Status | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     try {
-      const raw = localStorage.getItem(STORE_KEY);
-      if (raw) setRows(JSON.parse(raw));
-      const ec = localStorage.getItem(EXTRA_COLS_KEY);
-      if (ec) setExtraCols(JSON.parse(ec));
-      const ev = localStorage.getItem(EXTRA_VALS_KEY);
-      if (ev) setExtraVals(JSON.parse(ev));
       const cw = localStorage.getItem(COL_WIDTHS_KEY);
       if (cw) setColWidths(JSON.parse(cw));
       const co = localStorage.getItem(COL_ORDER_KEY);
@@ -263,9 +297,28 @@ export default function ManualLeadsPage() {
           STATUS_ORDER.every((s) => parsed.includes(s));
         if (valid) setStatusOrder(parsed);
       }
-      setVarSets(loadSets());
     } catch {}
-    setHydrated(true);
+    (async () => {
+      try {
+        await importLocalManualOnce();
+        const [rowsRes, colsRes, valsRes, nextVarSets] = await Promise.all([
+          apiJson<{rows: Row[]}>('/api/dmt/manual-leads'),
+          apiJson<{cols: ExtraCol[]}>('/api/dmt/manual-leads/extra-cols'),
+          apiJson<{values: Array<{leadId: string; colId: string; value: string}>}>('/api/dmt/manual-leads/extra-vals'),
+          loadSets(),
+        ]);
+        if (cancelled) return;
+        setRows(rowsRes.rows ?? []);
+        setExtraCols(colsRes.cols ?? []);
+        setExtraVals(valsListToMap(valsRes.values ?? []));
+        setVarSets(nextVarSets);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (!cancelled) setHydrated(true);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -302,14 +355,11 @@ export default function ManualLeadsPage() {
   useEffect(() => {
     if (!hydrated) return;
     try {
-      localStorage.setItem(STORE_KEY, JSON.stringify(rows));
-      localStorage.setItem(EXTRA_COLS_KEY, JSON.stringify(extraCols));
-      localStorage.setItem(EXTRA_VALS_KEY, JSON.stringify(extraVals));
       localStorage.setItem(COL_WIDTHS_KEY, JSON.stringify(colWidths));
       localStorage.setItem(COL_ORDER_KEY, JSON.stringify(colOrder));
       localStorage.setItem(STATUS_ORDER_KEY, JSON.stringify(statusOrder));
     } catch {}
-  }, [rows, extraCols, extraVals, colWidths, colOrder, statusOrder, hydrated]);
+  }, [colWidths, colOrder, statusOrder, hydrated]);
 
   useEffect(() => {
     if (ownerFilter === 'all') return;
@@ -343,13 +393,27 @@ export default function ManualLeadsPage() {
     setColWidths((prev) => ({...prev, [key]: MIN_COL_WIDTH}));
   };
 
-  const addExtraCol = (col: Omit<ExtraCol, 'key'>) => {
+  const addExtraCol = async (col: Omit<ExtraCol, 'key'>) => {
     const key = 'x_' + Date.now().toString(36);
-    setExtraCols((prev) => [...prev, {...col, key}]);
+    const nextCol = {...col, key};
+    setExtraCols((prev) => [...prev, nextCol]);
+    try {
+      const data = await apiJson<{col: ExtraCol}>('/api/dmt/manual-leads/extra-cols', {
+        method: 'POST',
+        body: JSON.stringify(nextCol),
+      });
+      setExtraCols((prev) => prev.map((c) => c.key === key ? data.col : c));
+    } catch (error) {
+      console.error(error);
+      setExtraCols((prev) => prev.filter((c) => c.key !== key));
+      alert('Column ვერ შეინახა.');
+    }
   };
 
-  const removeExtraCol = (key: string) => {
+  const removeExtraCol = async (key: string) => {
     if (!confirm('column წავშალო? მონაცემები დაიკარგება.')) return;
+    const beforeCols = extraCols;
+    const beforeVals = extraVals;
     setExtraCols((prev) => prev.filter((c) => c.key !== key));
     setExtraVals((prev) => {
       const next: ExtraVals = {};
@@ -360,13 +424,32 @@ export default function ManualLeadsPage() {
       }
       return next;
     });
+    try {
+      await apiJson(`/api/dmt/manual-leads/extra-cols/${encodeURIComponent(key)}`, {method: 'DELETE'});
+    } catch (error) {
+      console.error(error);
+      setExtraCols(beforeCols);
+      setExtraVals(beforeVals);
+      alert('Column ვერ წაიშალა.');
+    }
   };
 
-  const setExtraVal = (rowId: string, colKey: string, value: string) => {
+  const setExtraVal = async (rowId: string, colKey: string, value: string) => {
+    const before = extraVals;
     setExtraVals((prev) => ({
       ...prev,
       [rowId]: {...(prev[rowId] || {}), [colKey]: value}
     }));
+    try {
+      await apiJson('/api/dmt/manual-leads/extra-vals', {
+        method: 'PUT',
+        body: JSON.stringify({leadId: rowId, colId: colKey, value}),
+      });
+    } catch (error) {
+      console.error(error);
+      setExtraVals(before);
+      alert('ცვლილება ვერ შეინახა.');
+    }
   };
 
   const orderedCols = useMemo(() => buildOrderedCols(extraCols, colOrder), [extraCols, colOrder]);
@@ -420,23 +503,38 @@ export default function ManualLeadsPage() {
       'დახურული-მოგება': [],
       'დახურული-დაკარგვა': []
     };
-    for (const r of filtered) g[r.status].push(r);
+    for (const r of filtered) {
+      const bucket = g[r.status as Status] ?? g[STATUS_ORDER[0]];
+      bucket.push(r);
+    }
     return g;
   }, [filtered]);
 
-  const update = (id: string, patch: Partial<Row>) => {
+  const update = async (id: string, patch: Partial<Row>) => {
+    const before = rows.find((r) => r.id === id);
+    if (!before) return;
+    const nextRow = {
+      ...before,
+      ...patch,
+      editedBy: actorLabel,
+      editedAt: new Date().toLocaleString('en-GB').replace(',', '')
+    };
     setRows((prev) =>
       prev.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              ...patch,
-              editedBy: actorLabel,
-              editedAt: new Date().toLocaleString('en-GB').replace(',', '')
-            }
-          : r
+        r.id === id ? nextRow : r
       )
     );
+    try {
+      const data = await apiJson<{row: Row}>(`/api/dmt/manual-leads/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify(nextRow),
+      });
+      setRows((prev) => prev.map((r) => r.id === id ? data.row : r));
+    } catch (error) {
+      console.error(error);
+      setRows((prev) => prev.map((r) => r.id === id ? before : r));
+      alert('ცვლილება ვერ შეინახა.');
+    }
   };
 
   const saveMyTabColor = async (nextColor: ManualLeadTabColor) => {
@@ -468,7 +566,7 @@ export default function ManualLeadsPage() {
     }
   };
 
-  const addRow = (status: Status) => {
+  const addRow = async (status: Status) => {
     const id = 'r' + Date.now();
     const ownerName =
       activeOwnerUser?.name ||
@@ -496,6 +594,17 @@ export default function ManualLeadsPage() {
       return [...prev.slice(0, firstIdx), newRow, ...prev.slice(firstIdx)];
     });
     setCollapsed((prev) => ({...prev, [status]: false}));
+    try {
+      const data = await apiJson<{row: Row}>('/api/dmt/manual-leads', {
+        method: 'POST',
+        body: JSON.stringify(newRow),
+      });
+      setRows((prev) => prev.map((r) => r.id === id ? data.row : r));
+    } catch (error) {
+      console.error(error);
+      setRows((prev) => prev.filter((r) => r.id !== id));
+      alert('ჩანაწერი ვერ შეინახა.');
+    }
   };
 
   const exportCsv = () => {
@@ -527,9 +636,24 @@ export default function ManualLeadsPage() {
     URL.revokeObjectURL(url);
   };
 
-  const deleteRow = (id: string) => {
+  const deleteRow = async (id: string) => {
     if (!confirm('ჩანაწერი წავშალო?')) return;
+    const beforeRows = rows;
+    const beforeVals = extraVals;
     setRows((prev) => prev.filter((r) => r.id !== id));
+    setExtraVals((prev) => {
+      const next = {...prev};
+      delete next[id];
+      return next;
+    });
+    try {
+      await apiJson(`/api/dmt/manual-leads/${encodeURIComponent(id)}`, {method: 'DELETE'});
+    } catch (error) {
+      console.error(error);
+      setRows(beforeRows);
+      setExtraVals(beforeVals);
+      alert('ჩანაწერი ვერ წაიშალა.');
+    }
   };
 
   const toggleGroup = (s: Status) => {
@@ -804,7 +928,7 @@ export default function ManualLeadsPage() {
                 onVarSetCreated={(set) => {
                   setVarSets((prev) => {
                     const next = [...prev, set];
-                    saveSets(next);
+                    void saveSets(next).catch(console.error);
                     return next;
                   });
                 }}
@@ -987,7 +1111,7 @@ function renderCell(
   const v = r[c.key];
 
   if (c.kind === 'status') {
-    const st = STATUS_META[r.status];
+    const st = STATUS_META[r.status as Status] ?? STATUS_META[STATUS_ORDER[0]];
     return (
       <select
         key={c.key}
@@ -1093,6 +1217,16 @@ function renderCell(
     );
   }
 
+  if (c.kind === 'date-edit') {
+    return (
+      <DatePickerCell
+        key={c.key}
+        value={String(v ?? '')}
+        onChange={(iso) => update(r.id, {[c.key]: iso} as Partial<Row>)}
+      />
+    );
+  }
+
   if (c.kind === 'number') {
     return (
       <input
@@ -1120,6 +1254,98 @@ function renderCell(
       placeholder="—"
     />
   );
+}
+
+function DatePickerCell({value, onChange}: {value: string; onChange: (iso: string) => void}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const hasValue = value.trim().length > 0;
+  const inputValue = isIsoDate(value) ? value.slice(0, 10) : '';
+  const display = hasValue ? formatDDMMYYYY(value) : '—';
+
+  useEffect(() => {
+    if (!open) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [open]);
+
+  const setToday = () => {
+    onChange(new Date().toISOString().slice(0, 10));
+    setOpen(false);
+  };
+
+  const clearValue = () => {
+    onChange('');
+    setOpen(false);
+  };
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={`block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left font-mono text-[11.5px] transition-colors hover:bg-sur-2 focus:bg-sur focus:outline-none focus:ring-1 focus:ring-blue ${
+          hasValue ? 'text-navy' : 'text-text-3'
+        }`}
+        title="პერიოდის არჩევა"
+        aria-label={hasValue ? display : 'პერიოდის არჩევა'}
+      >
+        {display}
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-30 mt-1 flex items-center gap-2 rounded-md border border-bdr bg-sur p-2 shadow-lg">
+          <input
+            type="date"
+            value={inputValue}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') setOpen(false);
+            }}
+            autoFocus
+            className="rounded-md border border-bdr bg-sur-2 px-2 py-1 text-[12px] text-text focus:border-blue focus:outline-none"
+          />
+          <button
+            type="button"
+            onClick={setToday}
+            className="rounded-md border border-bdr bg-sur-2 px-2 py-1 text-[10.5px] font-semibold text-text-2 transition-colors hover:border-blue hover:text-blue"
+            title="დღეს"
+          >
+            დღეს
+          </button>
+          <button
+            type="button"
+            onClick={clearValue}
+            className="rounded p-1 text-text-3 transition-colors hover:bg-red-lt hover:text-red"
+            title="გასუფთავება"
+          >
+            <Eraser size={12} />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function isIsoDate(value: string) {
+  return /^\d{4}-\d{2}-\d{2}/.test(value);
+}
+
+function formatDDMMYYYY(value: string) {
+  if (!value) return '';
+  const iso = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[3]}.${iso[2]}.${iso[1]}`;
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+
+  const day = String(parsed.getDate()).padStart(2, '0');
+  const month = String(parsed.getMonth() + 1).padStart(2, '0');
+  return `${day}.${month}.${parsed.getFullYear()}`;
 }
 
 function fmt(n: number) {
@@ -1500,3 +1726,4 @@ function StatCard({label, value, accent}: {label: string; value: string; accent?
     </div>
   );
 }
+

@@ -29,6 +29,23 @@ export const SOURCE_ORDER: Source[] = [
   'linkedin'
 ];
 
+export type OfferStatus = 'offer_in_progress' | 'offer_accepted' | 'offer_rejected';
+
+export const OFFER_STATUS_ORDER: OfferStatus[] = [
+  'offer_in_progress',
+  'offer_accepted',
+  'offer_rejected'
+];
+
+export const OFFER_STATUS_META: Record<
+  OfferStatus,
+  {label: string; color: string; bg: string; border: string; icon: 'play' | 'check' | 'x'}
+> = {
+  offer_in_progress: {label: 'ოფერის გაკეთება', color: 'var(--ora)', bg: 'var(--ora-lt)', border: 'var(--ora-bd)', icon: 'play'},
+  offer_accepted: {label: 'მიღებულია', color: 'var(--grn)', bg: 'var(--grn-lt)', border: 'var(--grn-bd)', icon: 'check'},
+  offer_rejected: {label: 'უარყოფილი', color: 'var(--red)', bg: 'var(--red-lt)', border: '#f0b8b4', icon: 'x'},
+};
+
 export type Lead = {
   id: string;
   name: string;
@@ -44,6 +61,16 @@ export type Lead = {
   createdBy: string;
   updatedAt: string;
   updatedBy: string;
+  fromContactId: string | null;
+  offerStatus: OfferStatus;
+  labels: string[];
+  inventoryChecked: boolean;
+  inventoryCheckedAt: string | null;
+  inventoryCheckedBy: string | null;
+  invoiceId: string | null;
+  invoiceIssuedAt: string | null;
+  offerDecidedAt: string | null;
+  offerDecidedBy: string | null;
 };
 
 export type ColumnKind =
@@ -54,6 +81,8 @@ export type ColumnKind =
   | 'number'
   | 'date'
   | 'stage'
+  | 'offerStatus'
+  | 'labels'
   | 'source'
   | 'owner'
   | 'author';
@@ -72,10 +101,12 @@ export const LEAD_COLUMNS: Record<string, LeadColumn> = {
   id:         {key: 'id',         label: 'ID',           kind: 'id',     width: 90,  readonly: true},
   name:       {key: 'name',       label: 'კონტაქტი',     kind: 'text',   width: 170},
   company:    {key: 'company',    label: 'კომპანია',     kind: 'text',   width: 180},
+  labels:     {key: 'labels',     label: 'იარლიყები',    kind: 'labels', width: 190},
   phone:      {key: 'phone',      label: 'ტელეფონი',     kind: 'phone',  width: 160},
   email:      {key: 'email',      label: 'Email',        kind: 'email',  width: 200},
   source:     {key: 'source',     label: 'წყარო',        kind: 'source', width: 120},
   stage:      {key: 'stage',      label: 'სტადია',       kind: 'stage',  width: 140},
+  offerStatus: {key: 'offerStatus', label: 'სტატუსი',     kind: 'offerStatus', width: 190},
   owner:      {key: 'owner',      label: 'მფლ.',         kind: 'owner',  width: 110},
   value:      {key: 'value',      label: 'ღირებ. ₾',     kind: 'number', width: 120, align: 'right'},
   createdAt:  {key: 'createdAt',  label: 'დამატებულია',  kind: 'date',   width: 140, readonly: true},
@@ -88,10 +119,11 @@ export const DEFAULT_COLUMN_ORDER: (keyof Lead)[] = [
   'id',
   'name',
   'company',
+  'labels',
   'phone',
   'email',
   'source',
-  'stage',
+  'offerStatus',
   'owner',
   'value',
   'createdBy',
@@ -127,6 +159,10 @@ const K = {
   filters: 'dmt_leads_filters_v1',
   me: 'dmt_me_display_v1'
 } as const;
+
+export const LEADS_LOCAL_KEY = K.leads;
+export const LEADS_AUDIT_LOCAL_KEY = K.audit;
+export const LEADS_MIGRATED_KEY = 'dmt_leads_pg_migrated_v1';
 
 // ─── Identity ────────────────────────────────────────────────────────────────
 export function getActor(): string {
@@ -165,12 +201,88 @@ function save<T>(key: string, value: T) {
 }
 
 // ─── Leads ────────────────────────────────────────────────────────────────────
-export function loadLeads(): Lead[] {
-  return load<Lead[]>(K.leads, []);
+async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    ...init,
+    headers: {'content-type': 'application/json', ...(init?.headers ?? {})},
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(String(body?.error ?? `Request failed: ${res.status}`));
+  }
+  return res.json() as Promise<T>;
 }
 
-export function saveLeads(rows: Lead[]) {
-  save(K.leads, rows);
+export async function loadLeads(): Promise<Lead[]> {
+  const data = await apiJson<{leads: Lead[]}>('/api/dmt/leads');
+  return data.leads ?? [];
+}
+
+export async function createLead(lead: Lead): Promise<{lead: Lead; auditEntry: LeadAuditEntry | null}> {
+  return apiJson('/api/dmt/leads', {method: 'POST', body: JSON.stringify(lead)});
+}
+
+export async function updateLead(
+  id: string,
+  patch: Partial<Lead>
+): Promise<{lead: Lead; auditEntries: LeadAuditEntry[]}> {
+  return apiJson(`/api/dmt/leads/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function deleteLead(id: string): Promise<{ok: boolean; auditEntry: LeadAuditEntry | null}> {
+  return apiJson(`/api/dmt/leads/${encodeURIComponent(id)}`, {method: 'DELETE'});
+}
+
+export async function checkLeadInventory(id: string): Promise<{lead: Lead; auditEntry: LeadAuditEntry | null}> {
+  return apiJson(`/api/dmt/leads/${encodeURIComponent(id)}/inventory-check`, {method: 'POST'});
+}
+
+export async function decideLeadOffer(
+  id: string,
+  outcome: 'accepted' | 'rejected'
+): Promise<{lead: Lead; auditEntry: LeadAuditEntry | null; missing?: string[]}> {
+  return apiJson(`/api/dmt/leads/${encodeURIComponent(id)}/decide`, {
+    method: 'POST',
+    body: JSON.stringify({outcome}),
+  });
+}
+
+export async function setLeadLabels(
+  id: string,
+  labels: string[]
+): Promise<{lead: Lead; auditEntry: LeadAuditEntry | null}> {
+  return apiJson(`/api/dmt/leads/${encodeURIComponent(id)}/labels`, {
+    method: 'PATCH',
+    body: JSON.stringify({labels}),
+  });
+}
+
+export async function generateLeadInvoice(id: string): Promise<{lead: Lead; auditEntry: LeadAuditEntry | null}> {
+  return apiJson(`/api/dmt/leads/${encodeURIComponent(id)}/invoice`, {method: 'POST'});
+}
+
+export async function loadLabelSuggestions(): Promise<string[]> {
+  const data = await apiJson<{labels: string[]}>('/api/dmt/leads/labels/suggestions');
+  return data.labels ?? [];
+}
+
+export async function importLocalLeadsOnce() {
+  if (typeof window === 'undefined') return;
+  if (localStorage.getItem(LEADS_MIGRATED_KEY)) return;
+  const leads = load<Lead[]>(K.leads, []);
+  const audit = load<LeadAuditEntry[]>(K.audit, []);
+  if (leads.length || audit.length) {
+    await apiJson('/api/dmt/leads/bulk-import', {
+      method: 'POST',
+      body: JSON.stringify({leads, audit}),
+    });
+    localStorage.removeItem(K.leads);
+    localStorage.removeItem(K.audit);
+  }
+  localStorage.setItem(LEADS_MIGRATED_KEY, '1');
 }
 
 export function nextLeadId(rows: Lead[]): string {
@@ -200,31 +312,36 @@ export function emptyLead(rows: Lead[], actor: string): Lead {
     createdAt: now,
     createdBy: actor,
     updatedAt: now,
-    updatedBy: actor
+    updatedBy: actor,
+    fromContactId: null,
+    offerStatus: 'offer_in_progress',
+    labels: [],
+    inventoryChecked: false,
+    inventoryCheckedAt: null,
+    inventoryCheckedBy: null,
+    invoiceId: null,
+    invoiceIssuedAt: null,
+    offerDecidedAt: null,
+    offerDecidedBy: null
   };
 }
 
 // ─── Audit ────────────────────────────────────────────────────────────────────
-export function loadAudit(): LeadAuditEntry[] {
-  return load<LeadAuditEntry[]>(K.audit, []);
+export async function loadAudit(): Promise<LeadAuditEntry[]> {
+  const data = await apiJson<{audit: LeadAuditEntry[]}>('/api/dmt/leads/audit');
+  return data.audit ?? [];
 }
 
-export function appendAudit(entry: Omit<LeadAuditEntry, 'id' | 'at'>) {
-  const list = loadAudit();
-  const full: LeadAuditEntry = {
-    ...entry,
-    id: 'a_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-    at: new Date().toISOString()
-  };
-  list.unshift(full);
-  // Cap at 500 entries so localStorage doesn't balloon.
-  if (list.length > 500) list.length = 500;
-  save(K.audit, list);
-  return full;
+export async function appendAudit(entry: Omit<LeadAuditEntry, 'id' | 'at'>) {
+  const data = await apiJson<{entry: LeadAuditEntry}>('/api/dmt/leads/audit', {
+    method: 'POST',
+    body: JSON.stringify(entry),
+  });
+  return data.entry;
 }
 
-export function clearAudit() {
-  save<LeadAuditEntry[]>(K.audit, []);
+export async function clearAudit() {
+  return;
 }
 
 // ─── Column order / widths / filters ────────────────────────────────────────

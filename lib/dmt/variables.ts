@@ -105,23 +105,30 @@ export const DEFAULT_SETS: VarSet[] = [
   }
 ];
 
-export function loadSets(): VarSet[] {
-  if (typeof window === 'undefined') return DEFAULT_SETS;
-  try {
-    const raw = localStorage.getItem(STORE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as VarSet[];
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch {}
-  return DEFAULT_SETS;
+async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, {
+    ...init,
+    headers: {'content-type': 'application/json', ...(init?.headers ?? {})},
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(String(body?.error ?? `Request failed: ${res.status}`));
+  }
+  return res.json() as Promise<T>;
 }
 
-export function saveSets(sets: VarSet[]) {
+export async function loadSets(): Promise<VarSet[]> {
+  if (typeof window === 'undefined') return DEFAULT_SETS;
+  const data = await apiJson<{sets: VarSet[]}>('/api/dmt/variables/sets');
+  return data.sets?.length ? data.sets : DEFAULT_SETS;
+}
+
+export async function saveSets(sets: VarSet[]) {
   if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(sets));
-  } catch {}
+  await apiJson('/api/dmt/variables/bulk-import', {
+    method: 'POST',
+    body: JSON.stringify({sets, replaceSets: true}),
+  });
 }
 
 export function findOption(
@@ -412,21 +419,39 @@ export const DEFAULT_PAGES: PageScope[] = [
   }
 ];
 
-export function loadPages(): PageScope[] {
+export async function loadPages(): Promise<PageScope[]> {
   if (typeof window === 'undefined') return DEFAULT_PAGES;
-  try {
-    const raw = localStorage.getItem(PAGES_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as PageScope[];
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch {}
-  return DEFAULT_PAGES;
+  const data = await apiJson<{pages: PageScope[]}>('/api/dmt/variables/pages');
+  return data.pages?.length ? data.pages : DEFAULT_PAGES;
 }
 
-export function savePages(pages: PageScope[]) {
+export async function savePages(pages: PageScope[]) {
   if (typeof window === 'undefined') return;
+  await apiJson('/api/dmt/variables/bulk-import', {
+    method: 'POST',
+    body: JSON.stringify({pages, replacePages: true}),
+  });
+}
+
+export async function importLocalVariablesOnce() {
+  if (typeof window === 'undefined') return;
+  const migratedKey = 'dmt_variables_pg_migrated_v1';
+  if (localStorage.getItem(migratedKey)) return;
+  let sets: VarSet[] = [];
+  let pages: PageScope[] = [];
   try {
-    localStorage.setItem(PAGES_KEY, JSON.stringify(pages));
+    sets = JSON.parse(localStorage.getItem(STORE_KEY) || '[]') as VarSet[];
   } catch {}
+  try {
+    pages = JSON.parse(localStorage.getItem(PAGES_KEY) || '[]') as PageScope[];
+  } catch {}
+  if (sets.length || pages.length) {
+    await apiJson('/api/dmt/variables/bulk-import', {
+      method: 'POST',
+      body: JSON.stringify({sets, pages}),
+    });
+    localStorage.removeItem(STORE_KEY);
+    localStorage.removeItem(PAGES_KEY);
+  }
+  localStorage.setItem(migratedKey, '1');
 }

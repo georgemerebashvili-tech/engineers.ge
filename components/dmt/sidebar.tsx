@@ -27,6 +27,7 @@ import {
   Factory,
   Megaphone,
   BarChart3,
+  Contact,
   type LucideIcon
 } from 'lucide-react';
 
@@ -106,6 +107,7 @@ const SECTIONS: NavSection[] = [
   {
     title: 'ოპერაციები',
     items: [
+      {key: 'contacts', label: '0 · კონტაქტები', href: '/dmt/contacts', icon: Contact},
       {
         key: 'leads',
         label: '1 · ლიდები',

@@ -2,6 +2,8 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import {DmtPageShell} from '@/components/dmt/page-shell';
+import {LeadLabelsCell} from '@/components/dmt/lead-labels-cell';
+import {LeadStatusCell} from '@/components/dmt/lead-status-cell';
 import {
   Plus,
   Download,
@@ -19,14 +21,17 @@ import {
 import {
   DEFAULT_COLUMN_ORDER,
   LEAD_COLUMNS,
+  OFFER_STATUS_META,
+  OFFER_STATUS_ORDER,
   STAGE_META,
   STAGE_ORDER,
   SOURCE_ORDER,
-  appendAudit,
-  diffLead,
+  createLead,
+  deleteLead as deleteLeadApi,
   emptyLead,
   fmtDate,
   getActor,
+  importLocalLeadsOnce,
   loadAudit,
   loadColumnOrder,
   loadColumnWidths,
@@ -35,8 +40,8 @@ import {
   saveColumnOrder,
   saveColumnWidths,
   saveFilters,
-  saveLeads,
   setActor,
+  updateLead,
   type FilterState,
   type Lead,
   type LeadAuditEntry,
@@ -72,19 +77,27 @@ export default function LeadsPage() {
   };
 
   useEffect(() => {
-    setRows(loadLeads());
+    let cancelled = false;
     setOrder(loadColumnOrder());
     setWidths(loadColumnWidths());
     setFilters(loadFilters());
     setActorState(getActor());
-    setAudit(loadAudit());
-    setHydrated(true);
+    (async () => {
+      try {
+        await importLocalLeadsOnce();
+        const [nextRows, nextAudit] = await Promise.all([loadLeads(), loadAudit()]);
+        if (cancelled) return;
+        setRows(nextRows);
+        setAudit(nextAudit);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        if (!cancelled) setHydrated(true);
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    saveLeads(rows);
-  }, [rows, hydrated]);
   useEffect(() => {
     if (!hydrated) return;
     saveColumnOrder(order);
@@ -99,78 +112,81 @@ export default function LeadsPage() {
   }, [filters, hydrated]);
 
   // ─── Mutators ─────────────────────────────────────────────────────────────
-  const addLead = () => {
+  const addLead = async () => {
     const lead = emptyLead(rows, actor);
     setRows((prev) => [lead, ...prev]);
-    const entry = appendAudit({
-      by: actor,
-      action: 'create',
-      leadId: lead.id,
-      leadLabel: lead.id
-    });
-    setAudit((prev) => [entry, ...prev]);
     setShowHistory(true);
+    try {
+      const saved = await createLead(lead);
+      setRows((prev) => prev.map((r) => r.id === lead.id ? saved.lead : r));
+      const entry = saved.auditEntry;
+      if (entry) setAudit((prev) => [entry, ...prev]);
+    } catch (error) {
+      console.error(error);
+      setRows((prev) => prev.filter((r) => r.id !== lead.id));
+      alert('Lead ვერ შეინახა. სცადე თავიდან.');
+    }
   };
 
-  const updateField = <K extends keyof Lead>(id: string, key: K, value: Lead[K]) => {
-    setRows((prev) => {
-      const idx = prev.findIndex((r) => r.id === id);
-      if (idx === -1) return prev;
-      const before = prev[idx];
-      if (before[key] === value) return prev;
-      const after: Lead = {
-        ...before,
+  const updateField = async <K extends keyof Lead>(id: string, key: K, value: Lead[K]) => {
+    const before = rows.find((r) => r.id === id);
+    if (!before || before[key] === value) return;
+    const after: Lead = {
+      ...before,
+      [key]: value,
+      updatedAt: new Date().toISOString(),
+      updatedBy: actor
+    };
+    setRows((prev) => prev.map((r) => r.id === id ? after : r));
+    try {
+      const saved = await updateLead(id, {
         [key]: value,
-        updatedAt: new Date().toISOString(),
-        updatedBy: actor
-      };
-      const copy = prev.slice();
-      copy[idx] = after;
-      const col = LEAD_COLUMNS[key as string];
-      const entry = appendAudit({
-        by: actor,
-        action: 'update',
-        leadId: after.id,
-        leadLabel: after.name || after.company || after.id,
-        column: key as string,
-        columnLabel: col?.label ?? (key as string),
-        before: formatValue(before[key]),
-        after: formatValue(after[key])
-      });
-      setAudit((prevA) => [entry, ...prevA]);
-      return copy;
-    });
+        updatedAt: after.updatedAt,
+        updatedBy: after.updatedBy,
+      } as Partial<Lead>);
+      setRows((prev) => prev.map((r) => r.id === id ? saved.lead : r));
+      if (saved.auditEntries.length) setAudit((prev) => [...saved.auditEntries, ...prev]);
+    } catch (error) {
+      console.error(error);
+      setRows((prev) => prev.map((r) => r.id === id ? before : r));
+      alert('ცვლილება ვერ შეინახა. ძველი მნიშვნელობა დაბრუნდა.');
+    }
   };
 
-  const deleteLead = (id: string) => {
+  const replaceLead = (lead: Lead, auditEntry?: LeadAuditEntry | null) => {
+    setRows((prev) => prev.map((r) => r.id === lead.id ? lead : r));
+    if (auditEntry) setAudit((prev) => [auditEntry, ...prev]);
+  };
+
+  const deleteLead = async (id: string) => {
     const target = rows.find((r) => r.id === id);
     if (!target) return;
     if (!confirm(`წავშალო ლიდი ${target.id}?`)) return;
     setRows((prev) => prev.filter((r) => r.id !== id));
-    const entry = appendAudit({
-      by: actor,
-      action: 'delete',
-      leadId: target.id,
-      leadLabel: target.name || target.company || target.id
-    });
-    setAudit((prev) => [entry, ...prev]);
+    try {
+      const deleted = await deleteLeadApi(id);
+      const entry = deleted.auditEntry;
+      if (entry) setAudit((prev) => [entry, ...prev]);
+    } catch (error) {
+      console.error(error);
+      setRows((prev) => [target, ...prev]);
+      alert('Lead ვერ წაიშალა. ჩანაწერი დაბრუნდა.');
+    }
   };
 
-  const clearAll = () => {
+  const clearAll = async () => {
     if (rows.length === 0) return;
     if (!confirm(`გავასუფთავო ${rows.length} ჩანაწერი? audit log დარჩება.`)) return;
-    for (const r of rows) {
-      appendAudit({
-        by: actor,
-        action: 'delete',
-        leadId: r.id,
-        leadLabel: r.name || r.company || r.id,
-        column: 'bulk',
-        columnLabel: 'მასობრივი წაშლა'
-      });
-    }
+    const before = rows;
     setRows([]);
-    setAudit(loadAudit());
+    try {
+      await Promise.all(before.map((r) => deleteLeadApi(r.id)));
+      setAudit(await loadAudit());
+    } catch (error) {
+      console.error(error);
+      setRows(before);
+      alert('????? ????????? ????? ??? ????????.');
+    }
   };
 
   const changeActor = () => {
@@ -254,7 +270,8 @@ export default function LeadsPage() {
       }
       for (const [key, needle] of Object.entries(filters)) {
         if (!needle) continue;
-        const val = String((r as unknown as Record<string, unknown>)[key] ?? '').toLowerCase();
+        const rawVal = (r as unknown as Record<string, unknown>)[key];
+        const val = Array.isArray(rawVal) ? rawVal.join(' ').toLowerCase() : String(rawVal ?? '').toLowerCase();
         if (!val.includes(needle.toLowerCase())) return false;
       }
       return true;
@@ -286,8 +303,8 @@ export default function LeadsPage() {
   };
 
   // ─── Render ──────────────────────────────────────────────────────────────
-  const won = filtered.filter((l) => l.stage === 'won').length;
-  const active = filtered.filter((l) => !['won', 'lost'].includes(l.stage)).length;
+  const won = filtered.filter((l) => l.offerStatus === 'offer_accepted').length;
+  const active = filtered.filter((l) => l.offerStatus === 'offer_in_progress').length;
 
   const orderedCols = order
     .map((k) => LEAD_COLUMNS[k as string])
@@ -409,7 +426,7 @@ export default function LeadsPage() {
                     style={{gridTemplateColumns: gridTemplate}}
                   >
                     {orderedCols.map((c) =>
-                      renderCell(c, r, (k, v) => updateField(r.id, k, v as never))
+                      renderCell(c, r, (k, v) => updateField(r.id, k, v as never), replaceLead)
                     )}
                     <div className="flex items-center justify-center">
                       <button
@@ -459,7 +476,8 @@ export default function LeadsPage() {
 function renderCell(
   c: LeadColumn,
   r: Lead,
-  onChange: (key: keyof Lead, value: unknown) => void
+  onChange: (key: keyof Lead, value: unknown) => void,
+  onLeadSaved: (lead: Lead, auditEntry?: LeadAuditEntry | null) => void
 ) {
   const align = c.align === 'right' ? 'text-right' : '';
   const v = r[c.key];
@@ -468,6 +486,22 @@ function renderCell(
     return (
       <div key={c.key as string} className="px-3 py-2 font-mono text-[11px] font-semibold text-navy">
         {String(v)}
+      </div>
+    );
+  }
+
+  if (c.kind === 'offerStatus') {
+    return (
+      <div key={c.key as string} className="relative">
+        <LeadStatusCell lead={r} onSaved={onLeadSaved} />
+      </div>
+    );
+  }
+
+  if (c.kind === 'labels') {
+    return (
+      <div key={c.key as string} className="relative">
+        <LeadLabelsCell lead={r} onSaved={onLeadSaved} />
       </div>
     );
   }
@@ -666,7 +700,20 @@ function FilterPopover({
           <X size={12} />
         </button>
       </div>
-      {col.kind === 'stage' ? (
+      {col.kind === 'offerStatus' ? (
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full rounded-md border border-bdr bg-sur-2 px-2 py-1 text-[12px] focus:border-blue focus:outline-none"
+        >
+          <option value="">ყველა</option>
+          {OFFER_STATUS_ORDER.map((s) => (
+            <option key={s} value={s}>
+              {OFFER_STATUS_META[s].label}
+            </option>
+          ))}
+        </select>
+      ) : col.kind === 'stage' ? (
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -849,6 +896,7 @@ function AuditRow({entry, onScrollToLead}: {entry: LeadAuditEntry; onScrollToLea
 // ─── Utility ─────────────────────────────────────────────────────────────────
 function formatValue(v: unknown): string {
   if (v == null) return '';
+  if (Array.isArray(v)) return v.join(', ');
   if (typeof v === 'number') return String(v);
   return String(v);
 }
@@ -973,3 +1021,4 @@ function EmptyState({hasData, onAdd}: {hasData: boolean; onAdd: () => void}) {
     </div>
   );
 }
+

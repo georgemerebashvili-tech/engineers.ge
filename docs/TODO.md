@@ -8,6 +8,18 @@
 
 ---
 
+## 🔴 DMT shared state — multi-user data sync (BLOCKER)
+
+- [x] 2026-05-04 — `/dmt/leads`, `/dmt/leads/manual`, `/dmt/variables` localStorage-ში ინახავს მონაცემს → სხვა user-ს არ უჩანს. გადავიტანოთ Postgres-ზე. Task: [docs/tasks/032-dmt-shared-state-persistence.md](./tasks/032-dmt-shared-state-persistence.md). Codex ✅ 2026-05-04 — migration `0061_dmt_shared_state.sql`, DMT API routes, one-time localStorage import, UI prefs localStorage-ში დარჩა.
+
+## 🟡 DMT Contacts page + lead conversion
+
+- [ ] 2026-05-04 — ახალი `/dmt/contacts` გვერდი — სრული საკონტაქტო რეესტრი + "→ ლიდად გადაყვანის" ღილაკი (კომპანიის გარეშე disabled). Conversion-ის შემდეგ contact-ზე badge `→ L-NNNN`. Task: [docs/tasks/033-dmt-contacts.md](./tasks/033-dmt-contacts.md). Codex code ✅ 2026-05-04 — build/typecheck OK; DB migration apply blocked by Supabase password auth (`28P01`).
+
+## 🟡 Leads workflow refactor — 3 statuses + labels
+
+- [ ] 2026-05-04 — ლიდები: 3 status (`offer_in_progress` → `offer_accepted` / `offer_rejected`), workflow sub-steps (ინვენტარი + ინვოისი), free-form labels autocomplete-ით. Task: [docs/tasks/034-leads-status-workflow.md](./tasks/034-leads-status-workflow.md). Codex code ✅ 2026-05-04 — migration/API/store/components + `/dmt/leads` wired, build/typecheck OK; DB apply blocked by same Supabase password auth (`28P01`). Manual grid follow-through remains for final acceptance.
+
 ## 🟡 TBC archive safety — follow-up
 
 - [x] 2026-04-23 — TBC admin-ში დავამატოთ archive/restore workspace, რომ `users / companies / comments / devices / estimate` archived ჩანაწერები გამოჩნდეს, ფილტრდებოდეს და საჭიროების შემთხვევაში დაბრუნდეს active სიაში. (done 2026-04-24)
