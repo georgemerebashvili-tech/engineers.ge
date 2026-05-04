@@ -52,19 +52,29 @@ export async function consumeTbcResetToken(
   const hash = await bcrypt.hash(newPassword, 10);
   const now = new Date().toISOString();
 
-  const c = await db
-    .from('tbc_password_reset_tokens')
-    .update({consumed_at: now})
-    .eq('token', token);
-  if (c.error) return {ok: false, reason: 'db'};
-
+  // Update password first so a transient failure on the token row doesn't
+  // strand the user with a wasted token AND an unchanged password.
   const upd = await db
     .from('tbc_users')
     .update({password_hash: hash})
     .eq('id', data.user_id)
     .select('id, username')
     .single();
-  if (upd.error || !upd.data) return {ok: false, reason: 'db'};
+  if (upd.error || !upd.data) {
+    console.error('[tbc password-reset] user update failed', upd.error);
+    return {ok: false, reason: 'db'};
+  }
+
+  // Best-effort: mark token consumed. If this fails the password is already
+  // updated, so the user is fine; we just leave a reusable token (a cleanup
+  // job can sweep it).
+  const c = await db
+    .from('tbc_password_reset_tokens')
+    .update({consumed_at: now})
+    .eq('token', token);
+  if (c.error) {
+    console.error('[tbc password-reset] consume failed (password already changed)', c.error);
+  }
 
   return {
     ok: true,
