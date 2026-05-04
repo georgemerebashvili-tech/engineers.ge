@@ -4325,8 +4325,9 @@ async function renderProductionTab() {
   let cols = [..._products].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ka'));
   if (hideEmpty) cols = cols.filter(p => (usageByProduct.get(p.id) || 0) > 0);
 
-  // Rows: branches (filtered by name)
+  // Rows: branches with at least 1 device, filtered by name search
   const rows = (state.branches || []).filter(b => {
+    if ((branchTotals.get(b.id) || 0) === 0) return false;
     if (!q) return true;
     const hay = `${b.name || ''} ${b.alias || ''} ${b.city || ''} ${b.region || ''}`.toLowerCase();
     return hay.includes(q);
