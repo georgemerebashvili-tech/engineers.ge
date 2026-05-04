@@ -1864,7 +1864,7 @@ table.devices-sheet td:last-child { border-right: none; }
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
         <input id="productionSearch" type="text" placeholder="ძებნა: ფილიალი…" oninput="renderProductionTab()" style="height:32px;padding:0 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;min-width:200px;">
         <label style="display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--slate-600);cursor:pointer;">
-          <input type="checkbox" id="productionHideEmpty" onchange="renderProductionTab()"> ფარული ცარიელი სვეტები
+          <input type="checkbox" id="productionHideEmpty" onchange="renderProductionTab()" checked> ფარული ცარიელი სვეტები
         </label>
         <button class="btn sm" onclick="exportProductionXlsx()" style="font-size:12px;background:var(--slate-050);border-color:var(--border);color:var(--slate-700);">⬇ XLSX</button>
       </div>
@@ -4398,20 +4398,17 @@ async function renderProductionTab() {
       #tab-production thead th.prod-num-h { position:sticky; left:0; width:40px; text-align:center; padding:6px 6px; }
       #tab-production thead th.prod-branch-h { position:sticky; left:40px; padding:6px 10px; text-align:left; min-width:240px; border-right:1px solid var(--border); }
       #tab-production thead th.prod-total-left-h { position:sticky; left:320px; padding:6px 8px; text-align:center; min-width:56px; border-right:2px solid var(--slate-300); color:var(--slate-800); font-weight:700; }
-      #tab-production .prod-col-h { min-width:28px; max-width:28px; width:28px; padding:0; vertical-align:bottom; background:var(--slate-050); overflow:visible; }
-      #tab-production .prod-col-label { height:64px; width:28px; position:relative; overflow:visible; }
+      #tab-production .prod-col-h { min-width:56px; max-width:80px; width:60px; padding:0; vertical-align:bottom; background:var(--slate-050); }
+      #tab-production .prod-col-label { padding:4px 4px 6px; }
       #tab-production .prod-col-label span {
-        transform: rotate(-45deg);
-        transform-origin: left bottom;
-        position: absolute;
-        left: 16px;
-        bottom: 2px;
-        white-space: nowrap;
+        display: block;
         font-size: 11px;
         font-weight: 600;
         color: var(--slate-700);
-        display: inline-block;
-        line-height: 1;
+        text-align: center;
+        white-space: normal;
+        word-break: break-word;
+        line-height: 1.3;
       }
       #tab-production .prod-cell { text-align:center; padding:4px 2px; border-bottom:1px solid var(--border); border-left:1px solid var(--border); font-family:var(--font-mono); font-size:12px; min-width:28px; background:#fff; }
       #tab-production tbody tr:nth-child(even) .prod-cell { background:#fafbfc; }
