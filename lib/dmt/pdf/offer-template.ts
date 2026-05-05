@@ -57,6 +57,11 @@ function money(value: number) {
 }
 
 function fmtMoney(value: number) {
+  // Compact format for table cells (header column says price/total in GEL implicitly).
+  return new Intl.NumberFormat('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(value);
+}
+
+function fmtMoneyWithCurrency(value: number) {
   return `${new Intl.NumberFormat('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}).format(value)} GEL`;
 }
 
@@ -309,9 +314,10 @@ function drawIntro(ctx: DrawCtx, lead: OfferPdfLead) {
 }
 
 function tableColumns(hasLabor: boolean) {
+  // CONTENT_W = 511pt total budget. Columns must sum to ≤ 511.
   return hasLabor
-    ? [28, 190, 42, 42, 58, 64, 54, 64]
-    : [28, 248, 48, 48, 70, 76, 76];
+    ? [22, 121, 34, 36, 76, 80, 60, 80]   // N, name, unit, qty, price, sub-total, labor, line-total = 509
+    : [24, 175, 40, 44, 84, 84, 60];       // N, name, unit, qty, price, sub-total, sum = 511
 }
 
 function drawTableHeader(ctx: DrawCtx, y: number, hasLabor: boolean) {
@@ -400,13 +406,13 @@ function drawSummary(ctx: DrawCtx, offer: DmtOffer, totals: Totals) {
   const x = PAGE_W - M - 280;
   const rowH = 22;
   const rows: Array<[string, string, boolean]> = [
-    ['პროდუქციის ღირებულება (დღგ-ს ჩათვლით)', fmtMoney(totals.subtotal), false],
-    ['ხელობა (გადასახადების ჩათვლით)', fmtMoney(totals.laborTotal), false],
-    ['ჯამი', fmtMoney(totals.sum), false],
-    [`კომერციული მოგება ${totals.marginPercent}%`, fmtMoney(totals.marginAmount), false],
-    ['სულ ჯამი', fmtMoney(totals.grandTotal), true]
+    ['პროდუქციის ღირებულება (დღგ-ს ჩათვლით)', fmtMoneyWithCurrency(totals.subtotal), false],
+    ['ხელობა (გადასახადების ჩათვლით)', fmtMoneyWithCurrency(totals.laborTotal), false],
+    ['ჯამი', fmtMoneyWithCurrency(totals.sum), false],
+    [`კომერციული მოგება ${totals.marginPercent}%`, fmtMoneyWithCurrency(totals.marginAmount), false],
+    ['სულ ჯამი', fmtMoneyWithCurrency(totals.grandTotal), true]
   ];
-  if (offer.vatRate) rows.splice(1, 0, [`დღგ ინფორმაციულად ${offer.vatRate}%`, fmtMoney(offer.vatAmount ?? 0), false]);
+  if (offer.vatRate) rows.splice(1, 0, [`დღგ ინფორმაციულად ${offer.vatRate}%`, fmtMoneyWithCurrency(offer.vatAmount ?? 0), false]);
 
   ctx.page.drawRectangle({x, y: ctx.y - rows.length * rowH, width: 280, height: rows.length * rowH, borderColor: PDF_COLORS.line, borderWidth: 1});
   rows.forEach(([label, value, strong], index) => {
@@ -419,7 +425,7 @@ function drawSummary(ctx: DrawCtx, offer: DmtOffer, totals: Totals) {
 
   ctx.y -= drawWrapped(
     ctx,
-    `სისტემის დანერგვისთვის საჭიროა ${totals.items.length} ერთეული პოზიციის მიწოდება/მონტაჟი, საერთო ღირებულებით ${fmtMoney(totals.grandTotal)} დღგ-ს ჩათვლით.`,
+    `სისტემის დანერგვისთვის საჭიროა ${totals.items.length} ერთეული პოზიციის მიწოდება/მონტაჟი, საერთო ღირებულებით ${fmtMoneyWithCurrency(totals.grandTotal)} დღგ-ს ჩათვლით.`,
     M,
     ctx.y,
     CONTENT_W,
@@ -447,29 +453,31 @@ function drawGuaranteeAndTerms(ctx: DrawCtx, offer: DmtOffer) {
   const features = [
     'ქართული მენიუ პროგრამულ უზრუნველყოფაზე.',
     'მობილური აპლიკაციით სარგებლობა.',
-    'მონტაჟისთვის საჭირო მასალების მიწოდება.',
-    'სისტემის პირველადი კონფიგურაცია.',
-    'მომხმარებლების დამატება და უფლებების მართვა.',
-    'სისტემის დისტანციური მონიტორინგი.',
-    'შეტყობინებები და ოპერატიული რეაგირება.',
-    'ენერგოეფექტურობის კონტროლი.',
-    'სერვისის ისტორიის აღრიცხვა.',
-    'მონაცემების დაცული შენახვა.',
-    'ტექნიკური მხარდაჭერა.',
-    'მომავალი განახლებებით სარგებლობა.',
-    'შესრულებული სამუშაოების მონიტორინგი.'
+    'მონტაჟისთვის საჭირო მასალებს, როგორიცაა სადენები და სხვა სახარჯი მასალები.',
+    'პროგრამული უზრუნველყოფის მოხმარების ტრენინგს.',
+    'უფასო ტექნიკურ მხარდაჭერას სისტემის გამართვაზე ინტენსიურად პირველი სამი თვის განმავლობაში.',
+    'მუდმივ მხარდაჭერას სისტემის გამოყენებაზე — მხარდაჭერის გუნდთან მუდმივ წვდომას და პირად მენეჯერს.',
+    'მოწყობილობების ავტომატიზაციას ონლაინ.',
+    'მოწყობილობების დაჯგუფებას.',
+    'ავარიების ჩანაწერების ნახვას.',
+    'ავტომატიზაციის ჩანაწერების ნახვას.',
+    'უფასო სმს და ელ.ფოსტის შეტყობინებებს ავტომატიზაციაზე, ავარიაზე ან ამორჩეულ ქმედებაზე.',
+    'თანამშრომლების როლების გაწერას.',
+    'შესრულებული სამუშაოების მონიტორინგს.'
   ];
 
   ensureSpace(ctx, 34, 'კომერციული წინადადება · პაკეტი');
-  drawText(ctx, 'შეთავაზება მოიცავს', M, ctx.y, 11, {bold: true, color: PDF_COLORS.navy});
+  drawText(ctx, 'შემოთავაზება მოიცავს', M, ctx.y, 11, {bold: true, color: PDF_COLORS.navy});
   ctx.y -= 18;
+  drawText(ctx, 'პროგრამული უზრუნველყოფის პაკეტი მოიცავს:', M, ctx.y, 9.5, {color: PDF_COLORS.navy});
+  ctx.y -= 16;
   features.forEach((feature, index) => {
     ensureSpace(ctx, 18, 'კომერციული წინადადება · პაკეტი');
     drawText(ctx, `${index + 1}. ${feature}`, M + 8, ctx.y, 9, {maxWidth: CONTENT_W - 8});
     ctx.y -= 15;
   });
   ensureSpace(ctx, 42, 'კომერციული წინადადება · პაკეტი');
-  ctx.y -= drawWrapped(ctx, 'ამასთან, მომავალში დამატებითი ფუნქციონალისა და განახლებების გამოყენება სრულად უფასოა.', M, ctx.y - 4, CONTENT_W, 9.2, 4);
+  ctx.y -= drawWrapped(ctx, 'ამასთან, მომავალში დამატებული ფუნქციონალისა და განახლებების გამოყენებას სრულიად უფასოდ.', M, ctx.y - 4, CONTENT_W, 9.2, 4);
 }
 
 function drawSignatures(ctx: DrawCtx, lead: OfferPdfLead) {
