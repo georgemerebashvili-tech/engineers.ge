@@ -1,6 +1,8 @@
 import 'server-only';
 import {NextResponse} from 'next/server';
 import {getCurrentDmtUser, type DmtUser} from '@/lib/dmt/auth';
+import {normalizeOfferItems, type OfferStatus} from '@/lib/dmt/offers-store';
+import type {LeadPhotoAnalysis} from '@/lib/dmt/photos-store';
 
 export type DmtRouteAuth =
   | {me: DmtUser; response?: never}
@@ -197,6 +199,95 @@ export function manualLeadToDb(row: Record<string, unknown>, actor: string) {
     edited_by: String(row.editedBy ?? row.edited_by ?? actor),
     edited_at: toIsoOrNow(row.editedAt ?? row.edited_at),
     created_by: String(row.createdBy ?? row.created_by ?? actor)
+  };
+}
+
+export function offerFromDb(row: Record<string, unknown>) {
+  const status = String(row.status ?? 'draft');
+  const normalizedStatus: OfferStatus =
+    status === 'sent' || status === 'approved' || status === 'rejected' || status === 'cancelled'
+      ? status
+      : 'draft';
+
+  return {
+    id: String(row.id ?? ''),
+    leadId: String(row.lead_id ?? ''),
+    status: normalizedStatus,
+    items: normalizeOfferItems(row.items),
+    subtotal: parseNumber(row.subtotal),
+    vatRate: row.vat_rate === null || row.vat_rate === undefined ? null : parseNumber(row.vat_rate),
+    vatAmount: row.vat_amount === null || row.vat_amount === undefined ? null : parseNumber(row.vat_amount),
+    total: parseNumber(row.total),
+    docNumber: row.doc_number === null || row.doc_number === undefined ? null : parseNumber(row.doc_number),
+    docDate: row.doc_date ? String(row.doc_date) : null,
+    laborPerUnit: row.labor_per_unit === null || row.labor_per_unit === undefined ? null : parseNumber(row.labor_per_unit),
+    laborTotal: row.labor_total === null || row.labor_total === undefined ? null : parseNumber(row.labor_total),
+    marginPercent: row.margin_percent === null || row.margin_percent === undefined ? 15 : parseNumber(row.margin_percent, 15),
+    marginAmount: row.margin_amount === null || row.margin_amount === undefined ? null : parseNumber(row.margin_amount),
+    includeMoneyBackGuarantee: row.include_money_back_guarantee === null || row.include_money_back_guarantee === undefined
+      ? true
+      : Boolean(row.include_money_back_guarantee),
+    pdfUrl: row.pdf_url ? String(row.pdf_url) : null,
+    pdfGeneratedAt: row.pdf_generated_at ? String(row.pdf_generated_at) : null,
+    pdfGeneratedBy: row.pdf_generated_by ? String(row.pdf_generated_by) : null,
+    pdfDocSizeBytes: row.pdf_doc_size_bytes === null || row.pdf_doc_size_bytes === undefined ? null : parseNumber(row.pdf_doc_size_bytes),
+    currency: String(row.currency ?? 'GEL'),
+    deliveryTerms: String(row.delivery_terms ?? ''),
+    paymentTerms: String(row.payment_terms ?? ''),
+    notes: String(row.notes ?? ''),
+    shareToken: row.share_token ? String(row.share_token) : null,
+    shareTokenExpiresAt: row.share_token_expires_at ? String(row.share_token_expires_at) : null,
+    sentAt: row.sent_at ? String(row.sent_at) : null,
+    approvedAt: row.approved_at ? String(row.approved_at) : null,
+    approvedByClient: row.approved_by_client ? String(row.approved_by_client) : null,
+    rejectedAt: row.rejected_at ? String(row.rejected_at) : null,
+    rejectionReason: row.rejection_reason ? String(row.rejection_reason) : null,
+    createdAt: String(row.created_at ?? ''),
+    createdBy: String(row.created_by ?? ''),
+    updatedAt: String(row.updated_at ?? ''),
+    updatedBy: String(row.updated_by ?? '')
+  };
+}
+
+export function offerAuditFromDb(row: Record<string, unknown>) {
+  return {
+    id: String(row.id ?? ''),
+    at: String(row.at ?? ''),
+    by: String(row.by ?? ''),
+    action: String(row.action ?? ''),
+    offerId: String(row.offer_id ?? ''),
+    leadId: row.lead_id ? String(row.lead_id) : null,
+    before: row.before_val ?? null,
+    after: row.after_val ?? null,
+    notes: row.notes ? String(row.notes) : ''
+  };
+}
+
+export function photoFromDb(row: Record<string, unknown>) {
+  const analysis =
+    row.ai_analysis && typeof row.ai_analysis === 'object'
+      ? row.ai_analysis as LeadPhotoAnalysis
+      : null;
+
+  return {
+    id: String(row.id ?? ''),
+    leadId: String(row.lead_id ?? ''),
+    photoUrl: String(row.photo_url ?? ''),
+    thumbnailUrl: row.thumbnail_url ? String(row.thumbnail_url) : null,
+    aiAnalyzed: Boolean(row.ai_analyzed),
+    aiAnalysis: analysis,
+    aiModel: row.ai_model ? String(row.ai_model) : null,
+    aiAnalyzedAt: row.ai_analyzed_at ? String(row.ai_analyzed_at) : null,
+    aiError: row.ai_error ? String(row.ai_error) : null,
+    matchedInventoryId: row.matched_inventory_id ? String(row.matched_inventory_id) : null,
+    matchedQty: row.matched_qty === null || row.matched_qty === undefined ? null : parseNumber(row.matched_qty),
+    userNotes: String(row.user_notes ?? ''),
+    deletedAt: row.deleted_at ? String(row.deleted_at) : null,
+    deletedBy: row.deleted_by ? String(row.deleted_by) : null,
+    createdAt: String(row.created_at ?? ''),
+    createdBy: String(row.created_by ?? ''),
+    updatedAt: String(row.updated_at ?? ''),
+    updatedBy: String(row.updated_by ?? '')
   };
 }
 

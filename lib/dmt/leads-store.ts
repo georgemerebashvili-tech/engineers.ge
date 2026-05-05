@@ -119,7 +119,6 @@ export const DEFAULT_COLUMN_ORDER: (keyof Lead)[] = [
   'id',
   'name',
   'company',
-  'labels',
   'phone',
   'email',
   'source',
@@ -347,7 +346,7 @@ export async function clearAudit() {
 // ─── Column order / widths / filters ────────────────────────────────────────
 export function loadColumnOrder(): (keyof Lead)[] {
   const saved = load<string[]>(K.order, []);
-  const valid = saved.filter((k) => k in LEAD_COLUMNS) as (keyof Lead)[];
+  const valid = saved.filter((k) => k in LEAD_COLUMNS && k !== 'labels') as (keyof Lead)[];
   if (valid.length === 0) return [...DEFAULT_COLUMN_ORDER];
   // Append any column that was added after the order was saved.
   for (const k of DEFAULT_COLUMN_ORDER) {

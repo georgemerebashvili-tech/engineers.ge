@@ -2,6 +2,7 @@
 
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {DmtPageShell} from '@/components/dmt/page-shell';
+import {LeadDetailDrawer} from '@/components/dmt/lead-detail-drawer';
 import Link from 'next/link';
 import {
   Building2,
@@ -27,6 +28,7 @@ import {
   Eraser,
   GripVertical,
   Check,
+  Filter,
   LoaderCircle
 } from 'lucide-react';
 import {
@@ -279,6 +281,9 @@ export default function ManualLeadsPage() {
   const [statusOrder, setStatusOrder] = useState<Status[]>(STATUS_ORDER);
   const [statusDragKey, setStatusDragKey] = useState<Status | null>(null);
   const [statusDragOverKey, setStatusDragOverKey] = useState<Status | null>(null);
+  const [statusFilter, setStatusFilter] = useState<Status | 'all'>('all');
+  const [showStatusFilter, setShowStatusFilter] = useState(false);
+  const [detailLead, setDetailLead] = useState<Row | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -490,10 +495,27 @@ export default function ManualLeadsPage() {
       if (activeOwnerName && normalizeOwnerName(r.owner) !== normalizeOwnerName(activeOwnerName)) {
         return false;
       }
+      if (statusFilter !== 'all' && r.status !== statusFilter) return false;
       if (!t) return true;
       return Object.values(r).some((v) => String(v ?? '').toLowerCase().includes(t));
     });
-  }, [activeOwnerUser, rows, q]);
+  }, [activeOwnerUser, rows, q, statusFilter]);
+
+  const statusCounts = useMemo(() => {
+    const counts: Record<Status | 'all', number> = {
+      'all': 0,
+      'ახალი': 0,
+      'მოლაპარაკების პროცესი': 0,
+      'შეთავაზება გაცემული': 0,
+      'დახურული-მოგება': 0,
+      'დახურული-დაკარგვა': 0,
+    };
+    for (const r of rows) {
+      counts.all++;
+      if (counts[r.status as Status] !== undefined) counts[r.status as Status]++;
+    }
+    return counts;
+  }, [rows]);
 
   const grouped = useMemo(() => {
     const g: Record<Status, Row[]> = {
@@ -660,8 +682,17 @@ export default function ManualLeadsPage() {
     setCollapsed((prev) => ({...prev, [s]: !prev[s]}));
   };
 
+  const openDetailFromRow = (event: React.MouseEvent<HTMLDivElement>, row: Row) => {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('button,a,input,select,textarea,[data-no-row-open]')) return;
+    setDetailLead(row);
+  };
+
   const totalContract = filtered.reduce((s, r) => s + (r.contract || 0), 0);
   const fullWidth = totalColsWidth + 40 + 44 + 40;
+  const activeDetailLead = detailLead
+    ? rows.find((row) => row.id === detailLead.id) ?? detailLead
+    : null;
 
   return (
     <DmtPageShell
@@ -670,6 +701,22 @@ export default function ManualLeadsPage() {
       subtitle="Airtable-სტილის grid · ჯგუფდება სტატუსის მიხედვით · უჯრების პირდაპირ რედაქტირება"
       searchPlaceholder="ძიება ნებისმიერ ველში…"
       onQueryChange={setQ}
+      filterSlot={
+        <button
+          type="button"
+          onClick={() => setShowStatusFilter((v) => !v)}
+          className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+            showStatusFilter || statusFilter !== 'all'
+              ? 'border-blue bg-blue-lt text-blue'
+              : 'border-bdr bg-sur-2 text-text-2 hover:border-blue hover:text-blue'
+          }`}
+        >
+          <Filter size={14} /> ფილტრი
+          {statusFilter !== 'all' && (
+            <span className="rounded-full bg-blue px-1.5 py-0.5 font-mono text-[9.5px] text-white">1</span>
+          )}
+        </button>
+      }
       actions={
         <button
           onClick={exportCsv}
@@ -805,6 +852,58 @@ export default function ManualLeadsPage() {
             </div>
           )}
         </div>
+
+        {showStatusFilter && (
+        <div className="mb-4 rounded-[10px] border border-bdr bg-sur">
+          <div className="flex flex-wrap items-center gap-2 px-3 py-3">
+            <div className="mr-1 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-text-3">
+              სტატუსი
+            </div>
+            <button
+              type="button"
+              onClick={() => setStatusFilter('all')}
+              className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors ${
+                statusFilter === 'all'
+                  ? 'border-navy bg-navy text-white'
+                  : 'border-bdr bg-sur-2 text-text-2 hover:border-navy hover:text-navy'
+              }`}
+            >
+              ყველა
+              <span className={`rounded-full px-1.5 py-0.5 font-mono text-[10px] ${statusFilter === 'all' ? 'bg-white/20 text-white' : 'bg-bdr text-text-3'}`}>
+                {statusCounts.all}
+              </span>
+            </button>
+            {statusOrder.map((status) => {
+              const meta = STATUS_META[status];
+              const active = statusFilter === status;
+              return (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setStatusFilter(status)}
+                  className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-all"
+                  style={{
+                    borderColor: active ? meta.color : meta.border,
+                    background: active ? meta.color : meta.bg,
+                    color: active ? 'white' : meta.color,
+                  }}
+                >
+                  {status}
+                  <span
+                    className="rounded-full px-1.5 py-0.5 font-mono text-[10px]"
+                    style={{
+                      background: active ? 'rgba(255,255,255,0.25)' : meta.border,
+                      color: active ? 'white' : meta.color,
+                    }}
+                  >
+                    {statusCounts[status]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+        )}
 
         <div className="mb-4 grid gap-3 md:grid-cols-4">
           <StatCard label="სულ ჩანაწერი" value={String(filtered.length)} />
@@ -1028,7 +1127,8 @@ export default function ManualLeadsPage() {
                     items.map((r, idx) => (
                       <div
                         key={r.id}
-                        className="grid border-b border-bdr/60 last:border-b-0 text-[12px] transition-colors hover:bg-sur-2"
+                        onClick={(e) => openDetailFromRow(e, r)}
+                        className="grid cursor-pointer border-b border-bdr/60 text-[12px] transition-colors last:border-b-0 hover:bg-sur-2"
                         style={{gridTemplateColumns: gridTemplate}}
                       >
                         <div className="flex items-center justify-center font-mono text-[10px] text-text-3">
@@ -1097,6 +1197,11 @@ export default function ManualLeadsPage() {
           <b>💡 ცოცხალი grid:</b> უჯრედი სადაც text-ია — click-ი + რედაქტირება. Status / როლი / პრ. მენეჯერი — dropdown. <b>სვეტის ზომა:</b> header-ის მარჯვენა კიდეზე drag · ორმაგი click → მინიმუმი (~10 სიმბ.). <b>თანმიმდევრობა:</b> header-ი აიღე და გადაათრიე სხვა column-ზე → გადაადგილდება. Grid-ის მონაცემები ისევ localStorage-შია, ხოლო user tab ფერები DMT მომხმარებლის ნასტროიკებში ინახება.
         </div>
       </div>
+      <LeadDetailDrawer
+        key={activeDetailLead?.id ?? 'closed'}
+        lead={activeDetailLead}
+        onClose={() => setDetailLead(null)}
+      />
     </DmtPageShell>
   );
 }
@@ -1289,13 +1394,14 @@ function DatePickerCell({value, onChange}: {value: string; onChange: (iso: strin
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`block w-full cursor-pointer border-0 bg-transparent px-3 py-2 text-left font-mono text-[11.5px] transition-colors hover:bg-sur-2 focus:bg-sur focus:outline-none focus:ring-1 focus:ring-blue ${
+        className={`flex w-full cursor-pointer items-center gap-1.5 border-0 bg-transparent px-3 py-2 text-left font-mono text-[11.5px] transition-colors hover:bg-sur-2 focus:bg-sur focus:outline-none focus:ring-1 focus:ring-blue ${
           hasValue ? 'text-navy' : 'text-text-3'
         }`}
         title="პერიოდის არჩევა"
         aria-label={hasValue ? display : 'პერიოდის არჩევა'}
       >
-        {display}
+        <Calendar size={12} strokeWidth={2} className={hasValue ? 'text-blue' : 'text-text-3'} />
+        <span>{display}</span>
       </button>
       {open && (
         <div className="absolute left-0 top-full z-30 mt-1 flex items-center gap-2 rounded-md border border-bdr bg-sur p-2 shadow-lg">
@@ -1726,4 +1832,3 @@ function StatCard({label, value, accent}: {label: string; value: string; accent?
     </div>
   );
 }
-

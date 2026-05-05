@@ -1,6 +1,7 @@
 'use client';
 
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
+import {createPortal} from 'react-dom';
 import {Plus, X} from 'lucide-react';
 import {loadLabelSuggestions, setLeadLabels, type Lead, type LeadAuditEntry} from '@/lib/dmt/leads-store';
 
@@ -15,10 +16,50 @@ export function LeadLabelsCell({
   const [input, setInput] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState<{top: number; left: number} | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (!open) return;
     void loadLabelSuggestions().then(setSuggestions).catch(console.error);
+  }, [open]);
+
+  useEffect(() => {
+    if (!open || !triggerRef.current) {
+      setPos(null);
+      return;
+    }
+    const rect = triggerRef.current.getBoundingClientRect();
+    setPos({
+      top: rect.bottom + window.scrollY + 4,
+      left: rect.left + window.scrollX,
+    });
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target)) return;
+      if (panelRef.current?.contains(target)) return;
+      setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    const onScroll = () => setOpen(false);
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    window.addEventListener('scroll', onScroll, true);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('scroll', onScroll, true);
+    };
   }, [open]);
 
   const available = useMemo(() => {
@@ -51,7 +92,7 @@ export function LeadLabelsCell({
   };
 
   return (
-    <div className="relative px-2 py-1.5">
+    <div ref={triggerRef} className="relative px-2 py-1.5">
       <div className="flex max-w-full items-center gap-1 overflow-hidden">
         {lead.labels.slice(0, 2).map((label) => (
           <span key={label} className="inline-flex max-w-[70px] items-center gap-1 rounded-full border border-blue-bd bg-blue-lt px-2 py-0.5 text-[10.5px] font-semibold text-blue">
@@ -63,8 +104,12 @@ export function LeadLabelsCell({
           <Plus size={12} />
         </button>
       </div>
-      {open && (
-        <div className="absolute left-2 top-9 z-40 w-[260px] rounded-lg border border-bdr bg-sur p-3 shadow-xl">
+      {open && mounted && pos && createPortal(
+        <div
+          ref={panelRef}
+          className="fixed z-50 w-[260px] rounded-lg border border-bdr bg-sur p-3 shadow-xl"
+          style={{top: pos.top, left: pos.left}}
+        >
           <div className="mb-2 flex flex-wrap gap-1">
             {lead.labels.length === 0 ? (
               <span className="text-[11px] text-text-3">იარლიყი არ აქვს</span>
@@ -73,7 +118,7 @@ export function LeadLabelsCell({
                 key={label}
                 disabled={busy}
                 onClick={() => void save(lead.labels.filter((item) => item !== label))}
-                className="inline-flex items-center gap-1 rounded-full border border-bdr bg-sur-2 px-2 py-0.5 text-[11px] text-text-2"
+                className="inline-flex items-center gap-1 rounded-full border border-bdr bg-sur-2 px-2 py-0.5 text-[11px] text-text-2 hover:border-red hover:text-red"
               >
                 {label} <X size={10} />
               </button>
@@ -86,10 +131,11 @@ export function LeadLabelsCell({
               if (e.key === 'Enter') add(input);
               if (e.key === 'Escape') setOpen(false);
             }}
-            placeholder="Search..."
+            placeholder="ძიება ან ახალი..."
+            autoFocus
             className="mb-2 w-full rounded-md border border-bdr bg-sur-2 px-2 py-1.5 text-[12px] focus:border-blue focus:outline-none"
           />
-          <div className="space-y-1">
+          <div className="max-h-[240px] space-y-1 overflow-y-auto">
             {available.map((label) => (
               <button
                 key={label}
@@ -110,7 +156,8 @@ export function LeadLabelsCell({
               </button>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

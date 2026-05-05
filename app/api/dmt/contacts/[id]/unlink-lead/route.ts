@@ -5,43 +5,24 @@ import {
   contactFromDb,
   dmtActor,
   jsonError,
-  manualLeadFromDb,
-  parseNumber,
   requireDmtUser,
 } from '@/lib/dmt/shared-state-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function nextManualLeadId(db: ReturnType<typeof supabaseAdmin>) {
-  const {data, error} = await db
-    .from('dmt_manual_leads')
-    .select('id')
-    .like('id', 'M-%');
-
-  if (error) throw error;
-
-  let max = 1000;
-  for (const row of data ?? []) {
-    const match = /^M-(\d+)$/.exec(String((row as {id?: unknown}).id ?? ''));
-    if (match) max = Math.max(max, Number(match[1]));
-  }
-  return `M-${max + 1}`;
-}
-
 function contactLabel(contact: Record<string, unknown>) {
   return String(contact.name || contact.company || contact.email || contact.phone || 'Contact');
 }
 
 export async function POST(
-  req: NextRequest,
+  _req: NextRequest,
   {params}: {params: Promise<{id: string}>},
 ) {
   const auth = await requireDmtUser();
   if (auth.response) return auth.response;
 
   const {id} = await params;
-  const body = await req.json().catch(() => ({}));
   const db = supabaseAdmin();
   const actor = dmtActor(auth.me);
 
@@ -52,45 +33,26 @@ export async function POST(
     .single();
 
   if (contactError || !contact) return NextResponse.json({error: 'not found'}, {status: 404});
-  if (!String(contact.company ?? '').trim()) {
-    return NextResponse.json({error: 'company_required'}, {status: 400});
+
+  const leadId = contact.converted_to_lead_id;
+  if (!leadId) {
+    return NextResponse.json({error: 'not_converted'}, {status: 400});
   }
-  if (contact.converted_to_lead_id) {
-    return NextResponse.json({error: 'already_converted', leadId: contact.converted_to_lead_id}, {status: 409});
-  }
+
+  const {error: deleteError} = await db
+    .from('dmt_manual_leads')
+    .delete()
+    .eq('id', leadId);
+
+  if (deleteError) return jsonError(deleteError);
 
   const now = new Date().toISOString();
-  const leadId = await nextManualLeadId(db);
-
-  const manualLeadRow = {
-    id: leadId,
-    company: String(contact.company ?? ''),
-    contact: String(contact.name ?? ''),
-    phone: String(contact.phone ?? ''),
-    contract: parseNumber(body?.value, 0),
-    status: 'ახალი',
-    role: '',
-    owner: String(body?.owner ?? actor),
-    period: '',
-    edited_by: actor,
-    edited_at: now,
-    created_by: actor,
-  };
-
-  const {data: lead, error: leadError} = await db
-    .from('dmt_manual_leads')
-    .insert(manualLeadRow)
-    .select()
-    .single();
-
-  if (leadError) return jsonError(leadError);
-
   const {data: updatedContact, error: updateError} = await db
     .from('dmt_contacts')
     .update({
-      converted_to_lead_id: leadId,
-      converted_at: now,
-      converted_by: actor,
+      converted_to_lead_id: null,
+      converted_at: null,
+      converted_by: null,
       updated_at: now,
       updated_by: actor,
     })
@@ -104,20 +66,20 @@ export async function POST(
     .from('dmt_contacts_audit')
     .insert({
       by: actor,
-      action: 'convert',
+      action: 'update',
       contact_id: id,
       contact_label: contactLabel(contact),
       column_key: 'converted_to_lead_id',
       column_label: 'Lead',
-      before_val: '',
-      after_val: leadId,
+      before_val: String(leadId),
+      after_val: '',
     })
     .select()
     .single();
 
   return NextResponse.json({
     contact: contactFromDb(updatedContact),
-    lead: manualLeadFromDb(lead),
+    deletedLeadId: leadId,
     contactAuditEntry: contactAudit ? contactAuditFromDb(contactAudit) : null,
   });
 }

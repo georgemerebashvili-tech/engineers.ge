@@ -1,6 +1,15 @@
-import type {Lead, Stage, Source} from '@/lib/dmt/leads-store';
 
 export type ContactSource = 'manual' | 'import' | 'website' | 'referral' | 'event';
+export type ManualOfferStatus = 'offer_in_progress' | 'offer_accepted' | 'offer_rejected';
+export type TagCategory = 'funnel' | 'quality' | 'industry' | 'channel' | 'priority' | 'general';
+export type TagSuggestion = {
+  tag: string;
+  emoji: string;
+  category: TagCategory;
+  description: string;
+  useCount: number;
+  pinned: boolean;
+};
 
 export type Contact = {
   id: string;
@@ -35,10 +44,7 @@ export type ContactAuditEntry = {
 };
 
 export type ConvertContactBody = {
-  stage?: Stage;
-  source?: Source | ContactSource;
   value?: number;
-  owner?: string;
 };
 
 export const SOURCE_ORDER: ContactSource[] = ['manual', 'import', 'website', 'referral', 'event'];
@@ -97,10 +103,18 @@ export async function deleteContact(id: string): Promise<{ok: boolean; auditEntr
 export async function convertContactToLead(
   id: string,
   body: ConvertContactBody,
-): Promise<{contact: Contact; lead: Lead; contactAuditEntry: ContactAuditEntry | null}> {
+): Promise<{contact: Contact; lead: {id: string; [k: string]: unknown}; contactAuditEntry: ContactAuditEntry | null}> {
   return apiJson(`/api/dmt/contacts/${encodeURIComponent(id)}/convert`, {
     method: 'POST',
     body: JSON.stringify(body),
+  });
+}
+
+export async function unlinkLeadFromContact(
+  id: string,
+): Promise<{contact: Contact; deletedLeadId: string; contactAuditEntry: ContactAuditEntry | null}> {
+  return apiJson(`/api/dmt/contacts/${encodeURIComponent(id)}/unlink-lead`, {
+    method: 'POST',
   });
 }
 

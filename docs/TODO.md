@@ -20,6 +20,26 @@
 
 - [ ] 2026-05-04 — ლიდები: 3 status (`offer_in_progress` → `offer_accepted` / `offer_rejected`), workflow sub-steps (ინვენტარი + ინვოისი), free-form labels autocomplete-ით. Task: [docs/tasks/034-leads-status-workflow.md](./tasks/034-leads-status-workflow.md). Codex code ✅ 2026-05-04 — migration/API/store/components + `/dmt/leads` wired, build/typecheck OK; DB apply blocked by same Supabase password auth (`28P01`). Manual grid follow-through remains for final acceptance.
 
+## 🟡 Contacts: preset tag buttons + lead ID format + badge visual
+
+- [x] 2026-05-05 — Part 1: "თეგები" სვეტი chip-based UI-ით + 5 colored preset buttons (Manual/Import/Website/Referral/Event) + custom input · Part 2: ლიდის ID format `M-NNNN` (timestamp-ის ნაცვლად) · Part 3: badge visual polish (truncation, lock-state, hover transitions). **NO DELETIONS**. Task: [docs/tasks/035-contacts-preset-tags.md](./tasks/035-contacts-preset-tags.md). Codex code ✅ 2026-05-05 — source column stays hidden, source values migrate to tags once, chip popover + M-NNNN + polished/truncated converted badge shipped.
+
+## 🟡 Contacts: TagsCell portal fix + lead ID format M-NNNN
+
+- [x] 2026-05-05 — TagsCell panel-ი ცხრილის overflow-ში გადაიჭრება — გადატანა Portal-ით (close on scroll) · Convert API-ში ID format `M-NNNN` sequential (იყო timestamp `r177...`) · Long legacy ID-ების truncation badge-ში (`r177…6895` + tooltip). **NO DELETIONS**. Task: [docs/tasks/036-contacts-tags-fix-and-id-format.md](./tasks/036-contacts-tags-fix-and-id-format.md). Codex code ✅ 2026-05-05 — portal/dropdown close behavior, M-NNNN generator, legacy badge truncation, typecheck/lint OK.
+
+## 🟡 DMT Offer + per-lead inventory (mobile photos + AI vision)
+
+- [ ] 2026-05-05 — `dmt_offers` ცხრილი + ოფერის შექმნის UI (inventory items + custom) + send to client (share_token) · per-lead photo upload + AI analyze (Anthropic Claude Haiku 4.5 vision) · mobile route `/dmt/m/leads/[id]/photos` · QR code deep-link from desktop. **STRICTLY /dmt scope, NO other modifications. NO DELETIONS.** Task: [docs/tasks/037-dmt-offer-and-lead-inventory.md](./tasks/037-dmt-offer-and-lead-inventory.md). Codex code ✅ 2026-05-05 — offers/photos migrations, APIs, desktop drawer UI, mobile photo flow, QR deep-link, and AI analyze stub shipped; typecheck/lint/build OK; DB apply blocked by Supabase password auth (`28P01`).
+
+## 🟡 DMT Offer PDF generation (კომერციული წინადადება)
+
+- [ ] 2026-05-05 — PDF generation Task 037-ის ოფერებისთვის. Template matches existing "კომერციული წინადადება" layout (DMT logo, header, items table, totals with margin %, signature block, Sakpatenti footer). Yellow-highlighted fields = dynamic; rest = fixed template. Sequential doc number sequence (219...). pdf-lib + Georgian font. AI optional (skipped in v1). **STRICTLY /dmt scope. NO DELETIONS.** Task: [docs/tasks/038-dmt-offer-pdf-generation.md](./tasks/038-dmt-offer-pdf-generation.md). Codex code ✅ 2026-05-05 — PDF migration/API/renderer/UI shipped; typecheck/lint/build OK; DB apply blocked by Supabase password auth (`28P01`).
+
+## 🟡 DMT Offer PDF — template fidelity fixes
+
+- [ ] 2026-05-05 — Generated PDF ვიზუალურად ბევრად განსხვავდება ორიგინალისგან. Fix list: logo placement (centered, no overlap), metadata table style, items table 8 columns (with separate ხელობა / labor total), totals format, money-back yellow highlight, exact 13-point HVAC feature list (hardcoded), Sakpatenti emblem on every page, signature page (omit "ს/კ" if empty), continuation page headers. Task: [docs/tasks/039-offer-pdf-template-fidelity.md](./tasks/039-offer-pdf-template-fidelity.md). Codex-ს მიცემული.
+
 ## 🟡 TBC archive safety — follow-up
 
 - [x] 2026-04-23 — TBC admin-ში დავამატოთ archive/restore workspace, რომ `users / companies / comments / devices / estimate` archived ჩანაწერები გამოჩნდეს, ფილტრდებოდეს და საჭიროების შემთხვევაში დაბრუნდეს active სიაში. (done 2026-04-24)
@@ -45,11 +65,11 @@ Scaffold: `/calc/water-supply` live, 4 ტაბი, heat-loss layout-ის მ
 
 გასაკეთებელი:
 
-- [ ] 2026-04-22 — Tab 0 ოთახის ცხრილი: HVAC სვეტების ნაცვლად სანტექნიკური ხელსაწყოები (უნიტაზი, დუში, ხელსაბანი, ჭურჭლის სარეცხი, სარეცხი მანქანა, ბიდე, ონკანი, სანაცრე) + Q<sub>ც</sub>/Q<sub>ცხ</sub>/Q<sub>ს</sub> ერთდროულობის ფაქტორით (СП 30.13330 §5.2–5.5 + DIN 1988-300 §6.2). ცხრილი [water-supply.html](../public/calc/water-supply.html) Tab 0.
-- [ ] 2026-04-22 — Tab 1: Tab 0-ის ხელსაწყოების ჯამიდან `qₜₒₜ` + `q₀ˢ` → საკანალიზაციო დებიტი + სეპტიკის V<sub>კამერის</sub> ცოცხლად. ამჟამად მხოლოდ septic calculator მუშაობს ხელით შეყვანილ values-ზე (`recalcSeptic`).
-- [ ] 2026-04-22 — Tab 2: მასალათა BOQ (ცივი/ცხელი წყლის მილი PPR/PEX, საკანალიზაციო PVC Ø50/110, ფიტინგები, ონკანები, უნიტაზები). რაოდენობა — Tab 0-დან.
-- [ ] 2026-04-22 — Tab 3: პროდუქციის კატალოგი — Geberit, Grohe, Hansgrohe, Rehau, Uponor seed data. JSON + filter.
-- [ ] 2026-04-22 — საიდენტიფიკაციო labels/toolbar ღილაკები ("EPC", "PDF ანგარიში") ადაპტირდეს წყალმომარაგებისთვის ან გაითიშოს.
+- [x] 2026-04-22 — Tab 0 ოთახის ცხრილი: HVAC სვეტების ნაცვლად სანტექნიკური ხელსაწყოები (უნიტაზი, დუში, ხელსაბანი, ჭურჭლის სარეცხი, სარეცხი მანქანა, ბიდე, ონკანი, სანაცრე) + Q<sub>ც</sub>/Q<sub>ცხ</sub>/Q<sub>ს</sub> ერთდროულობის ფაქტორით (СП 30.13330 §5.2–5.5 + DIN 1988-300 §6.2). ცხრილი [water-supply.html](../public/calc/water-supply.html) Tab 0. Codex code ✅ 2026-05-05 — Tab 0 fixtures, diversity factor, room Q values, sewer summary, BOQ, and PDF feed are present in the calculator.
+- [x] 2026-04-22 — Tab 1: Tab 0-ის ხელსაწყოების ჯამიდან `qₜₒₜ` + `q₀ˢ` → საკანალიზაციო დებიტი + სეპტიკის V<sub>კამერის</sub> ცოცხლად. Codex code ✅ 2026-05-05 — Tab 0 totals feed sewer summary and septic user count before V calculation.
+- [x] 2026-04-22 — Tab 2: მასალათა BOQ (ცივი/ცხელი წყლის მილი PPR/PEX, საკანალიზაციო PVC Ø50/110, ფიტინგები, ონკანები, უნიტაზები). რაოდენობა — Tab 0-დან. Codex code ✅ 2026-05-05 — BOQ quantities now derive from fixture/floor/room totals.
+- [x] 2026-04-22 — Tab 3: პროდუქციის კატალოგი — Geberit, Grohe, Hansgrohe, Rehau, Uponor seed data. JSON + filter. Codex code ✅ 2026-05-05 — seed catalog renders with search plus brand/type filters.
+- [x] 2026-04-22 — საიდენტიფიკაციო labels/toolbar ღილაკები ("EPC", "PDF ანგარიში") ადაპტირდეს წყალმომარაგებისთვის ან გაითიშოს. Codex code ✅ 2026-05-05 — EPC hidden for water module; PDF button now generates water/sewer report.
 
 ---
 
