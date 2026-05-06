@@ -10,6 +10,7 @@ import {
   Gauge,
   Ruler,
   Building2,
+  Droplets,
   type LucideIcon
 } from 'lucide-react';
 import {Container} from './container';
@@ -114,6 +115,16 @@ const SYSTEMS: System[] = [
     desc: 'IFC მოდელი 3D-ში · walls/spaces/slabs · physics overlay (heat loss, orientation, type)',
     toolsCount: 1,
     href: '/calc/ifc-viewer',
+    accent: 'var(--blue)',
+    isNew: true
+  },
+  {
+    slug: 'fan-coil-hydraulics',
+    icons: [{icon: Droplets, color: 'var(--blue)'}],
+    title: 'ფ/კ ჰიდრავლიკა',
+    desc: '2-pipe / 4-pipe ფანქოილის წყლის ჰიდრავლიკა — ნაკადი, სიჩქარე, ΔP, კრიტიკული მარშრუტი, ტუმბო',
+    toolsCount: 1,
+    href: '/calc/fan-coil-hydraulics',
     accent: 'var(--blue)',
     isNew: true
   }

@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="ka">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Caucas Metal Scraper</title>
+    <style>
+      :root {
+        --bg: #f2f5fa;
+        --sur: #ffffff;
+        --sur-2: #f7f9fd;
+        --bdr: #dde6f2;
+        --bdr-2: #c4d4e8;
+        --navy: #1a3a6b;
+        --navy-2: #0f2550;
+        --blue: #1f6fd4;
+        --blue-lt: #e8f1fd;
+        --grn: #0f6e3a;
+        --grn-lt: #edfbf3;
+        --red: #c0201a;
+        --red-lt: #fff0ef;
+        --text: #1a2840;
+        --text-2: #3d5470;
+        --text-3: #7a96b8;
+        --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.07), 0 4px 14px rgba(0, 0, 0, 0.05);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        font-size: 13px;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.5;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        height: 52px;
+        border-bottom: 1px solid var(--bdr);
+        background: var(--sur);
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      }
+
+      .topbar-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        max-width: 1120px;
+        height: 52px;
+        margin: 0 auto;
+        padding: 0 20px;
+      }
+
+      .brand {
+        color: var(--navy);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .brand span {
+        display: block;
+        color: var(--text-3);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 9px;
+        font-weight: 600;
+      }
+
+      main {
+        width: 100%;
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 40px 20px;
+      }
+
+      .panel {
+        overflow: hidden;
+        border: 1px solid var(--bdr);
+        border-radius: 10px;
+        background: var(--sur);
+        box-shadow: var(--shadow-card);
+      }
+
+      .head,
+      .body {
+        padding: 14px;
+      }
+
+      .head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        border-bottom: 1px solid var(--bdr);
+        background: var(--sur-2);
+      }
+
+      h1 {
+        margin: 0;
+        color: var(--navy);
+        font-size: 18px;
+      }
+
+      .muted {
+        margin: 4px 0 0;
+        color: var(--text-2);
+        font-size: 12px;
+      }
+
+      button,
+      a.button {
+        display: inline-flex;
+        min-height: 28px;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 6px;
+        background: var(--blue);
+        color: white;
+        padding: 6px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        text-decoration: none;
+        cursor: pointer;
+      }
+
+      button:hover,
+      a.button:hover {
+        background: var(--navy-2);
+      }
+
+      .secondary {
+        border: 1px solid var(--bdr-2);
+        background: var(--sur-2);
+        color: var(--text-2);
+      }
+
+      .secondary:hover {
+        border-color: var(--blue);
+        background: var(--blue-lt);
+        color: var(--blue);
+      }
+
+      .bar {
+        overflow: hidden;
+        height: 12px;
+        border: 1px solid var(--bdr-2);
+        border-radius: 20px;
+        background: var(--sur-2);
+      }
+
+      .bar-fill {
+        width: 0%;
+        height: 100%;
+        border-radius: 20px;
+        background: var(--blue);
+        transition: width 180ms ease;
+      }
+
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        margin: 14px 0;
+      }
+
+      .stat {
+        border: 1px solid var(--bdr);
+        border-radius: 8px;
+        background: var(--sur-2);
+        padding: 10px;
+      }
+
+      .stat strong {
+        display: block;
+        color: var(--navy);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 18px;
+      }
+
+      .stat span {
+        color: var(--text-3);
+        font-size: 10px;
+        font-weight: 700;
+      }
+
+      .status {
+        min-height: 34px;
+        margin-top: 10px;
+        color: var(--text-2);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 11px;
+      }
+
+      .done {
+        display: none;
+        margin-top: 14px;
+        border: 1px solid #9ddcba;
+        border-radius: 8px;
+        background: var(--grn-lt);
+        color: var(--grn);
+        padding: 10px;
+      }
+
+      .error {
+        display: none;
+        margin-top: 14px;
+        border: 1px solid #f8a0a0;
+        border-radius: 8px;
+        background: var(--red-lt);
+        color: var(--red);
+        padding: 10px;
+      }
+
+      .log {
+        max-height: 340px;
+        overflow: auto;
+        margin: 0;
+        border-top: 1px solid var(--bdr);
+        background: #0f1724;
+        color: #dbe7f8;
+        padding: 12px 14px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 11px;
+        white-space: pre-wrap;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      @media (max-width: 720px) {
+        main {
+          padding: 24px 14px;
+        }
+
+        .head {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .stats {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">engineers.ge <span>CAUCAS METAL · SCRAPER</span></div>
+        <a class="button secondary" href="https://caucasmetal.ge/ka/categories" target="_blank" rel="noreferrer">წყარო</a>
+      </div>
+    </nav>
+    <main>
+      <section class="panel">
+        <div class="head">
+          <div>
+            <h1>მასალების ჩამოტვირთვა</h1>
+            <p class="muted">კატეგორიები, დასახელებები, მახასიათებლები, ფასები და ერთეულები XLSX ფორმატში</p>
+          </div>
+          <button id="start">ჩამოტვირთვა</button>
+        </div>
+        <div class="body">
+          <div class="bar" aria-label="progress">
+            <div id="bar" class="bar-fill"></div>
+          </div>
+          <div id="status" class="status">მზადაა.</div>
+          <div class="stats">
+            <div class="stat"><strong id="progress">0%</strong><span>პროგრესი</span></div>
+            <div class="stat"><strong id="categories">0</strong><span>გვერდები</span></div>
+            <div class="stat"><strong id="rows">0</strong><span>პოზიციები</span></div>
+            <div class="stat"><strong id="skipped">0</strong><span>ცარიელი გვერდები</span></div>
+          </div>
+          <div id="done" class="done">
+            დასრულდა. შეგიძლია ჩამოტვირთო XLSX ან JSON.
+            <div class="actions">
+              <a class="button" href="/download/xlsx">XLSX</a>
+              <a class="button secondary" href="/download/json">JSON</a>
+            </div>
+          </div>
+          <div id="error" class="error"></div>
+        </div>
+        <pre id="log" class="log"></pre>
+      </section>
+    </main>
+    <script>
+      const el = {
+        start: document.getElementById("start"),
+        bar: document.getElementById("bar"),
+        status: document.getElementById("status"),
+        progress: document.getElementById("progress"),
+        categories: document.getElementById("categories"),
+        rows: document.getElementById("rows"),
+        skipped: document.getElementById("skipped"),
+        done: document.getElementById("done"),
+        error: document.getElementById("error"),
+        log: document.getElementById("log"),
+      };
+
+      async function refresh() {
+        const res = await fetch("/api/status", { cache: "no-store" });
+        const status = await res.json();
+        const progress = Math.round(status.progress || 0);
+        el.bar.style.width = progress + "%";
+        el.progress.textContent = progress + "%";
+        el.categories.textContent = status.categories || 0;
+        el.rows.textContent = status.rows || 0;
+        el.skipped.textContent = status.skipped || 0;
+        el.status.textContent = status.current ? "მუშავდება: " + status.current : status.running ? "მუშავდება..." : "მზადაა.";
+        el.log.textContent = (status.logs || []).join("\n");
+        el.start.disabled = Boolean(status.running);
+        el.start.textContent = status.running ? "მიმდინარეობს..." : status.done ? "თავიდან ჩამოტვირთვა" : "ჩამოტვირთვა";
+        el.done.style.display = status.done ? "block" : "none";
+        el.error.style.display = status.error ? "block" : "none";
+        el.error.textContent = status.error || "";
+      }
+
+      el.start.addEventListener("click", async () => {
+        el.done.style.display = "none";
+        el.error.style.display = "none";
+        await fetch("/api/start", { method: "POST" });
+        await refresh();
+      });
+
+      setInterval(refresh, 1000);
+      refresh();
+    </script>
+  </body>
+</html>

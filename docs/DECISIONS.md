@@ -4,6 +4,33 @@
 
 ---
 
+## 2026-04-30 — STEP viewer stays isolated as a one-file prototype
+STEP/STP visualizer გაკეთდა ცალკე static prototype-ად
+`tools/step-viewer-prototype/index.html`-ში, მთავარი Next.js route/admin/sidebar
+ინტეგრაციის გარეშე.
+
+მიზეზი:
+- user-ს სურს ჯერ browser-only OCCT/WASM prototype-ის დატესტვა და მხოლოდ
+  წარმატების შემთხვევაში პროდუქტის UI-ში შეტანა.
+- `occt-import-js` აბრუნებს triangulated mesh-ს; reliable smart holes/bends
+  საჭიროებს B-Rep/topology-aware server-side CAD pipeline-ს (CadQuery/FreeCAD/OCCT).
+- იზოლირებული ერთფაილიანი HTML ამცირებს არსებული app-ის regression რისკს და
+  CDN/WASM compatibility-ს სწრაფად ამოწმებს.
+
+## 2026-04-28 — Construction procurement participation block lives on contacts
+`/construction/procurement`-ში მომწოდებლის/კომპანიის მონაწილეობიდან გამორთვა
+ინახება `construction_contacts` row-ზე (`procurement_blocked`, reason + audit
+metadata), არა ცალკე project-level blacklist-ში.
+
+მიზეზი:
+- user-ის მოთხოვნა იყო “რომელიმე კომპანია არ მინდოდეს რომ მივაღებინო
+  მონაწილეობა” — ეს არის supplier-level restriction და ყველა ახალ შესყიდვაზე
+  უნდა იმოქმედოს.
+- `active=false` რჩება ზოგად contact disable-ად; procurement block მხოლოდ
+  მონაწილედ დამატებას, გამარჯვებულად მონიშვნას და tender announcement-ს კეტავს.
+- ძველი პროექტების ისტორია არ იშლება; თუ ადრე იყო მონაწილე, UI მას აჩვენებს
+  OFF ნიშნით, მაგრამ საუკეთესო ფასის/გამარჯვებულის გათვლაში აღარ შედის.
+
 ## 2026-04-23 — TBC destructive actions switch to archive-first (360-day retention marker)
 `/tbc` workspace-ში hard delete-ები იცვლება archive-first flow-ით: users,
 companies, branch comments, device removals და estimate row replacements

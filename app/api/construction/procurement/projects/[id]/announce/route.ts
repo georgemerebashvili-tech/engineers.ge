@@ -26,7 +26,7 @@ export async function POST(req: Request, {params}: {params: Promise<{id: string}
       .eq('id', id)
       .single(),
     db.from('construction_contacts')
-      .select('id, name, email')
+      .select('id, name, email, procurement_blocked')
       .in('id', contact_ids),
     db.from('construction_procurement_items')
       .select('id', {count: 'exact', head: true})
@@ -37,9 +37,13 @@ export async function POST(req: Request, {params}: {params: Promise<{id: string}
   if (cErr) return NextResponse.json({error: 'db_error'}, {status: 500});
 
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://engineers.ge';
-  const results: {contactId: string; name: string; email: string | null; status: 'sent' | 'no_email' | 'failed'}[] = [];
+  const results: {contactId: string; name: string; email: string | null; status: 'sent' | 'no_email' | 'blocked' | 'failed'}[] = [];
 
   for (const contact of contacts ?? []) {
+    if (contact.procurement_blocked === true) {
+      results.push({contactId: contact.id, name: contact.name, email: contact.email, status: 'blocked'});
+      continue;
+    }
     if (!contact.email) {
       results.push({contactId: contact.id, name: contact.name, email: null, status: 'no_email'});
       continue;

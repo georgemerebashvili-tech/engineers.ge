@@ -8,6 +8,14 @@
 
 ---
 
+## 🟢 STEP viewer prototype follow-up
+
+- [ ] 2026-04-30 — `tools/step-viewer-prototype/index.html` გავტესტოთ რეალურ `.step/.stp` ფაილებზე; თუ prototype სტაბილურად იმუშავებს, შემდეგ დავგეგმოთ engineers.ge-ში ინტეგრაცია, ხოლო smart hole/bend dimensions გადავიტანოთ server-side CAD pipeline-ზე.
+
+## 🟡 DXF walls as simulation boundaries
+
+- [ ] 2026-04-26 — DXF-დან ამოღებული კედლები გამოვიყენოთ simulation boundary-ებად: smoke/water/airflow არ გადიოდეს solid wall-ში, door/window/opening-ები იყოს გამტარი/გაჟონვადი ზონები, ხოლო მასალას ჰქონდეს permeability/fire/smoke/water properties.
+
 ## 🟡 TBC archive safety — follow-up
 
 - [x] 2026-04-23 — TBC admin-ში დავამატოთ archive/restore workspace, რომ `users / companies / comments / devices / estimate` archived ჩანაწერები გამოჩნდეს, ფილტრდებოდეს და საჭიროების შემთხვევაში დაბრუნდეს active სიაში. (done 2026-04-24)

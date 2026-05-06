@@ -14,7 +14,7 @@ export async function GET(_req: Request, {params}: {params: Promise<{id: string}
     .from('construction_procurement_participants')
     .select(`
       project_id, contact_id, sort_order,
-      contact:construction_contacts(id, name, company, email, phone, category)
+      contact:construction_contacts(id, name, company, email, phone, category, active, procurement_blocked, procurement_block_reason)
     `)
     .eq('project_id', id)
     .order('sort_order');
@@ -35,6 +35,16 @@ export async function POST(req: Request, {params}: {params: Promise<{id: string}
   if (!contact_id) return NextResponse.json({error: 'contact_id required'}, {status: 400});
 
   const db = supabaseAdmin();
+
+  const {data: contact, error: cErr} = await db
+    .from('construction_contacts')
+    .select('id, active, procurement_blocked')
+    .eq('id', contact_id)
+    .maybeSingle();
+
+  if (cErr) return NextResponse.json({error: 'db_error'}, {status: 500});
+  if (!contact || contact.active === false) return NextResponse.json({error: 'contact_not_available'}, {status: 404});
+  if (contact.procurement_blocked === true) return NextResponse.json({error: 'contact_procurement_blocked'}, {status: 409});
 
   const {data: existing} = await db
     .from('construction_procurement_participants')

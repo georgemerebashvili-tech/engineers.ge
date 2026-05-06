@@ -1,0 +1,1103 @@
+<!doctype html>
+<html lang="ka">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>STEP Four-View Prototype</title>
+  <link rel="icon" href="data:,">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160/examples/jsm/"
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #f2f5fa;
+      --sur: #ffffff;
+      --sur-2: #f7f9fd;
+      --bdr: #dde6f2;
+      --bdr-2: #c4d4e8;
+      --navy: #1a3a6b;
+      --navy-2: #0f2550;
+      --blue: #1f6fd4;
+      --blue-lt: #e8f1fd;
+      --blue-bd: #b8d0f0;
+      --red: #c0201a;
+      --red-lt: #fff0ef;
+      --ora: #c05010;
+      --ora-lt: #fff5ea;
+      --grn: #0f6e3a;
+      --grn-lt: #edfbf3;
+      --text: #1a2840;
+      --text-2: #3d5470;
+      --text-3: #7a96b8;
+      --radius: 10px;
+      --shadow-card: 0 1px 3px rgba(0,0,0,.07), 0 4px 14px rgba(0,0,0,.05);
+    }
+
+    .dark {
+      --bg: #0f1724;
+      --sur: #151f2f;
+      --sur-2: #1b2638;
+      --bdr: #253349;
+      --bdr-2: #324566;
+      --text: #e6ecf5;
+      --text-2: #a7b7d1;
+      --text-3: #6b82a6;
+      --blue-lt: #15294a;
+    }
+
+    * { box-sizing: border-box; }
+
+    html {
+      font-size: 13px;
+      color-scheme: light;
+    }
+
+    html.dark { color-scheme: dark; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.5;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .55;
+    }
+
+    .mono {
+      font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .shell {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 16px 0 18px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .brand {
+      display: grid;
+      gap: 1px;
+    }
+
+    .brand strong {
+      color: var(--navy);
+      font-size: 15px;
+      line-height: 1.2;
+    }
+
+    .brand span {
+      color: var(--text-3);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .drop-card,
+    .panel,
+    .viewport {
+      background: var(--sur);
+      border: 1px solid var(--bdr);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-card);
+    }
+
+    .drop-card {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      border-style: dashed;
+      transition: border-color .15s ease, background .15s ease;
+    }
+
+    .drop-card.is-dragging {
+      border-color: var(--blue);
+      background: var(--blue-lt);
+    }
+
+    .drop-text {
+      display: grid;
+      gap: 2px;
+    }
+
+    .drop-title {
+      color: var(--navy);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .drop-meta {
+      color: var(--text-2);
+      font-size: 11px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 28px;
+      border-radius: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+      transition: color .15s ease, background .15s ease, border-color .15s ease;
+    }
+
+    .btn.primary {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .btn.primary:hover {
+      background: var(--navy-2);
+    }
+
+    .btn.secondary {
+      background: var(--sur-2);
+      color: var(--text-2);
+      border: 1px solid var(--bdr-2);
+    }
+
+    .btn.secondary:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+
+    .btn.square {
+      width: 30px;
+      padding: 0;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .status-row {
+      min-height: 24px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      color: var(--text-2);
+      font-size: 11px;
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--bdr-2);
+      border-top-color: var(--blue);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      display: none;
+    }
+
+    .is-loading .spinner {
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error {
+      color: var(--red);
+      background: var(--red-lt);
+      border: 1px solid rgba(192,32,26,.22);
+      border-radius: 6px;
+      padding: 3px 8px;
+    }
+
+    .views {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .viewport {
+      position: relative;
+      min-height: 260px;
+      aspect-ratio: 1.52 / 1;
+      overflow: hidden;
+    }
+
+    .viewport canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .label {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      z-index: 5;
+      padding: 2px 7px;
+      border: 1px solid var(--bdr-2);
+      border-radius: 20px;
+      background: color-mix(in srgb, var(--sur) 86%, transparent);
+      color: var(--navy);
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .06em;
+      pointer-events: none;
+    }
+
+    .dim-svg,
+    .label-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 4;
+    }
+
+    .dim-svg text {
+      fill: var(--navy);
+      font-family: "IBM Plex Mono", ui-monospace, monospace;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .dim-svg line,
+    .dim-svg path {
+      stroke: var(--navy);
+      stroke-width: 1.1;
+      vector-effect: non-scaling-stroke;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .panel {
+      padding: 12px;
+      min-width: 0;
+    }
+
+    .panel h2 {
+      margin: 0 0 8px;
+      color: var(--navy);
+      font-size: 13px;
+      line-height: 1.2;
+    }
+
+    .metric-list,
+    .feature-list {
+      display: grid;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--bdr);
+      color: var(--text-2);
+      font-size: 11px;
+    }
+
+    .metric strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .note {
+      color: var(--text-3);
+      font-size: 11px;
+      margin: 0;
+    }
+
+    .feature-list li {
+      padding: 6px 8px;
+      background: var(--sur-2);
+      border: 1px solid var(--bdr);
+      border-radius: 6px;
+      color: var(--text-2);
+      font-size: 11px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .color-row {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--bdr-2);
+      border-radius: 6px;
+      background: var(--sur-2);
+      padding: 3px 8px;
+      color: var(--text-2);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    input[type="color"] {
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      border: 1px solid var(--bdr-2);
+      border-radius: 5px;
+      background: transparent;
+    }
+
+    @media (max-width: 760px) {
+      .shell {
+        width: min(100% - 20px, 1120px);
+      }
+
+      .drop-card,
+      .views,
+      .info-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: flex-start;
+      }
+
+      .viewport {
+        min-height: 220px;
+      }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/occt-import-js@latest/dist/occt-import-js.js"></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <strong>STEP ოთხხედიანი viewer</strong>
+        <span class="mono">OCCT · THREE.JS · PROTOTYPE</span>
+      </div>
+      <div class="toolbar">
+        <label class="color-row">Mesh <input id="modelColor" type="color" value="#888888" aria-label="Model color"></label>
+        <button id="unitToggle" class="btn secondary" type="button">mm</button>
+        <button id="themeToggle" class="btn secondary square" type="button" title="Toggle dark mode">◐</button>
+      </div>
+    </header>
+
+    <section id="dropZone" class="drop-card" aria-label="STEP file upload">
+      <div class="drop-text">
+        <div class="drop-title">ჩააგდე STEP ფაილი ან აირჩიე ხელით</div>
+        <div class="drop-meta">მხოლოდ .step / .stp · parsing ხდება ბრაუზერში occt-import-js WASM-ით</div>
+      </div>
+      <div>
+        <button id="chooseBtn" class="btn primary" type="button">Choose File</button>
+        <input id="fileInput" class="file-input" type="file" accept=".step,.stp">
+      </div>
+    </section>
+
+    <div id="statusRow" class="status-row">
+      <span class="spinner" aria-hidden="true"></span>
+      <span id="statusText">ფაილი ჯერ არ არის ჩატვირთული.</span>
+    </div>
+
+    <section class="views" aria-label="Four CAD views">
+      <div class="viewport" data-view="front"><span class="label">FRONT</span><svg class="dim-svg"></svg></div>
+      <div class="viewport" data-view="top"><span class="label">TOP</span><svg class="dim-svg"></svg></div>
+      <div class="viewport" data-view="right"><span class="label">RIGHT</span><svg class="dim-svg"></svg></div>
+      <div class="viewport" data-view="iso"><span class="label">ISO</span></div>
+    </section>
+
+    <section class="info-grid">
+      <article class="panel">
+        <h2>Bounding box</h2>
+        <ul class="metric-list">
+          <li class="metric"><span>Length X</span><strong id="dimX" class="mono">—</strong></li>
+          <li class="metric"><span>Width Y</span><strong id="dimY" class="mono">—</strong></li>
+          <li class="metric"><span>Height Z</span><strong id="dimZ" class="mono">—</strong></li>
+        </ul>
+      </article>
+      <article class="panel">
+        <h2>Holes</h2>
+        <ul id="holeList" class="feature-list"></ul>
+        <p id="holeNote" class="note">ფაილის ჩატვირთვის შემდეგ გამოჩნდება best-effort შედეგი.</p>
+      </article>
+      <article class="panel">
+        <h2>Bends</h2>
+        <ul id="bendList" class="feature-list"></ul>
+        <p id="bendNote" class="note">Mesh adjacency heuristic: გრძელი shared edge + face angle 10°–170°.</p>
+      </article>
+    </section>
+
+    <footer class="actions">
+      <button id="exportPng" class="btn primary" type="button" disabled>Export PNG</button>
+      <button id="exportSvg" class="btn secondary" type="button" disabled>Export SVG</button>
+      <button id="resetView" class="btn secondary" type="button" disabled>Reset View</button>
+    </footer>
+  </main>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
+    import { SVGRenderer } from "three/addons/renderers/SVGRenderer.js";
+
+    const views = new Map();
+    const meshMaterial = new THREE.MeshStandardMaterial({
+      color: 0x888888,
+      roughness: 0.72,
+      metalness: 0.08,
+      side: THREE.DoubleSide
+    });
+    const state = {
+      fileName: "step_model",
+      sourceGroup: null,
+      box: null,
+      dimensionsMm: { x: 0, y: 0, z: 0 },
+      bends: [],
+      unit: "mm",
+      scale: 1
+    };
+
+    const els = {
+      body: document.body,
+      dropZone: document.getElementById("dropZone"),
+      chooseBtn: document.getElementById("chooseBtn"),
+      fileInput: document.getElementById("fileInput"),
+      statusRow: document.getElementById("statusRow"),
+      statusText: document.getElementById("statusText"),
+      dimX: document.getElementById("dimX"),
+      dimY: document.getElementById("dimY"),
+      dimZ: document.getElementById("dimZ"),
+      holeList: document.getElementById("holeList"),
+      holeNote: document.getElementById("holeNote"),
+      bendList: document.getElementById("bendList"),
+      bendNote: document.getElementById("bendNote"),
+      exportPng: document.getElementById("exportPng"),
+      exportSvg: document.getElementById("exportSvg"),
+      resetView: document.getElementById("resetView"),
+      unitToggle: document.getElementById("unitToggle"),
+      themeToggle: document.getElementById("themeToggle"),
+      modelColor: document.getElementById("modelColor")
+    };
+
+    initViews();
+    bindEvents();
+    animate();
+
+    function bindEvents() {
+      els.chooseBtn.addEventListener("click", () => els.fileInput.click());
+      els.fileInput.addEventListener("change", event => {
+        const file = event.target.files?.[0];
+        if (file) handleFile(file);
+      });
+
+      ["dragenter", "dragover"].forEach(type => {
+        els.dropZone.addEventListener(type, event => {
+          event.preventDefault();
+          els.dropZone.classList.add("is-dragging");
+        });
+      });
+
+      ["dragleave", "drop"].forEach(type => {
+        els.dropZone.addEventListener(type, event => {
+          event.preventDefault();
+          els.dropZone.classList.remove("is-dragging");
+        });
+      });
+
+      els.dropZone.addEventListener("drop", event => {
+        const file = event.dataTransfer?.files?.[0];
+        if (file) handleFile(file);
+      });
+
+      els.exportPng.addEventListener("click", exportPng);
+      els.exportSvg.addEventListener("click", exportSvg);
+      els.resetView.addEventListener("click", resetAllViews);
+      els.unitToggle.addEventListener("click", () => {
+        state.unit = state.unit === "mm" ? "inch" : "mm";
+        state.scale = state.unit === "mm" ? 1 : 1 / 25.4;
+        els.unitToggle.textContent = state.unit;
+        updateInfoPanels();
+        drawAllDimensionOverlays();
+      });
+      els.themeToggle.addEventListener("click", () => document.documentElement.classList.toggle("dark"));
+      els.modelColor.addEventListener("input", event => {
+        meshMaterial.color.set(event.target.value);
+      });
+      window.addEventListener("resize", resizeViews);
+    }
+
+    function initViews() {
+      document.querySelectorAll(".viewport").forEach(container => {
+        const kind = container.dataset.view;
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(getComputedStyle(document.documentElement).getPropertyValue("--sur-2").trim());
+        scene.add(new THREE.AmbientLight(0xffffff, 1.8));
+        const light = new THREE.DirectionalLight(0xffffff, 2.1);
+        light.position.set(4, 5, 7);
+        scene.add(light);
+
+        const grid = new THREE.GridHelper(400, 20, 0xc4d4e8, 0xdde6f2);
+        grid.material.transparent = true;
+        grid.material.opacity = 0.36;
+        scene.add(grid);
+
+        const axes = new THREE.AxesHelper(22);
+        scene.add(axes);
+
+        const rect = container.getBoundingClientRect();
+        const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(rect.width, rect.height);
+        container.appendChild(renderer.domElement);
+
+        const labelRenderer = new CSS2DRenderer();
+        labelRenderer.setSize(rect.width, rect.height);
+        labelRenderer.domElement.className = "label-layer";
+        container.appendChild(labelRenderer.domElement);
+
+        const isIso = kind === "iso";
+        const camera = isIso
+          ? new THREE.PerspectiveCamera(45, rect.width / Math.max(rect.height, 1), 0.1, 100000)
+          : new THREE.OrthographicCamera(-100, 100, 100, -100, 0.1, 100000);
+
+        const controls = isIso ? new OrbitControls(camera, renderer.domElement) : null;
+        if (controls) {
+          controls.enableDamping = true;
+          controls.dampingFactor = 0.08;
+          controls.screenSpacePanning = true;
+        }
+
+        views.set(kind, { kind, container, scene, renderer, labelRenderer, camera, controls, model: null });
+      });
+      resetAllViews();
+    }
+
+    async function handleFile(file) {
+      clearError();
+      const valid = /\.(step|stp)$/i.test(file.name);
+      if (!valid) {
+        setError("მხოლოდ .step ან .stp ფაილი მიიღება.");
+        return;
+      }
+
+      setLoading(true, `Parsing: ${file.name}`);
+      try {
+        state.fileName = file.name.replace(/\.(step|stp)$/i, "");
+        const buffer = await file.arrayBuffer();
+        const group = await parseStepToGroup(buffer);
+        setModel(group);
+        setLoading(false, `ჩაიტვირთა: ${file.name}`);
+      } catch (error) {
+        console.error(error);
+        setLoading(false);
+        setError(error?.message || "STEP parsing ვერ შესრულდა.");
+      }
+    }
+
+    async function parseStepToGroup(arrayBuffer) {
+      if (typeof window.occtimportjs !== "function") {
+        throw new Error("occt-import-js ვერ ჩაიტვირთა CDN-იდან.");
+      }
+      const occt = await window.occtimportjs();
+      const params = {
+        linearUnit: "millimeter",
+        linearDeflectionType: "bounding_box_ratio",
+        linearDeflection: 0.0008,
+        angularDeflection: 0.4
+      };
+      const result = occt.ReadStepFile(new Uint8Array(arrayBuffer), params);
+      if (!result?.success) {
+        throw new Error("OCCT-მა STEP ფაილის წაკითხვა ვერ შეძლო.");
+      }
+
+      const group = new THREE.Group();
+      group.name = state.fileName;
+
+      // occt-import-js returns triangulated meshes in a three.js-compatible JSON shape.
+      // We rebuild BufferGeometry manually so the prototype stays framework-free and
+      // can attach our own materials, dimension overlays, and mesh-adjacency analysis.
+      result.meshes.forEach((mesh, index) => {
+        const geometry = new THREE.BufferGeometry();
+        const positions = mesh.attributes?.position?.array || [];
+        const normals = mesh.attributes?.normal?.array || [];
+        const indices = mesh.index?.array || [];
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+        if (normals.length === positions.length) {
+          geometry.setAttribute("normal", new THREE.Float32BufferAttribute(normals, 3));
+        } else {
+          geometry.computeVertexNormals();
+        }
+        if (indices.length) {
+          geometry.setIndex(indices);
+        }
+        geometry.computeBoundingBox();
+        geometry.computeBoundingSphere();
+        const object = new THREE.Mesh(geometry, meshMaterial);
+        object.name = mesh.name || `mesh_${index + 1}`;
+        group.add(object);
+      });
+
+      if (!group.children.length) {
+        throw new Error("STEP ფაილში renderable mesh ვერ მოიძებნა.");
+      }
+      return group;
+    }
+
+    function setModel(group) {
+      state.sourceGroup = group;
+      state.box = new THREE.Box3().setFromObject(group);
+      const size = state.box.getSize(new THREE.Vector3());
+      state.dimensionsMm = { x: size.x, y: size.y, z: size.z };
+
+      state.bends = detectBends(group, state.box);
+      const bendLines = createBendLineGroup(state.bends);
+      state.sourceGroup.add(bendLines);
+
+      for (const view of views.values()) {
+        if (view.model) view.scene.remove(view.model);
+        view.model = state.sourceGroup.clone(true);
+        view.scene.add(view.model);
+      }
+
+      updateInfoPanels();
+      resetAllViews();
+      els.exportPng.disabled = false;
+      els.exportSvg.disabled = false;
+      els.resetView.disabled = false;
+    }
+
+    function resetAllViews() {
+      if (state.box) {
+        fitView("front");
+        fitView("top");
+        fitView("right");
+        fitView("iso");
+        drawAllDimensionOverlays();
+        return;
+      }
+      for (const view of views.values()) {
+        view.camera.position.set(120, 120, 120);
+        view.camera.lookAt(0, 0, 0);
+        if (view.controls) {
+          view.controls.target.set(0, 0, 0);
+          view.controls.update();
+        }
+      }
+    }
+
+    function fitView(kind) {
+      const view = views.get(kind);
+      if (!view || !state.box) return;
+      const center = state.box.getCenter(new THREE.Vector3());
+      const size = state.box.getSize(new THREE.Vector3());
+      const radius = Math.max(size.length() * 0.5, 1);
+      const distance = Math.max(radius * 3.2, 100);
+
+      const directions = {
+        front: new THREE.Vector3(0, 1, 0),
+        top: new THREE.Vector3(0, 0, 1),
+        right: new THREE.Vector3(1, 0, 0),
+        iso: new THREE.Vector3(1, 1, 1).normalize()
+      };
+      const upVectors = {
+        front: new THREE.Vector3(0, 0, 1),
+        top: new THREE.Vector3(0, 1, 0),
+        right: new THREE.Vector3(0, 0, 1),
+        iso: new THREE.Vector3(0, 0, 1)
+      };
+      const direction = directions[kind];
+      view.camera.position.copy(center).addScaledVector(direction, distance);
+      view.camera.up.copy(upVectors[kind]);
+      view.camera.lookAt(center);
+
+      const rect = view.container.getBoundingClientRect();
+      const aspect = rect.width / Math.max(rect.height, 1);
+      if (view.camera.isOrthographicCamera) {
+        const fit = Math.max(size.x, size.y, size.z, 1) * 0.72;
+        view.camera.left = -fit * aspect;
+        view.camera.right = fit * aspect;
+        view.camera.top = fit;
+        view.camera.bottom = -fit;
+        view.camera.near = 0.1;
+        view.camera.far = distance + radius * 5;
+        view.camera.updateProjectionMatrix();
+      } else {
+        view.camera.near = 0.1;
+        view.camera.far = distance + radius * 6;
+        view.camera.updateProjectionMatrix();
+        view.controls.target.copy(center);
+        view.controls.update();
+      }
+    }
+
+    function resizeViews() {
+      for (const view of views.values()) {
+        const rect = view.container.getBoundingClientRect();
+        view.renderer.setSize(rect.width, rect.height, false);
+        view.labelRenderer.setSize(rect.width, rect.height);
+        if (view.camera.isPerspectiveCamera) {
+          view.camera.aspect = rect.width / Math.max(rect.height, 1);
+        }
+        view.camera.updateProjectionMatrix();
+      }
+      resetAllViews();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      for (const view of views.values()) {
+        view.controls?.update();
+        view.renderer.render(view.scene, view.camera);
+        view.labelRenderer.render(view.scene, view.camera);
+      }
+      drawAllDimensionOverlays();
+    }
+
+    function drawAllDimensionOverlays() {
+      if (!state.box) return;
+      drawDimensions("front", [
+        { axis: "x", label: "X", offset: new THREE.Vector3(0, 0, -1) },
+        { axis: "z", label: "Z", offset: new THREE.Vector3(-1, 0, 0) }
+      ]);
+      drawDimensions("top", [
+        { axis: "x", label: "X", offset: new THREE.Vector3(0, -1, 0) },
+        { axis: "y", label: "Y", offset: new THREE.Vector3(-1, 0, 0) }
+      ]);
+      drawDimensions("right", [
+        { axis: "y", label: "Y", offset: new THREE.Vector3(0, 0, -1) },
+        { axis: "z", label: "Z", offset: new THREE.Vector3(0, -1, 0) }
+      ]);
+    }
+
+    function drawDimensions(kind, dimensions) {
+      const view = views.get(kind);
+      const svg = view.container.querySelector(".dim-svg");
+      if (!svg || !state.box) return;
+      const rect = view.container.getBoundingClientRect();
+      svg.setAttribute("viewBox", `0 0 ${rect.width} ${rect.height}`);
+      svg.innerHTML = `
+        <defs>
+          <marker id="arrow-${kind}" viewBox="0 0 8 8" refX="4" refY="4" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+            <path d="M 0 0 L 8 4 L 0 8 z" fill="var(--navy)"></path>
+          </marker>
+        </defs>`;
+
+      const b = state.box;
+      const span = Math.max(...Object.values(state.dimensionsMm), 1);
+      const padding = span * 0.09;
+      dimensions.forEach(config => {
+        const { start, end } = dimensionEndpoints(b, config.axis);
+        const offset = config.offset.clone().multiplyScalar(padding);
+        const a = worldToScreen(start.clone().add(offset), view, rect);
+        const c = worldToScreen(end.clone().add(offset), view, rect);
+        const mid = { x: (a.x + c.x) / 2, y: (a.y + c.y) / 2 };
+        const value = formatLength(state.dimensionsMm[config.axis]);
+        const line = svgEl("line", {
+          x1: a.x, y1: a.y, x2: c.x, y2: c.y,
+          "marker-start": `url(#arrow-${kind})`,
+          "marker-end": `url(#arrow-${kind})`
+        });
+        const label = svgEl("text", {
+          x: mid.x + 4,
+          y: mid.y - 4,
+          "text-anchor": "middle"
+        });
+        label.textContent = `${config.label} ${value}`;
+        svg.append(line, label);
+      });
+    }
+
+    function dimensionEndpoints(box, axis) {
+      const min = box.min;
+      const max = box.max;
+      const center = box.getCenter(new THREE.Vector3());
+      if (axis === "x") return {
+        start: new THREE.Vector3(min.x, center.y, min.z),
+        end: new THREE.Vector3(max.x, center.y, min.z)
+      };
+      if (axis === "y") return {
+        start: new THREE.Vector3(min.x, min.y, center.z),
+        end: new THREE.Vector3(min.x, max.y, center.z)
+      };
+      return {
+        start: new THREE.Vector3(min.x, center.y, min.z),
+        end: new THREE.Vector3(min.x, center.y, max.z)
+      };
+    }
+
+    function worldToScreen(position, view, rect) {
+      const projected = position.project(view.camera);
+      return {
+        x: (projected.x * 0.5 + 0.5) * rect.width,
+        y: (-projected.y * 0.5 + 0.5) * rect.height
+      };
+    }
+
+    function svgEl(name, attrs) {
+      const node = document.createElementNS("http://www.w3.org/2000/svg", name);
+      Object.entries(attrs).forEach(([key, value]) => node.setAttribute(key, value));
+      return node;
+    }
+
+    function updateInfoPanels() {
+      els.dimX.textContent = formatLength(state.dimensionsMm.x);
+      els.dimY.textContent = formatLength(state.dimensionsMm.y);
+      els.dimZ.textContent = formatLength(state.dimensionsMm.z);
+
+      // Hole recognition from triangulated STEP output is intentionally conservative.
+      // Reliable hole features require source B-Rep loops/cylindrical surfaces; the
+      // raw mesh alone often loses topology, especially after triangulation settings.
+      els.holeList.innerHTML = "";
+      const holeItem = document.createElement("li");
+      holeItem.textContent = "No holes detected";
+      els.holeList.appendChild(holeItem);
+      els.holeNote.textContent = "Placeholder: რეალური smart hole dimensions საჭიროებს B-Rep topology-ს CadQuery/FreeCAD/OpenCascade server-side pipeline-ით.";
+
+      els.bendList.innerHTML = "";
+      if (!state.bends.length) {
+        const li = document.createElement("li");
+        li.textContent = "No bends detected";
+        els.bendList.appendChild(li);
+        els.bendNote.textContent = "No qualifying long angled mesh edges found.";
+      } else {
+        state.bends.slice(0, 30).forEach((bend, index) => {
+          const li = document.createElement("li");
+          li.textContent = `Bend ${index + 1}: ${bend.angle.toFixed(1)}° ${bend.direction}, length ${formatLength(bend.length)}`;
+          els.bendList.appendChild(li);
+        });
+        els.bendNote.textContent = state.bends.length > 30
+          ? `Showing 30 of ${state.bends.length} heuristic candidates.`
+          : "Heuristic candidates rendered red=UP, blue=DOWN.";
+      }
+    }
+
+    function formatLength(mm) {
+      const value = mm * state.scale;
+      return `${value.toFixed(2)} ${state.unit === "mm" ? "mm" : "in"}`;
+    }
+
+    function detectBends(group, box) {
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z, 1);
+      const minLength = maxDim * 0.08;
+      const candidates = [];
+      const seen = new Set();
+
+      // Bend detection heuristic: build triangle adjacency by shared mesh edges,
+      // compare neighboring face normals, and keep long straight edges whose face
+      // angle is plausibly a sheet-metal fold. This is only a mesh approximation.
+      group.traverse(object => {
+        if (!object.isMesh) return;
+        const geometry = object.geometry;
+        const pos = geometry.getAttribute("position");
+        const index = geometry.index?.array;
+        if (!pos || !index) return;
+        const faces = [];
+        const edges = new Map();
+
+        for (let i = 0; i < index.length; i += 3) {
+          const ia = index[i];
+          const ib = index[i + 1];
+          const ic = index[i + 2];
+          const a = vertexAt(pos, ia);
+          const b = vertexAt(pos, ib);
+          const c = vertexAt(pos, ic);
+          const normal = new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(c, a)).normalize();
+          const faceIndex = faces.push({ normal }) - 1;
+          addEdge(edges, ia, ib, faceIndex, a, b);
+          addEdge(edges, ib, ic, faceIndex, b, c);
+          addEdge(edges, ic, ia, faceIndex, c, a);
+        }
+
+        for (const edge of edges.values()) {
+          if (edge.faces.length !== 2) continue;
+          const n1 = faces[edge.faces[0]].normal;
+          const n2 = faces[edge.faces[1]].normal;
+          const angle = THREE.MathUtils.radToDeg(Math.acos(THREE.MathUtils.clamp(n1.dot(n2), -1, 1)));
+          const length = edge.a.distanceTo(edge.b);
+          if (angle < 10 || angle > 170 || length < minLength) continue;
+          const dedupeKey = makeLineKey(edge.a, edge.b);
+          if (seen.has(dedupeKey)) continue;
+          seen.add(dedupeKey);
+          const cross = new THREE.Vector3().crossVectors(n1, n2);
+          const direction = cross.z >= 0 ? "UP" : "DOWN";
+          candidates.push({
+            start: edge.a.clone(),
+            end: edge.b.clone(),
+            angle,
+            length,
+            direction
+          });
+        }
+      });
+
+      return candidates
+        .sort((a, b) => b.length - a.length)
+        .slice(0, 80);
+    }
+
+    function vertexAt(attribute, index) {
+      return new THREE.Vector3(attribute.getX(index), attribute.getY(index), attribute.getZ(index));
+    }
+
+    function addEdge(edges, i1, i2, faceIndex, a, b) {
+      const key = i1 < i2 ? `${i1}:${i2}` : `${i2}:${i1}`;
+      if (!edges.has(key)) edges.set(key, { faces: [], a, b });
+      edges.get(key).faces.push(faceIndex);
+    }
+
+    function makeLineKey(a, b) {
+      const pa = [a.x, a.y, a.z].map(v => Math.round(v * 100) / 100).join(",");
+      const pb = [b.x, b.y, b.z].map(v => Math.round(v * 100) / 100).join(",");
+      return pa < pb ? `${pa}|${pb}` : `${pb}|${pa}`;
+    }
+
+    function createBendLineGroup(bends) {
+      const group = new THREE.Group();
+      group.name = "bend-lines";
+      bends.forEach((bend, index) => {
+        const geometry = new THREE.BufferGeometry().setFromPoints([bend.start, bend.end]);
+        const material = new THREE.LineBasicMaterial({
+          color: bend.direction === "UP" ? 0xc0201a : 0x1f6fd4,
+          linewidth: 2
+        });
+        const line = new THREE.Line(geometry, material);
+        line.name = `bend_${index + 1}`;
+        group.add(line);
+      });
+      return group;
+    }
+
+    function exportPng() {
+      if (!state.sourceGroup) return;
+      const width = 1600;
+      const height = 1000;
+      const output = document.createElement("canvas");
+      output.width = width;
+      output.height = height;
+      const ctx = output.getContext("2d");
+      ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+      ctx.fillRect(0, 0, width, height);
+
+      const slots = [
+        { kind: "front", x: 0, y: 0 },
+        { kind: "top", x: width / 2, y: 0 },
+        { kind: "right", x: 0, y: height / 2 },
+        { kind: "iso", x: width / 2, y: height / 2 }
+      ];
+
+      for (const slot of slots) {
+        const view = views.get(slot.kind);
+        view.renderer.render(view.scene, view.camera);
+        ctx.drawImage(view.renderer.domElement, slot.x, slot.y, width / 2, height / 2);
+        ctx.fillStyle = "rgba(255,255,255,.86)";
+        ctx.fillRect(slot.x + 16, slot.y + 14, 86, 24);
+        ctx.fillStyle = "#1a3a6b";
+        ctx.font = "700 15px system-ui, sans-serif";
+        ctx.fillText(slot.kind.toUpperCase(), slot.x + 28, slot.y + 31);
+      }
+      triggerDownload(output.toDataURL("image/png"), `${state.fileName}_views.png`);
+    }
+
+    function exportSvg() {
+      if (!state.sourceGroup) return;
+      const cellW = 800;
+      const cellH = 520;
+      const wrappers = [];
+
+      // SVG export uses three.js SVGRenderer for the orthographic model views.
+      // The generated SVGs are nested as translated groups into one document;
+      // dimensions are intentionally omitted here because the live overlay is HTML/SVG.
+      ["front", "top", "right"].forEach((kind, index) => {
+        const view = views.get(kind);
+        const renderer = new SVGRenderer();
+        renderer.setSize(cellW, cellH);
+        renderer.render(view.scene, view.camera);
+        const svg = renderer.domElement;
+        const inner = svg.innerHTML;
+        const x = (index % 2) * cellW;
+        const y = Math.floor(index / 2) * cellH;
+        wrappers.push(`<g transform="translate(${x}, ${y})"><rect width="${cellW}" height="${cellH}" fill="#f7f9fd"/><text x="18" y="28" fill="#1a3a6b" font-size="14" font-weight="700">${kind.toUpperCase()}</text>${inner}</g>`);
+      });
+
+      const svgDoc = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${cellW * 2}" height="${cellH * 2}" viewBox="0 0 ${cellW * 2} ${cellH * 2}">
+<rect width="100%" height="100%" fill="#f2f5fa"/>
+${wrappers.join("\n")}
+</svg>`;
+      const blob = new Blob([svgDoc], { type: "image/svg+xml;charset=utf-8" });
+      triggerDownload(URL.createObjectURL(blob), `${state.fileName}_views.svg`);
+    }
+
+    function triggerDownload(url, fileName) {
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+    }
+
+    function setLoading(isLoading, message = "") {
+      els.statusRow.classList.toggle("is-loading", isLoading);
+      if (message) els.statusText.textContent = message;
+    }
+
+    function setError(message) {
+      els.statusText.innerHTML = `<span class="error">${message}</span>`;
+    }
+
+    function clearError() {
+      els.statusText.textContent = "მზად არის ჩასატვირთად.";
+    }
+  </script>
+</body>
+</html>

@@ -23,7 +23,10 @@ type Project = {
   winner_contact_id:string|null; formulas:Formula[];
 };
 type Item = {id:string; sort_order:number; name:string; unit:string; qty:number; labor_note:string|null; drive_url:string|null};
-type Contact = {id:string; name:string; company:string|null; email:string|null; phone:string|null; category:string|null};
+type Contact = {
+  id:string; name:string; company:string|null; email:string|null; phone:string|null; category:string|null;
+  active?:boolean; procurement_blocked?:boolean; procurement_block_reason?:string|null;
+};
 type Participant = {project_id:string; contact_id:string; sort_order:number; contact:Contact};
 type Bid = {item_id:string; contact_id:string; product_price:number|null; install_price:number|null};
 type Selection = {item_id:string; contact_id:string; price_type:'product'|'install'};
@@ -182,7 +185,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
   useEffect(()=>{loadAll();},[loadAll]);
 
   // ── computed vars ──────────────────────────────────────────────────────────
-  const visPart=participants.filter(p=>supVis[p.contact_id]!==false);
+  const visPart=participants.filter(p=>supVis[p.contact_id]!==false && p.contact.procurement_blocked!==true);
 
   function getVars(){
     let bP=0,sP=0,bI=0,sI=0;
@@ -286,6 +289,11 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
 
   // ── winner ────────────────────────────────────────────────────────────────
   async function setWinner(cid:string){
+    const participant = participants.find(p => p.contact_id === cid);
+    if (participant?.contact.procurement_blocked) {
+      flash('ეს კომპანია შესყიდვებში მონაწილეობიდან გამორთულია');
+      return;
+    }
     const next=project?.winner_contact_id===cid?null:cid;
     setProject(p=>p?{...p,winner_contact_id:next}:p);
     await fetch(`/api/construction/procurement/projects/${projectId}`,{
@@ -302,6 +310,10 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
     });
     if(res.ok){setAddCid('');const r=await fetch(`/api/construction/procurement/projects/${projectId}/participants`);
       if(r.ok){const ps=(await r.json()).participants??[];setParticipants(ps);setSupVis(prev=>{const n={...prev};ps.forEach((p:Participant)=>{if(!(p.contact_id in n))n[p.contact_id]=true;});return n;});}}
+    else {
+      const d = await res.json().catch(() => ({}));
+      flash(d.error === 'contact_procurement_blocked' ? 'კომპანია მონაწილედ დამატებაზე გამორთულია' : 'მონაწილის დამატება ვერ მოხერხდა');
+    }
   }
 
   async function removeParticipant(cid:string){
@@ -318,6 +330,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
       method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({contact_ids:announceSel})
     });
     if(res.ok){const d=await res.json();setAnnounceRes(d.results);setProject(p=>p?{...p,status:'open'}:p);}
+    else flash('ტენდერის გაგზავნა ვერ მოხერხდა');
     setAnnouncing(false);
   }
 
@@ -561,17 +574,22 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
           <div className="text-[9px] font-bold uppercase tracking-widest text-[#1565C0]">მონაწილეები</div>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {participants.map((p,idx)=>(
-            <div key={p.contact_id} className="flex items-center gap-1.5 border-b border-slate-50 px-2 py-1.5 hover:bg-slate-50">
-              <div className="h-2 w-2 flex-shrink-0 rounded-full" style={{background:sc(idx)}}></div>
+          {participants.map((p,idx)=>{
+            const isBlocked=p.contact.procurement_blocked===true;
+            return (
+            <div key={p.contact_id} title={p.contact.procurement_block_reason ?? undefined} className={`flex items-center gap-1.5 border-b border-slate-50 px-2 py-1.5 hover:bg-slate-50 ${isBlocked?'bg-red-50/40':''}`}>
+              <div className="h-2 w-2 flex-shrink-0 rounded-full" style={{background:isBlocked?'#ef4444':sc(idx)}}></div>
               <input type="checkbox" className="h-3 w-3 flex-shrink-0 cursor-pointer accent-[#1565C0]"
-                checked={supVis[p.contact_id]!==false}
+                disabled={isBlocked}
+                checked={!isBlocked&&supVis[p.contact_id]!==false}
                 onChange={e=>setSupVis(prev=>({...prev,[p.contact_id]:e.target.checked}))}/>
-              <span className={`flex-1 min-w-0 truncate text-[11px] font-semibold ${supVis[p.contact_id]===false?'text-slate-300 line-through':''}`}>{p.contact.name}</span>
-              <button onClick={()=>setWinner(p.contact_id)}
-                className={`flex-shrink-0 text-[13px] ${project?.winner_contact_id===p.contact_id?'text-amber-400':'text-slate-200 hover:text-amber-300'}`}>⭐</button>
+              <span className={`flex-1 min-w-0 truncate text-[11px] font-semibold ${isBlocked||supVis[p.contact_id]===false?'text-slate-300 line-through':''}`}>{p.contact.name}</span>
+              {isBlocked&&<span className="rounded bg-red-100 px-1 py-0.5 text-[9px] font-bold text-red-600">OFF</span>}
+              <button onClick={()=>setWinner(p.contact_id)} disabled={isBlocked}
+                className={`flex-shrink-0 text-[13px] ${project?.winner_contact_id===p.contact_id?'text-amber-400':isBlocked?'text-slate-200':'text-slate-200 hover:text-amber-300'}`}>⭐</button>
             </div>
-          ))}
+            );
+          })}
         </div>
         {/* Winner box */}
         {winner&&(
@@ -592,7 +610,7 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
               <select value={addCid} onChange={e=>setAddCid(e.target.value)}
                 className="flex-1 rounded border border-dashed border-slate-300 bg-transparent px-1 py-1 text-[10px] text-slate-500 focus:border-[#1565C0] focus:outline-none">
                 <option value="">+ მომწოდ. დამატება</option>
-                {allContacts.filter(c=>!participants.find(p=>p.contact_id===c.id)).map(c=>(
+                {allContacts.filter(c=>!c.procurement_blocked&&!participants.find(p=>p.contact_id===c.id)).map(c=>(
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
@@ -907,31 +925,34 @@ export function ProcurementDetail({projectId,session}:{projectId:string;session:
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
                   <div className="mb-2 text-[10px] font-bold uppercase tracking-wider text-[#1565C0]">📨 ტენდერის გამოცხადება</div>
                   {!announceOpen?(
-                    <button onClick={()=>{setAnnounceOpen(true);setAnnounceSel(participants.filter(p=>p.contact.email).map(p=>p.contact_id));setAnnounceRes(null);}}
+                    <button onClick={()=>{setAnnounceOpen(true);setAnnounceSel(participants.filter(p=>p.contact.email&&p.contact.procurement_blocked!==true).map(p=>p.contact_id));setAnnounceRes(null);}}
                       className="rounded-lg border border-dashed border-slate-300 px-4 py-2 text-[12px] text-slate-500 hover:border-[#1565C0] hover:text-[#1565C0]">
                       ✉️ ელ-ფოსტები გაგზავნა...
                     </button>
                   ):(
                     <>
                       <div className="mb-3 space-y-1.5">
-                        {participants.map((p,idx)=>(
-                          <label key={p.contact_id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-100 px-3 py-2 hover:bg-slate-50">
-                            <input type="checkbox" className="accent-[#1565C0]" checked={announceSel.includes(p.contact_id)}
+                        {participants.map((p,idx)=>{
+                          const isBlocked=p.contact.procurement_blocked===true;
+                          return (
+                          <label key={p.contact_id} title={p.contact.procurement_block_reason ?? undefined} className={`flex items-center gap-2 rounded-lg border border-slate-100 px-3 py-2 ${isBlocked?'bg-red-50 text-slate-400':'cursor-pointer hover:bg-slate-50'}`}>
+                            <input type="checkbox" className="accent-[#1565C0]" disabled={isBlocked} checked={!isBlocked&&announceSel.includes(p.contact_id)}
                               onChange={e=>setAnnounceSel(prev=>e.target.checked?[...prev,p.contact_id]:prev.filter(id=>id!==p.contact_id))}/>
-                            <div className="h-5 w-5 flex-shrink-0 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{background:sc(idx)}}>{p.contact.name.slice(0,2).toUpperCase()}</div>
-                            <span className="flex-1 text-[12px] font-medium">{p.contact.name}</span>
-                            {p.contact.email?<span className="text-[10px] text-slate-400">{p.contact.email}</span>:<span className="text-[10px] text-red-400">ელ-ფ. არ არის</span>}
+                            <div className="h-5 w-5 flex-shrink-0 rounded-full flex items-center justify-center text-[9px] font-bold text-white" style={{background:isBlocked?'#ef4444':sc(idx)}}>{p.contact.name.slice(0,2).toUpperCase()}</div>
+                            <span className={`flex-1 text-[12px] font-medium ${isBlocked?'line-through':''}`}>{p.contact.name}</span>
+                            {isBlocked?<span className="text-[10px] font-semibold text-red-500">მონაწილეობა OFF</span>:p.contact.email?<span className="text-[10px] text-slate-400">{p.contact.email}</span>:<span className="text-[10px] text-red-400">ელ-ფ. არ არის</span>}
                           </label>
-                        ))}
+                          );
+                        })}
                       </div>
                       {announceRes&&(
                         <div className="mb-3 rounded-lg bg-slate-50 p-2 space-y-1">
                           {announceRes.map((r,i)=>(
                             <div key={i} className="flex items-center gap-2 text-[11px]">
                               <span className={r.status==='sent'?'text-green-600':r.status==='no_email'?'text-amber-600':'text-red-500'}>
-                                {r.status==='sent'?'✓':r.status==='no_email'?'!':'✕'}
+                                {r.status==='sent'?'✓':r.status==='no_email'?'!':r.status==='blocked'?'⛔':'✕'}
                               </span>
-                              <span>{r.name} — {r.status==='sent'?'გაიგზავნა':r.status==='no_email'?'ელ-ფ. არ არის':'შეცდომა'}</span>
+                              <span>{r.name} — {r.status==='sent'?'გაიგზავნა':r.status==='no_email'?'ელ-ფ. არ არის':r.status==='blocked'?'მონაწილეობა გამორთულია':'შეცდომა'}</span>
                             </div>
                           ))}
                         </div>

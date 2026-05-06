@@ -13,8 +13,15 @@ export async function PATCH(req: Request, {params}: {params: Promise<{id: string
   try { body = await req.json(); } catch { return NextResponse.json({error: 'bad_request'}, {status: 400}); }
 
   const allowed: Record<string, unknown> = {};
-  for (const k of ['name', 'identification_code', 'company', 'email', 'phone', 'category', 'notes', 'active']) {
+  for (const k of ['name', 'identification_code', 'company', 'email', 'phone', 'category', 'notes', 'active', 'procurement_blocked', 'procurement_block_reason']) {
     if (k in body) allowed[k] = body[k] === '' ? null : body[k];
+  }
+  if ('procurement_blocked' in body) {
+    const blocked = body.procurement_blocked === true;
+    allowed.procurement_blocked = blocked;
+    allowed.procurement_blocked_at = blocked ? new Date().toISOString() : null;
+    allowed.procurement_blocked_by = blocked ? session.username : null;
+    if (!blocked) allowed.procurement_block_reason = null;
   }
 
   const db = supabaseAdmin();
@@ -22,7 +29,7 @@ export async function PATCH(req: Request, {params}: {params: Promise<{id: string
     .from('construction_contacts')
     .update(allowed)
     .eq('id', id)
-    .select('id, name, identification_code, company, email, phone, category, notes, active')
+    .select('id, name, identification_code, company, email, phone, category, notes, active, procurement_blocked, procurement_block_reason, procurement_blocked_at, procurement_blocked_by')
     .single();
 
   if (error) return NextResponse.json({error: 'db_error'}, {status: 500});

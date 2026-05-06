@@ -22,7 +22,9 @@ const CAT_COLORS: Record<string, string> = {
 type Contact = {
   id: string; name: string; identification_code: string | null; company: string | null;
   email: string | null; phone: string | null; category: string | null; notes: string | null;
-  active: boolean; created_by: string; created_at: string;
+  active: boolean; procurement_blocked: boolean; procurement_block_reason: string | null;
+  procurement_blocked_at: string | null; procurement_blocked_by: string | null;
+  created_by: string; created_at: string;
 };
 
 const EMPTY_FORM = {name: '', identification_code: '', company: '', email: '', phone: '', category: '', notes: ''};
@@ -57,6 +59,7 @@ export function ContactsClient({session}: {session: ConstructionSession}) {
     if (search) params.set('q', search);
     if (filterCat) params.set('category', filterCat);
     params.set('active', 'all');
+    params.set('blocked', 'all');
     const res = await fetch(`/api/construction/procurement/contacts?${params}`);
     if (res.ok) setContacts((await res.json()).contacts ?? []);
     setLoading(false);
@@ -141,6 +144,31 @@ export function ContactsClient({session}: {session: ConstructionSession}) {
       body: JSON.stringify({active: !c.active})
     });
     setContacts((prev) => prev.map((x) => x.id === c.id ? {...x, active: !c.active} : x));
+  }
+
+  async function toggleProcurementBlocked(c: Contact) {
+    const nextBlocked = !c.procurement_blocked;
+    const reasonInput = nextBlocked
+      ? prompt(`რატომ ვუთიშავთ "${c.name}"-ს შესყიდვებში მონაწილეობას?`, c.procurement_block_reason ?? '')
+      : '';
+    if (reasonInput === null) return;
+    const reason = reasonInput.trim();
+
+    const res = await fetch(`/api/construction/procurement/contacts/${c.id}`, {
+      method: 'PATCH',
+      headers: {'content-type': 'application/json'},
+      body: JSON.stringify({
+        procurement_blocked: nextBlocked,
+        procurement_block_reason: nextBlocked ? reason : null
+      })
+    });
+    if (!res.ok) { flash('მონაწილეობის სტატუსი ვერ შეიცვალა'); return; }
+    setContacts((prev) => prev.map((x) => x.id === c.id ? {
+      ...x,
+      procurement_blocked: nextBlocked,
+      procurement_block_reason: nextBlocked ? reason : null,
+    } : x));
+    flash(nextBlocked ? 'კომპანია აღარ დაემატება მონაწილედ' : 'კომპანიას მონაწილეობა ჩაერთო');
   }
 
   async function deleteContact(c: Contact) {
@@ -296,7 +324,7 @@ export function ContactsClient({session}: {session: ConstructionSession}) {
             <option value="">ყველა კატ.</option>
             {CATEGORIES.map((c) => <option key={c} value={c}>{CAT_LABELS[c]}</option>)}
           </select>
-          <span className="self-center text-xs text-slate-400">{filtered.length} კონტაქტი</span>
+          <span className="self-center text-xs text-slate-400">{filtered.length} კონტაქტი · {filtered.filter(c => c.procurement_blocked).length} გამოთიშულია</span>
         </div>
 
         {/* List */}
@@ -365,7 +393,14 @@ export function ContactsClient({session}: {session: ConstructionSession}) {
                         </tr>
                       ) : (
                         <tr key={c.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                          <td className="px-4 py-3 font-semibold text-slate-900">{c.name}</td>
+                          <td className="px-4 py-3">
+                            <div className={`font-semibold ${c.procurement_blocked ? 'text-slate-400 line-through' : 'text-slate-900'}`}>{c.name}</div>
+                            {c.procurement_blocked && (
+                              <div className="mt-0.5 text-[10px] font-semibold text-red-500">
+                                შესყიდვებში მონაწილეობა გამორთულია
+                              </div>
+                            )}
+                          </td>
                           <td className="px-4 py-3 font-mono text-[11px] text-slate-500">{c.identification_code ?? '—'}</td>
                           <td className="px-4 py-3 text-slate-600">{c.company ?? '—'}</td>
                           <td className="px-4 py-3 text-slate-600 font-mono text-xs">{c.email ?? '—'}</td>
@@ -379,13 +414,25 @@ export function ContactsClient({session}: {session: ConstructionSession}) {
                           </td>
                           <td className="px-4 py-3">
                             {isAdmin ? (
-                              <button onClick={() => toggleActive(c)} className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${c.active ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-500'}`}>
-                                {c.active ? 'active' : 'inactive'}
-                              </button>
+                              <div className="flex flex-col items-start gap-1">
+                                <button onClick={() => toggleActive(c)} className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${c.active ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-500'}`}>
+                                  {c.active ? 'active' : 'inactive'}
+                                </button>
+                                <button
+                                  onClick={() => toggleProcurementBlocked(c)}
+                                  title={c.procurement_block_reason || undefined}
+                                  className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${c.procurement_blocked ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500 hover:bg-blue-50 hover:text-[#1565C0]'}`}
+                                >
+                                  {c.procurement_blocked ? 'მონაწილეობა OFF' : 'მონაწილეობა ON'}
+                                </button>
+                              </div>
                             ) : (
-                              <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${c.active ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-500'}`}>
-                                {c.active ? 'active' : 'inactive'}
-                              </span>
+                              <div className="flex flex-col items-start gap-1">
+                                <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${c.active ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-500'}`}>
+                                  {c.active ? 'active' : 'inactive'}
+                                </span>
+                                {c.procurement_blocked && <span className="rounded-full bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600">მონაწილეობა OFF</span>}
+                              </div>
                             )}
                           </td>
                           {isAdmin && (

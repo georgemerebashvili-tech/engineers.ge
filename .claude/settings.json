@@ -32,11 +32,29 @@
       "Bash(pkill:*)",
       "Bash(pgrep:*)",
       "Bash(ps:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(node -e \"console.log\\(require\\('./node_modules/@xyflow/react/package.json'\\).version\\)\")",
+      "mcp__MCP_DOCKER__browser_navigate",
+      "mcp__MCP_DOCKER__browser_take_screenshot",
+      "mcp__MCP_DOCKER__browser_wait_for",
+      "mcp__MCP_DOCKER__browser_console_messages",
+      "Bash(python3 -c \"import sys,json,re; html=sys.stdin.read\\(\\); match=re.search\\(r'\\\\\"message\\\\\":\\\\\"\\([^\\\\\"]+\\)\\\\\"', html\\); print\\(match.group\\(1\\)[:500] if match else 'no error message'\\)\")",
+      "mcp__MCP_DOCKER__browser_evaluate",
+      "mcp__MCP_DOCKER__browser_run_code",
+      "Bash(PORT=3034 npm run dev)",
+      "mcp__MCP_DOCKER__browser_snapshot",
+      "Bash(open \"http://localhost:3000/calc/fan-coil-hydraulics\")",
+      "Bash(open \"http://localhost:3000/demo/fan-coil\")",
+      "Bash(tar -tzf opengeometry-2.0.9.tgz)",
+      "Bash(tar -xzf opengeometry-2.0.9.tgz)",
+      "Bash(open http://localhost:5173/)",
+      "Bash(open http://localhost:3001/)",
+      "Bash(open http://localhost:3001/admin)"
     ],
     "additionalDirectories": [
       "/Users/macbookair/Desktop/engineers.ge/engineers.ge/app",
-      "/Users/macbookair/Desktop/engineers.ge/engineers.ge/.next"
+      "/Users/macbookair/Desktop/engineers.ge/engineers.ge/.next",
+      "/tmp/og-npm-check/package/opengeometry/pkg"
     ]
   }
 }

@@ -1243,15 +1243,13 @@ html.hl-pinned  #topTotals{margin-left:258px;transition:margin-left .2s}
         📂 გახსნა
       </button>
       <input type="file" id="loadFileInput" accept=".json" style="display:none" onchange="loadProject(this)">
-      <button onclick="generateEPC()" title="EPC მაჩვენებელი — GEECB Style"
-        style="display:flex;align-items:center;gap:5px;height:32px;padding:0 12px;border:1.5px solid #059669;border-radius:6px;background:#ecfdf5;color:#047857;font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap"
-        onmouseover="this.style.background='#d1fae5'" onmouseout="this.style.background='#ecfdf5'">
-        📄 EPC
+      <button onclick="alert('EPC სერტიფიკატი არ გამოიყენება წყალმომარაგების კალკულატორში')" title="EPC გამორთულია ამ მოდულში"
+        style="display:flex;align-items:center;gap:5px;height:32px;padding:0 12px;border:1.5px solid var(--bdr2);border-radius:6px;background:var(--sur2);color:var(--text3);font-family:var(--sans);font-size:11px;font-weight:700;cursor:not-allowed;white-space:nowrap">
+        🚫 EPC (გამორთულია)
       </button>
-      <button onclick="printHeatLoadReport()" title="EN 12831 + ASHRAE სრული PDF ანგარიში"
-        style="display:flex;align-items:center;gap:5px;height:32px;padding:0 12px;border:1.5px solid #8b5cf6;border-radius:6px;background:#f5f0ff;color:#6d28d9;font-family:var(--sans);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap"
-        onmouseover="this.style.background='#ede9fe'" onmouseout="this.style.background='#f5f0ff'">
-        🖨 PDF ანგარიში
+      <button onclick="alert('PDF ანგარიში წყალმომარაგებისთვის მალე დაემატება')" title="PDF export — coming soon"
+        style="display:flex;align-items:center;gap:5px;height:32px;padding:0 12px;border:1.5px solid var(--bdr2);border-radius:6px;background:var(--sur2);color:var(--text3);font-family:var(--sans);font-size:11px;font-weight:700;cursor:not-allowed;white-space:nowrap">
+        🖨 PDF (მალე)
       </button>
       <!-- ══ UNDO / REDO ══ -->
       <div style="display:flex;align-items:center;gap:3px;border-left:1px solid var(--bdr);padding-left:10px;margin-left:2px">
@@ -2073,11 +2071,34 @@ function buildMaterialsBOQ(){
   const totFix={};
   FIXTURE_DEFS.forEach(d=>totFix[d.key]=0);
   let sumQc=0,sumQh=0,sumQs=0;
+  let coldLen=0,hotLen=0,sewLen=0;
   state.floors.forEach(fl=>fl.rooms.forEach(r=>{
     const f=r.fixtures||{};
     FIXTURE_DEFS.forEach(d=>totFix[d.key]+=(f[d.key]||0));
     sumQc+=r.q_cold||0;sumQh+=r.q_hot||0;sumQs+=r.q_sewage||0;
+    const roomHasFix=FIXTURE_DEFS.some(d=>(f[d.key]||0)>0);
+    if(roomHasFix){
+      coldLen+=3; // local cold branch per room
+      // hot branch only if hot-using fixtures present
+      const hotCnt=(f.shower||0)+(f.bath||0)+(f.sink||0)+(f.kitchen||0)+(f.washer||0)+(f.dishw||0)+(f.bidet||0);
+      if(hotCnt>0) hotLen+=3;
+      sewLen+=3; // trap to stack per room
+    }
+    // per-fixture drops
+    const coldPerFix=(f.wc||0)+(f.shower||0)+(f.bath||0)+(f.sink||0)+(f.kitchen||0)+(f.washer||0)+(f.dishw||0)+(f.bidet||0)+(f.drain||0);
+    coldLen+=coldPerFix*1.2;
+    const hotPerFix=(f.shower||0)+(f.bath||0)+(f.sink||0)+(f.kitchen||0)+(f.washer||0)+(f.dishw||0)+(f.bidet||0);
+    hotLen+=hotPerFix*1.2;
+    const sewPerFix=(f.wc||0)+(f.shower||0)+(f.bath||0)+(f.sink||0)+(f.kitchen||0)+(f.washer||0)+(f.dishw||0)+(f.bidet||0)+(f.drain||0);
+    sewLen+=sewPerFix*1.5;
   }));
+  // vertical stacks — 3m per floor for supply + sewage
+  const floorCount=state.floors.length;
+  if(floorCount>0){
+    coldLen+=floorCount*3;
+    hotLen+=floorCount*3;
+    sewLen+=floorCount*3;
+  }
   // pipe sizing (simplified)
   function pipeSizeWS(q){return q<0.5?'Ø20':q<1.0?'Ø25':q<2.0?'Ø32':q<4.0?'Ø40':'Ø50';}
   function pipeSizeSew(q){return q<0.5?'Ø50':q<1.5?'Ø75':'Ø110';}
@@ -2096,11 +2117,11 @@ function buildMaterialsBOQ(){
   // ── Water supply pipes (PPR PN20) ──
   const qcPipe=pipeSizeWS(sumQc);
   const qhPipe=pipeSizeWS(sumQh);
-  addRow('💧 PPR PN20',`ცივი წყლის მილი PPR ${qcPipe}`,'მ','—',`q=${sumQc.toFixed(3)} l/s → ${qcPipe}`);
-  addRow('♨ PPR PN20',`ცხელი წყლის მილი PPR ${qhPipe}`,'მ','—',`q=${sumQh.toFixed(3)} l/s → ${qhPipe}`);
+  addRow('💧 PPR PN20',`ცივი წყლის მილი PPR ${qcPipe}`,'მ',Math.round(coldLen),`q=${sumQc.toFixed(3)} l/s → ${qcPipe}`);
+  addRow('♨ PPR PN20',`ცხელი წყლის მილი PPR ${qhPipe}`,'მ',Math.round(hotLen),`q=${sumQh.toFixed(3)} l/s → ${qhPipe}`);
   // ── Sewage pipes (PVC) ──
-  addRow('⬇ PVC',`საკანალ. მილი PVC ${pipeSizeSew(sumQs)}`,'მ','—',`qₛ=${sumQs.toFixed(3)} l/s`);
-  addRow('⬇ PVC','საკანალ. გამყვანი Ø110','მ','—','ვერტიკ. სადინარი / გასავლელი');
+  addRow('⬇ PVC',`საკანალ. მილი PVC ${pipeSizeSew(sumQs)}`,'მ',Math.round(sewLen),`qₛ=${sumQs.toFixed(3)} l/s`);
+  addRow('⬇ PVC','საკანალ. გამყვანი Ø110','მ',floorCount?Math.max(3,floorCount*3):'—','ვერტიკ. სადინარი / გასავლელი');
   // ── Fixtures ──
   FIXTURE_DEFS.forEach(d=>{
     const cnt=totFix[d.key];

@@ -404,6 +404,7 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
       items: [
         {key: 'site', label: 'საჯარო საიტი', href: '/', icon: Home},
         {key: 'calc-preview', label: 'კალკულატორები', href: '/calc', icon: FlaskConical},
+        {key: 'fan-coil-hydraulics', label: 'ფ/კ ჰიდრავლიკა', href: '/calc/fan-coil-hydraulics', icon: Droplets},
         {key: 'ads-preview', label: 'რეკლამის preview', href: '/ads', icon: Megaphone, flagKey: 'admin.ads-preview'},
         {
           key: 'sprinkler-sim',

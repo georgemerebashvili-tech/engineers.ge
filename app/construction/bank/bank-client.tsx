@@ -1,8 +1,17 @@
 'use client';
 
-import {useCallback, useEffect, useState} from 'react';
+import {Fragment, useCallback, useEffect, useMemo, useState} from 'react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import type {ConstructionSession} from '@/lib/construction/auth';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -22,7 +31,6 @@ function isoMinus(days: number) {
   return d.toISOString().slice(0, 10).replace(/-/g, '.');
 }
 function toInput(s: string) { return s.replace(/\./g, '-'); }
-function fromInput(s: string) { return s.replace(/-/g, '.'); }
 
 // ── types ─────────────────────────────────────────────────────────────────────
 type Balance = { AvailableBalance: number; CurrentBalance: number };
@@ -65,6 +73,7 @@ type TodayTx = {
 
 type Tab = 'balance' | 'statement' | 'today' | 'config' | 'rsge';
 type DirectionFilter = 'all' | 'credit' | 'debit';
+type StatementView = 'transactions' | 'top-credit' | 'top-debit' | 'daily';
 
 type ConfigData = {
   configured: boolean;
@@ -94,6 +103,8 @@ export function BankClient({session}: {session: ConstructionSession}) {
   const [stmtErr, setStmtErr]     = useState<string | null>(null);
   const [stmtQ, setStmtQ]        = useState('');
   const [stmtDir, setStmtDir]     = useState<DirectionFilter>('all');
+  const [stmtView, setStmtView]   = useState<StatementView>('transactions');
+  const [selectedOrg, setSelectedOrg] = useState<{direction: 'credit' | 'debit'; key: string} | null>(null);
 
   // today
   const [today, setToday]         = useState<TodayTx[] | null>(null);
@@ -219,6 +230,17 @@ export function BankClient({session}: {session: ConstructionSession}) {
   const stmtTotalDebit  = filteredStmt.reduce((s, r) => s + (r.EntryAmountDebit  || 0), 0);
   const todayTotalCredit = filteredToday.reduce((s, r) => s + (r.Credit || 0), 0);
   const todayTotalDebit  = filteredToday.reduce((s, r) => s + (r.Debit  || 0), 0);
+  const statementAnalytics = useMemo(() => buildStatementAnalytics(filteredStmt), [filteredStmt]);
+  const selectedOrgRows = useMemo(() => {
+    if (!selectedOrg) return [];
+    const source = selectedOrg.direction === 'credit' ? statementAnalytics.topCredits : statementAnalytics.topDebits;
+    return source.find(item => item.key === selectedOrg.key)?.rows ?? [];
+  }, [selectedOrg, statementAnalytics]);
+  const selectedOrgTitle = useMemo(() => {
+    if (!selectedOrg) return '';
+    const source = selectedOrg.direction === 'credit' ? statementAnalytics.topCredits : statementAnalytics.topDebits;
+    return source.find(item => item.key === selectedOrg.key)?.name ?? '';
+  }, [selectedOrg, statementAnalytics]);
 
   async function logout() {
     await fetch('/api/construction/logout', {method: 'POST'});
@@ -424,6 +446,13 @@ export function BankClient({session}: {session: ConstructionSession}) {
                   placeholder="ძიება სახელი, საიდ. კოდი, №, დანიშნულება…"
                   className="w-72 rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[12.5px] text-slate-800 placeholder:text-slate-400 focus:border-[#1565C0] focus:outline-none" />
                 <DirFilter value={stmtDir} onChange={setStmtDir} />
+                <select value={stmtView} onChange={e => { setStmtView(e.target.value as StatementView); setSelectedOrg(null); }}
+                  className="min-w-[210px] rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-slate-700 focus:border-[#1565C0] focus:outline-none">
+                  <option value="transactions">ამონაწერი · ტრანზაქციები</option>
+                  <option value="top-credit">ჩარტი · ტოპ 20 შემომრიცხავი</option>
+                  <option value="top-debit">ჩარტი · ტოპ 10 მიმღები</option>
+                  <option value="daily">დღეები · შემოსული / გასული</option>
+                </select>
                 <div className="ml-auto flex items-center gap-4 text-[12px]">
                   <SummaryPill label="შემოსული" amount={stmtTotalCredit} color="green" />
                   <SummaryPill label="გასული" amount={stmtTotalDebit} color="red" />
@@ -438,6 +467,26 @@ export function BankClient({session}: {session: ConstructionSession}) {
             {stmt && !stmtLoad && (
               filteredStmt.length === 0 ? (
                 <EmptyState label="ტრანზაქცია ამ პერიოდში არ მოიძებნა" />
+              ) : stmtView === 'top-credit' ? (
+                <StatementTopOrganizations
+                  title="ტოპ 20 კომპანია · ვინ ჩარიცხა მეტი"
+                  subtitle="დაჯგუფებულია გამგზავნის მიხედვით. დაჭერაზე გამოჩნდება ჩარიცხვების ისტორია."
+                  rows={statementAnalytics.topCredits.slice(0, 20)}
+                  direction="credit"
+                  selectedKey={selectedOrg?.direction === 'credit' ? selectedOrg.key : null}
+                  onSelect={item => setSelectedOrg({direction: 'credit', key: item.key})}
+                />
+              ) : stmtView === 'top-debit' ? (
+                <StatementTopOrganizations
+                  title="ტოპ 10 კომპანია · ვის გადავურიცხეთ"
+                  subtitle="დაჯგუფებულია მიმღების მიხედვით. დაჭერაზე გამოჩნდება გადარიცხვების ისტორია."
+                  rows={statementAnalytics.topDebits.slice(0, 10)}
+                  direction="debit"
+                  selectedKey={selectedOrg?.direction === 'debit' ? selectedOrg.key : null}
+                  onSelect={item => setSelectedOrg({direction: 'debit', key: item.key})}
+                />
+              ) : stmtView === 'daily' ? (
+                <StatementDailyFlow rows={statementAnalytics.daily} />
               ) : (
                 <TxTable rows={filteredStmt.map(r => ({
                   date: r.EntryDate,
@@ -456,11 +505,42 @@ export function BankClient({session}: {session: ConstructionSession}) {
               )
             )}
 
+            {stmt && !stmtLoad && selectedOrg && selectedOrgRows.length > 0 && stmtView !== 'transactions' && (
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+                  <div>
+                    <div className="text-[13px] font-bold text-slate-900">{selectedOrgTitle}</div>
+                    <div className="font-mono text-[10.5px] text-slate-400">
+                      {selectedOrg.direction === 'credit' ? 'ჩარიცხვების ისტორია' : 'გადარიცხვების ისტორია'} · {selectedOrgRows.length} ჩანაწერი
+                    </div>
+                  </div>
+                  <button onClick={() => setSelectedOrg(null)}
+                    className="ml-auto rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-[11.5px] font-semibold text-slate-600 transition hover:border-[#1565C0] hover:text-[#1565C0]">
+                    დახურვა
+                  </button>
+                </div>
+                <TxTable rows={selectedOrgRows.map(r => ({
+                  date: r.EntryDate,
+                  docNo: r.EntryDocumentNumber,
+                  credit: r.EntryAmountCredit,
+                  debit: r.EntryAmountDebit,
+                  currency: r.DocumentSourceCurrency && r.DocumentSourceCurrency !== 'GEL'
+                    ? `${fmt(r.DocumentSourceAmount)} ${r.DocumentSourceCurrency} @ ${r.DocumentRate}`
+                    : '',
+                  comment: r.EntryComment,
+                  nomination: r.DocumentNomination,
+                  sender: r.SenderDetails,
+                  beneficiary: r.BeneficiaryDetails,
+                  type: r.DocumentProductGroup,
+                }))} />
+              </div>
+            )}
+
             {!stmt && !stmtLoad && !stmtErr && (
               <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center">
                 <div className="text-3xl">📋</div>
                 <div className="mt-3 text-[14px] font-semibold text-slate-700">ამონაწერი</div>
-                <div className="mt-1 text-[12px] text-slate-400">აირჩიე პერიოდი და დააჭირე "ამონაწერი"</div>
+                <div className="mt-1 text-[12px] text-slate-400">აირჩიე პერიოდი და დააჭირე ამონაწერის ღილაკს</div>
               </div>
             )}
           </div>
@@ -646,6 +726,102 @@ type TxRow = {
   type: string;
 };
 
+type OrgAmountRow = {
+  key: string;
+  name: string;
+  inn: string;
+  amount: number;
+  count: number;
+  rows: TxRecord[];
+};
+
+type DailyFlowRow = {
+  date: string;
+  credit: number;
+  debit: number;
+  balance: number;
+  count: number;
+};
+
+function orgKey(details?: {Name: string; Inn: string}) {
+  const inn = details?.Inn?.trim();
+  const name = details?.Name?.trim();
+  return inn || name || 'unknown';
+}
+
+function orgName(details?: {Name: string; Inn: string}) {
+  return details?.Name?.trim() || details?.Inn?.trim() || 'უცნობი ორგანიზაცია';
+}
+
+function dayKey(date: string) {
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return date?.slice(0, 10) || '—';
+  return d.toISOString().slice(0, 10);
+}
+
+function dayLabel(date: string) {
+  if (date === '—') return date;
+  const d = new Date(`${date}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return date;
+  return d.toLocaleDateString('ka-GE', {day: '2-digit', month: '2-digit'});
+}
+
+function buildStatementAnalytics(records: TxRecord[]) {
+  const creditMap = new Map<string, OrgAmountRow>();
+  const debitMap = new Map<string, OrgAmountRow>();
+  const dayMap = new Map<string, DailyFlowRow>();
+
+  for (const r of records) {
+    const credit = r.EntryAmountCredit || 0;
+    const debit = r.EntryAmountDebit || 0;
+    if (credit > 0) {
+      const key = orgKey(r.SenderDetails);
+      const existing = creditMap.get(key) ?? {
+        key,
+        name: orgName(r.SenderDetails),
+        inn: r.SenderDetails?.Inn?.trim() || '',
+        amount: 0,
+        count: 0,
+        rows: [],
+      };
+      existing.amount += credit;
+      existing.count += 1;
+      existing.rows.push(r);
+      creditMap.set(key, existing);
+    }
+    if (debit > 0) {
+      const key = orgKey(r.BeneficiaryDetails);
+      const existing = debitMap.get(key) ?? {
+        key,
+        name: orgName(r.BeneficiaryDetails),
+        inn: r.BeneficiaryDetails?.Inn?.trim() || '',
+        amount: 0,
+        count: 0,
+        rows: [],
+      };
+      existing.amount += debit;
+      existing.count += 1;
+      existing.rows.push(r);
+      debitMap.set(key, existing);
+    }
+
+    const date = dayKey(r.EntryDate);
+    const daily = dayMap.get(date) ?? {date, credit: 0, debit: 0, balance: 0, count: 0};
+    daily.credit += credit;
+    daily.debit += debit;
+    daily.balance += credit - debit;
+    daily.count += 1;
+    dayMap.set(date, daily);
+  }
+
+  const sortDesc = (a: OrgAmountRow, b: OrgAmountRow) => b.amount - a.amount;
+  return {
+    topCredits: Array.from(creditMap.values()).sort(sortDesc),
+    topDebits: Array.from(debitMap.values()).sort(sortDesc),
+    daily: Array.from(dayMap.values()).sort((a, b) => a.date.localeCompare(b.date)),
+  };
+}
+
 function TxTable({rows}: {rows: TxRow[]}) {
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
   function toggle(i: number) { setExpanded(p => ({...p, [i]: !p[i]})); }
@@ -669,7 +845,7 @@ function TxTable({rows}: {rows: TxRow[]}) {
           </thead>
           <tbody>
             {rows.map((r, i) => (
-              <>
+              <Fragment key={`${r.docNo || 'row'}-${r.date || 'date'}-${i}`}>
                 <tr key={i}
                   onClick={() => toggle(i)}
                   className="cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50">
@@ -703,7 +879,7 @@ function TxTable({rows}: {rows: TxRow[]}) {
                   </td>
                 </tr>
                 {expanded[i] && (
-                  <tr key={`exp-${i}`} className="border-b border-slate-100 bg-slate-50">
+                  <tr className="border-b border-slate-100 bg-slate-50">
                     <td colSpan={9} className="px-6 pb-3 pt-2">
                       <div className="grid grid-cols-3 gap-4 text-[11.5px]">
                         <div>
@@ -731,11 +907,197 @@ function TxTable({rows}: {rows: TxRow[]}) {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             ))}
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+function StatementTopOrganizations({
+  title,
+  subtitle,
+  rows,
+  direction,
+  selectedKey,
+  onSelect,
+}: {
+  title: string;
+  subtitle: string;
+  rows: OrgAmountRow[];
+  direction: 'credit' | 'debit';
+  selectedKey: string | null;
+  onSelect: (item: OrgAmountRow) => void;
+}) {
+  const max = Math.max(...rows.map(r => r.amount), 1);
+  const total = rows.reduce((sum, row) => sum + row.amount, 0);
+  const chartRows = rows.map(row => ({
+    ...row,
+    shortName: row.name.length > 22 ? `${row.name.slice(0, 22)}...` : row.name,
+  }));
+
+  return (
+    <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <div className="text-[14px] font-bold text-slate-900">{title}</div>
+            <div className="mt-0.5 text-[11.5px] text-slate-500">{subtitle}</div>
+          </div>
+          <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-right">
+            <div className="font-mono text-[12px] font-bold text-slate-900">{fmt(total)}</div>
+            <div className="font-mono text-[9px] uppercase tracking-wider text-slate-400">GEL</div>
+          </div>
+        </div>
+        <div className="h-[360px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartRows} layout="vertical" margin={{top: 4, right: 26, left: 8, bottom: 4}}>
+              <CartesianGrid stroke="var(--bdr)" horizontal={false} />
+              <XAxis type="number" tick={{fontSize: 10, fill: 'var(--text-3)'}} tickFormatter={v => fmt(Number(v), 0)} />
+              <YAxis type="category" dataKey="shortName" width={150} tick={{fontSize: 10, fill: 'var(--text-2)'}} />
+              <Tooltip content={<MoneyChartTooltip />} />
+              <Bar
+                dataKey="amount"
+                fill={direction === 'credit' ? 'var(--grn)' : 'var(--red)'}
+                radius={[0, 5, 5, 0]}
+                onClick={row => {
+                  const payload = (row as {payload?: OrgAmountRow}).payload;
+                  if (payload) onSelect(payload);
+                }}
+                cursor="pointer"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
+          <div className="font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-slate-400">ორგანიზაციები</div>
+        </div>
+        <div className="max-h-[418px] overflow-auto">
+          {rows.map((row, index) => (
+            <button key={row.key} onClick={() => onSelect(row)}
+              className={`block w-full border-b border-slate-100 px-4 py-3 text-left transition last:border-0 hover:bg-slate-50 ${
+                selectedKey === row.key ? 'bg-blue-50' : ''
+              }`}>
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 w-6 shrink-0 font-mono text-[10px] font-bold text-slate-400">#{index + 1}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-[12.5px] font-semibold text-slate-900">{row.name}</div>
+                  <div className="mt-0.5 flex flex-wrap gap-2 font-mono text-[10px] text-slate-400">
+                    {row.inn && <span>{row.inn}</span>}
+                    <span>{row.count} ოპერაცია</span>
+                  </div>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
+                    <div
+                      className={direction === 'credit' ? 'h-full rounded-full bg-emerald-600' : 'h-full rounded-full bg-red-500'}
+                      style={{width: `${Math.max(4, (row.amount / max) * 100)}%`}}
+                    />
+                  </div>
+                </div>
+                <div className={direction === 'credit' ? 'font-mono text-[12px] font-bold text-emerald-600' : 'font-mono text-[12px] font-bold text-red-500'}>
+                  {fmt(row.amount)}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatementDailyFlow({rows}: {rows: DailyFlowRow[]}) {
+  const totals = rows.reduce((acc, row) => ({
+    credit: acc.credit + row.credit,
+    debit: acc.debit + row.debit,
+    count: acc.count + row.count,
+  }), {credit: 0, debit: 0, count: 0});
+  const chartRows = rows.map(row => ({...row, label: dayLabel(row.date)}));
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-3 flex flex-wrap items-start gap-3">
+          <div>
+            <div className="text-[14px] font-bold text-slate-900">დღეების ჭრილი · შემოსული / გასული</div>
+            <div className="mt-0.5 text-[11.5px] text-slate-500">ყოველ დღეზე ჩანს რამდენი ჩაირიცხა, რამდენი გადაირიცხა და წმინდა სხვაობა.</div>
+          </div>
+          <div className="ml-auto flex flex-wrap gap-2">
+            <SummaryPill label="შემოსული" amount={totals.credit} color="green" />
+            <SummaryPill label="გასული" amount={totals.debit} color="red" />
+          </div>
+        </div>
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartRows} margin={{top: 8, right: 12, left: 0, bottom: 8}}>
+              <CartesianGrid stroke="var(--bdr)" vertical={false} />
+              <XAxis dataKey="label" tick={{fontSize: 10, fill: 'var(--text-3)'}} />
+              <YAxis tick={{fontSize: 10, fill: 'var(--text-3)'}} tickFormatter={v => fmt(Number(v), 0)} />
+              <Tooltip content={<DailyChartTooltip />} />
+              <Bar dataKey="credit" name="შემოსული" fill="var(--grn)" radius={[5, 5, 0, 0]} />
+              <Bar dataKey="debit" name="გასული" fill="var(--red)" radius={[5, 5, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <table className="w-full border-collapse text-[12.5px]">
+          <thead>
+            <tr className="border-b border-slate-200 bg-slate-50 font-mono text-[9.5px] uppercase tracking-[0.06em] text-slate-400">
+              <th className="px-3 py-2.5 text-left font-bold">დღე</th>
+              <th className="px-3 py-2.5 text-right font-bold">შემოსული ₾</th>
+              <th className="px-3 py-2.5 text-right font-bold">გასული ₾</th>
+              <th className="px-3 py-2.5 text-right font-bold">სხვაობა ₾</th>
+              <th className="px-3 py-2.5 text-right font-bold">ჩანაწერი</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(row => (
+              <tr key={row.date} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                <td className="px-3 py-2 font-mono text-[11px] font-semibold text-slate-700">{row.date}</td>
+                <td className="px-3 py-2 text-right font-mono font-semibold text-emerald-600">{fmt(row.credit)}</td>
+                <td className="px-3 py-2 text-right font-mono font-semibold text-red-500">{fmt(row.debit)}</td>
+                <td className={`px-3 py-2 text-right font-mono font-semibold ${row.balance >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{fmt(row.balance)}</td>
+                <td className="px-3 py-2 text-right font-mono text-[11px] text-slate-400">{row.count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function MoneyChartTooltip({active, payload}: {active?: boolean; payload?: {payload?: OrgAmountRow; value?: number}[]}) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0].payload;
+  if (!row) return null;
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] shadow-sm">
+      <div className="max-w-64 font-semibold text-slate-900">{row.name}</div>
+      {row.inn && <div className="font-mono text-[10px] text-slate-400">{row.inn}</div>}
+      <div className="mt-1 font-mono font-bold text-slate-800">{fmt(Number(payload[0].value || 0))} ₾</div>
+      <div className="font-mono text-[10px] text-slate-400">{row.count} ოპერაცია</div>
+    </div>
+  );
+}
+
+function DailyChartTooltip({active, payload, label}: {active?: boolean; payload?: {name?: string; value?: number; color?: string}[]; label?: string}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] shadow-sm">
+      <div className="mb-1 font-mono font-bold text-slate-800">{label}</div>
+      {payload.map(item => (
+        <div key={item.name} className="flex min-w-36 justify-between gap-4">
+          <span className="text-slate-500">{item.name}</span>
+          <span className="font-mono font-semibold" style={{color: item.color}}>{fmt(Number(item.value || 0))} ₾</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -809,16 +1171,6 @@ function EmptyState({label}: {label: string}) {
     <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white py-16 text-center">
       <div className="text-3xl">🔍</div>
       <div className="mt-2 text-[13px] font-semibold text-slate-600">{label}</div>
-    </div>
-  );
-}
-
-function RsRow({label, value, bold, mono}: {label: string; value?: string | null; bold?: boolean; mono?: boolean}) {
-  if (!value) return null;
-  return (
-    <div className="flex gap-3 px-5 py-3 text-[12.5px]">
-      <span className="w-44 shrink-0 text-slate-400">{label}</span>
-      <span className={`text-slate-800 ${bold ? 'font-semibold' : ''} ${mono ? 'font-mono' : ''}`}>{value}</span>
     </div>
   );
 }
