@@ -1,10 +1,10 @@
 'use client';
 
 import React, {
-  useRef, useState, useMemo, useEffect, useCallback,
+  useRef, useState, useMemo, useCallback,
 } from 'react';
 import * as d3 from 'd3';
-import { Download } from 'lucide-react';
+import { Download, Eye, EyeOff } from 'lucide-react';
 import type { ChainResult } from '@/lib/ahu-ashrae/chain';
 import {
   satW, enthalpy, dewPoint, rhFromDbW,
@@ -13,20 +13,24 @@ import {
   satCurvePoints, rhCurvePoints, isothermSegment, wetBulbSegment, specVolPts,
   type IdPt,
 } from '@/lib/ahu-ashrae/mollier-geometry';
+import {
+  COMFORT_OVERLAYS, getOverlay,
+  type OverlayId,
+} from '@/lib/ahu-ashrae/comfort-overlays';
 
 // ─── Chart dimensions ─────────────────────────────────────────────────────────
 const SVG_W = 920;
 const SVG_H = 560;
-// Generous margins so labels never clip
 const M = { top: 28, right: 24, bottom: 56, left: 72 } as const;
 const IW = SVG_W - M.left - M.right;
 const IH = SVG_H - M.top - M.bottom;
 
-// Small left buffer so saturation curve doesn't start right at the edge
 const D_DOM: [number, number] = [-0.3, 30];
 const H_DOM: [number, number] = [-12, 132];
 
-// Chart decoration constants
+/** Clips the upper-left dead zone — no HVAC state exists above this temperature */
+const T_CLIP = 50;
+
 const ISO_TEMPS       = [-10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
 const ISO_LABEL_TEMPS = [-10, 0, 10, 20, 30, 40, 50];
 const RH_VALS         = [10, 20, 30, 40, 50, 60, 70, 80, 90];
@@ -79,13 +83,21 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
   const afRef   = useRef(0);
 
   const [hover, setHover] = useState<HoverData | null>(null);
+  const [overlayId, setOverlayId] = useState<OverlayId>('none');
 
   // ── Scales ────────────────────────────────────────────────────────────────
   const xS = useMemo(() => d3.scaleLinear().domain(D_DOM).range([0, IW]), []);
   const yS = useMemo(() => d3.scaleLinear().domain(H_DOM).range([IH, 0]), []);
   const ln  = useMemo(() => makeLine(xS, yS), [xS, yS]);
 
-  // ── Static chart paths (recompute only on pressure change) ───────────────
+  // ── Trapezoid clip (T=T_CLIP isotherm as upper boundary) ─────────────────
+  // At d=0: h=enthalpy(50,0)≈50.3 kJ/kg  →  clips dead zone upper-left
+  // At d=30: h=enthalpy(50,0.03)≈128 kJ/kg  →  near chart top
+  const clipYL = yS(enthalpy(T_CLIP, 0));
+  const clipYR = yS(enthalpy(T_CLIP, D_DOM[1] / 1000));
+  const clipPts = `0,${IH} ${IW},${IH} ${IW},${clipYR.toFixed(1)} 0,${clipYL.toFixed(1)}`;
+
+  // ── Static chart paths ────────────────────────────────────────────────────
   const satPath = useMemo(() => ln(satCurvePoints(pressure)) ?? '', [ln, pressure]);
   const rhPaths = useMemo(
     () => RH_VALS.map((rh) => ({ rh, d: ln(rhCurvePoints(rh, pressure)) ?? '' })),
@@ -104,7 +116,42 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
     [ln, pressure],
   );
 
-  // ── Isotherm labels: every 10 °C, placed near saturation curve end ────────
+  // ── Comfort overlay ───────────────────────────────────────────────────────
+  const overlay = useMemo(() => getOverlay(overlayId), [overlayId]);
+
+  // Convert (tdb [°C], w [g/kg]) → Mollier (d [g/kg], h [kJ/kg]) SVG points
+  const toIdSvg = useCallback(
+    (verts: { tdb: number; w: number }[]) =>
+      verts
+        .map((v) => `${xS(v.w).toFixed(1)},${yS(enthalpy(v.tdb, v.w / 1000)).toFixed(1)}`)
+        .join(' '),
+    [xS, yS],
+  );
+
+  const comfortEl = useMemo(() => {
+    if (!overlay) return null;
+    return (
+      <g style={{ pointerEvents: 'none' }}>
+        <polygon
+          points={toIdSvg(overlay.vertices)}
+          fill={overlay.fill}
+          stroke={overlay.border}
+          strokeWidth={1.4}
+        />
+        {overlay.zones?.map((z, i) => (
+          <polygon
+            key={i}
+            points={toIdSvg(z.vertices)}
+            fill={z.fill}
+            stroke={z.border}
+            strokeWidth={1}
+          />
+        ))}
+      </g>
+    );
+  }, [overlay, toIdSvg]);
+
+  // ── Isotherm labels ───────────────────────────────────────────────────────
   const isoLabels = useMemo(
     () =>
       ISO_LABEL_TEMPS.map((T) => {
@@ -116,7 +163,7 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
     [xS, yS, pressure],
   );
 
-  // ── RH labels at T ≈ 42 °C ────────────────────────────────────────────────
+  // ── RH labels at T ≈ 42°C ─────────────────────────────────────────────────
   const rhLabels = useMemo(() => {
     const T_lbl = 42;
     return [20, 40, 60, 80].map((rh) => {
@@ -127,7 +174,7 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
     });
   }, [xS, yS, pressure]);
 
-  // ── Wet-bulb labels at left edge ──────────────────────────────────────────
+  // ── Wet-bulb labels ───────────────────────────────────────────────────────
   const wbLabels = useMemo(
     () =>
       WB_TEMPS.map((Twb) => {
@@ -159,6 +206,8 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
         if (d < -0.5 || d > 31 || h < -14 || h > 134) { setHover(null); return; }
         const w   = Math.max(0, d) / 1000;
         const T   = (h - 2501 * w) / (1.006 + 1.86 * w);
+        // Don't show tooltip in clipped dead zone
+        if (T > T_CLIP + 1) { setHover(null); return; }
         const rh  = rhFromDbW(T, w, pressure);
         const tdp = dewPoint(w, pressure);
         setHover({ cx: plotX, cy: plotY, d, h, T, rh, tdp });
@@ -229,7 +278,7 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
     );
   }, [chain, xS, yS]);
 
-  // ── State circles (numbered, T_db label, white halo) ──────────────────────
+  // ── State circles ─────────────────────────────────────────────────────────
   const stateLayer = useMemo(() => {
     if (!chain || chain.states.length < 1) return null;
     return (
@@ -248,7 +297,6 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
                 dominantBaseline="middle" fontWeight={700} fill="white">
                 {i}
               </text>
-              {/* White outline then colored text */}
               <text x={cx} y={labelY} fontSize={8.5} textAnchor="middle"
                 fontWeight={600} stroke="white" strokeWidth={3}
                 style={{ paintOrder: 'stroke' } as React.CSSProperties}>
@@ -265,7 +313,7 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
     );
   }, [chain, xS, yS]);
 
-  // ── Hover tooltip (inline SVG) ─────────────────────────────────────────────
+  // ── Hover tooltip ─────────────────────────────────────────────────────────
   const tooltipEl = useMemo(() => {
     if (!hover) return null;
     const TW = 168, TH = 66;
@@ -291,12 +339,31 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
   return (
     <div>
       {/* Toolbar */}
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
         <button onClick={handleExport}
           className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors hover:opacity-75"
           style={{ borderColor: 'var(--bdr)', color: 'var(--text-2)', background: 'var(--sur)' }}>
           <Download size={11} /> SVG
         </button>
+
+        {/* Comfort overlay selector */}
+        <div className="flex items-center gap-1.5">
+          {overlayId === 'none'
+            ? <EyeOff size={11} style={{ color: 'var(--text-3)' }} />
+            : <Eye size={11} style={{ color: 'var(--blue)' }} />}
+          <select
+            value={overlayId}
+            onChange={(e) => setOverlayId(e.target.value as OverlayId)}
+            className="text-[10px] font-medium rounded border px-2 py-1 outline-none"
+            style={{ borderColor: 'var(--bdr)', background: 'var(--sur)', color: 'var(--text)' }}
+          >
+            <option value="none">No Comfort Overlay</option>
+            {COMFORT_OVERLAYS.map((o) => (
+              <option key={o.id} value={o.id}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+
         <span className="text-[10px] ml-auto" style={{ color: 'var(--text-3)' }}>
           hover → values
         </span>
@@ -309,118 +376,120 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
         style={{ width: '100%', height: 'auto', userSelect: 'none', cursor: 'crosshair' }}
       >
         <defs>
+          {/* Trapezoid clip: upper boundary = T_CLIP isotherm (eliminates dead zone) */}
           <clipPath id={CLIP_ID}>
-            <rect x={0} y={0} width={IW} height={IH} />
+            <polygon points={clipPts} />
           </clipPath>
         </defs>
 
         <g transform={`translate(${M.left},${M.top})`}>
 
-          {/* ── Plot area (clipped) ──────────────────────────────────────── */}
+          {/* ── Plot area (clipped to trapezoid) ────────────────────────── */}
           <g clipPath={`url(#${CLIP_ID})`}>
-            <g>
-              {/* Background */}
-              <rect x={0} y={0} width={IW} height={IH} fill="#f8fafc" />
+            {/* Background */}
+            <rect x={0} y={0} width={IW} height={IH} fill="#f8fafc" />
 
-              {/* Grid */}
-              {X_TICKS.map((d) => (
-                <line key={d} x1={xS(d)} y1={0} x2={xS(d)} y2={IH}
-                  stroke="#e2e8f0" strokeWidth={0.4} />
-              ))}
-              {Y_TICKS.map((h) => (
-                <line key={h} x1={0} y1={yS(h)} x2={IW} y2={yS(h)}
-                  stroke="#e2e8f0" strokeWidth={0.4} />
-              ))}
+            {/* Grid */}
+            {X_TICKS.map((d) => (
+              <line key={d} x1={xS(d)} y1={0} x2={xS(d)} y2={IH}
+                stroke="#e2e8f0" strokeWidth={0.4} />
+            ))}
+            {Y_TICKS.map((h) => (
+              <line key={h} x1={0} y1={yS(h)} x2={IW} y2={yS(h)}
+                stroke="#e2e8f0" strokeWidth={0.4} />
+            ))}
 
-              {/* Specific volume lines */}
-              {svPaths.map(({ v, d }) => d && (
-                <path key={v} d={d} fill="none"
-                  stroke="#94a3b8" strokeWidth={0.5} strokeDasharray="5 7" opacity={0.28} />
-              ))}
+            {/* Comfort overlay (below chart curves) */}
+            {comfortEl}
 
-              {/* Wet-bulb lines */}
-              {wbPaths.map(({ Twb, d }) => d && (
-                <path key={Twb} d={d} fill="none"
-                  stroke="#34d399" strokeWidth={0.7} strokeDasharray="5 4" opacity={0.45} />
-              ))}
+            {/* Specific volume lines */}
+            {svPaths.map(({ v, d }) => d && (
+              <path key={v} d={d} fill="none"
+                stroke="#94a3b8" strokeWidth={0.5} strokeDasharray="5 7" opacity={0.28} />
+            ))}
 
-              {/* Isotherms */}
-              {isoPaths.map(({ T, d }) => d && (
-                <path key={T} d={d} fill="none"
-                  stroke={T === 0 ? '#334e7a' : '#8aa5c5'}
-                  strokeWidth={T === 0 ? 1.4 : 0.75}
-                  strokeDasharray={T < 0 ? '4 3' : '0'}
-                  opacity={T === 0 ? 0.85 : 0.65}
-                />
-              ))}
+            {/* Wet-bulb lines */}
+            {wbPaths.map(({ Twb, d }) => d && (
+              <path key={Twb} d={d} fill="none"
+                stroke="#34d399" strokeWidth={0.7} strokeDasharray="5 4" opacity={0.45} />
+            ))}
 
-              {/* RH curves */}
-              {rhPaths.map(({ rh, d }) => d && (
-                <path key={rh} d={d} fill="none"
-                  stroke="#3b82f6" strokeWidth={0.85}
-                  strokeDasharray="4 2" opacity={0.5} />
-              ))}
+            {/* Isotherms */}
+            {isoPaths.map(({ T, d }) => d && (
+              <path key={T} d={d} fill="none"
+                stroke={T === 0 ? '#334e7a' : '#8aa5c5'}
+                strokeWidth={T === 0 ? 1.4 : 0.75}
+                strokeDasharray={T < 0 ? '4 3' : '0'}
+                opacity={T === 0 ? 0.85 : 0.65}
+              />
+            ))}
 
-              {/* Saturation curve */}
-              <path d={satPath} fill="none" stroke="#1d4ed8" strokeWidth={2.6} />
+            {/* RH curves */}
+            {rhPaths.map(({ rh, d }) => d && (
+              <path key={rh} d={d} fill="none"
+                stroke="#3b82f6" strokeWidth={0.85}
+                strokeDasharray="4 2" opacity={0.5} />
+            ))}
 
-              {/* ── Labels ── */}
+            {/* Saturation curve */}
+            <path d={satPath} fill="none" stroke="#1d4ed8" strokeWidth={2.6} />
 
-              {/* Isotherm labels (every 10 °C, near saturation curve) */}
-              {isoLabels.map((lbl) => lbl && (
-                <g key={lbl.T}>
-                  <text x={lbl.x} y={lbl.y} textAnchor="end" fontSize={8.5}
-                    stroke="white" strokeWidth={2.5} fontWeight={600} fill="white">
-                    {lbl.T > 0 ? `+${lbl.T}` : `${lbl.T}`}°
-                  </text>
-                  <text x={lbl.x} y={lbl.y} textAnchor="end" fontSize={8.5}
-                    fontWeight={600} fill="#3b5278">
-                    {lbl.T > 0 ? `+${lbl.T}` : `${lbl.T}`}°
-                  </text>
-                </g>
-              ))}
+            {/* ── Labels ── */}
 
-              {/* RH labels */}
-              {rhLabels.map((lbl) => lbl && (
-                <g key={lbl.rh}>
-                  <text x={lbl.x} y={lbl.y} fontSize={8.5}
-                    stroke="white" strokeWidth={2.5} fontWeight={600} fill="white">
-                    {lbl.rh}%
-                  </text>
-                  <text x={lbl.x} y={lbl.y} fontSize={8.5}
-                    fontWeight={600} fill="#1d4ed8" opacity={0.75}>
-                    {lbl.rh}%
-                  </text>
-                </g>
-              ))}
-
-              {/* Wet-bulb labels */}
-              {wbLabels.map((lbl) => lbl && (
-                <text key={lbl.Twb} x={lbl.x} y={lbl.y}
-                  fontSize={7.5} fill="#059669" opacity={0.6}>
-                  {lbl.Twb}°wb
+            {/* Isotherm labels */}
+            {isoLabels.map((lbl) => lbl && (
+              <g key={lbl.T}>
+                <text x={lbl.x} y={lbl.y} textAnchor="end" fontSize={8.5}
+                  stroke="white" strokeWidth={2.5} fontWeight={600} fill="white">
+                  {lbl.T > 0 ? `+${lbl.T}` : `${lbl.T}`}°
                 </text>
-              ))}
+                <text x={lbl.x} y={lbl.y} textAnchor="end" fontSize={8.5}
+                  fontWeight={600} fill="#3b5278">
+                  {lbl.T > 0 ? `+${lbl.T}` : `${lbl.T}`}°
+                </text>
+              </g>
+            ))}
 
-              {/* Spec-vol labels */}
-              {SVOL_VALS.map((v) => {
-                const pts = specVolPts(v, pressure);
-                if (!pts.length) return null;
-                const last = pts[pts.length - 1];
-                if (last.d < 1 || last.d > 29.5) return null;
-                return (
-                  <text key={v} x={xS(last.d) - 2} y={yS(last.h) - 3}
-                    fontSize={7} fill="#94a3b8" opacity={0.55} textAnchor="end">
-                    {v}
-                  </text>
-                );
-              })}
+            {/* RH labels */}
+            {rhLabels.map((lbl) => lbl && (
+              <g key={lbl.rh}>
+                <text x={lbl.x} y={lbl.y} fontSize={8.5}
+                  stroke="white" strokeWidth={2.5} fontWeight={600} fill="white">
+                  {lbl.rh}%
+                </text>
+                <text x={lbl.x} y={lbl.y} fontSize={8.5}
+                  fontWeight={600} fill="#1d4ed8" opacity={0.75}>
+                  {lbl.rh}%
+                </text>
+              </g>
+            ))}
 
-              {/* Process arrows */}
-              {arrowLayer}
-              {/* State circles */}
-              {stateLayer}
-            </g>
+            {/* Wet-bulb labels */}
+            {wbLabels.map((lbl) => lbl && (
+              <text key={lbl.Twb} x={lbl.x} y={lbl.y}
+                fontSize={7.5} fill="#059669" opacity={0.6}>
+                {lbl.Twb}°wb
+              </text>
+            ))}
+
+            {/* Spec-vol labels */}
+            {SVOL_VALS.map((v) => {
+              const pts = specVolPts(v, pressure);
+              if (!pts.length) return null;
+              const last = pts[pts.length - 1];
+              if (last.d < 1 || last.d > 29.5) return null;
+              return (
+                <text key={v} x={xS(last.d) - 2} y={yS(last.h) - 3}
+                  fontSize={7} fill="#94a3b8" opacity={0.55} textAnchor="end">
+                  {v}
+                </text>
+              );
+            })}
+
+            {/* Process arrows */}
+            {arrowLayer}
+            {/* State circles */}
+            {stateLayer}
 
             {/* Crosshair */}
             {hover && (
@@ -441,6 +510,15 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
               onMouseLeave={handleMouseLeave}
             />
           </g>
+
+          {/* ── T_CLIP boundary — drawn outside clip, shows the slant edge ── */}
+          <line
+            x1={0} y1={clipYL} x2={IW} y2={clipYR}
+            stroke="#94a3b8" strokeWidth={0.7} strokeDasharray="5 4" opacity={0.45}
+          />
+          <text x={5} y={clipYL - 4} fontSize={7} fill="#94a3b8" opacity={0.6}>
+            {T_CLIP}°C max
+          </text>
 
           {/* ── X axis ──────────────────────────────────────────────────── */}
           {X_TICKS.map((d) => {
@@ -467,9 +545,11 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
             );
           })}
 
-          {/* Chart border */}
-          <rect x={0} y={0} width={IW} height={IH}
-            fill="none" stroke="#cbd5e1" strokeWidth={1} />
+          {/* Trapezoid chart border (matches clip boundary) */}
+          <polygon
+            points={`0,${clipYL.toFixed(1)} ${IW},${clipYR.toFixed(1)} ${IW},${IH} 0,${IH}`}
+            fill="none" stroke="#cbd5e1" strokeWidth={1}
+          />
 
           {/* Axis labels */}
           <text x={IW / 2} y={IH + 46} textAnchor="middle"
@@ -485,6 +565,26 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
           {tooltipEl}
         </g>
       </svg>
+
+      {/* Comfort overlay legend */}
+      {overlay && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[10px]"
+          style={{ color: 'var(--text-3)' }}>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-3 h-3 rounded-sm border"
+              style={{ background: overlay.fill, borderColor: overlay.border }} />
+            <span style={{ color: 'var(--text-2)', fontWeight: 600 }}>{overlay.label}</span>
+            <span className="font-mono opacity-70">· {overlay.reference}</span>
+          </div>
+          {overlay.zones?.filter((z) => z.label).map((z, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <span className="inline-block w-3 h-3 rounded-sm"
+                style={{ background: z.fill, border: `1px solid ${z.border}` }} />
+              <span>{z.label}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
