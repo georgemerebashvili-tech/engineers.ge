@@ -5,13 +5,13 @@ import dynamic from 'next/dynamic';
 import {
   Boxes, Box, Filter, Snowflake, Flame, Fan,
   ArrowLeftRight, PanelTopOpen, Shuffle, Droplet, Volume2,
-  ChevronUp, ChevronDown, Trash2, Plus, Power,
+  ChevronUp, ChevronDown, Trash2, Plus, Power, Zap,
   Move3d, RectangleHorizontal, RectangleVertical, Square,
   GripVertical, AlertTriangle, Info,
   type LucideIcon,
 } from 'lucide-react';
 import type { AhuWizardState, AhuUnit } from '@/lib/ahu-ashrae/types';
-import type { SectionConfig, SectionType } from '@/lib/ahu-ashrae/sections';
+import type { SectionConfig, SectionType, FilterClass } from '@/lib/ahu-ashrae/sections';
 import { getAhuTypeSpec } from '@/lib/ahu-ashrae/ahu-types-data';
 import { SECTION_VISUALS, makeDefaultParams, CASING_KG_PER_M } from '@/lib/ahu-ashrae/section-visuals';
 import {
@@ -61,6 +61,46 @@ const TYPE_LABELS_KA: Record<SectionType, string> = {
   fan: 'ვენტილატორი',
   silencer: 'ხმოვანი დამცავი',
 };
+
+// ─── Quick-toggle chips (canonical ASHRAE order, left → right) ────────────────
+type ChipDef =
+  | { kind: 'simple'; type: SectionType; rank: number; label: string; sub?: string; icon: LucideIcon }
+  | { kind: 'filter'; filterClass: FilterClass; rank: number; label: string; sub: string; icon: LucideIcon };
+
+const CHIPS: ChipDef[] = [
+  { kind: 'simple',  type: 'damper',         rank: 10,  label: 'დემპერი',       icon: PanelTopOpen },
+  { kind: 'filter',  filterClass: 'G4',      rank: 20,  label: 'G4',             sub: 'მსხვილი',     icon: Filter },
+  { kind: 'filter',  filterClass: 'M5',      rank: 21,  label: 'M5',             sub: 'საშუალო',     icon: Filter },
+  { kind: 'filter',  filterClass: 'F7',      rank: 22,  label: 'F7',             sub: 'წვრილი',      icon: Filter },
+  { kind: 'filter',  filterClass: 'F9',      rank: 23,  label: 'F9',             sub: 'წვრილი',      icon: Filter },
+  { kind: 'filter',  filterClass: 'carbon',  rank: 24,  label: 'ნახშირი',       sub: 'გაზი/სუნი',   icon: Filter },
+  { kind: 'filter',  filterClass: 'electric',rank: 25,  label: 'ESP',            sub: 'ელექტროსტ.',  icon: Zap },
+  { kind: 'filter',  filterClass: 'H13',     rank: 26,  label: 'H13',            sub: 'HEPA',         icon: Filter },
+  { kind: 'simple',  type: 'heat_recovery',  rank: 30,  label: 'რეკუპერატორი',  icon: ArrowLeftRight },
+  { kind: 'simple',  type: 'mixing_box',     rank: 35,  label: 'შერევა',        icon: Shuffle },
+  { kind: 'simple',  type: 'preheat',        rank: 40,  label: 'წინა გათბობა',  icon: Flame },
+  { kind: 'simple',  type: 'cooling_coil',   rank: 50,  label: 'გაგრილება',     icon: Snowflake },
+  { kind: 'simple',  type: 'reheat',         rank: 60,  label: 'უკანა გათბობა', icon: Flame },
+  { kind: 'simple',  type: 'humidifier',     rank: 70,  label: 'გამატენიანებ.', icon: Droplet },
+  { kind: 'simple',  type: 'fan',            rank: 80,  label: 'ვენტილატორი',   icon: Fan },
+  { kind: 'simple',  type: 'silencer',       rank: 90,  label: 'ხმოვანი დამც.', icon: Volume2 },
+];
+
+function chipMatches(s: SectionConfig, chip: ChipDef): boolean {
+  if (chip.kind === 'simple') return s.spec.type === chip.type;
+  return s.spec.type === 'filter' && s.spec.params.filterClass === chip.filterClass;
+}
+
+function rankOfSection(s: SectionConfig): number {
+  const c = CHIPS.find((x) => chipMatches(s, x));
+  return c?.rank ?? 99;
+}
+
+function chipColor(chip: ChipDef): string {
+  return chip.kind === 'filter'
+    ? SECTION_VISUALS.filter.color
+    : SECTION_VISUALS[chip.type].color;
+}
 
 interface Props {
   state: AhuWizardState;
