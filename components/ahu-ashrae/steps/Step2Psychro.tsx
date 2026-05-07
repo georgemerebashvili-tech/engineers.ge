@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import {
   ResponsiveContainer, Scatter, XAxis, YAxis,
-  CartesianGrid, Tooltip,
+  CartesianGrid,
   ComposedChart,
   useXAxisScale, useYAxisScale,
 } from 'recharts';
@@ -546,11 +546,6 @@ function PsychroChart({ psychro, chain, overlay, processArrows, metrics, showGri
             ticks={[0, 4, 8, 12, 16, 20, 24, 28]}
             tick={metrics.absHumid ? { fontSize: 10, fill: 'var(--text-3)' } : false}
             label={{ value: 'Humidity ratio (g/kg)', angle: -90, position: 'insideLeft', offset: 15, fontSize: 11, fill: 'var(--text-2)' }}
-          />
-          <Tooltip
-            contentStyle={{ background: 'var(--sur)', border: '1px solid var(--bdr-2)', fontSize: 11 }}
-            formatter={(v) => [Number(v).toFixed(2), '']}
-            labelFormatter={(label) => `T = ${Number(label).toFixed(1)}°C`}
           />
 
           {/* Comfort overlay polygon */}
