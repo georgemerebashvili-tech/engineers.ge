@@ -3,10 +3,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import {
-  Boxes, Filter, Snowflake, Flame, Fan,
+  Boxes, Box, Filter, Snowflake, Flame, Fan,
   ArrowLeftRight, PanelTopOpen, Shuffle, Droplet, Volume2,
   ChevronUp, ChevronDown, Trash2, Plus, Power,
-  Move3d, RectangleHorizontal,
+  Move3d, RectangleHorizontal, RectangleVertical, Square,
   GripVertical, AlertTriangle, Info,
   type LucideIcon,
 } from 'lucide-react';
@@ -20,12 +20,21 @@ import {
   ORDER_RULE_LEGEND,
   type OrderViolation,
 } from '@/lib/ahu-ashrae/section-order-rules';
-import { AhuOrthoSchematic } from '../AhuOrthoSchematic';
+import { AhuOrthoSchematic, type AhuOrthoView } from '../AhuOrthoSchematic';
+
+type AhuViewMode = 'persp' | AhuOrthoView;
 
 const AhuStlViewer = dynamic(
   () => import('../AhuStlViewer').then((m) => m.AhuStlViewer),
   { ssr: false, loading: () => <ViewerLoading /> },
 );
+
+const VIEW_BUTTONS: Array<{ id: AhuViewMode; icon: LucideIcon; label: string; title: string }> = [
+  { id: 'persp', icon: Move3d,              label: '3D',     title: 'პერსპექტივა — orbit' },
+  { id: 'side',  icon: RectangleHorizontal, label: 'გვერდი', title: 'გვერდხედი — სიგრძე × სიმაღლე' },
+  { id: 'front', icon: Square,              label: 'წინა',   title: 'წინხედი — სიღრმე × სიმაღლე' },
+  { id: 'top',   icon: RectangleVertical,   label: 'ზემო',   title: 'ზედხედი — სიგრძე × სიღრმე' },
+];
 
 const ICON_MAP: Record<SectionType, LucideIcon> = {
   damper: PanelTopOpen,
@@ -169,6 +178,8 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
     return componentKg + casingKg;
   }, [sections, viewerSections]);
 
+  const [viewMode, setViewMode] = useState<AhuViewMode>('persp');
+
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(280px,340px)_1fr] gap-5">
       {/* ── Section editor ── */}
@@ -263,82 +274,91 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
         <RuleLegend />
       </section>
 
-      {/* ── Right column: side ortho (top) + 3D (bottom) ── */}
-      <div className="flex flex-col gap-5 min-w-0">
-        {/* Side ortho — always visible, dynamic */}
-        <section
-          className="rounded-xl border p-4 flex flex-col"
-          style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}
-        >
-          <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <RectangleHorizontal size={16} style={{ color: 'var(--blue)' }} />
-              <h2 className="text-sm font-bold" style={{ color: 'var(--navy)' }}>
-                გვერდხედი
-              </h2>
-            </div>
+      {/* ── Viewer (single panel, view-mode toolbar) ── */}
+      <section
+        className="rounded-xl border p-4 flex flex-col min-w-0"
+        style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}
+      >
+        <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <Box size={16} style={{ color: 'var(--blue)' }} />
+            <h2 className="text-sm font-bold" style={{ color: 'var(--navy)' }}>
+              {viewMode === 'persp' ? '3D ნახვა' : 'ორთოგრაფიული ხედი'}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <ViewModeToolbar value={viewMode} onChange={setViewMode} />
             <div className="text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
               {viewerSections.length} სექცია
             </div>
           </div>
-          <p className="text-xs mb-3" style={{ color: 'var(--text-3)' }}>
-            ორთოგრაფიული გვერდხედი — ზომები მმ-ში; დინამიური, კომპონენტებთან ერთად განახლდება.
-          </p>
-          <div
-            className="rounded-lg overflow-hidden border"
-            style={{ borderColor: 'var(--bdr)', background: '#f7f9fc', minHeight: 240 }}
-          >
-            {viewerSections.length > 0 ? (
-              <AhuOrthoSchematic
-                sections={viewerSections}
-                view="side"
-                weightKg={totalWeightKg}
-              />
-            ) : (
-              <div className="h-[240px] flex items-center justify-center text-xs" style={{ color: 'var(--text-3)' }}>
-                არცერთი სექცია არ არის ჩართული
-              </div>
-            )}
-          </div>
-        </section>
+        </div>
+        <p className="text-xs mb-3" style={{ color: 'var(--text-3)' }}>
+          {viewMode === 'persp'
+            ? 'orbit / zoom — მაუსით. სექციათა რიგი ცოცხლად აისახება.'
+            : 'ორთოგრაფიული ხედი — ზომები მმ-ში, სრული გაბარიტი + წონა title block-ში.'}
+        </p>
 
-        {/* 3D perspective — always visible, dynamic */}
-        <section
-          className="rounded-xl border p-4 flex flex-col"
-          style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}
+        <div
+          className="flex-1 rounded-lg overflow-hidden border"
+          style={{
+            borderColor: 'var(--bdr)',
+            background: viewMode === 'persp'
+              ? 'linear-gradient(180deg, #eef3f9 0%, #d8e2ee 100%)'
+              : '#f7f9fc',
+            minHeight: 480,
+          }}
         >
-          <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <Move3d size={16} style={{ color: 'var(--blue)' }} />
-              <h2 className="text-sm font-bold" style={{ color: 'var(--navy)' }}>
-                3D ნახვა
-              </h2>
-            </div>
-            <div className="text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
-              orbit / zoom
-            </div>
-          </div>
-          <p className="text-xs mb-3" style={{ color: 'var(--text-3)' }}>
-            პერსპექტივა — მაუსით orbit / zoom. სექციათა რიგი ცოცხლად აისახება.
-          </p>
-          <div
-            className="flex-1 rounded-lg overflow-hidden border"
-            style={{
-              borderColor: 'var(--bdr)',
-              background: 'linear-gradient(180deg, #eef3f9 0%, #d8e2ee 100%)',
-              minHeight: 360,
-            }}
-          >
-            {viewerSections.length > 0 ? (
+          {viewerSections.length > 0 ? (
+            viewMode === 'persp' ? (
               <AhuStlViewer sections={viewerSections} />
             ) : (
-              <div className="h-full flex items-center justify-center text-xs" style={{ color: 'var(--text-3)' }}>
-                არცერთი სექცია არ არის ჩართული
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
+              <AhuOrthoSchematic
+                sections={viewerSections}
+                view={viewMode}
+                weightKg={totalWeightKg}
+              />
+            )
+          ) : (
+            <div className="h-full flex items-center justify-center text-xs" style={{ color: 'var(--text-3)' }}>
+              არცერთი სექცია არ არის ჩართული
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ViewModeToolbar({
+  value, onChange,
+}: {
+  value: AhuViewMode;
+  onChange: (v: AhuViewMode) => void;
+}) {
+  return (
+    <div className="inline-flex rounded-md border overflow-hidden" style={{ borderColor: 'var(--bdr-2)' }}>
+      {VIEW_BUTTONS.map((b) => {
+        const Icon = b.icon;
+        const active = value === b.id;
+        return (
+          <button
+            key={b.id}
+            type="button"
+            onClick={() => onChange(b.id)}
+            title={b.title}
+            className="flex items-center gap-1 px-2 py-1 text-[10px] font-semibold transition-colors"
+            style={
+              active
+                ? { background: 'var(--blue)', color: '#fff' }
+                : { background: 'var(--sur)', color: 'var(--text-3)' }
+            }
+          >
+            <Icon size={11} />
+            <span>{b.label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
