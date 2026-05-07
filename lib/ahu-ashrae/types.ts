@@ -235,8 +235,8 @@ export interface HeatRecoveryResult {
 // ─── Full AHU Wizard State ────────────────────────────────────────────────────
 
 export type WizardStep =
-  | 'inputs'      // საწყისი მონაცემები (climate, indoor, airflow, loads)
-  | 'ahu_type'    // AHU სქემა (mixing / 100% OA / HR / CAV-VAV)
+  | 'ahu_type'    // AHU სქემა — first, defines what airflow inputs make sense
+  | 'inputs'      // პარამეტრები (climate, indoor, airflow, loads) — depends on schema
   | 'components'  // სექციების შერჩევა + STL 3D viewer (catalog-driven)
   | 'psychro'     // ფსიქრომეტრიული პროცესი (drag-able points)
   | 'sizing'      // სექციების სიზინგი (cool/heat/filter/HR + ΔP)

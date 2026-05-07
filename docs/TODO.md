@@ -16,35 +16,33 @@
 `inputs → ahu_type → components (+ STL 3D viewer) → psychro (drag points) → sizing → fan → summary → report`
 
 **Admin AHU catalog tasks:**
-- [ ] 2026-05-07 — `/admin/ahu/models` — capacity tiers (2000 / 5000 / 10000 / 15000 / 20000 m³/h) × flow type (cross-flow, counter-flow, mixing, 100% OA) + dimensions/weight/price 🔴
-- [ ] 2026-05-07 — `/admin/ahu/sections` — pre-defined section sequences per model (filter → pre-heat → cooling → re-heat → HR → fan, model-specific order) 🔴
-- [ ] 2026-05-07 — `/admin/ahu/filters` — ფილტრების კატალოგი (G4, F7, carbon, electric, etc.) + ΔP curves
-- [ ] 2026-05-07 — `/admin/ahu/coils` — water/DX coils (rows, fpi, capacity, ΔP, water Δt)
-- [ ] 2026-05-07 — `/admin/ahu/fans` — fan models with airflow/pressure curves
-- [ ] 2026-05-07 — `/admin/ahu/heat-recovery` — HR types (rotary wheel, plate, run-around) + effectiveness
-- [ ] 2026-05-07 — `/admin/ahu/components` — generic catalog (humidifiers, dampers, silencers)
-- [ ] 2026-05-07 — sidebar: `კონტენტი > AHU კატალოგი` group with all sub-tables 🔴
+- [x] 2026-05-07 — `/admin/ahu-catalog` — sidebar entry + 7-tab overview (models / sections / filters / coils / fans / hr / humidifiers); skeleton ready, real data tables next 🔴
+- [ ] 2026-05-07 — Backend: Supabase tables for ahu_models / ahu_sections / ahu_filters / ahu_coils / ahu_fans / ahu_hr / ahu_humidifiers + migrations
+- [ ] 2026-05-07 — CRUD UI for each tab (form + list, currently placeholders)
+- [ ] 2026-05-07 — STL file uploads per ahu_model row → `/public/ahu/models/<id>.stl` (or Supabase storage)
+- [ ] 2026-05-07 — Wire wizard StepComponents → admin catalog (auto-pick model by airflow round-up + flow type) 🔴
 
-**Wizard tasks (current session):**
-- [x] 2026-05-07 — Reorder STEPS + WizardStep type (foundational, no functional break) 🔴
-- [x] 2026-05-07 — Scaffold StepComponents, StepSizing, StepFan, StepSummary, StepReport
-- [x] 2026-05-07 — Procedural AHU 3D viewer (R3F box + sections) — STL upgrade pending catalog
-- [ ] 2026-05-07 — Interactive draggable i-d chart points in StepPsychro
-- [ ] 2026-05-07 — Wire StepComponents to admin catalog (model selection by airflow round-up)
-- [ ] 2026-05-07 — AHU full i18n via next-intl (`messages/*.json` ahu namespace) — labels currently bilingual KA·EN in code; should resolve from locale (en/ru/tr/az/hy)
+**Wizard tasks (DONE 2026-05-07):**
+- [x] Reorder STEPS + WizardStep type (8-step pipeline)
+- [x] Scaffold StepComponents, StepSizing, StepFan, StepSummary, StepReport
+- [x] Procedural AHU 3D viewer (R3F box + sections) — live updates with section toggles
+- [x] Section pipeline architecture (lib/ahu-ashrae/sections/, chain.ts, narrate.ts, air-state.ts)
+- [x] 5 section presets (mixing_with_hr / 100_oa_with_hr / simple_recirc / cooling_only / full_treatment)
+- [x] StepComponents — preset selector, ↑/↓ reorder, enable/disable, type picker, live 3D
+- [x] StepSummary — chain totals + state-by-state table + auto-narrative journal
+- [x] Step2Psychro — chain points plot on i-d chart + 5 comfort overlays toggleable (Givoni / ASHRAE 55 summer+winter / EN 15251 / ISO 7730 / Outdoor Heat Index)
+- [x] StepReport — printable structured doc (8 sections), `window.print()` works for browser PDF
 
-**Pro-grade i-d chart + report (Marsh-level quality bar):**
-Reference: https://drajmarsh.bitbucket.io/psychro-chart2d.html
-
-- [ ] 2026-05-07 — Comfort overlays on i-d chart: Givoni / ASHRAE 55-2017 / ISO 7730 PMV / EN 15251 / Outdoor Heat Index 🔴
-- [ ] 2026-05-07 — Auto-narrative generator (`lib/ahu-ashrae/narrate.ts`): each state-transition → Georgian sentence with input/process/output + standard reference 🔴
-- [ ] 2026-05-07 — StepSummary live narrative log (running journal as user navigates wizard)
-- [ ] 2026-05-07 — StepReport full sequential story + equations + standards-compliance flags (SFP vs 90.1, IAQ vs 62.1, comfort vs 55) → PDF
-- [ ] 2026-05-07 — Reference study: read drajmarsh.bitbucket.io psychro-chart2d source for comfort polygon coordinates
+**Wizard remaining:**
+- [ ] 2026-05-07 — Interactive draggable i-d chart points in StepPsychro (ცვლა → live recalc downstream chain) 🟡
+- [ ] 2026-05-07 — Per-section parameter editor in StepComponents (target T, ΔP, ε, etc. inline)
+- [ ] 2026-05-07 — Standards-compliance flags (SFP vs 90.1, IAQ vs 62.1, comfort vs 55) — green/amber/red badges
+- [ ] 2026-05-07 — AHU full i18n via next-intl
 
 **Memory:**
 - [project_ahu_catalog_architecture.md](~/.claude/projects/-Users-macbookair-Desktop-engineers-ge-engineers-ge/memory/project_ahu_catalog_architecture.md)
 - [project_ahu_psychro_quality_bar.md](~/.claude/projects/-Users-macbookair-Desktop-engineers-ge-engineers-ge/memory/project_ahu_psychro_quality_bar.md)
+- [project_ahu_section_pipeline.md](~/.claude/projects/-Users-macbookair-Desktop-engineers-ge-engineers-ge/memory/project_ahu_section_pipeline.md)
 
 ---
 

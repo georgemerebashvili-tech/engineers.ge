@@ -49,7 +49,16 @@
       "Bash(tar -xzf opengeometry-2.0.9.tgz)",
       "Bash(open http://localhost:5173/)",
       "Bash(open http://localhost:3001/)",
-      "Bash(open http://localhost:3001/admin)"
+      "Bash(open http://localhost:3001/admin)",
+      "WebFetch(domain:afl.cloudair.tech)",
+      "Bash(python3 -c \"import json; d=json.load\\(open\\('/tmp/cats.json'\\)\\); [print\\(c.get\\('id_product_category'\\), c.get\\('name'\\), c.get\\('subname'\\)\\) for c in d]\")",
+      "Bash(echo \"started $!\")",
+      "Bash(python3 -c ' *)",
+      "Bash(node /tmp/test_fan.mjs)",
+      "Bash(kill bkuqlhym2 *)",
+      "Bash(echo \"PID=$!\")",
+      "Bash(grep -n \"MiniChart\\\\|</div>$\\\\|export function FanDatasheet\\\\|^}\" components/ahu-ashrae/fans/FanDatasheet.tsx)",
+      "Bash(grep -nA 12 \"^export interface PsychoPoint\" /Users/macbookair/Desktop/engineers.ge/engineers.ge/lib/ahu-ashrae/types.ts)"
     ],
     "additionalDirectories": [
       "/Users/macbookair/Desktop/engineers.ge/engineers.ge/app",

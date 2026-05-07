@@ -179,6 +179,13 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
       title: 'კონტენტი',
       items: [
         {
+          key: 'ahu-catalog',
+          label: 'AHU კატალოგი',
+          href: '/admin/ahu-catalog',
+          icon: Wind,
+          flagKey: 'admin.ahu-catalog'
+        },
+        {
           key: 'banners',
           label: 'ბანერები · Hero Ads',
           href: '/admin/banners',

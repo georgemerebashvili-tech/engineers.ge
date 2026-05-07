@@ -44,14 +44,14 @@ import { StepReport } from './steps/StepReport';
 // ─── Step metadata ─────────────────────────────────────────────────────────────
 
 const STEPS: { id: WizardStep; label: string; icon: React.ComponentType<{size?: number; strokeWidth?: number}> }[] = [
-  { id: 'inputs',     label: 'საწყისი მონაცემები',  icon: Wind },
-  { id: 'ahu_type',   label: 'AHU სქემა',           icon: Layers },
-  { id: 'components', label: 'კომპონენტები + 3D',   icon: Boxes },
-  { id: 'psychro',    label: 'ფსიქრომეტრია',        icon: Thermometer },
-  { id: 'sizing',     label: 'სიზინგი + ΔP',        icon: Gauge },
-  { id: 'fan',        label: 'ვენტილატორი',         icon: Fan },
-  { id: 'summary',    label: 'შეჯამება',            icon: FileText },
-  { id: 'report',     label: 'რეპორტი (PDF)',       icon: Download },
+  { id: 'ahu_type',   label: 'AHU სქემა',     icon: Layers },
+  { id: 'inputs',     label: 'პარამეტრები',   icon: Wind },
+  { id: 'components', label: 'კომპონენტები + 3D', icon: Boxes },
+  { id: 'psychro',    label: 'ფსიქრომეტრია',  icon: Thermometer },
+  { id: 'sizing',     label: 'სიზინგი + ΔP',  icon: Gauge },
+  { id: 'fan',        label: 'ვენტილატორი',   icon: Fan },
+  { id: 'summary',    label: 'შეჯამება',      icon: FileText },
+  { id: 'report',     label: 'რეპორტი (PDF)', icon: Download },
 ];
 
 // ─── Default wizard state for a fresh AHU unit ────────────────────────────────
@@ -59,7 +59,7 @@ const STEPS: { id: WizardStep; label: string; icon: React.ComponentType<{size?: 
 export function makeDefaultWizardState(project: AhuProject): AhuWizardState {
   const city = resolveCity(project.location, project.customCity) ?? GE_CITIES[0];
   return {
-    currentStep: 'inputs',
+    currentStep: 'ahu_type',
     selectedCity: city,
     design: {
       summerOutdoorDB: city.summerDB,
@@ -604,7 +604,7 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
             <StepComponents state={state} unit={unit} onUpdate={onUpdate} />
           )}
           {state.currentStep === 'psychro' && (
-            <Step2Psychro state={state} psychro={psychro} />
+            <Step2Psychro state={state} psychro={psychro} chain={chain} />
           )}
           {state.currentStep === 'sizing' && (
             <StepSizing state={state} psychro={psychro} />
@@ -616,7 +616,7 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
             <StepSummary state={state} unit={unit} psychro={psychro} chain={chain} />
           )}
           {state.currentStep === 'report' && (
-            <StepReport state={state} unit={unit} />
+            <StepReport project={project} state={state} unit={unit} psychro={psychro} chain={chain} />
           )}
 
           <div className="flex items-center justify-between mt-8 pt-5 border-t" style={{ borderColor: 'var(--bdr)' }}>
