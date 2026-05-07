@@ -31,10 +31,6 @@ const FIELD_MAP: Record<string, string> = {
   fromContactId: 'from_contact_id',
   owner: 'owner',
   value: 'value',
-  createdAt: 'created_at',
-  createdBy: 'created_by',
-  updatedAt: 'updated_at',
-  updatedBy: 'updated_by',
 };
 
 function labelFor(key: string) {
@@ -69,8 +65,8 @@ export async function PATCH(
 
   const actor = dmtActor(auth.me);
   const update: Record<string, unknown> = {
-    updated_at: String((body as Record<string, unknown>).updatedAt ?? new Date().toISOString()),
-    updated_by: String((body as Record<string, unknown>).updatedBy ?? actor),
+    updated_at: new Date().toISOString(),
+    updated_by: actor,
   };
 
   for (const [clientKey, dbKey] of Object.entries(FIELD_MAP)) {

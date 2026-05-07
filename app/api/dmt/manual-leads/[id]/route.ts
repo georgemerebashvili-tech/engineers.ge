@@ -14,9 +14,6 @@ const FIELD_MAP: Record<string, string> = {
   role: 'role',
   owner: 'owner',
   period: 'period',
-  editedBy: 'edited_by',
-  editedAt: 'edited_at',
-  createdBy: 'created_by',
 };
 
 export async function PATCH(
@@ -34,8 +31,8 @@ export async function PATCH(
 
   const actor = dmtActor(auth.me);
   const update: Record<string, unknown> = {
-    edited_by: String((body as Record<string, unknown>).editedBy ?? actor),
-    edited_at: String((body as Record<string, unknown>).editedAt ?? new Date().toISOString()),
+    edited_by: actor,
+    edited_at: new Date().toISOString(),
   };
 
   for (const [clientKey, dbKey] of Object.entries(FIELD_MAP)) {

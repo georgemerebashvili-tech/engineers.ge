@@ -19,9 +19,16 @@ export const metadata: Metadata = {
 // if the user is already authenticated — otherwise the login form shows up
 // inside the gated shell.
 const PUBLIC_PATHS = ['/dmt/login', '/dmt/register', '/dmt/forgot', '/dmt/reset'];
+const MOBILE_PATHS = ['/dmt/m'];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(p + '/')
+  );
+}
+
+function isMobilePath(pathname: string) {
+  return MOBILE_PATHS.some(
     (p) => pathname === p || pathname.startsWith(p + '/')
   );
 }
@@ -69,6 +76,10 @@ export default async function DmtLayout({children}: {children: React.ReactNode})
       ip,
       user_agent
     });
+  }
+
+  if (isMobilePath(pathname)) {
+    return <div className="min-h-screen bg-bg text-text">{children}</div>;
   }
 
   return (

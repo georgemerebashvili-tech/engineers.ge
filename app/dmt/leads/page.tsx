@@ -2,6 +2,7 @@
 
 import {useEffect, useMemo, useState} from 'react';
 import {DmtPageShell} from '@/components/dmt/page-shell';
+import {ActorChip} from '@/components/dmt/actor-chip';
 import {LeadLabelsCell} from '@/components/dmt/lead-labels-cell';
 import {LeadStatusCell} from '@/components/dmt/lead-status-cell';
 import {
@@ -46,12 +47,56 @@ import {
   type Lead,
   type LeadAuditEntry,
   type LeadColumn,
+  type OfferStatus,
   type Source,
   type Stage
 } from '@/lib/dmt/leads-store';
 
 const MIN_W = 80;
 const MAX_W = 640;
+const ADVANCED_FILTER_STORAGE_KEY = 'dmt:leads:filter';
+
+type SortKey = 'date' | 'status' | 'value' | null;
+type SortDir = 'asc' | 'desc';
+type DatePreset = 'last7' | 'last30' | 'thisMonth' | 'prevMonth';
+
+const STATUS_SORT_ORDER: Record<OfferStatus, number> = {
+  offer_in_progress: 0,
+  offer_accepted: 1,
+  offer_rejected: 2,
+};
+
+function toDateInputValue(date: Date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function getPresetRange(preset: DatePreset) {
+  const today = new Date();
+  const end = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const start = new Date(end);
+
+  if (preset === 'last7') {
+    start.setDate(end.getDate() - 6);
+  } else if (preset === 'last30') {
+    start.setDate(end.getDate() - 29);
+  } else if (preset === 'thisMonth') {
+    start.setDate(1);
+  } else {
+    start.setMonth(end.getMonth() - 1, 1);
+    end.setDate(0);
+  }
+
+  return {from: toDateInputValue(start), to: toDateInputValue(end)};
+}
+
+function formatDateFilterLabel(value: string) {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString('en-GB');
+}
 
 export default function LeadsPage() {
   const [hydrated, setHydrated] = useState(false);
@@ -60,7 +105,17 @@ export default function LeadsPage() {
   const [widths, setWidths] = useState<Record<string, number>>({});
   const [filters, setFilters] = useState<FilterState>({});
   const [q, setQ] = useState('');
-  const [actor, setActorState] = useState('მე');
+  const [actor, setActorState] = useState('');
+  const [statusFilter, setStatusFilter] = useState<Set<OfferStatus>>(() => new Set());
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [ownerFilter, setOwnerFilter] = useState('');
+  const [labelFilter, setLabelFilter] = useState<Set<string>>(() => new Set());
+  const [sortKey, setSortKey] = useState<SortKey>(null);
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
+  const [datePanelOpen, setDatePanelOpen] = useState(false);
+  const [shellKey, setShellKey] = useState(0);
   const [showHistory, setShowHistory] = useState(false);
   const [audit, setAudit] = useState<LeadAuditEntry[]>([]);
   const [dragKey, setDragKey] = useState<string | null>(null);
@@ -110,6 +165,52 @@ export default function LeadsPage() {
     if (!hydrated) return;
     saveFilters(filters);
   }, [filters, hydrated]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const raw = window.localStorage.getItem(ADVANCED_FILTER_STORAGE_KEY);
+    if (!raw) return;
+    try {
+      const saved = JSON.parse(raw) as {
+        status?: unknown;
+        from?: unknown;
+        to?: unknown;
+        owner?: unknown;
+        labels?: unknown;
+        sortKey?: unknown;
+        sortDir?: unknown;
+      };
+      if (Array.isArray(saved.status)) {
+        const statuses = saved.status.filter((s): s is OfferStatus => OFFER_STATUS_ORDER.includes(s as OfferStatus));
+        setStatusFilter(new Set(statuses));
+      }
+      if (typeof saved.from === 'string') setDateFrom(saved.from);
+      if (typeof saved.to === 'string') setDateTo(saved.to);
+      if (typeof saved.owner === 'string') setOwnerFilter(saved.owner);
+      if (Array.isArray(saved.labels)) {
+        setLabelFilter(new Set(saved.labels.map(String).filter(Boolean)));
+      }
+      if (saved.sortKey === 'date' || saved.sortKey === 'status' || saved.sortKey === 'value' || saved.sortKey === null) {
+        setSortKey(saved.sortKey);
+      }
+      if (saved.sortDir === 'asc' || saved.sortDir === 'desc') setSortDir(saved.sortDir);
+    } catch {
+      // Ignore stale localStorage data.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hydrated || typeof window === 'undefined') return;
+    window.localStorage.setItem(ADVANCED_FILTER_STORAGE_KEY, JSON.stringify({
+      status: Array.from(statusFilter),
+      from: dateFrom,
+      to: dateTo,
+      owner: ownerFilter,
+      labels: Array.from(labelFilter),
+      sortKey,
+      sortDir,
+    }));
+  }, [dateFrom, dateTo, hydrated, labelFilter, ownerFilter, sortDir, sortKey, statusFilter]);
 
   // ─── Mutators ─────────────────────────────────────────────────────────────
   const addLead = async () => {
@@ -253,11 +354,37 @@ export default function LeadsPage() {
   };
   const clearFilters = () => setFilters({});
 
-  const activeFilterCount = Object.keys(filters).length;
+  const countByStatus = useMemo(() => {
+    return rows.reduce<Record<OfferStatus, number>>((acc, row) => {
+      acc[row.offerStatus] = (acc[row.offerStatus] ?? 0) + 1;
+      return acc;
+    }, {offer_in_progress: 0, offer_accepted: 0, offer_rejected: 0});
+  }, [rows]);
+
+  const ownerOptions = useMemo(() => {
+    return [...new Set(rows.map((row) => row.owner.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  }, [rows]);
+
+  const labelOptions = useMemo(() => {
+    return [...new Set(rows.flatMap((row) => row.labels).map((label) => label.trim()).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b));
+  }, [rows]);
+
+  const activeFilterCount =
+    Object.keys(filters).length +
+    statusFilter.size +
+    labelFilter.size +
+    (ownerFilter ? 1 : 0) +
+    (dateFrom || dateTo ? 1 : 0);
+
+  const hasActiveFilters = activeFilterCount > 0 || q.trim().length > 0;
+  const dateLabel = dateFrom || dateTo
+    ? `თარიღი (${dateFrom ? formatDateFilterLabel(dateFrom) : ''}${dateFrom && dateTo ? ' - ' : dateFrom ? ' →' : '← '}${dateTo ? formatDateFilterLabel(dateTo) : ''})`
+    : 'თარიღი';
 
   const filtered = useMemo(() => {
     const t = q.trim().toLowerCase();
-    return rows.filter((r) => {
+    let result = rows.filter((r) => {
       if (t) {
         const hit =
           r.name.toLowerCase().includes(t) ||
@@ -265,8 +392,20 @@ export default function LeadsPage() {
           r.email.toLowerCase().includes(t) ||
           r.phone.toLowerCase().includes(t) ||
           r.id.toLowerCase().includes(t) ||
-          r.owner.toLowerCase().includes(t);
+          r.owner.toLowerCase().includes(t) ||
+          r.labels.join(' ').toLowerCase().includes(t);
         if (!hit) return false;
+      }
+      if (statusFilter.size > 0 && !statusFilter.has(r.offerStatus)) return false;
+      if (ownerFilter && r.owner !== ownerFilter) return false;
+      if (labelFilter.size > 0 && !r.labels.some((label) => labelFilter.has(label))) return false;
+      if (dateFrom) {
+        const fromMs = new Date(`${dateFrom}T00:00:00`).getTime();
+        if (!Number.isNaN(fromMs) && new Date(r.updatedAt).getTime() < fromMs) return false;
+      }
+      if (dateTo) {
+        const toMs = new Date(`${dateTo}T23:59:59.999`).getTime();
+        if (!Number.isNaN(toMs) && new Date(r.updatedAt).getTime() > toMs) return false;
       }
       for (const [key, needle] of Object.entries(filters)) {
         if (!needle) continue;
@@ -276,7 +415,73 @@ export default function LeadsPage() {
       }
       return true;
     });
-  }, [rows, q, filters]);
+
+    const dir = sortDir === 'asc' ? 1 : -1;
+    const key = sortKey ?? 'date';
+    result = [...result].sort((a, b) => {
+      if (key === 'status') {
+        return ((STATUS_SORT_ORDER[a.offerStatus] ?? 99) - (STATUS_SORT_ORDER[b.offerStatus] ?? 99)) * dir;
+      }
+      if (key === 'value') return ((a.value || 0) - (b.value || 0)) * dir;
+      return (new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()) * dir;
+    });
+    return result;
+  }, [rows, q, filters, statusFilter, ownerFilter, labelFilter, dateFrom, dateTo, sortKey, sortDir]);
+
+  const toggleStatusFilter = (status: OfferStatus) => {
+    setStatusFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
+    });
+  };
+
+  const toggleLabelFilter = (label: string) => {
+    setLabelFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  };
+
+  const applyDatePreset = (preset: DatePreset) => {
+    const range = getPresetRange(preset);
+    setDateFrom(range.from);
+    setDateTo(range.to);
+  };
+
+  const clearAllFilters = () => {
+    clearFilters();
+    setStatusFilter(new Set());
+    setLabelFilter(new Set());
+    setOwnerFilter('');
+    setDateFrom('');
+    setDateTo('');
+    setSortKey(null);
+    setSortDir('desc');
+    setDatePanelOpen(false);
+    setShellKey((value) => value + 1);
+  };
+
+  const toggleSort = (key: Exclude<SortKey, null>) => {
+    setSortKey((prev) => {
+      if (prev === key) {
+        setSortDir((dir) => dir === 'asc' ? 'desc' : 'asc');
+        return prev;
+      }
+      setSortDir('desc');
+      return key;
+    });
+  };
+
+  const sortKeyForColumn = (key: keyof Lead): Exclude<SortKey, null> | null => {
+    if (key === 'updatedAt' || key === 'createdAt') return 'date';
+    if (key === 'offerStatus') return 'status';
+    if (key === 'value') return 'value';
+    return null;
+  };
 
   // ─── Export CSV ──────────────────────────────────────────────────────────
   const exportCsv = () => {
@@ -315,6 +520,7 @@ export default function LeadsPage() {
 
   return (
     <DmtPageShell
+      key={shellKey}
       kicker="OPERATIONS"
       title="ლიდები"
       subtitle="გაყიდვების pipeline — ცხოვრელი grid, ცვლილებები ავტომატურად ინახება"
@@ -327,20 +533,21 @@ export default function LeadsPage() {
             className="inline-flex items-center gap-1.5 rounded-md border border-bdr bg-sur-2 px-3 py-1.5 text-[12px] font-semibold text-text-2 hover:border-blue hover:text-blue"
             title="audit log-ში ჩაიწერება ეს სახელი"
           >
-            <UserRound size={14} /> {actor}
+            <UserRound size={14} /> {actor || 'account'}
           </button>
-          {activeFilterCount > 0 ? (
-            <button
-              onClick={clearFilters}
-              className="inline-flex items-center gap-1.5 rounded-md border border-blue bg-blue-lt px-3 py-1.5 text-[12px] font-semibold text-blue hover:border-blue"
-            >
-              <Filter size={14} /> ფილტრი {activeFilterCount} ×
-            </button>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-md border border-bdr bg-sur-2 px-3 py-1.5 text-[12px] font-semibold text-text-3">
-              <Filter size={14} /> სვეტებიდან
-            </span>
-          )}
+          <button
+            onClick={() => setFiltersExpanded((value) => !value)}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[12px] font-semibold ${
+              activeFilterCount > 0
+                ? 'border-blue bg-blue-lt text-blue'
+                : 'border-bdr bg-sur-2 text-text-3 hover:border-blue hover:text-blue'
+            }`}
+          >
+            <Filter size={14} /> ფილტრი
+            {activeFilterCount > 0 && (
+              <span className="rounded-full bg-blue px-1.5 py-0.5 text-[10px] text-white">{activeFilterCount}</span>
+            )}
+          </button>
         </div>
       }
       actions={
@@ -373,6 +580,76 @@ export default function LeadsPage() {
     >
       <div className="flex h-full gap-4 px-6 py-5 md:px-8">
         <div className="min-w-0 flex-1">
+          {filtersExpanded && (
+            <div className="mb-4 space-y-3 rounded-[10px] border border-bdr bg-sur p-3 shadow-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <FilterPill label="ყველა" active={statusFilter.size === 0} onClick={() => setStatusFilter(new Set())} />
+                {OFFER_STATUS_ORDER.map((status) => (
+                  <FilterPill
+                    key={status}
+                    label={OFFER_STATUS_META[status].label}
+                    active={statusFilter.has(status)}
+                    count={countByStatus[status] ?? 0}
+                    color={OFFER_STATUS_META[status].color}
+                    onClick={() => toggleStatusFilter(status)}
+                  />
+                ))}
+                <div className="relative">
+                  <button
+                    onClick={() => setDatePanelOpen((value) => !value)}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11.5px] font-semibold ${
+                      dateFrom || dateTo
+                        ? 'border-blue bg-blue-lt text-blue'
+                        : 'border-bdr bg-sur-2 text-text-2 hover:border-blue hover:text-blue'
+                    }`}
+                  >
+                    {dateLabel} ▾
+                  </button>
+                  {datePanelOpen && (
+                    <DateFilterPanel
+                      from={dateFrom}
+                      to={dateTo}
+                      onFrom={setDateFrom}
+                      onTo={setDateTo}
+                      onPreset={applyDatePreset}
+                      onClear={() => {
+                        setDateFrom('');
+                        setDateTo('');
+                      }}
+                    />
+                  )}
+                </div>
+                {hasActiveFilters && (
+                  <button onClick={clearAllFilters} className="text-[11.5px] font-semibold text-red hover:underline">
+                    ფილტრების გასუფთავება ({activeFilterCount + (q.trim() ? 1 : 0)})
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <select
+                  value={ownerFilter}
+                  onChange={(e) => setOwnerFilter(e.target.value)}
+                  className="h-8 rounded-md border border-bdr bg-sur-2 px-2 text-[12px] text-text-2 focus:border-blue focus:outline-none"
+                >
+                  <option value="">ყველა owner</option>
+                  {ownerOptions.map((owner) => (
+                    <option key={owner} value={owner}>{owner}</option>
+                  ))}
+                </select>
+                {labelOptions.slice(0, 12).map((label) => (
+                  <FilterPill
+                    key={label}
+                    label={label}
+                    active={labelFilter.has(label)}
+                    onClick={() => toggleLabelFilter(label)}
+                  />
+                ))}
+                {labelOptions.length === 0 && <span className="text-[11.5px] text-text-3">labels ჯერ არ არის</span>}
+              </div>
+            </div>
+          )}
+
           <div className="mb-4 grid gap-3 md:grid-cols-3">
             <StatCard label="ნაჩვენები" value={String(filtered.length)} />
             <StatCard label="აქტიური" value={String(active)} accent="blue" />
@@ -401,6 +678,10 @@ export default function LeadsPage() {
                     }
                     onClosePopover={() => setFilterPopover(null)}
                     onSetFilter={(v) => setFilter(c.key as keyof Lead, v)}
+                    sortKey={sortKeyForColumn(c.key)}
+                    activeSortKey={sortKey}
+                    sortDir={sortDir}
+                    onSort={toggleSort}
                     onDragStart={onDragStart(c.key as string)}
                     onDragOver={onDragOver(c.key as string)}
                     onDrop={onDrop(c.key as string)}
@@ -479,7 +760,6 @@ function renderCell(
   onChange: (key: keyof Lead, value: unknown) => void,
   onLeadSaved: (lead: Lead, auditEntry?: LeadAuditEntry | null) => void
 ) {
-  const align = c.align === 'right' ? 'text-right' : '';
   const v = r[c.key];
 
   if (c.kind === 'id') {
@@ -545,14 +825,9 @@ function renderCell(
   }
 
   if (c.kind === 'author') {
-    const name = String(v ?? '');
-    const initial = name.trim()[0] || '—';
     return (
-      <div key={c.key as string} className="flex items-center gap-1.5 px-3 py-2 text-[11px] text-text-2">
-        <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-navy text-[9px] font-bold uppercase text-white">
-          {initial}
-        </span>
-        <span className="truncate">{name || '—'}</span>
+      <div key={c.key as string} className="overflow-hidden px-3 py-2">
+        <ActorChip name={String(v ?? '')} />
       </div>
     );
   }
@@ -586,6 +861,71 @@ function renderCell(
   );
 }
 
+function FilterPill({
+  label,
+  active,
+  count,
+  color,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  count?: number;
+  color?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11.5px] font-semibold transition ${
+        active ? 'border-blue bg-blue-lt text-blue' : 'border-bdr bg-sur-2 text-text-2 hover:border-blue hover:text-blue'
+      }`}
+      style={active && color ? {borderColor: color, color} : undefined}
+    >
+      {label}
+      {count !== undefined && <span className="font-mono text-[10px] opacity-70">{count}</span>}
+    </button>
+  );
+}
+
+function DateFilterPanel({
+  from,
+  to,
+  onFrom,
+  onTo,
+  onPreset,
+  onClear,
+}: {
+  from: string;
+  to: string;
+  onFrom: (value: string) => void;
+  onTo: (value: string) => void;
+  onPreset: (preset: DatePreset) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div className="absolute left-0 top-full z-40 mt-2 w-[280px] rounded-lg border border-bdr bg-sur p-3 shadow-xl">
+      <div className="grid grid-cols-2 gap-2">
+        <label className="text-[11px] font-semibold text-text-3">
+          დან
+          <input type="date" value={from} onChange={(e) => onFrom(e.target.value)} className="mt-1 h-8 w-full rounded-md border border-bdr bg-sur-2 px-2 text-[12px] text-text focus:border-blue focus:outline-none" />
+        </label>
+        <label className="text-[11px] font-semibold text-text-3">
+          მდე
+          <input type="date" value={to} onChange={(e) => onTo(e.target.value)} className="mt-1 h-8 w-full rounded-md border border-bdr bg-sur-2 px-2 text-[12px] text-text focus:border-blue focus:outline-none" />
+        </label>
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-1.5">
+        <button onClick={() => onPreset('last7')} className="rounded-md border border-bdr px-2 py-1 text-[11px] font-semibold text-text-2 hover:border-blue hover:text-blue">ბოლო 7</button>
+        <button onClick={() => onPreset('last30')} className="rounded-md border border-bdr px-2 py-1 text-[11px] font-semibold text-text-2 hover:border-blue hover:text-blue">ბოლო 30</button>
+        <button onClick={() => onPreset('thisMonth')} className="rounded-md border border-bdr px-2 py-1 text-[11px] font-semibold text-text-2 hover:border-blue hover:text-blue">ეს თვე</button>
+        <button onClick={() => onPreset('prevMonth')} className="rounded-md border border-bdr px-2 py-1 text-[11px] font-semibold text-text-2 hover:border-blue hover:text-blue">წინა თვე</button>
+      </div>
+      <button onClick={onClear} className="mt-3 text-[11px] font-semibold text-red hover:underline">გასუფთავება</button>
+    </div>
+  );
+}
+
 // ─── Header cell ─────────────────────────────────────────────────────────────
 type HeaderProps = {
   col: LeadColumn;
@@ -598,6 +938,10 @@ type HeaderProps = {
   onTogglePopover: () => void;
   onClosePopover: () => void;
   onSetFilter: (v: string) => void;
+  sortKey: Exclude<SortKey, null> | null;
+  activeSortKey: SortKey;
+  sortDir: SortDir;
+  onSort: (key: Exclude<SortKey, null>) => void;
   onDragStart: () => void;
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
@@ -624,7 +968,21 @@ function HeaderCell(p: HeaderProps) {
         strokeWidth={2}
         className="cursor-grab text-text-3 opacity-0 group-hover:opacity-100"
       />
-      <span className="flex-1 truncate">{col.label}</span>
+      {p.sortKey ? (
+        <button
+          type="button"
+          onClick={() => p.onSort(p.sortKey!)}
+          className={`flex min-w-0 flex-1 items-center gap-1 truncate text-left ${
+            p.activeSortKey === p.sortKey ? 'text-blue' : ''
+          }`}
+          title="სორტირება"
+        >
+          <span className="truncate">{col.label}</span>
+          {p.activeSortKey === p.sortKey && <span>{p.sortDir === 'asc' ? '↑' : '↓'}</span>}
+        </button>
+      ) : (
+        <span className="flex-1 truncate">{col.label}</span>
+      )}
       <button
         onClick={p.onTogglePopover}
         className={`shrink-0 rounded p-0.5 transition-opacity ${
@@ -968,19 +1326,23 @@ function EditableNumberCell({col, value, onChange}: {
   value: number;
   onChange: (key: keyof Lead, value: unknown) => void;
 }) {
-  const [local, setLocal] = useState(value === 0 ? '' : String(value));
-  useEffect(() => { setLocal(value === 0 ? '' : String(value)); }, [value]);
+  const normalized = value === 0 ? '' : String(value);
+  const [draft, setDraft] = useState({base: normalized, local: normalized});
+  const local = draft.base !== normalized && draft.local !== normalized ? normalized : draft.local;
 
   const commit = (raw: string) => {
     const n = raw === '' ? 0 : Number(raw);
-    if (!Number.isNaN(n) && n !== value) onChange(col.key, n);
+    if (!Number.isNaN(n) && n !== value) {
+      onChange(col.key, n);
+      setDraft({base: normalized, local: raw});
+    }
   };
 
   return (
     <input
       type="number"
       value={local}
-      onChange={(e) => setLocal(e.target.value)}
+      onChange={(e) => setDraft({base: normalized, local: e.target.value})}
       onBlur={(e) => commit(e.target.value)}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
@@ -989,7 +1351,7 @@ function EditableNumberCell({col, value, onChange}: {
           (e.target as HTMLInputElement).blur();
         }
         if (e.key === 'Escape') {
-          setLocal(value === 0 ? '' : String(value));
+          setDraft({base: normalized, local: normalized});
           (e.target as HTMLInputElement).blur();
         }
       }}

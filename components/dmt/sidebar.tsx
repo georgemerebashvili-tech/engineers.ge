@@ -107,10 +107,10 @@ const SECTIONS: NavSection[] = [
   {
     title: 'ოპერაციები',
     items: [
-      {key: 'contacts', label: '0 · კონტაქტები', href: '/dmt/contacts', icon: Contact},
+      {key: 'contacts', label: '1 · კონტაქტები', href: '/dmt/contacts', icon: Contact},
       {
         key: 'leads',
-        label: '1 · ლიდები',
+        label: '2 · ლიდები',
         href: '/dmt/leads',
         icon: Users,
         children: [
@@ -120,8 +120,8 @@ const SECTIONS: NavSection[] = [
           {key: 'leads-negotiations', label: 'მოლაპარაკებები', href: '/dmt/leads?stage=negotiating', icon: Handshake}
         ]
       },
-      {key: 'inspections', label: '2 · ინსპექტირება', href: '/dmt/inspections', icon: ClipboardCheck},
-      {key: 'invoices', label: '3 · ინვოისები', href: '/dmt/invoices', icon: FileText},
+      {key: 'inspections', label: '3 · ინსპექტირება', href: '/dmt/inspections', icon: ClipboardCheck},
+      {key: 'invoices', label: '4 · ინვოისები', href: '/dmt/invoices', icon: FileText},
       {key: 'announcements', label: 'განცხადებები', href: '/dmt/announcements', icon: Megaphone},
       {
         key: 'inventory',

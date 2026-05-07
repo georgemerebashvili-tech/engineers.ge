@@ -11,6 +11,17 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? value as Record<string, unknown> : {};
 }
 
+function nullableString(value: unknown) {
+  const next = typeof value === 'string' ? value.trim() : '';
+  return next || null;
+}
+
+function nullableNumber(value: unknown) {
+  if (value === null || value === undefined || value === '') return null;
+  const next = Number(value);
+  return Number.isFinite(next) ? next : null;
+}
+
 export async function GET(req: NextRequest) {
   const auth = await requireDmtUser();
   if (auth.response) return auth.response;
@@ -48,11 +59,16 @@ export async function POST(req: NextRequest) {
     const items = normalizeOfferItems(body.items);
     const rawVatRate = body.vatRate ?? body.vat_rate;
     const rawMarginPercent = body.marginPercent ?? body.margin_percent;
+    const rawMarginAmountOverride = body.marginAmountOverride ?? body.margin_amount_override;
+    const rawDiscountPercent = body.discountPercent ?? body.discount_percent;
     const totals = calculateOfferTotals(
       items,
       rawVatRate === null || rawVatRate === undefined ? null : Number(rawVatRate),
-      rawMarginPercent === null || rawMarginPercent === undefined ? 15 : Number(rawMarginPercent)
+      rawMarginPercent === null || rawMarginPercent === undefined ? 15 : Number(rawMarginPercent),
+      nullableNumber(rawMarginAmountOverride),
+      nullableNumber(rawDiscountPercent)
     );
+    const marginAmountOverride = nullableNumber(rawMarginAmountOverride);
     const currency = String(body.currency ?? 'GEL').trim() || 'GEL';
     const id = await nextOfferId(db);
 
@@ -69,8 +85,19 @@ export async function POST(req: NextRequest) {
         labor_total: totals.laborTotal,
         margin_percent: totals.marginPercent,
         margin_amount: totals.marginAmount,
+        margin_amount_override: marginAmountOverride,
+        discount_percent: totals.discountPercent,
+        monthly_subscription: nullableNumber(body.monthlySubscription ?? body.monthly_subscription),
+        subscription_regular_price: nullableNumber(body.subscriptionRegularPrice ?? body.subscription_regular_price),
         include_money_back_guarantee: body.includeMoneyBackGuarantee ?? body.include_money_back_guarantee ?? true,
         total: totals.total,
+        doc_number_override: nullableNumber(body.docNumberOverride ?? body.doc_number_override),
+        doc_date_override: nullableString(body.docDateOverride ?? body.doc_date_override),
+        client_company: nullableString(body.clientCompany ?? body.client_company),
+        client_tax_id: nullableString(body.clientTaxId ?? body.client_tax_id),
+        client_contact: nullableString(body.clientContact ?? body.client_contact),
+        client_phone: nullableString(body.clientPhone ?? body.client_phone),
+        client_address: nullableString(body.clientAddress ?? body.client_address),
         currency,
         delivery_terms: String(body.deliveryTerms ?? body.delivery_terms ?? ''),
         payment_terms: String(body.paymentTerms ?? body.payment_terms ?? ''),

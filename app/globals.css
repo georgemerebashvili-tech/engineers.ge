@@ -491,3 +491,22 @@ table.dmt-rt .dmt-rt-handle.active {
   .story-event { opacity: 1 !important; }
 }
 
+@keyframes dmt-offer-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(196, 117, 0, 0.45); }
+  50% { box-shadow: 0 0 0 5px rgba(196, 117, 0, 0); }
+}
+
+.dmt-offer-pulse-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--ora);
+  animation: dmt-offer-pulse 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dmt-offer-pulse-dot {
+    animation: none !important;
+  }
+}

@@ -2,6 +2,7 @@
 
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {DmtPageShell} from '@/components/dmt/page-shell';
+import {ActorChip} from '@/components/dmt/actor-chip';
 import {LeadDetailDrawer} from '@/components/dmt/lead-detail-drawer';
 import Link from 'next/link';
 import {
@@ -1303,14 +1304,9 @@ function renderCell(
   }
 
   if (c.kind === 'author') {
-    const name = String(v ?? '');
-    const initial = name.trim()[0] || '—';
     return (
-      <div key={c.key} className="flex items-center gap-1.5 px-3 py-2 text-[11px] text-text-2">
-        <span className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-navy text-[9px] font-bold uppercase text-white">
-          {initial}
-        </span>
-        <span className="truncate">{name}</span>
+      <div key={c.key} className="overflow-hidden px-3 py-2">
+        <ActorChip name={String(v ?? '')} />
       </div>
     );
   }

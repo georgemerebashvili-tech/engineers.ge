@@ -1,12 +1,11 @@
 import {rgb} from 'pdf-lib';
 
 export const PDF_COLORS = {
-  navy: rgb(0.06, 0.14, 0.28),
-  blue: rgb(0.05, 0.36, 0.74),
-  text: rgb(0.10, 0.13, 0.18),
-  muted: rgb(0.38, 0.44, 0.52),
-  line: rgb(0.80, 0.84, 0.89),
-  soft: rgb(0.94, 0.97, 1),
-  white: rgb(1, 1, 1),
-  yellow: rgb(1, 0.94, 0.55)
+  text: rgb(0.13, 0.16, 0.22),
+  navy: rgb(0.10, 0.20, 0.45),     // headings — sazeo brand navy
+  blue: rgb(0.18, 0.40, 0.85),     // section titles — bright accent blue
+  muted: rgb(0.45, 0.50, 0.58),
+  line: rgb(0.78, 0.82, 0.88),
+  soft: rgb(0.95, 0.97, 0.99),
+  white: rgb(1, 1, 1)
 };

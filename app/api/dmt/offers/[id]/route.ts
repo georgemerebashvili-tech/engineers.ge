@@ -13,6 +13,23 @@ function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' ? value as Record<string, unknown> : {};
 }
 
+function nullableString(value: unknown) {
+  const next = typeof value === 'string' ? value.trim() : '';
+  return next || null;
+}
+
+function nullableNumber(value: unknown) {
+  if (value === null || value === undefined || value === '') return null;
+  const next = Number(value);
+  return Number.isFinite(next) ? next : null;
+}
+
+function bodyValue(body: Record<string, unknown>, camel: string, snake: string, fallback: unknown) {
+  if (Object.prototype.hasOwnProperty.call(body, camel)) return body[camel];
+  if (Object.prototype.hasOwnProperty.call(body, snake)) return body[snake];
+  return fallback;
+}
+
 function auditAction(beforeStatus: string, nextStatus: string) {
   if (beforeStatus !== 'approved' && nextStatus === 'approved') return 'approve';
   if (beforeStatus !== 'rejected' && nextStatus === 'rejected') return 'reject';
@@ -64,10 +81,14 @@ export async function PATCH(
       : normalizeOfferItems(body.items);
     const vatRate = body.vatRate ?? body.vat_rate ?? before.vat_rate;
     const marginPercent = body.marginPercent ?? body.margin_percent ?? before.margin_percent ?? 15;
+    const marginAmountOverride = bodyValue(body, 'marginAmountOverride', 'margin_amount_override', before.margin_amount_override);
+    const discountPercent = bodyValue(body, 'discountPercent', 'discount_percent', before.discount_percent);
     const totals = calculateOfferTotals(
       items,
       vatRate === null || vatRate === undefined ? null : Number(vatRate),
-      Number(marginPercent)
+      Number(marginPercent),
+      nullableNumber(marginAmountOverride),
+      nullableNumber(discountPercent)
     );
     const status = String(body.status ?? before.status);
     if (!VALID_STATUS.has(status as OfferStatus)) {
@@ -84,8 +105,19 @@ export async function PATCH(
       labor_total: totals.laborTotal,
       margin_percent: totals.marginPercent,
       margin_amount: totals.marginAmount,
+      margin_amount_override: nullableNumber(marginAmountOverride),
+      discount_percent: totals.discountPercent,
+      monthly_subscription: nullableNumber(bodyValue(body, 'monthlySubscription', 'monthly_subscription', before.monthly_subscription)),
+      subscription_regular_price: nullableNumber(bodyValue(body, 'subscriptionRegularPrice', 'subscription_regular_price', before.subscription_regular_price)),
       include_money_back_guarantee: body.includeMoneyBackGuarantee ?? body.include_money_back_guarantee ?? before.include_money_back_guarantee ?? true,
       total: totals.total,
+      doc_number_override: nullableNumber(bodyValue(body, 'docNumberOverride', 'doc_number_override', before.doc_number_override)),
+      doc_date_override: nullableString(bodyValue(body, 'docDateOverride', 'doc_date_override', before.doc_date_override)),
+      client_company: nullableString(bodyValue(body, 'clientCompany', 'client_company', before.client_company)),
+      client_tax_id: nullableString(bodyValue(body, 'clientTaxId', 'client_tax_id', before.client_tax_id)),
+      client_contact: nullableString(bodyValue(body, 'clientContact', 'client_contact', before.client_contact)),
+      client_phone: nullableString(bodyValue(body, 'clientPhone', 'client_phone', before.client_phone)),
+      client_address: nullableString(bodyValue(body, 'clientAddress', 'client_address', before.client_address)),
       currency: String(body.currency ?? before.currency ?? 'GEL'),
       delivery_terms: String(body.deliveryTerms ?? body.delivery_terms ?? before.delivery_terms ?? ''),
       payment_terms: String(body.paymentTerms ?? body.payment_terms ?? before.payment_terms ?? ''),

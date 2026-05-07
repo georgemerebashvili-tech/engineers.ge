@@ -10,6 +10,10 @@ export const dynamic = 'force-dynamic';
 const BUCKET = 'dmt-offers-pdfs';
 
 async function ensureDocNumber(db: ReturnType<typeof supabaseAdmin>, offerRow: Record<string, unknown>) {
+  if (offerRow.doc_number_override !== null && offerRow.doc_number_override !== undefined) {
+    return Number(offerRow.doc_number_override);
+  }
+
   if (offerRow.doc_number !== null && offerRow.doc_number !== undefined) {
     return Number(offerRow.doc_number);
   }
@@ -50,7 +54,7 @@ export async function POST(
     const docNumber = await ensureDocNumber(db, offerRow);
     const baseOffer = offerFromDb({...offerRow, doc_number: docNumber});
     const totals = calculateOfferPdfTotals(baseOffer);
-    const docDate = String(offerRow.doc_date ?? new Date().toISOString().slice(0, 10));
+    const docDate = String(offerRow.doc_date_override ?? offerRow.doc_date ?? new Date().toISOString().slice(0, 10));
     const lead = manualLeadFromDb(leadRow);
 
     const rendered = await renderOfferPdf({

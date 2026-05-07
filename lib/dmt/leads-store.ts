@@ -170,7 +170,7 @@ export function getActor(): string {
     const saved = localStorage.getItem(K.me);
     if (saved) return saved;
   } catch {}
-  return 'მე';
+  return '';
 }
 
 export function setActor(name: string) {

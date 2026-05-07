@@ -201,7 +201,6 @@ export function DeviceEditorModal({
 
   const devicePhotoInput = useRef<HTMLInputElement>(null);
   const situPhotoInput = useRef<HTMLInputElement>(null);
-  const multiPhotoInput = useRef<HTMLInputElement>(null);
   const pendingDeviceSlot = useRef<number | null>(null);
   const lastPhotoTap = useRef<{slot: number; at: number} | null>(null);
   const [needInput, setNeedInput] = useState('');
@@ -322,37 +321,6 @@ export function DeviceEditorModal({
       lastPhotoTap.current = null;
     } else {
       lastPhotoTap.current = {slot, at: now};
-    }
-  }
-
-  function pickMultiplePhotos() {
-    if (multiPhotoInput.current) {
-      multiPhotoInput.current.value = '';
-      multiPhotoInput.current.click();
-    }
-  }
-
-  async function onMultipleFiles(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files || []).slice(0, 5);
-    if (!files.length) return;
-    const emptySlots = ([0, 1, 2, 3, 4] as const).filter((s) => !photos[s]);
-    const toProcess = files.slice(0, emptySlots.length);
-    for (let i = 0; i < toProcess.length; i++) {
-      const file = toProcess[i];
-      const slot = emptySlots[i];
-      setUploadingSlots((s) => ({...s, [slot]: 0}));
-      try {
-        const pair = await fileToResizedPair(file, {fullDim: 1024, fullQ: 0.82, thumbDim: 256, thumbQ: 0.7});
-        setPhotos((p) => {const n = [...p]; n[slot] = pair.thumb; return n;});
-        const ref = await uploadToStorage(pair.full, pair.thumb, 'device', undefined, (pct) => {
-          setUploadingSlots((s) => ({...s, [slot]: pct}));
-        });
-        setPhotos((p) => {const n = [...p]; n[slot] = ref ?? pair.full; return n;});
-      } catch (err) {
-        console.error('multi photo failed', err);
-      } finally {
-        setUploadingSlots((s) => {const n = {...s}; delete n[slot]; return n;});
-      }
     }
   }
 
@@ -665,26 +633,17 @@ export function DeviceEditorModal({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={pickMultiplePhotos}
-                  disabled={photoCount >= 5}
-                  className="flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-slate-700 px-3 py-3 text-sm font-bold text-white shadow disabled:opacity-40 active:scale-95"
-                >
-                  📁 სურათების<br />ატვირთვა
-                </button>
-                <button
-                  onClick={runAiScan}
-                  disabled={photoCount === 0 || aiStatus === 'loading'}
-                  className="flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-[#0071CE] px-3 py-3 text-sm font-bold text-white shadow disabled:opacity-40 active:scale-95"
-                >
-                  {aiStatus === 'loading'
-                    ? '⏳ სკანირება…'
-                    : aiStatus === 'ok'
-                    ? '✅ AI სკანირება'
-                    : '🔍 AI სკანირება'}
-                </button>
-              </div>
+              <button
+                onClick={runAiScan}
+                disabled={photoCount === 0 || aiStatus === 'loading'}
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#0071CE] px-4 py-3.5 text-base font-bold text-white shadow disabled:opacity-40 active:scale-95"
+              >
+                {aiStatus === 'loading'
+                  ? '⏳ სკანირება…'
+                  : aiStatus === 'ok'
+                  ? '✅ თავიდან სკანირება'
+                  : '🔍 AI სკანირება'}
+              </button>
 
               {aiMessage && (
                 <div
@@ -1096,14 +1055,6 @@ export function DeviceEditorModal({
           multiple
           className="hidden"
           onChange={onSituFiles}
-        />
-        <input
-          ref={multiPhotoInput}
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={onMultipleFiles}
         />
       </div>
     </div>

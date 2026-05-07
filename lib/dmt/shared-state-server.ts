@@ -1,7 +1,7 @@
 import 'server-only';
 import {NextResponse} from 'next/server';
 import {getCurrentDmtUser, type DmtUser} from '@/lib/dmt/auth';
-import {normalizeOfferItems, type OfferStatus} from '@/lib/dmt/offers-store';
+import {calculateOfferTotals, normalizeOfferItems, type OfferStatus} from '@/lib/dmt/offers-store';
 import type {LeadPhotoAnalysis} from '@/lib/dmt/photos-store';
 
 export type DmtRouteAuth =
@@ -19,7 +19,25 @@ export function dmtActor(me: DmtUser) {
 }
 
 export function jsonError(error: unknown, status = 500) {
-  const message = error instanceof Error ? error.message : String(error || 'server_error');
+  let message = 'server_error';
+  if (error instanceof Error && error.message) {
+    message = error.message;
+  } else if (typeof error === 'string' && error) {
+    message = error;
+  } else if (error && typeof error === 'object') {
+    const obj = error as Record<string, unknown>;
+    if (typeof obj.message === 'string' && obj.message) {
+      message = obj.message;
+    } else if (typeof obj.details === 'string' && obj.details) {
+      message = obj.details;
+    } else if (typeof obj.hint === 'string' && obj.hint) {
+      message = obj.hint;
+    } else if (typeof obj.code === 'string' && obj.code) {
+      message = obj.code;
+    } else {
+      try { message = JSON.stringify(error); } catch { message = 'server_error'; }
+    }
+  }
   return NextResponse.json({error: message}, {status});
 }
 
@@ -77,9 +95,9 @@ export function leadToDb(row: Record<string, unknown>, actor: string) {
     owner: String(row.owner ?? ''),
     value: parseNumber(row.value),
     created_at: String(row.createdAt ?? row.created_at ?? now),
-    created_by: String(row.createdBy ?? row.created_by ?? actor),
+    created_by: actor,
     updated_at: String(row.updatedAt ?? row.updated_at ?? now),
-    updated_by: String(row.updatedBy ?? row.updated_by ?? actor),
+    updated_by: actor,
     from_contact_id: row.fromContactId ? String(row.fromContactId) : null,
     offer_status: String(row.offerStatus ?? row.offer_status ?? 'offer_in_progress'),
     labels: Array.isArray(row.labels) ? row.labels.map(String) : [],
@@ -130,9 +148,9 @@ export function contactToDb(row: Record<string, unknown>, actor: string) {
     converted_at: row.convertedAt ? String(row.convertedAt) : null,
     converted_by: row.convertedBy ? String(row.convertedBy) : null,
     created_at: String(row.createdAt ?? row.created_at ?? now),
-    created_by: String(row.createdBy ?? row.created_by ?? actor),
+    created_by: actor,
     updated_at: String(row.updatedAt ?? row.updated_at ?? now),
-    updated_by: String(row.updatedBy ?? row.updated_by ?? actor)
+    updated_by: actor
   };
 }
 
@@ -196,9 +214,9 @@ export function manualLeadToDb(row: Record<string, unknown>, actor: string) {
     role: String(row.role ?? ''),
     owner: String(row.owner ?? ''),
     period: String(row.period ?? ''),
-    edited_by: String(row.editedBy ?? row.edited_by ?? actor),
+    edited_by: actor,
     edited_at: toIsoOrNow(row.editedAt ?? row.edited_at),
-    created_by: String(row.createdBy ?? row.created_by ?? actor)
+    created_by: actor
   };
 }
 
@@ -208,22 +226,48 @@ export function offerFromDb(row: Record<string, unknown>) {
     status === 'sent' || status === 'approved' || status === 'rejected' || status === 'cancelled'
       ? status
       : 'draft';
+  const items = normalizeOfferItems(row.items);
+  const discountPercent = row.discount_percent === null || row.discount_percent === undefined
+    ? null
+    : parseNumber(row.discount_percent);
+  const marginAmountOverride = row.margin_amount_override === null || row.margin_amount_override === undefined
+    ? null
+    : parseNumber(row.margin_amount_override);
+  const totals = calculateOfferTotals(
+    items,
+    row.vat_rate === null || row.vat_rate === undefined ? null : parseNumber(row.vat_rate),
+    row.margin_percent === null || row.margin_percent === undefined ? 15 : parseNumber(row.margin_percent, 15),
+    marginAmountOverride,
+    discountPercent
+  );
 
   return {
     id: String(row.id ?? ''),
     leadId: String(row.lead_id ?? ''),
     status: normalizedStatus,
-    items: normalizeOfferItems(row.items),
+    items,
     subtotal: parseNumber(row.subtotal),
     vatRate: row.vat_rate === null || row.vat_rate === undefined ? null : parseNumber(row.vat_rate),
     vatAmount: row.vat_amount === null || row.vat_amount === undefined ? null : parseNumber(row.vat_amount),
     total: parseNumber(row.total),
     docNumber: row.doc_number === null || row.doc_number === undefined ? null : parseNumber(row.doc_number),
     docDate: row.doc_date ? String(row.doc_date) : null,
+    docNumberOverride: row.doc_number_override === null || row.doc_number_override === undefined ? null : parseNumber(row.doc_number_override),
+    docDateOverride: row.doc_date_override ? String(row.doc_date_override) : null,
+    clientCompany: row.client_company ? String(row.client_company) : null,
+    clientTaxId: row.client_tax_id ? String(row.client_tax_id) : null,
+    clientContact: row.client_contact ? String(row.client_contact) : null,
+    clientPhone: row.client_phone ? String(row.client_phone) : null,
+    clientAddress: row.client_address ? String(row.client_address) : null,
     laborPerUnit: row.labor_per_unit === null || row.labor_per_unit === undefined ? null : parseNumber(row.labor_per_unit),
     laborTotal: row.labor_total === null || row.labor_total === undefined ? null : parseNumber(row.labor_total),
     marginPercent: row.margin_percent === null || row.margin_percent === undefined ? 15 : parseNumber(row.margin_percent, 15),
     marginAmount: row.margin_amount === null || row.margin_amount === undefined ? null : parseNumber(row.margin_amount),
+    marginAmountOverride,
+    discountPercent,
+    discountAmount: discountPercent === null ? null : totals.discountAmount,
+    monthlySubscription: row.monthly_subscription === null || row.monthly_subscription === undefined ? null : parseNumber(row.monthly_subscription),
+    subscriptionRegularPrice: row.subscription_regular_price === null || row.subscription_regular_price === undefined ? null : parseNumber(row.subscription_regular_price),
     includeMoneyBackGuarantee: row.include_money_back_guarantee === null || row.include_money_back_guarantee === undefined
       ? true
       : Boolean(row.include_money_back_guarantee),

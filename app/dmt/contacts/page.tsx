@@ -10,6 +10,7 @@ import {
   X
 } from 'lucide-react';
 import {DmtPageShell} from '@/components/dmt/page-shell';
+import {ActorChip} from '@/components/dmt/actor-chip';
 import {
   CONTACT_COLUMN_ORDER,
   SOURCE_META,
@@ -93,7 +94,7 @@ export default function DmtContactsPage() {
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
   const [error, setError] = useState('');
-  const [actor, setActorState] = useState('მე');
+  const [actor, setActorState] = useState('');
   const [pendingLeadOps, setPendingLeadOps] = useState<Set<string>>(new Set());
   const pendingLeadOpsRef = useRef<Set<string>>(new Set());
 
@@ -687,13 +688,9 @@ function ContactLeadToggle({
 }
 
 function AuthorCell({name}: {name: string}) {
-  const label = name || '—';
   return (
-    <div className="flex items-center gap-2 border-r border-bdr px-3 py-2 text-text-2">
-      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-lt text-[10px] font-bold text-blue">
-        {label.slice(0, 1).toUpperCase()}
-      </span>
-      <span className="min-w-0 truncate">{label}</span>
+    <div className="overflow-hidden border-r border-bdr px-3 py-2">
+      <ActorChip name={name} />
     </div>
   );
 }
