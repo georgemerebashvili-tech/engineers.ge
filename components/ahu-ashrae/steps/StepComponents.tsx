@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import {
   Boxes, Box, Filter, Snowflake, Flame, Fan,
@@ -238,33 +238,46 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
   // ── Drag-and-drop state (HTML5 native DnD) ─────────────────────────────────
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<{ idx: number; pos: 'before' | 'after' } | null>(null);
+  // Ref mirrors keep event handlers reading fresh values without stale closures
+  const dragFromRef = useRef<number | null>(null);
+  const dragOverRef = useRef<{ idx: number; pos: 'before' | 'after' } | null>(null);
 
   const handleDragStart = (idx: number) => (e: React.DragEvent<HTMLDivElement>) => {
+    dragFromRef.current = idx;
     setDragFrom(idx);
     e.dataTransfer.effectAllowed = 'move';
-    // Some browsers refuse to start drag without a payload
     e.dataTransfer.setData('text/plain', String(idx));
   };
   const handleDragOver = (idx: number) => (e: React.DragEvent<HTMLDivElement>) => {
-    if (dragFrom === null) return;
+    if (dragFromRef.current === null) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
-    const pos = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
-    setDragOver((prev) => (prev?.idx === idx && prev.pos === pos ? prev : { idx, pos }));
+    const pos: 'before' | 'after' = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+    const cur = dragOverRef.current;
+    if (cur?.idx === idx && cur.pos === pos) return;
+    const next = { idx, pos };
+    dragOverRef.current = next;
+    setDragOver(next);
   };
   const handleDrop = (idx: number) => (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    if (dragFrom === null) return;
-    let target = idx + (dragOver?.idx === idx && dragOver.pos === 'after' ? 1 : 0);
+    const from = dragFromRef.current;
+    if (from === null) return;
+    const over = dragOverRef.current;
+    let target = idx + (over?.idx === idx && over.pos === 'after' ? 1 : 0);
     // splice() math: when moving forward, the removal shifts indexes left by 1
-    if (dragFrom < target) target -= 1;
+    if (from < target) target -= 1;
     target = Math.max(0, Math.min(target, sections.length - 1));
-    reorderSection(dragFrom, target);
+    reorderSection(from, target);
+    dragFromRef.current = null;
+    dragOverRef.current = null;
     setDragFrom(null);
     setDragOver(null);
   };
   const handleDragEnd = () => {
+    dragFromRef.current = null;
+    dragOverRef.current = null;
     setDragFrom(null);
     setDragOver(null);
   };
@@ -371,7 +384,7 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
         )}
 
         {/* Section list */}
-        <div className="flex flex-col gap-1.5 mb-4" onDragEnd={handleDragEnd}>
+        <div className="flex flex-col gap-1.5 mb-4">
           {sections.length === 0 && (
             <div
               className="rounded-lg border-2 border-dashed p-8 text-center text-xs"
@@ -397,6 +410,7 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
               onDragStart={handleDragStart(i)}
               onDragOver={handleDragOver(i)}
               onDrop={handleDrop(i)}
+              onDragEnd={handleDragEnd}
             />
           ))}
         </div>
@@ -514,23 +528,31 @@ interface RowProps {
   onDragStart: (e: React.DragEvent<HTMLDivElement>) => void;
   onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
   onDrop: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragEnd: () => void;
 }
 function SectionRow({
   section, index, total, isDragSource, dragOverPos, hasViolation,
   onMove, onToggle, onRemove, onSetFilterForm, onSetFilterClass,
-  onDragStart, onDragOver, onDrop,
+  onDragStart, onDragOver, onDrop, onDragEnd,
 }: RowProps) {
   const Icon = ICON_MAP[section.spec.type];
   const visual = SECTION_VISUALS[section.spec.type];
   const enabled = section.enabled;
+  // Only allow drag to start from the grip handle
+  const dragAllowed = useRef(false);
   return (
     <div className="relative">
       {dragOverPos === 'before' && <DropIndicator side="top" />}
       <div
         draggable
-        onDragStart={onDragStart}
+        onDragStart={(e) => {
+          if (!dragAllowed.current) { e.preventDefault(); return; }
+          dragAllowed.current = false;
+          onDragStart(e);
+        }}
         onDragOver={onDragOver}
         onDrop={onDrop}
+        onDragEnd={onDragEnd}
         className="flex items-center gap-2 px-2 py-2 rounded-lg border transition-shadow"
         style={{
           background: enabled ? 'var(--sur)' : 'var(--sur-2)',
@@ -540,11 +562,14 @@ function SectionRow({
           cursor: 'default',
         }}
       >
-        {/* Drag handle */}
+        {/* Drag handle — only this activates drag */}
         <span
           className="shrink-0 p-1 rounded text-[var(--text-3)] hover:bg-[var(--bdr)]"
           style={{ cursor: 'grab' }}
           title="გადატანა — დააჭირე და გადაიტანე"
+          onMouseDown={() => { dragAllowed.current = true; }}
+          onMouseUp={() => { dragAllowed.current = false; }}
+          onMouseLeave={() => { dragAllowed.current = false; }}
         >
           <GripVertical size={13} />
         </span>
