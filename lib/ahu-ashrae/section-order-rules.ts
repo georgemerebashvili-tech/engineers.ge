@@ -15,6 +15,7 @@
  */
 
 import type { SectionConfig, SectionType, FilterClass } from './sections';
+import type { AhuType } from './types';
 
 // Coarse → fine filter rank. Equal ranks (e.g. F9 and carbon) are
 // interchangeable; lower rank cannot follow a higher rank.
@@ -102,12 +103,48 @@ const PAIR_RULES: PairRule[] = [
     message: 'ხმოვანი დამცავი ვენტილატორის შემდეგ — silencer აქრობს ფანის ხმაურს; თუ ფანის წინ არის, მას აზრი არა აქვს.' },
 ];
 
+const TYPE_LABEL_KA: Record<SectionType, string> = {
+  damper: 'დემპერი',
+  filter: 'ფილტრი',
+  mixing_box: 'შერევის ყუთი',
+  heat_recovery: 'რეკუპერატორი',
+  preheat: 'წინა გათბობა',
+  cooling_coil: 'გამაგრილებელი',
+  reheat: 'უკანა გათბობა',
+  humidifier: 'გამატენიანებელი',
+  fan: 'ვენტილატორი',
+  silencer: 'ხმოვანი დამცავი',
+};
+
+/**
+ * AHU-type-level forbidden section types.
+ * supply_only = no exhaust stream → heat recovery is physically impossible.
+ */
+const AHU_FORBIDDEN: Partial<Record<AhuType, SectionType[]>> = {
+  supply_only: ['heat_recovery'],
+};
+
 /**
  * Validate the proposed section sequence. Returns all violations.
  * Empty array → sequence is standards-compliant.
  */
-export function validateOrder(sections: SectionConfig[]): OrderViolation[] {
+export function validateOrder(sections: SectionConfig[], ahuType?: AhuType): OrderViolation[] {
   const v: OrderViolation[] = [];
+
+  // R0 — AHU-type-level forbidden sections
+  if (ahuType) {
+    const forbidden = AHU_FORBIDDEN[ahuType] ?? [];
+    for (let i = 0; i < sections.length; i++) {
+      if (forbidden.includes(sections[i].spec.type)) {
+        v.push({
+          rule: 'ahu-type-forbidden',
+          index: i,
+          conflictWith: -1,
+          message: `${TYPE_LABEL_KA[sections[i].spec.type]} — ეს სექცია ამ AHU ტიპისთვის დაუშვებელია. "წინდინება (Direct flow)" სქემაში გამოსაშვები ნაკადი არ არის, რეკუპერატორი ვერ იმუშავებს.`,
+        });
+      }
+    }
+  }
 
   // R1 — filter class progression (coarse → fine)
   let lastRank = 0;
@@ -174,6 +211,7 @@ export function tryReorder(
   sections: SectionConfig[],
   fromIdx: number,
   toIdx: number,
+  ahuType?: AhuType,
 ): { ok: true; next: SectionConfig[] } | { ok: false; reason: string; rule: string } {
   if (fromIdx === toIdx) return { ok: true, next: sections };
   if (fromIdx < 0 || fromIdx >= sections.length) {
@@ -188,7 +226,7 @@ export function tryReorder(
   // Re-write order field for stability
   const stamped = next.map((s, i) => ({ ...s, order: i }));
 
-  const violations = validateOrder(stamped);
+  const violations = validateOrder(stamped, ahuType);
   // Only block if the moved section is part of any violation
   const movedNewIdx = clamped;
   const blocking = violations.find(

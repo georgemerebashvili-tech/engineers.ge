@@ -7,10 +7,11 @@ import {
   ArrowLeftRight, PanelTopOpen, Shuffle, Droplet, Volume2,
   ChevronUp, ChevronDown, Trash2, Plus, Power, Zap,
   Move3d, RectangleHorizontal, RectangleVertical, Square,
-  GripVertical, AlertTriangle, Info,
+  GripVertical, AlertTriangle, Info, Thermometer,
   type LucideIcon,
 } from 'lucide-react';
 import type { AhuWizardState, AhuUnit } from '@/lib/ahu-ashrae/types';
+import type { ChainResult } from '@/lib/ahu-ashrae/chain';
 import type { SectionConfig, SectionType, FilterClass, FilterForm, FilterParams } from '@/lib/ahu-ashrae/sections';
 import { getAhuTypeSpec } from '@/lib/ahu-ashrae/ahu-types-data';
 import { SECTION_VISUALS, makeDefaultParams, CASING_KG_PER_M } from '@/lib/ahu-ashrae/section-visuals';
@@ -152,9 +153,10 @@ interface Props {
   state: AhuWizardState;
   unit: AhuUnit;
   onUpdate: (patch: Partial<AhuWizardState>) => void;
+  chain?: ChainResult;
 }
 
-export function StepComponents({ state, unit, onUpdate }: Props) {
+export function StepComponents({ state, unit, onUpdate, chain }: Props) {
   const airflow = state.airflow.supplyAirflow;
   const tier = pickTier(airflow);
   const ahuSpec = unit.ahuType ? getAhuTypeSpec(unit.ahuType) : null;
@@ -162,7 +164,10 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
   const sections = state.sections ?? [];
 
   // Persistent list of standards violations in the current chain
-  const violations: OrderViolation[] = useMemo(() => validateOrder(sections), [sections]);
+  const violations: OrderViolation[] = useMemo(
+    () => validateOrder(sections, unit.ahuType ?? undefined),
+    [sections, unit.ahuType],
+  );
 
   // Transient explanation shown after a rejected drag/move (auto-dismisses)
   const [rejection, setRejection] = useState<{ msg: string; ts: number } | null>(null);
@@ -270,7 +275,7 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
       .filter((s) => s.enabled)
       .map((s) => {
         const v = SECTION_VISUALS[s.spec.type];
-        return { id: s.id, label: s.label, color: v.color, width: v.width3D };
+        return { id: s.id, label: s.label, color: v.color, width: v.width3D, type: s.spec.type };
       }),
     [sections],
   );
@@ -288,6 +293,7 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
   const [viewMode, setViewMode] = useState<AhuViewMode>('persp');
 
   return (
+    <div className="space-y-5">
     <div className="grid grid-cols-1 xl:grid-cols-[minmax(280px,340px)_1fr] gap-5">
       {/* ── Section editor ── */}
       <section
@@ -378,7 +384,7 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
           ))}
         </div>
 
-        <AddSectionPicker onAdd={addSection} />
+        <AddSectionPicker onAdd={addSection}  />
 
         <RuleLegend />
       </section>
@@ -435,6 +441,8 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
           )}
         </div>
       </section>
+    </div>
+    {chain && chain.states.length >= 2 && <ProcessWaterfall chain={chain} />}
     </div>
   );
 }
@@ -639,7 +647,7 @@ function FilterRowPickers({
       >
         {formOptions.map((f) => (
           <option key={f} value={f}>
-            {FILTER_FORM_SHORT[f]} — {FILTER_FORM_LABEL[f]}
+            {FILTER_FORM_SHORT[f]}
           </option>
         ))}
       </select>
@@ -686,11 +694,21 @@ function ViolationBanner({
       <ul className="space-y-1 list-disc pl-4">
         {top.map((v, i) => (
           <li key={i}>
-            <span className="font-mono opacity-70">#{v.conflictWith + 1}→#{v.index + 1}</span>{' '}
-            <span className="opacity-80">
-              ({TYPE_LABELS_KA[sections[v.conflictWith]?.spec.type] ?? '—'} → {TYPE_LABELS_KA[sections[v.index]?.spec.type] ?? '—'})
-            </span>
-            : {v.message}
+            {v.conflictWith >= 0 ? (
+              <>
+                <span className="font-mono opacity-70">#{v.conflictWith + 1}→#{v.index + 1}</span>{' '}
+                <span className="opacity-80">
+                  ({TYPE_LABELS_KA[sections[v.conflictWith]?.spec.type] ?? '—'} → {TYPE_LABELS_KA[sections[v.index]?.spec.type] ?? '—'})
+                </span>
+                : {v.message}
+              </>
+            ) : (
+              <>
+                <span className="font-mono opacity-70">#{v.index + 1}</span>{' '}
+                <span className="opacity-80">({TYPE_LABELS_KA[sections[v.index]?.spec.type] ?? '—'})</span>
+                : {v.message}
+              </>
+            )}
           </li>
         ))}
       </ul>
@@ -733,12 +751,16 @@ function RuleLegend() {
   );
 }
 
-function AddSectionPicker({ onAdd }: { onAdd: (t: SectionType) => void }) {
+function AddSectionPicker({ onAdd, ahuType }: { onAdd: (t: SectionType) => void; ahuType?: string }) {
   const [open, setOpen] = useState(false);
-  const types: SectionType[] = [
+  const allTypes: SectionType[] = [
     'damper', 'filter', 'mixing_box', 'heat_recovery',
     'preheat', 'cooling_coil', 'reheat', 'humidifier', 'fan', 'silencer',
   ];
+  // heat_recovery requires an exhaust stream — unavailable in direct-flow (supply_only) units
+  const types = ahuType === 'supply_only'
+    ? allTypes.filter((t) => t !== 'heat_recovery')
+    : allTypes;
   return (
     <div className="relative">
       <button
@@ -785,6 +807,174 @@ function ViewerLoading() {
     <div className="h-full flex items-center justify-center text-xs" style={{ color: 'var(--text-3)' }}>
       3D viewer იტვირთება…
     </div>
+  );
+}
+
+// ─── Process Waterfall ────────────────────────────────────────────────────────
+
+function ProcessWaterfall({ chain }: { chain: ChainResult }) {
+  const { states, totalCooling, totalHeating, totalDeltaP } = chain;
+
+  return (
+    <section
+      className="rounded-xl border p-4"
+      style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Thermometer size={16} style={{ color: 'var(--blue)' }} />
+          <h2 className="text-sm font-bold" style={{ color: 'var(--navy)' }}>
+            ჰაერის პროცესი — სექციებით
+          </h2>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          {totalCooling > 0.05 && (
+            <span className="text-[11px] font-bold font-mono px-2 py-0.5 rounded-md"
+              style={{ background: '#eff6ff', color: '#1d4ed8' }}>
+              ∑ Q_cool = {totalCooling.toFixed(1)} kW
+            </span>
+          )}
+          {totalHeating > 0.05 && (
+            <span className="text-[11px] font-bold font-mono px-2 py-0.5 rounded-md"
+              style={{ background: '#fff7ed', color: '#c2410c' }}>
+              ∑ Q_heat = {totalHeating.toFixed(1)} kW
+            </span>
+          )}
+          <span className="text-[11px] font-bold font-mono px-2 py-0.5 rounded-md"
+            style={{ background: 'var(--sur-2)', color: 'var(--text-2)', border: '1px solid var(--bdr-2)' }}>
+            ∑ ΔP = {totalDeltaP.toFixed(0)} Pa
+          </span>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-[11px] border-collapse">
+          <thead>
+            <tr style={{ color: 'var(--text-3)' }}>
+              {['#', 'სექცია', 'T_out (°C)', 'ΔT (K)', 'RH', 'W (g/kg)', 'Q (kW)', 'ΔP (Pa)'].map((h) => (
+                <th
+                  key={h}
+                  className="py-1.5 pr-3 text-right font-bold text-[10px] uppercase tracking-[0.06em] whitespace-nowrap"
+                  style={{ borderBottom: '1px solid var(--bdr-2)' }}
+                >
+                  {h === '#' || h === 'სექცია' ? (
+                    <span className="text-left block">{h}</span>
+                  ) : h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {states.map((s, i) => {
+              const prev = i > 0 ? states[i - 1] : null;
+              const dT = prev != null ? s.state.tdb - prev.state.tdb : null;
+              const energy = s.energy ?? null;
+
+              return (
+                <tr
+                  key={s.id}
+                  style={{
+                    borderBottom: '1px solid var(--bdr)',
+                    background: i === 0
+                      ? 'var(--blue-lt)'
+                      : i % 2 === 0 ? 'transparent' : 'var(--sur-2)',
+                  }}
+                >
+                  {/* # */}
+                  <td className="py-1.5 pr-3 font-mono text-left"
+                    style={{ color: 'var(--text-3)', width: 24 }}>
+                    {i}
+                  </td>
+
+                  {/* Label */}
+                  <td className="py-1.5 pr-4 text-left">
+                    <span className="font-semibold whitespace-nowrap"
+                      style={{ color: i === 0 ? 'var(--blue)' : 'var(--text)' }}>
+                      {i === 0 ? 'გარე ჰაერი' : s.label}
+                    </span>
+                  </td>
+
+                  {/* T_out */}
+                  <td className="py-1.5 pr-3 text-right font-mono font-bold whitespace-nowrap"
+                    style={{ color: 'var(--navy)' }}>
+                    {s.state.tdb.toFixed(1)}
+                  </td>
+
+                  {/* ΔT */}
+                  <td className="py-1.5 pr-3 text-right font-mono whitespace-nowrap"
+                    style={{
+                      color: dT == null ? 'var(--text-3)'
+                        : dT < -0.15 ? '#1d4ed8'
+                        : dT > 0.15 ? '#c2410c'
+                        : 'var(--text-3)',
+                      fontWeight: dT != null && Math.abs(dT) > 0.15 ? 600 : 400,
+                    }}>
+                    {dT == null ? '—' : (dT >= 0 ? '+' : '') + dT.toFixed(1)}
+                  </td>
+
+                  {/* RH */}
+                  <td className="py-1.5 pr-3 text-right font-mono"
+                    style={{ color: 'var(--text-2)' }}>
+                    {(s.state.rh * 100).toFixed(0)}%
+                  </td>
+
+                  {/* W */}
+                  <td className="py-1.5 pr-3 text-right font-mono"
+                    style={{ color: 'var(--text-2)' }}>
+                    {(s.state.w * 1000).toFixed(2)}
+                  </td>
+
+                  {/* Q */}
+                  <td className="py-1.5 pr-3 text-right">
+                    {energy == null || Math.abs(energy) < 0.05
+                      ? <span style={{ color: 'var(--text-3)' }}>—</span>
+                      : energy < 0
+                        ? <span className="font-mono font-bold px-1.5 py-0.5 rounded"
+                            style={{ background: '#eff6ff', color: '#1d4ed8' }}>
+                            {energy.toFixed(1)}
+                          </span>
+                        : <span className="font-mono font-bold px-1.5 py-0.5 rounded"
+                            style={{ background: '#fff7ed', color: '#c2410c' }}>
+                            +{energy.toFixed(1)}
+                          </span>
+                    }
+                  </td>
+
+                  {/* ΔP */}
+                  <td className="py-1.5 text-right font-mono"
+                    style={{ color: 'var(--text-2)' }}>
+                    {s.deltaP == null ? '—' : s.deltaP.toFixed(0)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Supply state footer */}
+      <div className="mt-3 pt-3 border-t flex items-center gap-4 flex-wrap"
+        style={{ borderColor: 'var(--bdr)' }}>
+        <span className="text-[10px] font-bold uppercase tracking-[0.06em]"
+          style={{ color: 'var(--text-3)' }}>
+          საკვები ჰაერი →
+        </span>
+        <span className="text-xs font-mono font-bold" style={{ color: 'var(--navy)' }}>
+          {chain.supplyState.tdb.toFixed(1)}°C
+        </span>
+        <span className="text-xs font-mono" style={{ color: 'var(--text-2)' }}>
+          RH {(chain.supplyState.rh * 100).toFixed(0)}%
+        </span>
+        <span className="text-xs font-mono" style={{ color: 'var(--text-2)' }}>
+          W = {(chain.supplyState.w * 1000).toFixed(2)} g/kg
+        </span>
+        <span className="text-xs font-mono" style={{ color: 'var(--text-2)' }}>
+          h = {chain.supplyState.h.toFixed(1)} kJ/kg
+        </span>
+      </div>
+    </section>
   );
 }
 
