@@ -15,6 +15,7 @@
 
 import type { AhuWizardState, AhuUnit, WizardStep } from './types';
 import type { ChainResult } from './chain';
+import { isBalancedAhu } from './ahu-types-data';
 
 export const STEP_ORDER: WizardStep[] = [
   'ahu_type',
@@ -46,10 +47,15 @@ export function isStepValid(
   switch (id) {
     case 'ahu_type':
       return Boolean(unit.ahuType);
-    case 'inputs':
-      return state.airflow.supplyAirflow > 0
+    case 'inputs': {
+      const supplyOk = state.airflow.supplyAirflow > 0;
+      const exhaustOk = !isBalancedAhu(unit.ahuType)
+        || (state.airflow.exhaustAirflow ?? state.airflow.supplyAirflow) > 0;
+      return supplyOk
+        && exhaustOk
         && state.design.summerOutdoorDB > -50
         && state.design.summerIndoorDB > -50;
+    }
     case 'components':
       return Array.isArray(state.sections) && state.sections.filter((s) => s.enabled).length > 0;
     case 'psychro':

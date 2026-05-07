@@ -1,18 +1,31 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Thermometer, AlertTriangle, Eye, EyeOff } from 'lucide-react';
+import {
+  Thermometer, AlertTriangle, Eye, EyeOff,
+  ChevronDown, ChevronUp,
+} from 'lucide-react';
 import {
   ResponsiveContainer, Scatter, XAxis, YAxis,
   CartesianGrid, Tooltip, Customized,
   ComposedChart,
 } from 'recharts';
 import type { AhuWizardState, PsychrometricResults } from '@/lib/ahu-ashrae/types';
-import type { ChainResult, ChainStateLabel } from '@/lib/ahu-ashrae/chain';
-import { rhCurveLine } from '@/lib/ahu-ashrae/psychrometrics';
+import type { ChainResult } from '@/lib/ahu-ashrae/chain';
 import {
-  COMFORT_OVERLAYS, getOverlay, type OverlayId, type ComfortOverlay,
+  rhCurveLine, wetBulbCurveLine, enthalpyCurveLine,
+  specVolumeCurveLine, vapourPressureCurveLine,
+} from '@/lib/ahu-ashrae/psychrometrics';
+import {
+  COMFORT_OVERLAYS, getOverlay, adjustOverlayForPmv,
+  DEFAULT_COMFORT_PARAMS,
+  describeAirVelocity, describeClo, describeMet, describeMrt,
+  type OverlayId, type ComfortOverlay, type ComfortParams,
 } from '@/lib/ahu-ashrae/comfort-overlays';
+import {
+  PROCESS_OVERLAYS, getProcessOverlay,
+  type ProcessOverlayId, type ProcessArrow,
+} from '@/lib/ahu-ashrae/process-overlays';
 
 interface Props {
   state: AhuWizardState;
@@ -20,10 +33,41 @@ interface Props {
   chain?: ChainResult;
 }
 
+// ─── Chart-metric definitions ────────────────────────────────────────────────
+
+type MetricId = 'dryBulb' | 'absHumid' | 'relHumid' | 'wetBulb' | 'vapPress' | 'specVol' | 'enthalpy';
+
+interface MetricDef {
+  id: MetricId;
+  label: string;
+  color: string;
+  /** Default-on flag */
+  on: boolean;
+}
+
+const METRICS: MetricDef[] = [
+  { id: 'dryBulb',  label: 'Dry-Bulb Temp.',  color: 'var(--text-3)', on: true },
+  { id: 'absHumid', label: 'Absolute Humidity', color: 'var(--text-3)', on: true },
+  { id: 'relHumid', label: 'Relative Humidity', color: '#1f6fd4',     on: true },
+  { id: 'wetBulb',  label: 'Wet-Bulb Temp.',   color: '#0f6e3a',      on: true },
+  { id: 'vapPress', label: 'Vapour Pressure',  color: '#7c4ec0',      on: false },
+  { id: 'specVol',  label: 'Specific Volume',  color: '#c05010',      on: false },
+  { id: 'enthalpy', label: 'Enthalpy',         color: '#a06010',      on: true },
+];
+
+const DEFAULT_METRICS: Record<MetricId, boolean> = METRICS.reduce(
+  (acc, m) => ({ ...acc, [m.id]: m.on }),
+  {} as Record<MetricId, boolean>,
+);
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function Step2Psychro({ state, psychro, chain }: Props) {
-  const [overlayId, setOverlayId] = useState<OverlayId>('givoni');
+  const [overlayId, setOverlayId] = useState<OverlayId>('iso7730');
+  const [processId, setProcessId] = useState<ProcessOverlayId>('none');
+  const [params, setParams] = useState<ComfortParams>(DEFAULT_COMFORT_PARAMS);
+  const [showGrid, setShowGrid] = useState<boolean>(false);
+  const [metrics, setMetrics] = useState<Record<MetricId, boolean>>(DEFAULT_METRICS);
 
   if (!psychro && !chain) {
     return (
@@ -44,70 +88,101 @@ export function Step2Psychro({ state, psychro, chain }: Props) {
     );
   }
 
-  const overlay = getOverlay(overlayId);
+  const overlayBase = getOverlay(overlayId);
+  const overlay = overlayBase
+    ? (overlayId === 'iso7730' || overlayId === 'ashrae55_summer' ||
+       overlayId === 'ashrae55_winter' || overlayId === 'en15251')
+      ? adjustOverlayForPmv(overlayBase, params)
+      : overlayBase
+    : null;
+
+  const processOverlay = getProcessOverlay(processId);
 
   return (
     <div className="space-y-5">
-      {/* ── Psychrometric chart ── */}
       <div
         className="rounded-xl border p-4"
         style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}
       >
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <div className="flex items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-2">
             <Thermometer size={14} style={{ color: 'var(--blue)' }} />
             <h2 className="text-xs font-bold uppercase tracking-[0.08em]" style={{ color: 'var(--navy)' }}>
               ფსიქრომეტრიული დიაგრამა (i-d)
             </h2>
           </div>
-          <div className="flex items-center gap-3">
-            <ComfortSelector value={overlayId} onChange={setOverlayId} />
-            <div className="text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
-              P = {state.design.pressure.toFixed(1)} kPa
-            </div>
+          <div className="text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
+            P = {state.design.pressure.toFixed(1)} kPa
           </div>
         </div>
 
-        <PsychroChart psychro={psychro} chain={chain} overlay={overlay} />
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-4">
+          {/* ── Chart ── */}
+          <div>
+            <PsychroChart
+              psychro={psychro}
+              chain={chain}
+              overlay={overlay}
+              processArrows={processOverlay.arrows}
+              metrics={metrics}
+              showGrid={showGrid}
+              pressure={state.design.pressure}
+            />
 
-        {/* Legend */}
-        <div className="mt-3 flex flex-wrap gap-3 text-[10px]">
-          {overlay && (
-            <div className="flex items-center gap-1.5">
-              <span
-                className="inline-block w-3 h-3 rounded-sm border"
-                style={{ background: overlay.fill, borderColor: overlay.border }}
-              />
-              <span style={{ color: 'var(--text-2)' }}>{overlay.label}</span>
-              <span className="font-mono" style={{ color: 'var(--text-3)' }}>· {overlay.reference}</span>
+            {/* Legend */}
+            <div className="mt-3 flex flex-wrap gap-3 text-[10px]">
+              {overlay && (
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className="inline-block w-3 h-3 rounded-sm border"
+                    style={{ background: overlay.fill, borderColor: overlay.border }}
+                  />
+                  <span style={{ color: 'var(--text-2)' }}>{overlay.label}</span>
+                  <span className="font-mono" style={{ color: 'var(--text-3)' }}>· {overlay.reference}</span>
+                </div>
+              )}
+              {chain && chain.states.map((p, i) => (
+                <div key={p.id} className="flex items-center gap-1.5">
+                  <span
+                    className="inline-block w-2.5 h-2.5 rounded-full"
+                    style={{ background: chainColor(i, chain.states.length) }}
+                  />
+                  <span style={{ color: 'var(--text-2)' }}>
+                    <strong style={{ color: chainColor(i, chain.states.length) }}>s{i}</strong> {p.label}
+                  </span>
+                </div>
+              ))}
+              {!chain && psychro && (
+                <>
+                  {(['outdoor', 'mixed', 'supplyAir', 'roomAir', 'adp'] as const).map((k) => {
+                    const p = psychro[k];
+                    return (
+                      <div key={p.label} className="flex items-center gap-1.5">
+                        <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: pointColor(p.label) }} />
+                        <span style={{ color: 'var(--text-2)' }}>
+                          <strong style={{ color: pointColor(p.label) }}>{p.label}</strong> · {p.description}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </>
+              )}
             </div>
-          )}
-          {chain && chain.states.map((p, i) => (
-            <div key={p.id} className="flex items-center gap-1.5">
-              <span
-                className="inline-block w-2.5 h-2.5 rounded-full"
-                style={{ background: chainColor(i, chain.states.length) }}
-              />
-              <span style={{ color: 'var(--text-2)' }}>
-                <strong style={{ color: chainColor(i, chain.states.length) }}>s{i}</strong> {p.label}
-              </span>
-            </div>
-          ))}
-          {!chain && psychro && (
-            <>
-              {(['outdoor', 'mixed', 'supplyAir', 'roomAir', 'adp'] as const).map((k) => {
-                const p = psychro[k];
-                return (
-                  <div key={p.label} className="flex items-center gap-1.5">
-                    <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: pointColor(p.label) }} />
-                    <span style={{ color: 'var(--text-2)' }}>
-                      <strong style={{ color: pointColor(p.label) }}>{p.label}</strong> · {p.description}
-                    </span>
-                  </div>
-                );
-              })}
-            </>
-          )}
+          </div>
+
+          {/* ── Right sidebar: 3 panels ── */}
+          <div className="space-y-3 text-[11px]">
+            <ComfortPanel
+              overlayId={overlayId}
+              onOverlayChange={setOverlayId}
+              params={params}
+              onParamsChange={setParams}
+              showGrid={showGrid}
+              onShowGridChange={setShowGrid}
+            />
+            <ProcessPanel processId={processId} onChange={setProcessId} />
+            <MetricsPanel metrics={metrics} onChange={setMetrics} />
+          </div>
         </div>
       </div>
 
@@ -158,7 +233,7 @@ export function Step2Psychro({ state, psychro, chain }: Props) {
         </div>
       )}
 
-      {/* ── Capacity boxes (fall back to legacy psychro if available) ── */}
+      {/* ── Capacity boxes ── */}
       {psychro && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <CapacityBox
@@ -194,25 +269,219 @@ export function Step2Psychro({ state, psychro, chain }: Props) {
   );
 }
 
-// ─── Comfort selector ────────────────────────────────────────────────────────
+// ─── Sidebar panels ──────────────────────────────────────────────────────────
 
-function ComfortSelector({ value, onChange }: { value: OverlayId; onChange: (id: OverlayId) => void }) {
+function PanelHeader({ title, open, onToggle }: { title: string; open: boolean; onToggle: () => void }) {
   return (
-    <div className="flex items-center gap-1.5">
-      {value === 'none'
-        ? <EyeOff size={12} style={{ color: 'var(--text-3)' }} />
-        : <Eye size={12} style={{ color: 'var(--blue)' }} />}
-      <select
+    <button
+      type="button"
+      onClick={onToggle}
+      className="w-full flex items-center justify-between px-3 py-2 rounded-md border"
+      style={{ background: 'var(--sur-2)', borderColor: 'var(--bdr)', color: 'var(--navy)' }}
+    >
+      <span className="text-[10px] font-bold uppercase tracking-[0.1em]">{title}</span>
+      {open ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+    </button>
+  );
+}
+
+function ComfortPanel({
+  overlayId, onOverlayChange,
+  params, onParamsChange,
+  showGrid, onShowGridChange,
+}: {
+  overlayId: OverlayId;
+  onOverlayChange: (id: OverlayId) => void;
+  params: ComfortParams;
+  onParamsChange: (p: ComfortParams) => void;
+  showGrid: boolean;
+  onShowGridChange: (v: boolean) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const showPmv = overlayId === 'iso7730' || overlayId === 'ashrae55_summer' ||
+                  overlayId === 'ashrae55_winter' || overlayId === 'en15251';
+  return (
+    <div className="space-y-1.5">
+      <PanelHeader title="Comfort Overlay" open={open} onToggle={() => setOpen(!open)} />
+      {open && (
+        <div className="rounded-md border p-2.5 space-y-2.5" style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}>
+          <div className="flex items-center gap-1.5">
+            {overlayId === 'none'
+              ? <EyeOff size={12} style={{ color: 'var(--text-3)' }} />
+              : <Eye size={12} style={{ color: 'var(--blue)' }} />}
+            <select
+              value={overlayId}
+              onChange={(e) => onOverlayChange(e.target.value as OverlayId)}
+              className="flex-1 text-[11px] font-medium rounded-md border px-2 py-1"
+              style={{ borderColor: 'var(--bdr-2)', background: 'var(--sur-2)', color: 'var(--text)' }}
+            >
+              <option value="none">No Comfort Overlay</option>
+              {COMFORT_OVERLAYS.map((o) => (
+                <option key={o.id} value={o.id}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <label className="flex items-center gap-2 text-[10.5px]" style={{ color: 'var(--text-2)' }}>
+            <input
+              type="checkbox"
+              checked={showGrid}
+              onChange={(e) => onShowGridChange(e.target.checked)}
+            />
+            Show Underlying Data Grid
+          </label>
+
+          {showPmv && (
+            <div className="space-y-2 pt-1 border-t" style={{ borderColor: 'var(--bdr)' }}>
+              <PmvSlider
+                label="Air Velocity"
+                unit="m/s"
+                value={params.airVelocity}
+                min={0} max={1.5} step={0.05}
+                describe={describeAirVelocity}
+                onChange={(v) => onParamsChange({ ...params, airVelocity: v })}
+              />
+              <PmvSlider
+                label="Clothing Level"
+                unit="clo"
+                value={params.clo}
+                min={0.3} max={1.5} step={0.05}
+                describe={describeClo}
+                onChange={(v) => onParamsChange({ ...params, clo: v })}
+              />
+              <PmvSlider
+                label="Metabolic Rate"
+                unit="met"
+                value={params.met}
+                min={0.8} max={3.0} step={0.05}
+                describe={describeMet}
+                onChange={(v) => onParamsChange({ ...params, met: v })}
+              />
+              <PmvSlider
+                label="Mean Radiant Temp."
+                unit="°C"
+                value={params.mrt}
+                min={10} max={35} step={0.5}
+                describe={describeMrt}
+                onChange={(v) => onParamsChange({ ...params, mrt: v })}
+              />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PmvSlider({
+  label, unit, value, min, max, step, describe, onChange,
+}: {
+  label: string;
+  unit: string;
+  value: number;
+  min: number; max: number; step: number;
+  describe: (v: number) => string;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between">
+        <span className="text-[10.5px] font-medium" style={{ color: 'var(--text)' }}>{label}:</span>
+        <span className="text-[11px] font-mono font-bold" style={{ color: 'var(--blue)' }}>
+          {value.toFixed(unit === 'clo' || unit === 'met' ? 2 : (unit === 'm/s' ? 2 : 1))} {unit}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
         value={value}
-        onChange={(e) => onChange(e.target.value as OverlayId)}
-        className="text-[11px] font-medium rounded-md border px-2 py-1"
-        style={{ borderColor: 'var(--bdr-2)', background: 'var(--sur)', color: 'var(--text)' }}
-      >
-        <option value="none">No Comfort Overlay</option>
-        {COMFORT_OVERLAYS.map((o) => (
-          <option key={o.id} value={o.id}>{o.label}</option>
-        ))}
-      </select>
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        className="w-full mt-1"
+      />
+      <div className="text-[9.5px] italic" style={{ color: 'var(--text-3)' }}>{describe(value)}</div>
+    </div>
+  );
+}
+
+function ProcessPanel({ processId, onChange }: {
+  processId: ProcessOverlayId;
+  onChange: (id: ProcessOverlayId) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  const o = PROCESS_OVERLAYS[processId];
+  return (
+    <div className="space-y-1.5">
+      <PanelHeader title="Process Overlay" open={open} onToggle={() => setOpen(!open)} />
+      {open && (
+        <div className="rounded-md border p-2.5 space-y-1.5" style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}>
+          <select
+            value={processId}
+            onChange={(e) => onChange(e.target.value as ProcessOverlayId)}
+            className="w-full text-[11px] font-medium rounded-md border px-2 py-1"
+            style={{ borderColor: 'var(--bdr-2)', background: 'var(--sur-2)', color: 'var(--text)' }}
+          >
+            {(Object.keys(PROCESS_OVERLAYS) as ProcessOverlayId[]).map((id) => (
+              <option key={id} value={id}>{PROCESS_OVERLAYS[id].label}</option>
+            ))}
+          </select>
+          {o.description && (
+            <div className="text-[9.5px] italic" style={{ color: 'var(--text-3)' }}>{o.description}</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MetricsPanel({
+  metrics, onChange,
+}: {
+  metrics: Record<MetricId, boolean>;
+  onChange: (m: Record<MetricId, boolean>) => void;
+}) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="space-y-1.5">
+      <PanelHeader title="Chart Metrics" open={open} onToggle={() => setOpen(!open)} />
+      {open && (
+        <div className="rounded-md border p-2.5 space-y-1.5" style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}>
+          {METRICS.map((m) => {
+            const on = metrics[m.id];
+            return (
+              <label key={m.id} className="flex items-center justify-between gap-2 text-[10.5px]"
+                     style={{ color: on ? 'var(--text)' : 'var(--text-3)' }}>
+                <span className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    onChange={(e) => onChange({ ...metrics, [m.id]: e.target.checked })}
+                  />
+                  <span>{m.label}</span>
+                </span>
+                {on
+                  ? <Eye size={11} style={{ color: m.color }} />
+                  : <EyeOff size={11} style={{ color: 'var(--text-3)' }} />}
+              </label>
+            );
+          })}
+          <div className="flex gap-1.5 pt-1.5 border-t" style={{ borderColor: 'var(--bdr)' }}>
+            <button
+              type="button"
+              onClick={() => onChange(DEFAULT_METRICS)}
+              className="flex-1 text-[10px] font-medium rounded border px-2 py-1"
+              style={{ borderColor: 'var(--bdr-2)', background: 'var(--sur-2)', color: 'var(--text-2)' }}
+            >Default</button>
+            <button
+              type="button"
+              onClick={() => onChange(METRICS.reduce((acc, m) => ({ ...acc, [m.id]: false }), {} as Record<MetricId, boolean>))}
+              className="flex-1 text-[10px] font-medium rounded border px-2 py-1"
+              style={{ borderColor: 'var(--bdr-2)', background: 'var(--sur-2)', color: 'var(--text-2)' }}
+            >None</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -223,26 +492,50 @@ interface ChartProps {
   psychro?: PsychrometricResults;
   chain?: ChainResult;
   overlay: ComfortOverlay | null;
+  processArrows: ProcessArrow[];
+  metrics: Record<MetricId, boolean>;
+  showGrid: boolean;
+  pressure: number;
 }
 
-function PsychroChart({ psychro, chain, overlay }: ChartProps) {
+function PsychroChart({ psychro, chain, overlay, processArrows, metrics, showGrid, pressure }: ChartProps) {
   const rhValues = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-  const rhCurves = rhValues.map((rh) => ({
-    rh,
-    points: rhCurveLine(rh, -5, 50, 60).filter((p) => p.tdb >= -5 && p.tdb <= 50),
-  }));
+  const wbValues = [0, 5, 10, 15, 20, 25, 30];
+  const hValues = [10, 30, 50, 70, 90, 110]; // kJ/kg
+  const vValues = [0.80, 0.84, 0.88, 0.92, 0.96]; // m³/kg
+  const wConstValues = [4, 8, 12, 16, 20, 24]; // g/kg — for vapour-pressure (constant W) horizontal lines
+
+  const rhCurves = metrics.relHumid
+    ? rhValues.map((rh) => ({ rh, points: rhCurveLine(rh, -5, 50, 60, pressure).filter((p) => p.tdb >= -5 && p.tdb <= 50) }))
+    : [];
+
+  const wbCurves = metrics.wetBulb
+    ? wbValues.map((twb) => ({ twb, points: wetBulbCurveLine(twb, -5, 50, 50, pressure) }))
+    : [];
+
+  const hCurves = metrics.enthalpy
+    ? hValues.map((h) => ({ h, points: enthalpyCurveLine(h, -5, 50, 50) }))
+    : [];
+
+  const vCurves = metrics.specVol
+    ? vValues.map((v) => ({ v, points: specVolumeCurveLine(v, -5, 50, 50, pressure) }))
+    : [];
+
+  const wConstLines = metrics.vapPress
+    ? wConstValues.map((wg) => ({ wg, points: [{ tdb: -5, w: wg }, { tdb: 50, w: wg }] as Array<{ tdb: number; w: number }> }))
+    : [];
 
   return (
-    <div style={{ width: '100%', height: 440 }}>
+    <div style={{ width: '100%', height: 520 }}>
       <ResponsiveContainer>
         <ComposedChart margin={{ top: 10, right: 30, left: 0, bottom: 25 }}>
-          <CartesianGrid stroke="var(--bdr)" strokeDasharray="2 4" />
+          {showGrid && <CartesianGrid stroke="var(--bdr)" strokeDasharray="2 4" />}
           <XAxis
             dataKey="tdb"
             type="number"
             domain={[-5, 45]}
             ticks={[-5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45]}
-            tick={{ fontSize: 10, fill: 'var(--text-3)' }}
+            tick={metrics.dryBulb ? { fontSize: 10, fill: 'var(--text-3)' } : false}
             label={{ value: 'Dry-bulb temperature (°C)', position: 'insideBottom', offset: -10, fontSize: 11, fill: 'var(--text-2)' }}
           />
           <YAxis
@@ -250,7 +543,7 @@ function PsychroChart({ psychro, chain, overlay }: ChartProps) {
             type="number"
             domain={[0, 28]}
             ticks={[0, 4, 8, 12, 16, 20, 24, 28]}
-            tick={{ fontSize: 10, fill: 'var(--text-3)' }}
+            tick={metrics.absHumid ? { fontSize: 10, fill: 'var(--text-3)' } : false}
             label={{ value: 'Humidity ratio (g/kg)', angle: -90, position: 'insideLeft', offset: 15, fontSize: 11, fill: 'var(--text-2)' }}
           />
           <Tooltip
@@ -259,15 +552,63 @@ function PsychroChart({ psychro, chain, overlay }: ChartProps) {
             labelFormatter={(label) => `T = ${Number(label).toFixed(1)}°C`}
           />
 
-          {/* Comfort overlay polygon — drawn first so chart elements overlay it */}
+          {/* Comfort overlay polygon */}
           {overlay && (
             <Customized
-              key={`overlay-${overlay.id}`}
+              key={`overlay-${overlay.id}-${overlay.vertices[0].tdb.toFixed(2)}`}
               component={(props: { xAxisMap?: Record<string, { scale: (v: number) => number }>; yAxisMap?: Record<string, { scale: (v: number) => number }> }) => (
                 <ComfortPolygon overlay={overlay} {...props} />
               )}
             />
           )}
+
+          {/* Constant W (= vapour-pressure) horizontal lines */}
+          {wConstLines.map((line) => (
+            <Scatter
+              key={`vp-${line.wg}`}
+              data={line.points}
+              line={{ stroke: '#7c4ec0', strokeWidth: 0.5, strokeDasharray: '1 3' }}
+              shape={() => <></>}
+              legendType="none"
+              isAnimationActive={false}
+            />
+          ))}
+
+          {/* Constant specific-volume oblique lines */}
+          {vCurves.map((c) => (
+            <Scatter
+              key={`v-${c.v}`}
+              data={c.points}
+              line={{ stroke: '#c05010', strokeWidth: 0.5, strokeDasharray: '4 2' }}
+              shape={() => <></>}
+              legendType="none"
+              isAnimationActive={false}
+            />
+          ))}
+
+          {/* Constant enthalpy oblique lines */}
+          {hCurves.map((c) => (
+            <Scatter
+              key={`h-${c.h}`}
+              data={c.points}
+              line={{ stroke: '#a06010', strokeWidth: 0.5, strokeDasharray: '6 3' }}
+              shape={() => <></>}
+              legendType="none"
+              isAnimationActive={false}
+            />
+          ))}
+
+          {/* Constant wet-bulb oblique lines */}
+          {wbCurves.map((c) => (
+            <Scatter
+              key={`wb-${c.twb}`}
+              data={c.points}
+              line={{ stroke: '#0f6e3a', strokeWidth: 0.5, strokeDasharray: '3 3' }}
+              shape={() => <></>}
+              legendType="none"
+              isAnimationActive={false}
+            />
+          ))}
 
           {/* RH curves */}
           {rhCurves.map((curve) => (
@@ -281,7 +622,17 @@ function PsychroChart({ psychro, chain, overlay }: ChartProps) {
             />
           ))}
 
-          {/* Chain process line — connects all states sequentially */}
+          {/* Process overlay arrows (educational) */}
+          {processArrows.length > 0 && (
+            <Customized
+              key={`proc-${processArrows.map((a) => a.id).join('-')}`}
+              component={(props: { xAxisMap?: Record<string, { scale: (v: number) => number }>; yAxisMap?: Record<string, { scale: (v: number) => number }> }) => (
+                <ProcessArrows arrows={processArrows} {...props} />
+              )}
+            />
+          )}
+
+          {/* Chain process line */}
           {chain && (
             <Scatter
               data={chain.states.map((s) => ({ tdb: s.state.tdb, w: s.state.w * 1000 }))}
@@ -314,7 +665,7 @@ function PsychroChart({ psychro, chain, overlay }: ChartProps) {
             />
           )}
 
-          {/* Legacy points (only if no chain) */}
+          {/* Legacy points */}
           {!chain && psychro && (
             <>
               <Scatter
@@ -356,7 +707,7 @@ function PsychroChart({ psychro, chain, overlay }: ChartProps) {
   );
 }
 
-// ─── Comfort polygon SVG injection ────────────────────────────────────────────
+// ─── SVG injectors ────────────────────────────────────────────────────────────
 
 interface PolygonProps {
   overlay: ComfortOverlay;
@@ -384,13 +735,60 @@ function ComfortPolygon({ overlay, xAxisMap, yAxisMap }: PolygonProps) {
   );
 }
 
+interface ArrowsProps {
+  arrows: ProcessArrow[];
+  xAxisMap?: Record<string, { scale: (v: number) => number }>;
+  yAxisMap?: Record<string, { scale: (v: number) => number }>;
+}
+function ProcessArrows({ arrows, xAxisMap, yAxisMap }: ArrowsProps) {
+  if (!xAxisMap || !yAxisMap) return null;
+  const xKey = Object.keys(xAxisMap)[0];
+  const yKey = Object.keys(yAxisMap)[0];
+  const xScale = xAxisMap[xKey]?.scale;
+  const yScale = yAxisMap[yKey]?.scale;
+  if (!xScale || !yScale) return null;
+  return (
+    <g>
+      {arrows.map((a) => {
+        const x1 = xScale(a.from.tdb);
+        const y1 = yScale(a.from.w);
+        const x2 = xScale(a.to.tdb);
+        const y2 = yScale(a.to.w);
+        // Arrowhead — small triangle at tip
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len;
+        const uy = dy / len;
+        const head = 7;
+        const wing = 3.5;
+        const hx1 = x2 - ux * head + uy * wing;
+        const hy1 = y2 - uy * head - ux * wing;
+        const hx2 = x2 - ux * head - uy * wing;
+        const hy2 = y2 - uy * head + ux * wing;
+        return (
+          <g key={a.id} style={{ pointerEvents: 'none' }}>
+            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={a.color} strokeWidth={1.5} />
+            <polygon points={`${x2},${y2} ${hx1},${hy1} ${hx2},${hy2}`} fill={a.color} />
+            <text
+              x={x2 + ux * 6}
+              y={y2 + uy * 6 + 3}
+              fontSize={9}
+              fill={a.color}
+              opacity={0.85}
+            >{a.label}</text>
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function chainColor(i: number, total: number): string {
-  // OA red → mixed gray → supply blue → room green
-  if (i === 0) return '#c05010'; // outdoor — orange
-  if (i === total - 1) return '#1f6fd4'; // supply — blue
-  // intermediate: blue gradient navy → blue
+  if (i === 0) return '#c05010';
+  if (i === total - 1) return '#1f6fd4';
   const t = total > 2 ? (i - 1) / (total - 2) : 0;
   const r = Math.round(26 + t * 5);
   const g = Math.round(58 + t * 53);

@@ -31,6 +31,7 @@
 - [x] StepComponents — preset selector, ↑/↓ reorder, enable/disable, type picker, live 3D
 - [x] StepSummary — chain totals + state-by-state table + auto-narrative journal
 - [x] Step2Psychro — chain points plot on i-d chart + 5 comfort overlays toggleable (Givoni / ASHRAE 55 summer+winter / EN 15251 / ISO 7730 / Outdoor Heat Index)
+- [x] 2026-05-07 — Step2Psychro Daikin-style sidebar: Comfort Overlay (PMV sliders: air velocity, clo, met, MRT → dynamic polygon adjust) + Process Overlay (sensible / dehum / adiabatic / heat-cool / all → directional arrows) + Chart Metrics (7-family toggle: dry-bulb, abs/rel humidity, wet-bulb, vapour pressure, specific volume, enthalpy with Default/None) + Show Underlying Data Grid + new curve generators (wet-bulb, enthalpy, spec. volume, vapour pressure)
 - [x] StepReport — printable structured doc (8 sections), `window.print()` works for browser PDF
 
 **Wizard remaining:**

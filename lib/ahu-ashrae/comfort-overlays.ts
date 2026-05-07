@@ -129,3 +129,107 @@ export function getOverlay(id: OverlayId): ComfortOverlay | null {
   if (id === 'none') return null;
   return COMFORT_OVERLAYS.find((o) => o.id === id) ?? null;
 }
+
+// ─── PMV parameters → dynamic polygon adjustment ─────────────────────────────
+
+/**
+ * User-tuneable comfort parameters (Fanger / ISO 7730 inputs).
+ */
+export interface ComfortParams {
+  /** Air velocity [m/s] — 0.0–1.5 typical indoor range */
+  airVelocity: number;
+  /** Clothing level [clo] — 0.5 (summer t-shirt) … 1.5 (heavy suit) */
+  clo: number;
+  /** Metabolic rate [met] — 1.0 (sedentary) … 2.0 (walking) */
+  met: number;
+  /** Mean Radiant Temperature [°C] — equal to T_db when no asymmetric radiation */
+  mrt: number;
+}
+
+export const DEFAULT_COMFORT_PARAMS: ComfortParams = {
+  airVelocity: 0.20,
+  clo: 1.00,
+  met: 1.00,
+  mrt: 20.0,
+};
+
+/** Air velocity descriptor (matches Daikin viewer hints) */
+export function describeAirVelocity(v: number): string {
+  if (v < 0.10) return 'Unnoticeably still';
+  if (v < 0.25) return 'Unnoticeably still';
+  if (v < 0.50) return 'Lightly perceptible';
+  if (v < 0.80) return 'Pleasantly noticeable';
+  if (v < 1.20) return 'Noticeable breeze';
+  return 'Strong breeze';
+}
+
+export function describeClo(clo: number): string {
+  if (clo < 0.40) return 'Underwear / very light';
+  if (clo < 0.60) return 'Light summer (t-shirt + shorts)';
+  if (clo < 0.85) return 'Typical office (trousers + shirt)';
+  if (clo < 1.10) return 'Business suit or casual with sweater';
+  if (clo < 1.40) return 'Heavy business suit';
+  return 'Heavy winter clothing';
+}
+
+export function describeMet(met: number): string {
+  if (met < 0.90) return 'Sleeping / reclining';
+  if (met < 1.10) return 'Seated with sedentary activity';
+  if (met < 1.40) return 'Standing / light office';
+  if (met < 1.80) return 'Walking slowly / light work';
+  if (met < 2.30) return 'Walking briskly / moderate work';
+  return 'Heavy physical work';
+}
+
+export function describeMrt(mrt: number): string {
+  if (mrt < 16) return 'Cold surfaces (poor insulation)';
+  if (mrt < 19) return 'Slightly cool surroundings';
+  if (mrt < 23) return 'Normal room temperature';
+  if (mrt < 27) return 'Warm surroundings';
+  return 'Hot radiant load (sun / equipment)';
+}
+
+/**
+ * Adjust a base comfort polygon (ASHRAE/ISO/EN-style rectangle in tdb–W
+ * space) using PMV parameters. The shifts come from Fanger's equation
+ * sensitivities — increased clo / mrt → cooler comfort range, increased
+ * met / air velocity → warmer-end tolerance.
+ *
+ * Not a rigorous Fanger solve — a linearised approximation valid for
+ * small deviations from the ISO 7730 base case (clo=1.0, met=1.0,
+ * v=0.10 m/s, MRT=20°C).
+ */
+export function adjustOverlayForPmv(
+  base: ComfortOverlay,
+  params: ComfortParams,
+): ComfortOverlay {
+  const { airVelocity, clo, met, mrt } = params;
+  // Reference case used for the static polygons in COMFORT_OVERLAYS
+  const refClo = 1.00;
+  const refMet = 1.00;
+  const refV = 0.10;
+  const refMrt = 20.0;
+
+  // Approximate sensitivities (ISO 7730 Annex B / Fanger 1970, °C per unit):
+  //   ΔTcomfort ≈ −3.0 × Δclo  − 0.7 × ΔMRT/MRTref ... simplified:
+  //   −3 °C per +1 clo, −0.5 °C per +1°C MRT, +1.5 °C per +1 met,
+  //   +2.5 °C per +1 m/s air velocity (only on warm side).
+  const dtClo = (clo - refClo) * -3.0;
+  const dtMrt = (mrt - refMrt) * -0.5;
+  const dtMet = (met - refMet) * 1.5;
+  const dtVelLow = 0;
+  const dtVelHigh = (airVelocity - refV) * 2.5; // expands warm boundary only
+
+  const adjusted = base.vertices.map((v, idx) => {
+    // Vertices are ordered: 0 cool-low W, 1 warm-low W, 2 warm-high W, 3 cool-high W
+    const isWarmEdge = idx === 1 || idx === 2;
+    const isCoolEdge = idx === 0 || idx === 3;
+    const shift =
+      dtClo + dtMrt + dtMet +
+      (isWarmEdge ? dtVelHigh : 0) +
+      (isCoolEdge ? dtVelLow : 0);
+    return { tdb: v.tdb + shift, w: v.w };
+  });
+
+  return { ...base, vertices: adjusted };
+}

@@ -304,3 +304,90 @@ export function rhCurveLine(
   }
   return pts;
 }
+
+// ─── Other Constant-Property Lines (chart metrics) ────────────────────────────
+
+/**
+ * Constant wet-bulb line. Returns (tdb, W g/kg) points along oblique line
+ * where Twb = const. Truncated at saturation curve (W ≤ Wsat(tdb)).
+ */
+export function wetBulbCurveLine(
+  twb: number,
+  tMin = -5,
+  tMax = 50,
+  steps = 50,
+  p = 101.325,
+): Array<{ tdb: number; w: number }> {
+  const pts: Array<{ tdb: number; w: number }> = [];
+  const start = Math.max(tMin, twb); // wet-bulb line begins at Twb (sat point)
+  for (let i = 0; i <= steps; i++) {
+    const tdb = start + (i / steps) * (tMax - start);
+    const w = wFromDbWb(tdb, twb, p) * 1000;
+    if (w >= 0 && w <= 35) pts.push({ tdb, w });
+  }
+  return pts;
+}
+
+/**
+ * Constant enthalpy line. h = 1.006·t + W·(2501 + 1.86·t) → solve for W.
+ * W = (h − 1.006·t) / (2501 + 1.86·t)
+ */
+export function enthalpyCurveLine(
+  h: number,
+  tMin = -5,
+  tMax = 50,
+  steps = 50,
+): Array<{ tdb: number; w: number }> {
+  const pts: Array<{ tdb: number; w: number }> = [];
+  for (let i = 0; i <= steps; i++) {
+    const tdb = tMin + (i / steps) * (tMax - tMin);
+    const wKg = (h - 1.006 * tdb) / (2501 + 1.86 * tdb);
+    const w = wKg * 1000;
+    if (w >= 0 && w <= 35) pts.push({ tdb, w });
+  }
+  return pts;
+}
+
+/**
+ * Constant specific-volume line. v = 287.055·(T+273.15) / ((p−pw)·1000),
+ * where pw = W·p / (0.621945+W). Solve for W given v and p.
+ */
+export function specVolumeCurveLine(
+  v: number,
+  tMin = -5,
+  tMax = 50,
+  steps = 50,
+  p = 101.325,
+): Array<{ tdb: number; w: number }> {
+  const pts: Array<{ tdb: number; w: number }> = [];
+  for (let i = 0; i <= steps; i++) {
+    const tdb = tMin + (i / steps) * (tMax - tMin);
+    // pa = R·T/v / 1000 ; pw = p − pa ; W = 0.621945·pw/pa
+    const pa = (287.055 * (tdb + 273.15)) / v / 1000;
+    const pw = p - pa;
+    if (pw <= 0) continue;
+    const wKg = (0.621945 * pw) / pa;
+    const w = wKg * 1000;
+    if (w >= 0 && w <= 35) pts.push({ tdb, w });
+  }
+  return pts;
+}
+
+/**
+ * Constant vapour-pressure line (= constant W). Pure horizontal line on the
+ * psychrometric chart. Returned as 2-point line for SVG drawing.
+ */
+export function vapourPressureCurveLine(
+  pwKpa: number,
+  tMin = -5,
+  tMax = 50,
+  p = 101.325,
+): Array<{ tdb: number; w: number }> {
+  const wKg = wFromPw(pwKpa, p);
+  const w = wKg * 1000;
+  if (w < 0 || w > 35) return [];
+  return [
+    { tdb: tMin, w },
+    { tdb: tMax, w },
+  ];
+}

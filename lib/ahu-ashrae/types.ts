@@ -80,6 +80,10 @@ export interface DesignConditions {
 
 export interface AirflowInputs {
   supplyAirflow: number;      // m³/h total supply
+  /** m³/h total exhaust/return — used only for balanced AHUs (HRV + recovery types).
+   *  Undefined means "track supply" (default = supplyAirflow). Supply-only AHUs
+   *  ignore this field. */
+  exhaustAirflow?: number;
   oaFraction: number;         // 0–1 (outdoor air fraction)
   // ASHRAE 62.1 ventilation method
   ventilationMethod: 'fraction' | 'ashrae621';

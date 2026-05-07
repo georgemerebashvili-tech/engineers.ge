@@ -8,6 +8,7 @@ import {
   CUSTOM_CITY_ID, makeCustomCity,
 } from '@/lib/ahu-ashrae/climate-data';
 import { pressureFromElevation } from '@/lib/ahu-ashrae/psychrometrics';
+import { isBalancedAhu } from '@/lib/ahu-ashrae/ahu-types-data';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -24,6 +25,8 @@ interface Props {
 export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) {
   const { selectedCity, design, airflow, loads } = state;
   const isCustom = selectedCity?.id === CUSTOM_CITY_ID;
+  const balanced = isBalancedAhu(unit.ahuType);
+  const exhaustAirflow = airflow.exhaustAirflow ?? airflow.supplyAirflow;
 
   // ── City select ──
   const handleCityChange = useCallback((id: string) => {
@@ -273,42 +276,62 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
       </Card>
 
       {/* ── Airflow ── */}
-      <Card icon={<Wind size={14} />} title="ჰაერის ნაკადი">
+      <Card
+        icon={<Wind size={14} />}
+        title={balanced ? 'ჰაერის ნაკადი — მიწოდება + გაწოვა' : 'ჰაერის ნაკადი — მხოლოდ მიწოდება'}
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Supply airflow */}
           <div>
-            <div className="grid grid-cols-2 gap-3">
+            {/* Flow inputs row — supply (+ exhaust if balanced) */}
+            <div className={balanced ? 'grid grid-cols-2 gap-3' : ''}>
               <NumInput
-                label="მიწოდების Q"
+                label={balanced ? 'მიწოდება (SA)' : 'მიწოდების Q'}
                 unit="m³/h"
                 value={airflow.supplyAirflow}
                 step={100}
                 onChange={(v) => onUpdate({ airflow: { ...airflow, supplyAirflow: v } })}
               />
-              <div>
-                <label className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.08em] mb-1.5" style={{ color: 'var(--text-3)' }}>
-                  გარე ჰაერი (OA)
-                  <InfoTip text="OA = Outdoor Air (გარე / სუფთა ჰაერი). გარედან შემოსული ახალი ჰაერი, რომელიც ერევა ოთახიდან დაბრუნებულ (RA) ჰაერს. ჯამი ქმნის მიწოდების ჰაერს (SA). მაღალი OA → უკეთესი ჰაერის ხარისხი მაგრამ მეტი ენერგია; დაბალი OA → ენერგო-ეფექტური მაგრამ ცუდი ჰაერი (CO₂, სუნი)." />
-                </label>
-                <div className="flex rounded-lg border overflow-hidden" style={{ borderColor: 'var(--bdr-2)' }}>
-                  {(['fraction', 'ashrae621'] as const).map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => onUpdate({ airflow: { ...airflow, ventilationMethod: m } })}
-                      className="flex-1 py-1.5 text-[10px] font-semibold transition-all"
-                      style={
-                        airflow.ventilationMethod === m
-                          ? { background: 'var(--blue)', color: '#fff' }
-                          : { background: 'var(--sur)', color: 'var(--text-3)' }
-                      }
-                      title={m === 'fraction'
-                        ? 'პროცენტული წილი — შენ თვითონ აყენებ რამდენი % იყოს გარე ჰაერი'
-                        : 'ASHRAE 62.1 — სტანდარტი ანგარიშობს მინიმუმ ვენტილაციას ადამიანების და ფართობის მიხედვით'}
-                    >
-                      {m === 'fraction' ? '% (%OA)' : 'ASHRAE 62.1'}
-                    </button>
-                  ))}
-                </div>
+              {balanced && (
+                <NumInput
+                  label="გაწოვა (EA)"
+                  unit="m³/h"
+                  value={exhaustAirflow}
+                  step={100}
+                  onChange={(v) => onUpdate({ airflow: { ...airflow, exhaustAirflow: v } })}
+                />
+              )}
+            </div>
+            {balanced && (
+              <div className="mt-1 text-[10px] leading-snug" style={{ color: 'var(--text-3)' }}>
+                რეკ.: EA ≈ SA (ბალანსი) ან EA = 0.9 × SA (მცირე დადებითი წნევა შენობაში)
+              </div>
+            )}
+
+            {/* OA method toggle — own row */}
+            <div className="mt-3">
+              <label className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.08em] mb-1.5" style={{ color: 'var(--text-3)' }}>
+                გარე ჰაერი (OA)
+                <InfoTip text="OA = Outdoor Air (გარე / სუფთა ჰაერი). გარედან შემოსული ახალი ჰაერი, რომელიც ერევა ოთახიდან დაბრუნებულ (RA) ჰაერს. ჯამი ქმნის მიწოდების ჰაერს (SA). მაღალი OA → უკეთესი ჰაერის ხარისხი მაგრამ მეტი ენერგია; დაბალი OA → ენერგო-ეფექტური მაგრამ ცუდი ჰაერი (CO₂, სუნი)." />
+              </label>
+              <div className="flex rounded-lg border overflow-hidden" style={{ borderColor: 'var(--bdr-2)' }}>
+                {(['fraction', 'ashrae621'] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => onUpdate({ airflow: { ...airflow, ventilationMethod: m } })}
+                    className="flex-1 py-1.5 text-[10px] font-semibold transition-all"
+                    style={
+                      airflow.ventilationMethod === m
+                        ? { background: 'var(--blue)', color: '#fff' }
+                        : { background: 'var(--sur)', color: 'var(--text-3)' }
+                    }
+                    title={m === 'fraction'
+                      ? 'პროცენტული წილი — შენ თვითონ აყენებ რამდენი % იყოს გარე ჰაერი'
+                      : 'ASHRAE 62.1 — სტანდარტი ანგარიშობს მინიმუმ ვენტილაციას ადამიანების და ფართობის მიხედვით'}
+                  >
+                    {m === 'fraction' ? '% (%OA)' : 'ASHRAE 62.1'}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -365,27 +388,49 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
             <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-3" style={{ color: 'var(--text-3)' }}>
               ჰაერის ბალანსი
             </div>
-            <BarStat
-              label="მიწოდება (SA)"
-              value={airflow.supplyAirflow}
-              unit="m³/h"
-              max={airflow.supplyAirflow}
-              color="var(--blue)"
-            />
-            <BarStat
-              label={`გარე ჰაერი (OA) — ${oaFractionDisplay.toFixed(0)}%`}
-              value={oaM3h}
-              unit="m³/h"
-              max={airflow.supplyAirflow}
-              color="var(--grn)"
-            />
-            <BarStat
-              label="სარეციკლო (RA)"
-              value={airflow.supplyAirflow - oaM3h}
-              unit="m³/h"
-              max={airflow.supplyAirflow}
-              color="var(--text-3)"
-            />
+            {(() => {
+              const barMax = Math.max(airflow.supplyAirflow, balanced ? exhaustAirflow : 0) || 1;
+              return (
+                <>
+                  <BarStat
+                    label="მიწოდება (SA)"
+                    value={airflow.supplyAirflow}
+                    unit="m³/h"
+                    max={barMax}
+                    color="var(--blue)"
+                  />
+                  {balanced && (
+                    <BarStat
+                      label="გაწოვა (EA)"
+                      value={exhaustAirflow}
+                      unit="m³/h"
+                      max={barMax}
+                      color="var(--ora)"
+                    />
+                  )}
+                  <BarStat
+                    label={`გარე ჰაერი (OA) — ${oaFractionDisplay.toFixed(0)}%`}
+                    value={oaM3h}
+                    unit="m³/h"
+                    max={barMax}
+                    color="var(--grn)"
+                  />
+                  <BarStat
+                    label="სარეციკლო (RA)"
+                    value={airflow.supplyAirflow - oaM3h}
+                    unit="m³/h"
+                    max={barMax}
+                    color="var(--text-3)"
+                  />
+                </>
+              );
+            })()}
+            {balanced && Math.abs(airflow.supplyAirflow - exhaustAirflow) > 0.01 && (
+              <div className="mt-2 text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
+                ΔQ (SA−EA) = {(airflow.supplyAirflow - exhaustAirflow).toFixed(0)} m³/h
+                {airflow.supplyAirflow > exhaustAirflow ? ' (დადებითი წნევა)' : ' (უარყოფითი წნევა)'}
+              </div>
+            )}
             {airflow.ventilationMethod === 'ashrae621' && (
               <div className="mt-2 text-[10px] font-mono" style={{ color: 'var(--blue)' }}>
                 ASHRAE 62.1 min OA: {minOA.toFixed(0)} m³/h

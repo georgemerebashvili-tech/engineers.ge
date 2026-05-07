@@ -146,3 +146,11 @@ export const AHU_TYPES: AhuTypeSpec[] = [
 export function getAhuTypeSpec(id: AhuType): AhuTypeSpec | undefined {
   return AHU_TYPES.find((t) => t.id === id);
 }
+
+/** True for AHUs with both supply and exhaust streams (HRV + all recovery types).
+ *  False only for direct-flow supply-only schemes. */
+export function isBalancedAhu(t?: AhuType): boolean {
+  if (!t) return false;
+  const spec = getAhuTypeSpec(t);
+  return spec ? spec.category !== 'supply' : false;
+}
