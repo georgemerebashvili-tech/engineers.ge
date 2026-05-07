@@ -70,7 +70,11 @@
       "Bash(grep -oE \"\\(error|Error|რადაც\\)[^,<>{]{0,80}\" /tmp/eng-prod-real.html)",
       "Bash(npx --yes playwright --version)",
       "Bash(node /tmp/grab-error.mjs https://engineers.ge/calc/ahu-ashrae)",
-      "Bash(node --experimental-modules /tmp/grab-error.mjs https://engineers.ge/calc/ahu-ashrae)"
+      "Bash(node --experimental-modules /tmp/grab-error.mjs https://engineers.ge/calc/ahu-ashrae)",
+      "Bash(grep -n \"^      <section\\\\|^      </section\\\\|^    <div\\\\|^    </div\\\\|^      </div\\\\|^      <div\\\\|^  return\\\\|^  \\);$\\\\|^}$\" /Users/macbookair/Desktop/engineers.ge/engineers.ge/components/ahu-ashrae/steps/StepComponents.tsx)",
+      "Bash(awk 'NR>=395 && NR<=410 {print NR\": \"$0}')",
+      "Bash(awk 'NR>=60 && NR<=110 {print NR\": \"$0}')",
+      "Bash(git stash *)"
     ],
     "additionalDirectories": [
       "/Users/macbookair/Desktop/engineers.ge/engineers.ge/app",

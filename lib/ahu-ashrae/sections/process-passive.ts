@@ -7,7 +7,7 @@ import type { AirState } from '../air-state';
 import { fmtPa } from '../narrate';
 import type {
   SectionResult, SectionProcessor,
-  DamperParams, FilterParams, SilencerParams, FilterClass,
+  DamperParams, FilterParams, SilencerParams, FilterClass, FilterForm,
 } from './types';
 
 // ─── Filter ΔP table (clean, mid-life avg, dirty) ─────────────────────────────
@@ -22,6 +22,34 @@ const FILTER_DP: Record<FilterClass, { clean: number; avg: number; dirty: number
   carbon:   { clean: 60,  avg: 120, dirty: 220, label: 'Carbon (smell removal)' },
   electric: { clean: 25,  avg: 40,  dirty: 60,  label: 'Electrostatic' },
 };
+
+/** ΔP multiplier per physical form — more media area → lower velocity → lower ΔP. */
+export const FILTER_FORM_DP_FACTOR: Record<FilterForm, number> = {
+  panel:       1.0,  // baseline (flat panel reference)
+  pleated:     0.9,  // pleated adds ~10% media
+  bag:         0.8,  // long pocket — large media area
+  w_type:      0.7,  // compact rigid W-type
+  v_bank:      0.6,  // V-bank — lowest ΔP for media filters
+  cassette:    1.1,  // HEPA cassette, dense media
+  cylindrical: 1.2,  // packed carbon cylinder
+  plate:       0.5,  // electrostatic plate, no media
+};
+
+/** Default form per class (when params.form is undefined — legacy data). */
+const DEFAULT_FORM_BY_CLASS: Record<FilterClass, FilterForm> = {
+  G4:       'panel',
+  M5:       'bag',
+  F7:       'bag',
+  F9:       'bag',
+  H13:      'cassette',
+  H14:      'cassette',
+  carbon:   'panel',
+  electric: 'plate',
+};
+
+export function resolveFilterForm(p: FilterParams): FilterForm {
+  return p.form ?? DEFAULT_FORM_BY_CLASS[p.filterClass];
+}
 
 // ─── Damper ───────────────────────────────────────────────────────────────────
 
@@ -51,7 +79,10 @@ export const processDamper: SectionProcessor<DamperParams> = (inlet, p, id, labe
 
 export const processFilter: SectionProcessor<FilterParams> = (inlet, p, id, label) => {
   const spec = FILTER_DP[p.filterClass];
-  const deltaP = p.useAverageDeltaP ? spec.avg : spec.clean;
+  const form = resolveFilterForm(p);
+  const formFactor = FILTER_FORM_DP_FACTOR[form];
+  const baseDeltaP = p.useAverageDeltaP ? spec.avg : spec.clean;
+  const deltaP = baseDeltaP * formFactor;
   return {
     outlet: inlet,
     deltaP,
@@ -59,10 +90,11 @@ export const processFilter: SectionProcessor<FilterParams> = (inlet, p, id, labe
     narrative: {
       sectionId: id,
       sectionLabel: label,
-      summary: `${spec.label} ფილტრი → ${fmtPa(deltaP)} ${p.useAverageDeltaP ? '(mid-life avg)' : '(clean)'}`,
+      summary: `${spec.label} (${form}) → ${fmtPa(deltaP)} ${p.useAverageDeltaP ? '(mid-life avg)' : '(clean)'}`,
       details: [
-        `კლასი: ${p.filterClass}`,
-        `ΔP clean: ${fmtPa(spec.clean)} | avg: ${fmtPa(spec.avg)} | dirty: ${fmtPa(spec.dirty)}`,
+        `კლასი: ${p.filterClass} · ფორმა: ${form} (×${formFactor.toFixed(2)})`,
+        `ΔP base: ${fmtPa(baseDeltaP)} → ფორმის ფაქტორით: ${fmtPa(deltaP)}`,
+        `clean ${fmtPa(spec.clean)} | avg ${fmtPa(spec.avg)} | dirty ${fmtPa(spec.dirty)}`,
         `T/W უცვლელი`,
       ],
       reference: 'ISO 16890:2016',

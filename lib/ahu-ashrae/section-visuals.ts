@@ -40,7 +40,7 @@ export const CASING_KG_PER_M = 80;
 export function makeDefaultParams(type: SectionType): unknown {
   switch (type) {
     case 'damper':        return { openFraction: 1, baseDeltaP: 20 };
-    case 'filter':        return { filterClass: 'G4', useAverageDeltaP: true };
+    case 'filter':        return { filterClass: 'G4', form: 'panel', useAverageDeltaP: true };
     case 'mixing_box':    return { outsideAirFraction: 0.3 };
     case 'heat_recovery': return { hrType: 'crossflow_plate', sensibleEff: 0.65, latentEff: 0, deltaP: 100 };
     case 'preheat':       return { source: 'hot_water', targetTdb: 5, deltaP: 50 };

@@ -48,8 +48,26 @@ export interface DamperParams {
 export type FilterClass =
   | 'G4' | 'M5' | 'F7' | 'F9' | 'H13' | 'H14' | 'carbon' | 'electric';
 
+/**
+ * Physical form / construction of the filter element. Drives ΔP multiplier
+ * (more media area = lower velocity = lower ΔP), and constrains which classes
+ * are realistically available (e.g. HEPA only as cassette/V-bank).
+ */
+export type FilterForm =
+  | 'panel'        // flat panel (cheapest, highest ΔP for class)
+  | 'pleated'      // pleated panel
+  | 'bag'          // bag / pocket filter (most common F5-F9)
+  | 'w_type'       // W-type compact rigid (high media area, low ΔP)
+  | 'v_bank'       // V-bank rigid (lowest ΔP, common HEPA)
+  | 'cassette'     // HEPA cassette
+  | 'cylindrical'  // carbon cylinder
+  | 'plate';       // electrostatic plate (very low ΔP, no media)
+
 export interface FilterParams {
   filterClass: FilterClass;
+  /** Physical form / construction. Drives ΔP multiplier.
+   *  Optional — defaults applied per class if unset (legacy data). */
+  form?: FilterForm;
   /** Use clean ΔP (false) or 0.5×(clean+dirty) average (true) */
   useAverageDeltaP: boolean;
 }

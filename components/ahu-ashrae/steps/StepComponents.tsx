@@ -11,7 +11,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { AhuWizardState, AhuUnit } from '@/lib/ahu-ashrae/types';
-import type { SectionConfig, SectionType, FilterClass } from '@/lib/ahu-ashrae/sections';
+import type { SectionConfig, SectionType, FilterClass, FilterForm, FilterParams } from '@/lib/ahu-ashrae/sections';
 import { getAhuTypeSpec } from '@/lib/ahu-ashrae/ahu-types-data';
 import { SECTION_VISUALS, makeDefaultParams, CASING_KG_PER_M } from '@/lib/ahu-ashrae/section-visuals';
 import {
@@ -86,6 +86,52 @@ const CHIPS: ChipDef[] = [
   { kind: 'simple',  type: 'silencer',       rank: 90,  label: 'ხმოვანი დამც.', icon: Volume2 },
 ];
 
+// ─── Filter form (physical construction) ──────────────────────────────────────
+const FILTER_FORM_LABEL: Record<FilterForm, string> = {
+  panel:       'Panel (ბრტყელი)',
+  pleated:     'Pleated (ნაკეცი)',
+  bag:         'Bag / Pocket (ჯიბე)',
+  w_type:      'W-type (კომპაქტ. ხისტი)',
+  v_bank:      'V-bank',
+  cassette:    'Cassette (HEPA)',
+  cylindrical: 'Cylindrical (ნახშ.)',
+  plate:       'Plate (ESP)',
+};
+
+const FILTER_FORM_SHORT: Record<FilterForm, string> = {
+  panel:       'panel',
+  pleated:     'pleat',
+  bag:         'bag',
+  w_type:      'W',
+  v_bank:      'V',
+  cassette:    'cass',
+  cylindrical: 'cyl',
+  plate:       'plate',
+};
+
+/** Realistic forms per class (ISO 16890 / EN 1822 practice). */
+const FILTER_FORM_OPTIONS: Record<FilterClass, FilterForm[]> = {
+  G4:       ['panel', 'pleated'],
+  M5:       ['panel', 'pleated', 'bag'],
+  F7:       ['bag', 'w_type', 'v_bank', 'pleated'],
+  F9:       ['bag', 'w_type', 'v_bank'],
+  H13:      ['cassette', 'v_bank'],
+  H14:      ['cassette'],
+  carbon:   ['panel', 'cylindrical', 'v_bank'],
+  electric: ['plate'],
+};
+
+const DEFAULT_FORM_BY_CLASS_UI: Record<FilterClass, FilterForm> = {
+  G4:       'panel',
+  M5:       'bag',
+  F7:       'bag',
+  F9:       'bag',
+  H13:      'cassette',
+  H14:      'cassette',
+  carbon:   'panel',
+  electric: 'plate',
+};
+
 function chipMatches(s: SectionConfig, chip: ChipDef): boolean {
   if (chip.kind === 'simple') return s.spec.type === chip.type;
   return s.spec.type === 'filter' && s.spec.params.filterClass === chip.filterClass;
@@ -151,6 +197,27 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
 
   const removeSection = (idx: number) => {
     setSections(sections.filter((_, i) => i !== idx));
+  };
+
+  const setFilterForm = (idx: number, form: FilterForm) => {
+    const next = sections.map((s, i) => {
+      if (i !== idx || s.spec.type !== 'filter') return s;
+      const params: FilterParams = { ...s.spec.params, form };
+      return { ...s, spec: { type: 'filter' as const, params } };
+    });
+    setSections(next);
+  };
+
+  const setFilterClass = (idx: number, filterClass: FilterClass) => {
+    const next = sections.map((s, i) => {
+      if (i !== idx || s.spec.type !== 'filter') return s;
+      const allowed = FILTER_FORM_OPTIONS[filterClass];
+      const currentForm = s.spec.params.form ?? DEFAULT_FORM_BY_CLASS_UI[s.spec.params.filterClass];
+      const form = allowed.includes(currentForm) ? currentForm : DEFAULT_FORM_BY_CLASS_UI[filterClass];
+      const params: FilterParams = { ...s.spec.params, filterClass, form };
+      return { ...s, spec: { type: 'filter' as const, params } };
+    });
+    setSections(next);
   };
 
   const addSection = (type: SectionType) => {
@@ -302,6 +369,8 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
               onMove={(dir) => moveSection(i, dir)}
               onToggle={() => toggleSection(i)}
               onRemove={() => removeSection(i)}
+              onSetFilterForm={(form) => setFilterForm(i, form)}
+              onSetFilterClass={(cls) => setFilterClass(i, cls)}
               onDragStart={handleDragStart(i)}
               onDragOver={handleDragOver(i)}
               onDrop={handleDrop(i)}
@@ -415,13 +484,15 @@ interface RowProps {
   onMove: (dir: -1 | 1) => void;
   onToggle: () => void;
   onRemove: () => void;
+  onSetFilterForm: (form: FilterForm) => void;
+  onSetFilterClass: (cls: FilterClass) => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>) => void;
   onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
   onDrop: (e: React.DragEvent<HTMLDivElement>) => void;
 }
 function SectionRow({
   section, index, total, isDragSource, dragOverPos, hasViolation,
-  onMove, onToggle, onRemove,
+  onMove, onToggle, onRemove, onSetFilterForm, onSetFilterClass,
   onDragStart, onDragOver, onDrop,
 }: RowProps) {
   const Icon = ICON_MAP[section.spec.type];
@@ -487,12 +558,14 @@ function SectionRow({
               <AlertTriangle size={11} style={{ color: '#dc2626' }} />
             )}
           </div>
-          <div className="text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
-            {TYPE_LABELS_KA[section.spec.type]} · #{index + 1}
+          <div className="text-[10px] font-mono flex items-center gap-1 flex-wrap" style={{ color: 'var(--text-3)' }}>
+            <span>{TYPE_LABELS_KA[section.spec.type]} · #{index + 1}</span>
             {section.spec.type === 'filter' && (
-              <span className="ml-1.5 px-1 rounded" style={{ background: 'var(--blue-lt)', color: 'var(--blue)' }}>
-                {section.spec.params.filterClass}
-              </span>
+              <FilterRowPickers
+                params={section.spec.params}
+                onSetClass={onSetFilterClass}
+                onSetForm={onSetFilterForm}
+              />
             )}
           </div>
         </div>
@@ -516,6 +589,61 @@ function SectionRow({
       </div>
       {dragOverPos === 'after' && <DropIndicator side="bottom" />}
     </div>
+  );
+}
+
+function FilterRowPickers({
+  params, onSetClass, onSetForm,
+}: {
+  params: FilterParams;
+  onSetClass: (cls: FilterClass) => void;
+  onSetForm: (form: FilterForm) => void;
+}) {
+  const currentClass = params.filterClass;
+  const currentForm = params.form ?? DEFAULT_FORM_BY_CLASS_UI[currentClass];
+  const formOptions = FILTER_FORM_OPTIONS[currentClass];
+  const allClasses: FilterClass[] = ['G4', 'M5', 'F7', 'F9', 'carbon', 'electric', 'H13', 'H14'];
+  return (
+    <span
+      className="inline-flex items-center gap-1"
+      onMouseDown={(e) => e.stopPropagation()}
+      draggable={false}
+    >
+      <select
+        value={currentClass}
+        onChange={(e) => onSetClass(e.target.value as FilterClass)}
+        className="rounded px-1 py-0.5 border text-[10px] font-mono cursor-pointer focus:outline-none focus:ring-1"
+        style={{
+          background: 'var(--blue-lt)',
+          borderColor: 'var(--blue-bd)',
+          color: 'var(--blue)',
+        }}
+        title="ფილტრის კლასი"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {allClasses.map((c) => (
+          <option key={c} value={c}>{c}</option>
+        ))}
+      </select>
+      <select
+        value={currentForm}
+        onChange={(e) => onSetForm(e.target.value as FilterForm)}
+        className="rounded px-1 py-0.5 border text-[10px] font-mono cursor-pointer focus:outline-none focus:ring-1"
+        style={{
+          background: 'var(--sur-2)',
+          borderColor: 'var(--bdr-2)',
+          color: 'var(--text-2)',
+        }}
+        title="ფილტრის ფორმა / კონსტრუქცია"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {formOptions.map((f) => (
+          <option key={f} value={f}>
+            {FILTER_FORM_SHORT[f]} — {FILTER_FORM_LABEL[f]}
+          </option>
+        ))}
+      </select>
+    </span>
   );
 }
 
