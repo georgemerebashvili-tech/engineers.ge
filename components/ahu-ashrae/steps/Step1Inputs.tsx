@@ -23,10 +23,12 @@ interface Props {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) {
-  const { selectedCity, design, airflow } = state;
+  const { selectedCity, design, airflow, fanInputs } = state;
   const isCustom = selectedCity?.id === CUSTOM_CITY_ID;
   const balanced = isBalancedAhu(unit.ahuType);
   const exhaustAirflow = airflow.exhaustAirflow ?? airflow.supplyAirflow;
+  const supplyPa = fanInputs.externalStaticPressure;
+  const exhaustPa = fanInputs.exhaustExternalStaticPressure ?? fanInputs.externalStaticPressure;
 
   // ── City select ──
   const handleCityChange = useCallback((id: string) => {
@@ -297,6 +299,29 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
                 />
               )}
             </div>
+
+            {/* Duct static pressure row */}
+            <div className={`mt-2 ${balanced ? 'grid grid-cols-2 gap-3' : ''}`}>
+              <NumInput
+                label={balanced ? 'SA სტ. წნევა' : 'სისტ. სტ. წნევა'}
+                unit="Pa"
+                value={supplyPa}
+                step={10}
+                min={0}
+                onChange={(v) => onUpdate({ fanInputs: { ...fanInputs, externalStaticPressure: v } })}
+              />
+              {balanced && (
+                <NumInput
+                  label="EA სტ. წნევა"
+                  unit="Pa"
+                  value={exhaustPa}
+                  step={10}
+                  min={0}
+                  onChange={(v) => onUpdate({ fanInputs: { ...fanInputs, exhaustExternalStaticPressure: v } })}
+                />
+              )}
+            </div>
+
             {balanced && (
               <div className="mt-1 text-[10px] leading-snug" style={{ color: 'var(--text-3)' }}>
                 რეკ.: EA ≈ SA (ბალანსი) ან EA = 0.9 × SA (მცირე დადებითი წნევა შენობაში)
@@ -431,6 +456,29 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
                 ASHRAE 62.1 min OA: {minOA.toFixed(0)} m³/h
               </div>
             )}
+            <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--bdr)' }}>
+              <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2" style={{ color: 'var(--text-3)' }}>
+                სახარჯო სისტემის წნევა
+              </div>
+              <div className={balanced ? 'grid grid-cols-2 gap-2' : ''}>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>
+                    {balanced ? 'SA (მიწ.)' : 'SA'}
+                  </span>
+                  <span className="text-[10px] font-bold font-mono" style={{ color: 'var(--navy)' }}>
+                    {supplyPa} Pa
+                  </span>
+                </div>
+                {balanced && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>EA (გაწ.)</span>
+                    <span className="text-[10px] font-bold font-mono" style={{ color: 'var(--ora)' }}>
+                      {exhaustPa} Pa
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </Card>
