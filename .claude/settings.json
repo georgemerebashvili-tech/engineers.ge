@@ -58,7 +58,19 @@
       "Bash(kill bkuqlhym2 *)",
       "Bash(echo \"PID=$!\")",
       "Bash(grep -n \"MiniChart\\\\|</div>$\\\\|export function FanDatasheet\\\\|^}\" components/ahu-ashrae/fans/FanDatasheet.tsx)",
-      "Bash(grep -nA 12 \"^export interface PsychoPoint\" /Users/macbookair/Desktop/engineers.ge/engineers.ge/lib/ahu-ashrae/types.ts)"
+      "Bash(grep -nA 12 \"^export interface PsychoPoint\" /Users/macbookair/Desktop/engineers.ge/engineers.ge/lib/ahu-ashrae/types.ts)",
+      "Bash(gh run *)",
+      "Bash(gh api *)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:getdatepicker.com)",
+      "WebSearch",
+      "Bash(grep -oE '\\(\"|<\\)error[^\"<]{0,100}' /Users/macbookair/.claude/projects/-Users-macbookair-Desktop-engineers-ge-engineers-ge/0f415278-3a89-42b5-a12b-9d56466500cf/tool-results/b0cqmiacl.txt)",
+      "Bash(PORT=3010 npm start)",
+      "Bash(grep -oE \"AHU [^<]{0,40}\" /tmp/eng-prod-real.html)",
+      "Bash(grep -oE \"\\(error|Error|რადაც\\)[^,<>{]{0,80}\" /tmp/eng-prod-real.html)",
+      "Bash(npx --yes playwright --version)",
+      "Bash(node /tmp/grab-error.mjs https://engineers.ge/calc/ahu-ashrae)",
+      "Bash(node --experimental-modules /tmp/grab-error.mjs https://engineers.ge/calc/ahu-ashrae)"
     ],
     "additionalDirectories": [
       "/Users/macbookair/Desktop/engineers.ge/engineers.ge/app",
