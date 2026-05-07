@@ -61,21 +61,19 @@ export interface CityClimate {
 
 // ─── Design Conditions ────────────────────────────────────────────────────────
 
-export type DesignMode = 'cooling' | 'heating';
-
 export interface DesignConditions {
-  mode: DesignMode;
-  // Outdoor — summer (cooling)
-  summerDB: number;    // °C dry bulb
-  summerWB: number;    // °C mean coincident wet bulb
-  // Outdoor — winter (heating)
-  winterDB: number;    // °C dry bulb
-  winterRH: number;    // % relative humidity
-  // Indoor
-  indoorDB: number;    // °C
-  indoorRH: number;    // % (0–100)
+  // Summer (cooling) — outdoor + indoor
+  summerOutdoorDB: number;   // °C dry bulb
+  summerOutdoorWB: number;   // °C mean coincident wet bulb
+  summerIndoorDB: number;    // °C
+  summerIndoorRH: number;    // %
+  // Winter (heating) — outdoor + indoor
+  winterOutdoorDB: number;   // °C dry bulb
+  winterOutdoorRH: number;   // %
+  winterIndoorDB: number;    // °C
+  winterIndoorRH: number;    // %
   // Atmospheric
-  pressure: number;    // kPa
+  pressure: number;          // kPa
 }
 
 // ─── Airflow ──────────────────────────────────────────────────────────────────

@@ -88,18 +88,49 @@ export function loadWizardState(projectId: string, unitId: string): AhuWizardSta
   try {
     const raw = localStorage.getItem(WIZARD_KEY_PREFIX + projectId + '_' + unitId);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as AhuWizardState & {
-      design?: { outdoorDB?: number; outdoorWB?: number; outdoorRH?: number };
-    };
-    // Migrate legacy outdoorDB/WB/RH → summerDB/WB + winterDB/RH
-    const d = parsed.design as AhuWizardState['design'] & { outdoorDB?: number; outdoorWB?: number; outdoorRH?: number };
-    if (d && (d.summerDB === undefined || d.winterDB === undefined)) {
+    const parsed = JSON.parse(raw);
+    const d = parsed?.design as Record<string, number | string | undefined> | undefined;
+    if (d) {
       const city = parsed.selectedCity;
-      d.summerDB = d.summerDB ?? (d.mode === 'cooling' ? d.outdoorDB : undefined) ?? city?.summerDB ?? 32;
-      d.summerWB = d.summerWB ?? (d.mode === 'cooling' ? d.outdoorWB : undefined) ?? city?.summerMCWB ?? 22;
-      d.winterDB = d.winterDB ?? (d.mode === 'heating' ? d.outdoorDB : undefined) ?? city?.winterDB99 ?? -10;
-      d.winterRH = d.winterRH ?? (d.mode === 'heating' ? d.outdoorRH : undefined) ?? 80;
+      // Pull legacy fields once, then strip them
+      const legacyOutdoorDB = d.outdoorDB as number | undefined;
+      const legacyOutdoorWB = d.outdoorWB as number | undefined;
+      const legacyOutdoorRH = d.outdoorRH as number | undefined;
+      const legacyIndoorDB = d.indoorDB as number | undefined;
+      const legacyIndoorRH = d.indoorRH as number | undefined;
+      const legacyMode = d.mode as 'cooling' | 'heating' | undefined;
+      const legacySummerDB = d.summerDB as number | undefined;
+      const legacySummerWB = d.summerWB as number | undefined;
+      const legacyWinterDB = d.winterDB as number | undefined;
+      const legacyWinterRH = d.winterRH as number | undefined;
+
+      d.summerOutdoorDB = (d.summerOutdoorDB as number | undefined)
+        ?? legacySummerDB
+        ?? (legacyMode === 'cooling' ? legacyOutdoorDB : undefined)
+        ?? city?.summerDB ?? 32;
+      d.summerOutdoorWB = (d.summerOutdoorWB as number | undefined)
+        ?? legacySummerWB
+        ?? (legacyMode === 'cooling' ? legacyOutdoorWB : undefined)
+        ?? city?.summerMCWB ?? 22;
+      d.summerIndoorDB = (d.summerIndoorDB as number | undefined) ?? legacyIndoorDB ?? 24;
+      d.summerIndoorRH = (d.summerIndoorRH as number | undefined) ?? legacyIndoorRH ?? 50;
+
+      d.winterOutdoorDB = (d.winterOutdoorDB as number | undefined)
+        ?? legacyWinterDB
+        ?? (legacyMode === 'heating' ? legacyOutdoorDB : undefined)
+        ?? city?.winterDB99 ?? -10;
+      d.winterOutdoorRH = (d.winterOutdoorRH as number | undefined)
+        ?? legacyWinterRH
+        ?? (legacyMode === 'heating' ? legacyOutdoorRH : undefined)
+        ?? 80;
+      d.winterIndoorDB = (d.winterIndoorDB as number | undefined) ?? legacyIndoorDB ?? 22;
+      d.winterIndoorRH = (d.winterIndoorRH as number | undefined) ?? legacyIndoorRH ?? 40;
+
+      delete d.mode;
       delete d.outdoorDB; delete d.outdoorWB; delete d.outdoorRH;
+      delete d.indoorDB; delete d.indoorRH;
+      delete d.summerDB; delete d.summerWB;
+      delete d.winterDB; delete d.winterRH;
     }
     return parsed as AhuWizardState;
   } catch {

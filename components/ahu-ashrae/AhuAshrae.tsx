@@ -54,13 +54,14 @@ export function makeDefaultWizardState(project: AhuProject): AhuWizardState {
     currentStep: 'inputs',
     selectedCity: city,
     design: {
-      mode: 'cooling',
-      summerDB: city.summerDB,
-      summerWB: city.summerMCWB,
-      winterDB: city.winterDB99,
-      winterRH: 80,
-      indoorDB: 24,
-      indoorRH: 50,
+      summerOutdoorDB: city.summerDB,
+      summerOutdoorWB: city.summerMCWB,
+      summerIndoorDB: 24,
+      summerIndoorRH: 50,
+      winterOutdoorDB: city.winterDB99,
+      winterOutdoorRH: 80,
+      winterIndoorDB: 22,
+      winterIndoorRH: 40,
       pressure: city.pressure,
     },
     airflow: {
@@ -96,15 +97,14 @@ function calcPsychro(state: AhuWizardState): PsychrometricResults | undefined {
   const { design, airflow, loads } = state;
   const p = design.pressure;
   try {
+    // Cooling psychrometric chart uses summer design conditions
     const oaFlow = airflow.supplyAirflow * airflow.oaFraction;
     const raFlow = airflow.supplyAirflow - oaFlow;
-    const outdoor = design.mode === 'cooling'
-      ? statePointFromWb(design.summerDB, design.summerWB, 'O', 'გარე ჰაერი', p)
-      : statePointFromRh(design.winterDB, design.winterRH, 'O', 'გარე ჰაერი', p);
-    const roomAir = statePointFromRh(design.indoorDB, design.indoorRH, 'R', 'ოთახის ჰაერი', p);
+    const outdoor = statePointFromWb(design.summerOutdoorDB, design.summerOutdoorWB, 'O', 'გარე ჰაერი', p);
+    const roomAir = statePointFromRh(design.summerIndoorDB, design.summerIndoorRH, 'R', 'ოთახის ჰაერი', p);
     const mixed = mixAir(outdoor, oaFlow, roomAir, raFlow, 'M', 'შერეული ჰაერი', p);
     const density = airDensity(mixed.tdb, mixed.w, p);
-    const supplyTdb = supplyTFromSensible(design.indoorDB, loads.sensibleCooling, airflow.supplyAirflow, density);
+    const supplyTdb = supplyTFromSensible(design.summerIndoorDB, loads.sensibleCooling, airflow.supplyAirflow, density);
     const supplyW = supplyWFromLatent(roomAir.w, loads.latentCooling, airflow.supplyAirflow, density);
     const supplyAir = statePoint(supplyTdb, supplyW, 'S', 'მიწოდების ჰაერი', p);
     const adp = apparatusDewPoint(mixed, supplyAir, p);

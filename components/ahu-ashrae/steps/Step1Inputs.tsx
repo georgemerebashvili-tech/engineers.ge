@@ -33,9 +33,9 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
         selectedCity: custom,
         design: {
           ...design,
-          summerDB: custom.summerDB,
-          summerWB: custom.summerMCWB,
-          winterDB: custom.winterDB99,
+          summerOutdoorDB: custom.summerDB,
+          summerOutdoorWB: custom.summerMCWB,
+          winterOutdoorDB: custom.winterDB99,
           pressure: custom.pressure,
         },
       });
@@ -51,9 +51,9 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
       selectedCity: found,
       design: {
         ...design,
-        summerDB: found.summerDB,
-        summerWB: found.summerMCWB,
-        winterDB: found.winterDB99,
+        summerOutdoorDB: found.summerDB,
+        summerOutdoorWB: found.summerMCWB,
+        winterOutdoorDB: found.winterDB99,
         pressure: found.pressure,
       },
     });
@@ -67,17 +67,12 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
     if (partial.name !== undefined) next.nameEn = partial.name;
     // Sync design when ASHRAE values change
     const designUpdate = { ...design };
-    if (partial.summerDB !== undefined) designUpdate.summerDB = partial.summerDB;
-    if (partial.summerMCWB !== undefined) designUpdate.summerWB = partial.summerMCWB;
-    if (partial.winterDB99 !== undefined) designUpdate.winterDB = partial.winterDB99;
+    if (partial.summerDB !== undefined) designUpdate.summerOutdoorDB = partial.summerDB;
+    if (partial.summerMCWB !== undefined) designUpdate.summerOutdoorWB = partial.summerMCWB;
+    if (partial.winterDB99 !== undefined) designUpdate.winterOutdoorDB = partial.winterDB99;
     if (next.pressure !== design.pressure) designUpdate.pressure = next.pressure;
     onUpdate({ selectedCity: next, design: designUpdate });
   }, [selectedCity, design, onUpdate]);
-
-  // ── Mode toggle ── (only switches which set drives downstream calcs; both stay editable)
-  const handleModeChange = useCallback((mode: 'cooling' | 'heating') => {
-    onUpdate({ design: { ...design, mode } });
-  }, [design, onUpdate]);
 
   // ── OA from ASHRAE 62.1 ──
   const minOA = airflow.ventilationMethod === 'ashrae621'
@@ -122,7 +117,7 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
 
       {/* ── Location & Climate ── */}
       <Card icon={<MapPin size={14} />} title="მდებარეობა · ASHRAE კლიმატი">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* City picker */}
           <div>
             <label className="block text-[10px] font-bold uppercase tracking-[0.08em] mb-1.5" style={{ color: 'var(--text-3)' }}>
@@ -166,32 +161,6 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
             )}
           </div>
 
-          {/* Mode toggle */}
-          <div>
-            <label className="block text-[10px] font-bold uppercase tracking-[0.08em] mb-1.5" style={{ color: 'var(--text-3)' }}>
-              რეჟიმი
-            </label>
-            <div
-              className="inline-flex rounded-lg p-0.5 border"
-              style={{ background: 'var(--sur-2)', borderColor: 'var(--bdr)' }}
-            >
-              {(['cooling', 'heating'] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => handleModeChange(m)}
-                  className="px-4 py-1.5 rounded-md text-xs font-semibold transition-all"
-                  style={
-                    design.mode === m
-                      ? { background: m === 'cooling' ? 'var(--blue)' : 'var(--ora)', color: '#fff' }
-                      : { color: 'var(--text-3)' }
-                  }
-                >
-                  {m === 'cooling' ? '❄ გაგრილება' : '🔥 გათბობა'}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* ASHRAE design conditions info */}
           {selectedCity && !isCustom && (
             <div className="rounded-lg p-3 border" style={{ background: 'var(--sur-2)', borderColor: 'var(--bdr)' }}>
@@ -225,67 +194,70 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
           )}
         </div>
 
-        {/* Design conditions — Summer + Winter shown together */}
+        {/* Design conditions — Summer + Winter, each with own outdoor + indoor */}
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* Summer (cooling) */}
-          <SeasonGroup
-            title="ზაფხული · გაგრილება"
-            icon="❄"
-            accent={design.mode === 'cooling' ? 'var(--blue)' : 'var(--bdr-2)'}
-            active={design.mode === 'cooling'}
-          >
+          <SeasonGroup title="ზაფხული · გაგრილება" icon="❄" accent="var(--blue)">
             <NumInput
               label="გარე DB"
               unit="°C"
-              value={design.summerDB}
-              onChange={(v) => onUpdate({ design: { ...design, summerDB: v } })}
+              value={design.summerOutdoorDB}
+              onChange={(v) => onUpdate({ design: { ...design, summerOutdoorDB: v } })}
             />
             <NumInput
               label="გარე WB"
               unit="°C"
-              value={design.summerWB}
-              onChange={(v) => onUpdate({ design: { ...design, summerWB: v } })}
+              value={design.summerOutdoorWB}
+              onChange={(v) => onUpdate({ design: { ...design, summerOutdoorWB: v } })}
+            />
+            <NumInput
+              label="შიდა DB"
+              unit="°C"
+              value={design.summerIndoorDB}
+              onChange={(v) => onUpdate({ design: { ...design, summerIndoorDB: v } })}
+            />
+            <NumInput
+              label="შიდა RH"
+              unit="%"
+              value={design.summerIndoorRH}
+              min={0} max={100}
+              onChange={(v) => onUpdate({ design: { ...design, summerIndoorRH: v } })}
             />
           </SeasonGroup>
 
           {/* Winter (heating) */}
-          <SeasonGroup
-            title="ზამთარი · გათბობა"
-            icon="🔥"
-            accent={design.mode === 'heating' ? 'var(--ora)' : 'var(--bdr-2)'}
-            active={design.mode === 'heating'}
-          >
+          <SeasonGroup title="ზამთარი · გათბობა" icon="🔥" accent="var(--ora)">
             <NumInput
               label="გარე DB"
               unit="°C"
-              value={design.winterDB}
-              onChange={(v) => onUpdate({ design: { ...design, winterDB: v } })}
+              value={design.winterOutdoorDB}
+              onChange={(v) => onUpdate({ design: { ...design, winterOutdoorDB: v } })}
             />
             <NumInput
               label="გარე RH"
               unit="%"
-              value={design.winterRH}
+              value={design.winterOutdoorRH}
               min={0} max={100}
-              onChange={(v) => onUpdate({ design: { ...design, winterRH: v } })}
+              onChange={(v) => onUpdate({ design: { ...design, winterOutdoorRH: v } })}
+            />
+            <NumInput
+              label="შიდა DB"
+              unit="°C"
+              value={design.winterIndoorDB}
+              onChange={(v) => onUpdate({ design: { ...design, winterIndoorDB: v } })}
+            />
+            <NumInput
+              label="შიდა RH"
+              unit="%"
+              value={design.winterIndoorRH}
+              min={0} max={100}
+              onChange={(v) => onUpdate({ design: { ...design, winterIndoorRH: v } })}
             />
           </SeasonGroup>
         </div>
 
-        {/* Indoor + atmospheric */}
+        {/* Atmospheric pressure */}
         <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3">
-          <NumInput
-            label="შიდა DB"
-            unit="°C"
-            value={design.indoorDB}
-            onChange={(v) => onUpdate({ design: { ...design, indoorDB: v } })}
-          />
-          <NumInput
-            label="შიდა RH"
-            unit="%"
-            value={design.indoorRH}
-            min={0} max={100}
-            onChange={(v) => onUpdate({ design: { ...design, indoorRH: v } })}
-          />
           <NumInput
             label="ატ. წნევა"
             unit="kPa"
@@ -517,39 +489,26 @@ function Card({
 }
 
 function SeasonGroup({
-  title, icon, accent, active, children,
+  title, icon, accent, children,
 }: {
   title: string;
   icon: string;
   accent: string;
-  active: boolean;
   children: React.ReactNode;
 }) {
   return (
     <div
-      className="rounded-lg border p-3 transition-all"
-      style={{
-        borderColor: accent,
-        background: active ? 'var(--sur)' : 'var(--sur-2)',
-        borderWidth: active ? 2 : 1,
-      }}
+      className="rounded-lg border-2 p-3"
+      style={{ borderColor: accent, background: 'var(--sur)' }}
     >
       <div className="flex items-center gap-1.5 mb-2.5">
         <span className="text-sm">{icon}</span>
         <span
           className="text-[10px] font-bold uppercase tracking-[0.08em]"
-          style={{ color: active ? accent : 'var(--text-3)' }}
+          style={{ color: accent }}
         >
           {title}
         </span>
-        {active && (
-          <span
-            className="ml-auto text-[9px] font-bold uppercase px-1.5 py-0.5 rounded"
-            style={{ background: accent, color: '#fff' }}
-          >
-            აქტიური
-          </span>
-        )}
       </div>
       <div className="grid grid-cols-2 gap-3">{children}</div>
     </div>
