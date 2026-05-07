@@ -275,18 +275,33 @@ function ProcessStateLayer({
   const LH = 58;
   const CR = 20;
 
-  type StatePoint = { x: number; tdb: number; rh: number; w: number; idx: number };
-  const pts: StatePoint[] = [];
+  type StatePoint = { x: number; tdb: number; rh: number; w: number; label: number; isInlet: boolean };
 
-  if (inletState) {
-    pts.push({ x: 0, ...inletState, idx: 0 });
+  // Pre-compute left edges of each section
+  const leftX: number[] = [];
+  let totalW = 0;
+  for (let i = 0; i < sections.length; i++) {
+    leftX[i] = totalW;
+    totalW += widthsMm[i];
   }
 
-  let cumX = 0;
+  const pts: StatePoint[] = [];
+
+  // Inlet: placed to the left of the first section
+  if (inletState) {
+    const indent = Math.min(100, (widthsMm[0] ?? 300) * 0.35);
+    pts.push({ x: -indent, ...inletState, label: 0, isInlet: true });
+  }
+
+  // Each section's outlet: centered within that section's box
   sections.forEach((s, i) => {
-    cumX += widthsMm[i];
     if (s.outletTdb != null && s.outletRh != null && s.outletW != null) {
-      pts.push({ x: cumX, tdb: s.outletTdb, rh: s.outletRh, w: s.outletW, idx: pts.length });
+      pts.push({
+        x: leftX[i] + widthsMm[i] / 2,
+        tdb: s.outletTdb, rh: s.outletRh, w: s.outletW,
+        label: pts.length,
+        isInlet: false,
+      });
     }
   });
 
@@ -294,32 +309,31 @@ function ProcessStateLayer({
 
   return (
     <g>
-      <line x1={-30} y1={0} x2={cumX + 30} y2={0}
+      <line x1={-30} y1={0} x2={totalW + 30} y2={0}
         stroke="#1565c0" strokeWidth={1.5} strokeOpacity={0.2} />
 
-      {pts.map((pt) => {
-        const prev = pt.idx > 0 ? pts[pt.idx - 1] : null;
+      {pts.map((pt, pi) => {
+        const prev = pi > 0 ? pts[pi - 1] : null;
         const dT = prev ? pt.tdb - prev.tdb : null;
         const tFill = dT == null ? '#0e1a32'
           : dT < -0.15 ? '#1d4ed8'
           : dT > 0.15 ? '#c2410c'
           : '#334a5a';
-        const isInlet = pt.idx === 0;
         return (
-          <g key={pt.idx}>
+          <g key={pi}>
             <line x1={pt.x} y1={-CR} x2={pt.x} y2={-(LH * 2 + FS + 30)}
-              stroke={isInlet ? '#1565c0' : '#5a6e8a'}
-              strokeWidth={isInlet ? 2.5 : 1.8}
-              strokeDasharray={isInlet ? undefined : '15 8'}
+              stroke={pt.isInlet ? '#1565c0' : '#5a6e8a'}
+              strokeWidth={pt.isInlet ? 2.5 : 1.8}
+              strokeDasharray={pt.isInlet ? undefined : '15 8'}
               strokeOpacity={0.45}
             />
             <circle cx={pt.x} cy={0} r={CR}
-              fill={isInlet ? '#1565c0' : '#2d4870'}
+              fill={pt.isInlet ? '#1565c0' : '#2d4870'}
               stroke="#f0f4fa" strokeWidth={3} />
             <text x={pt.x} y={CR * 0.4}
-              fontSize={CR * 1.0} fontWeight={700}
+              fontSize={CR} fontWeight={700}
               textAnchor="middle" dominantBaseline="middle" fill="white">
-              {pt.idx}
+              {pt.label}
             </text>
             <text x={pt.x} y={-55}
               fontSize={FS} fontWeight={700} textAnchor="middle" fill={tFill}>
