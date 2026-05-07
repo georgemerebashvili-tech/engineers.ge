@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import {
   Boxes, Box, Filter, Snowflake, Flame, Fan,
   ArrowLeftRight, PanelTopOpen, Shuffle, Droplet, Volume2,
-  ChevronUp, ChevronDown, Trash2, Plus, Power, Zap,
+  ChevronDown, Trash2, Plus, Power, Zap,
   Move3d, RectangleHorizontal, RectangleVertical, Square,
   GripVertical, AlertTriangle, Info,
   type LucideIcon,
@@ -549,27 +549,7 @@ function SectionRow({
           <GripVertical size={13} />
         </span>
 
-        {/* Up/Down chevrons */}
-        <div className="flex flex-col gap-0.5 shrink-0">
-          <button
-            onClick={() => onMove(-1)}
-            disabled={index === 0}
-            className="p-0.5 rounded hover:bg-[var(--bdr)] disabled:opacity-30"
-            title="ზევით"
-          >
-            <ChevronUp size={10} />
-          </button>
-          <button
-            onClick={() => onMove(1)}
-            disabled={index === total - 1}
-            className="p-0.5 rounded hover:bg-[var(--bdr)] disabled:opacity-30"
-            title="ქვევით"
-          >
-            <ChevronDown size={10} />
-          </button>
-        </div>
-
-        <span
+<span
           className="inline-flex h-7 w-7 items-center justify-center rounded-md shrink-0"
           style={{ background: visual.color, color: '#fff' }}
         >

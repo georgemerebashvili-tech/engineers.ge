@@ -13,6 +13,7 @@ import {
 } from 'recharts';
 import type { AhuWizardState, PsychrometricResults } from '@/lib/ahu-ashrae/types';
 import type { ChainResult } from '@/lib/ahu-ashrae/chain';
+import { MollierView } from './Step2Mollier';
 import {
   rhCurveLine, wetBulbCurveLine, enthalpyCurveLine,
   specVolumeCurveLine, vapourPressureCurveLine,
@@ -64,6 +65,7 @@ const DEFAULT_METRICS: Record<MetricId, boolean> = METRICS.reduce(
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function Step2Psychro({ state, psychro, chain }: Props) {
+  const [chartMode, setChartMode] = useState<'tx' | 'id'>('tx');
   const [overlayId, setOverlayId] = useState<OverlayId>('iso7730');
   const [processId, setProcessId] = useState<ProcessOverlayId>('none');
   const [params, setParams] = useState<ComfortParams>(DEFAULT_COMFORT_PARAMS);
@@ -109,14 +111,43 @@ export function Step2Psychro({ state, psychro, chain }: Props) {
           <div className="flex items-center gap-2">
             <Thermometer size={14} style={{ color: 'var(--blue)' }} />
             <h2 className="text-xs font-bold uppercase tracking-[0.08em]" style={{ color: 'var(--navy)' }}>
-              ფსიქრომეტრიული დიაგრამა (i-d)
+              ფსიქრომეტრიული დიაგრამა
             </h2>
           </div>
-          <div className="text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
-            P = {state.design.pressure.toFixed(1)} kPa
+          <div className="flex items-center gap-3">
+            {/* Chart mode tabs */}
+            <div
+              className="flex rounded-md overflow-hidden border text-[10px] font-bold"
+              style={{ borderColor: 'var(--bdr)' }}
+            >
+              {(['tx', 'id'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setChartMode(mode)}
+                  className="px-2.5 py-1 transition-colors"
+                  style={{
+                    background: chartMode === mode ? 'var(--blue)' : 'var(--sur-2)',
+                    color: chartMode === mode ? '#fff' : 'var(--text-2)',
+                  }}
+                >
+                  {mode === 'tx' ? 'T-x (ASHRAE)' : 'i-d (Mollier)'}
+                </button>
+              ))}
+            </div>
+            <div className="text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
+              P = {state.design.pressure.toFixed(1)} kPa
+            </div>
           </div>
         </div>
 
+        {/* ── i-d (Mollier) mode ── */}
+        {chartMode === 'id' && (
+          <MollierView chain={chain} pressure={state.design.pressure} />
+        )}
+
+        {/* ── T-x (ASHRAE) mode ── */}
+        {chartMode === 'tx' && (
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_240px] gap-4">
           {/* ── Chart ── */}
           <div>
@@ -193,6 +224,7 @@ export function Step2Psychro({ state, psychro, chain }: Props) {
             <MetricsPanel metrics={metrics} onChange={setMetrics} />
           </div>
         </div>
+        )}
       </div>
 
       {/* ── Chain state inline table ── */}
