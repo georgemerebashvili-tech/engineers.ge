@@ -55,9 +55,10 @@ export function makeDefaultWizardState(project: AhuProject): AhuWizardState {
     selectedCity: city,
     design: {
       mode: 'cooling',
-      outdoorDB: city.summerDB,
-      outdoorWB: city.summerMCWB,
-      outdoorRH: 50,
+      summerDB: city.summerDB,
+      summerWB: city.summerMCWB,
+      winterDB: city.winterDB99,
+      winterRH: 80,
       indoorDB: 24,
       indoorRH: 50,
       pressure: city.pressure,
@@ -97,7 +98,9 @@ function calcPsychro(state: AhuWizardState): PsychrometricResults | undefined {
   try {
     const oaFlow = airflow.supplyAirflow * airflow.oaFraction;
     const raFlow = airflow.supplyAirflow - oaFlow;
-    const outdoor = statePointFromWb(design.outdoorDB, design.outdoorWB, 'O', 'გარე ჰაერი', p);
+    const outdoor = design.mode === 'cooling'
+      ? statePointFromWb(design.summerDB, design.summerWB, 'O', 'გარე ჰაერი', p)
+      : statePointFromRh(design.winterDB, design.winterRH, 'O', 'გარე ჰაერი', p);
     const roomAir = statePointFromRh(design.indoorDB, design.indoorRH, 'R', 'ოთახის ჰაერი', p);
     const mixed = mixAir(outdoor, oaFlow, roomAir, raFlow, 'M', 'შერეული ჰაერი', p);
     const density = airDensity(mixed.tdb, mixed.w, p);

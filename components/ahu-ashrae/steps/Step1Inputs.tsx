@@ -33,8 +33,9 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
         selectedCity: custom,
         design: {
           ...design,
-          outdoorDB: custom.summerDB,
-          outdoorWB: custom.summerMCWB,
+          summerDB: custom.summerDB,
+          summerWB: custom.summerMCWB,
+          winterDB: custom.winterDB99,
           pressure: custom.pressure,
         },
       });
@@ -50,8 +51,9 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
       selectedCity: found,
       design: {
         ...design,
-        outdoorDB: found.summerDB,
-        outdoorWB: found.summerMCWB,
+        summerDB: found.summerDB,
+        summerWB: found.summerMCWB,
+        winterDB: found.winterDB99,
         pressure: found.pressure,
       },
     });
@@ -65,26 +67,17 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
     if (partial.name !== undefined) next.nameEn = partial.name;
     // Sync design when ASHRAE values change
     const designUpdate = { ...design };
-    if (partial.summerDB !== undefined && design.mode === 'cooling') designUpdate.outdoorDB = partial.summerDB;
-    if (partial.summerMCWB !== undefined && design.mode === 'cooling') designUpdate.outdoorWB = partial.summerMCWB;
-    if (partial.winterDB99 !== undefined && design.mode === 'heating') designUpdate.outdoorDB = partial.winterDB99;
+    if (partial.summerDB !== undefined) designUpdate.summerDB = partial.summerDB;
+    if (partial.summerMCWB !== undefined) designUpdate.summerWB = partial.summerMCWB;
+    if (partial.winterDB99 !== undefined) designUpdate.winterDB = partial.winterDB99;
     if (next.pressure !== design.pressure) designUpdate.pressure = next.pressure;
     onUpdate({ selectedCity: next, design: designUpdate });
   }, [selectedCity, design, onUpdate]);
 
-  // ── Mode toggle ──
+  // ── Mode toggle ── (only switches which set drives downstream calcs; both stay editable)
   const handleModeChange = useCallback((mode: 'cooling' | 'heating') => {
-    if (!selectedCity) return;
-    onUpdate({
-      design: {
-        ...design,
-        mode,
-        outdoorDB: mode === 'cooling' ? selectedCity.summerDB : selectedCity.winterDB99,
-        outdoorWB: mode === 'cooling' ? selectedCity.summerMCWB : 0,
-        outdoorRH: mode === 'heating' ? 80 : design.outdoorRH,
-      },
-    });
-  }, [design, selectedCity, onUpdate]);
+    onUpdate({ design: { ...design, mode } });
+  }, [design, onUpdate]);
 
   // ── OA from ASHRAE 62.1 ──
   const minOA = airflow.ventilationMethod === 'ashrae621'
@@ -232,30 +225,54 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
           )}
         </div>
 
-        {/* Design conditions inputs */}
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-5 gap-3">
-          <NumInput
-            label="გარე DB"
-            unit="°C"
-            value={design.outdoorDB}
-            onChange={(v) => onUpdate({ design: { ...design, outdoorDB: v } })}
-          />
-          {design.mode === 'cooling' ? (
+        {/* Design conditions — Summer + Winter shown together */}
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* Summer (cooling) */}
+          <SeasonGroup
+            title="ზაფხული · გაგრილება"
+            icon="❄"
+            accent={design.mode === 'cooling' ? 'var(--blue)' : 'var(--bdr-2)'}
+            active={design.mode === 'cooling'}
+          >
+            <NumInput
+              label="გარე DB"
+              unit="°C"
+              value={design.summerDB}
+              onChange={(v) => onUpdate({ design: { ...design, summerDB: v } })}
+            />
             <NumInput
               label="გარე WB"
               unit="°C"
-              value={design.outdoorWB}
-              onChange={(v) => onUpdate({ design: { ...design, outdoorWB: v } })}
+              value={design.summerWB}
+              onChange={(v) => onUpdate({ design: { ...design, summerWB: v } })}
             />
-          ) : (
+          </SeasonGroup>
+
+          {/* Winter (heating) */}
+          <SeasonGroup
+            title="ზამთარი · გათბობა"
+            icon="🔥"
+            accent={design.mode === 'heating' ? 'var(--ora)' : 'var(--bdr-2)'}
+            active={design.mode === 'heating'}
+          >
+            <NumInput
+              label="გარე DB"
+              unit="°C"
+              value={design.winterDB}
+              onChange={(v) => onUpdate({ design: { ...design, winterDB: v } })}
+            />
             <NumInput
               label="გარე RH"
               unit="%"
-              value={design.outdoorRH}
+              value={design.winterRH}
               min={0} max={100}
-              onChange={(v) => onUpdate({ design: { ...design, outdoorRH: v } })}
+              onChange={(v) => onUpdate({ design: { ...design, winterRH: v } })}
             />
-          )}
+          </SeasonGroup>
+        </div>
+
+        {/* Indoor + atmospheric */}
+        <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3">
           <NumInput
             label="შიდა DB"
             unit="°C"
@@ -293,8 +310,9 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
                 onChange={(v) => onUpdate({ airflow: { ...airflow, supplyAirflow: v } })}
               />
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-[0.08em] mb-1.5" style={{ color: 'var(--text-3)' }}>
-                  სახაზინო (OA)
+                <label className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-[0.08em] mb-1.5" style={{ color: 'var(--text-3)' }}>
+                  გარე ჰაერი (OA)
+                  <InfoTip text="OA = Outdoor Air (გარე / სუფთა ჰაერი). გარედან შემოსული ახალი ჰაერი, რომელიც ერევა ოთახიდან დაბრუნებულ (RA) ჰაერს. ჯამი ქმნის მიწოდების ჰაერს (SA). მაღალი OA → უკეთესი ჰაერის ხარისხი მაგრამ მეტი ენერგია; დაბალი OA → ენერგო-ეფექტური მაგრამ ცუდი ჰაერი (CO₂, სუნი)." />
                 </label>
                 <div className="flex rounded-lg border overflow-hidden" style={{ borderColor: 'var(--bdr-2)' }}>
                   {(['fraction', 'ashrae621'] as const).map((m) => (
@@ -307,6 +325,9 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
                           ? { background: 'var(--blue)', color: '#fff' }
                           : { background: 'var(--sur)', color: 'var(--text-3)' }
                       }
+                      title={m === 'fraction'
+                        ? 'პროცენტული წილი — შენ თვითონ აყენებ რამდენი % იყოს გარე ჰაერი'
+                        : 'ASHRAE 62.1 — სტანდარტი ანგარიშობს მინიმუმ ვენტილაციას ადამიანების და ფართობის მიხედვით'}
                     >
                       {m === 'fraction' ? '% (%OA)' : 'ASHRAE 62.1'}
                     </button>
@@ -318,12 +339,15 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
             {airflow.ventilationMethod === 'fraction' ? (
               <div className="mt-3">
                 <NumInput
-                  label="OA წილი"
+                  label="OA წილი (გარე ჰაერის %)"
                   unit="%"
                   value={airflow.oaFraction * 100}
                   min={0} max={100}
                   onChange={(v) => onUpdate({ airflow: { ...airflow, oaFraction: v / 100 } })}
                 />
+                <div className="mt-1 text-[10px] leading-snug" style={{ color: 'var(--text-3)' }}>
+                  რეკომენდ.: ოფისი 15–30% · რესტორანი 30–50% · საავადმყოფო 100% (მთლიანად გარე ჰაერი)
+                </div>
               </div>
             ) : (
               <div className="mt-3 grid grid-cols-3 gap-2">
@@ -373,7 +397,7 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
               color="var(--blue)"
             />
             <BarStat
-              label={`სახაზინო (OA) — ${oaFractionDisplay.toFixed(0)}%`}
+              label={`გარე ჰაერი (OA) — ${oaFractionDisplay.toFixed(0)}%`}
               value={oaM3h}
               unit="m³/h"
               max={airflow.supplyAirflow}
@@ -489,6 +513,65 @@ function Card({
       </div>
       {children}
     </div>
+  );
+}
+
+function SeasonGroup({
+  title, icon, accent, active, children,
+}: {
+  title: string;
+  icon: string;
+  accent: string;
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="rounded-lg border p-3 transition-all"
+      style={{
+        borderColor: accent,
+        background: active ? 'var(--sur)' : 'var(--sur-2)',
+        borderWidth: active ? 2 : 1,
+      }}
+    >
+      <div className="flex items-center gap-1.5 mb-2.5">
+        <span className="text-sm">{icon}</span>
+        <span
+          className="text-[10px] font-bold uppercase tracking-[0.08em]"
+          style={{ color: active ? accent : 'var(--text-3)' }}
+        >
+          {title}
+        </span>
+        {active && (
+          <span
+            className="ml-auto text-[9px] font-bold uppercase px-1.5 py-0.5 rounded"
+            style={{ background: accent, color: '#fff' }}
+          >
+            აქტიური
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-3">{children}</div>
+    </div>
+  );
+}
+
+function InfoTip({ text }: { text: string }) {
+  return (
+    <span className="relative group inline-flex items-center" style={{ color: 'var(--text-3)' }}>
+      <Info size={11} className="cursor-help" />
+      <span
+        className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 top-full mt-1 z-50 px-2.5 py-1.5 rounded-md text-[10px] font-normal normal-case tracking-normal leading-snug whitespace-pre-line shadow-lg pointer-events-none"
+        style={{
+          background: 'var(--navy)',
+          color: '#fff',
+          width: 280,
+          maxWidth: '70vw',
+        }}
+      >
+        {text}
+      </span>
+    </span>
   );
 }
 

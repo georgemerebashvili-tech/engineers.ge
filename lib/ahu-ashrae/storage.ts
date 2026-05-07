@@ -87,7 +87,21 @@ export function loadWizardState(projectId: string, unitId: string): AhuWizardSta
   if (typeof window === 'undefined') return null;
   try {
     const raw = localStorage.getItem(WIZARD_KEY_PREFIX + projectId + '_' + unitId);
-    return raw ? (JSON.parse(raw) as AhuWizardState) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as AhuWizardState & {
+      design?: { outdoorDB?: number; outdoorWB?: number; outdoorRH?: number };
+    };
+    // Migrate legacy outdoorDB/WB/RH → summerDB/WB + winterDB/RH
+    const d = parsed.design as AhuWizardState['design'] & { outdoorDB?: number; outdoorWB?: number; outdoorRH?: number };
+    if (d && (d.summerDB === undefined || d.winterDB === undefined)) {
+      const city = parsed.selectedCity;
+      d.summerDB = d.summerDB ?? (d.mode === 'cooling' ? d.outdoorDB : undefined) ?? city?.summerDB ?? 32;
+      d.summerWB = d.summerWB ?? (d.mode === 'cooling' ? d.outdoorWB : undefined) ?? city?.summerMCWB ?? 22;
+      d.winterDB = d.winterDB ?? (d.mode === 'heating' ? d.outdoorDB : undefined) ?? city?.winterDB99 ?? -10;
+      d.winterRH = d.winterRH ?? (d.mode === 'heating' ? d.outdoorRH : undefined) ?? 80;
+      delete d.outdoorDB; delete d.outdoorWB; delete d.outdoorRH;
+    }
+    return parsed as AhuWizardState;
   } catch {
     return null;
   }

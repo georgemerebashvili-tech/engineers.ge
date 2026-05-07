@@ -65,10 +65,12 @@ export type DesignMode = 'cooling' | 'heating';
 
 export interface DesignConditions {
   mode: DesignMode;
-  // Outdoor
-  outdoorDB: number;   // °C
-  outdoorWB: number;   // °C (summer); or calculated from RH (winter)
-  outdoorRH: number;   // % (mainly for winter)
+  // Outdoor — summer (cooling)
+  summerDB: number;    // °C dry bulb
+  summerWB: number;    // °C mean coincident wet bulb
+  // Outdoor — winter (heating)
+  winterDB: number;    // °C dry bulb
+  winterRH: number;    // % relative humidity
   // Indoor
   indoorDB: number;    // °C
   indoorRH: number;    // % (0–100)
