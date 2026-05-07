@@ -46,64 +46,12 @@ export const GE_CITIES: CityClimate[] = [
   city('mestia',   'მესტია',   'Mestia',   'GE', 1440, 26.5, 17.5, -14.0, -18.5),
 ];
 
-// ─── Europe ───────────────────────────────────────────────────────────────────
-
-export const EU_CITIES: CityClimate[] = [
-  city('athens',      'Athens',     'Athens',     'GR',  27,  36.7, 22.8,  2.1,  0.2),
-  city('berlin',      'Berlin',     'Berlin',     'DE',  36,  31.6, 19.5, -10.4, -13.2),
-  city('london',      'London',     'London',     'GB',  18,  28.9, 20.3,  -2.3,  -4.3),
-  city('paris',       'Paris',      'Paris',      'FR',  75,  31.8, 21.2,  -4.3,  -6.4),
-  city('rome',        'Rome',       'Rome',       'IT',  21,  34.3, 23.5,   0.9,  -1.0),
-  city('madrid',      'Madrid',     'Madrid',     'ES', 631,  36.6, 20.5,  -3.1,  -5.5),
-  city('amsterdam',   'Amsterdam',  'Amsterdam',  'NL',   0,  27.9, 20.2,  -5.3,  -7.7),
-  city('vienna',      'Vienna',     'Vienna',     'AT', 156,  31.9, 21.6,  -9.7, -12.4),
-  city('warsaw',      'Warsaw',     'Warsaw',     'PL', 107,  29.8, 19.8, -16.4, -19.7),
-  city('bucharest',   'Bucharest',  'Bucharest',  'RO',  80,  35.0, 22.2, -14.4, -17.9),
-  city('istanbul',    'Istanbul',   'Istanbul',   'TR',  60,  32.8, 24.3,  -0.3,  -2.3),
-  city('ankara',      'Ankara',     'Ankara',     'TR', 891,  34.5, 18.8, -11.0, -14.5),
-  city('moscow',      'Moscow',     'Moscow',     'RU', 156,  27.6, 19.4, -24.9, -28.5),
-  city('kyiv',        'Kyiv',       'Kyiv',       'UA', 166,  30.3, 20.9, -19.8, -22.6),
-  city('baku',        'Baku',       'Baku',       'AZ',  27,  36.2, 24.4,  -3.0,  -5.0),
-  city('yerevan',     'Yerevan',    'Yerevan',    'AM', 994,  37.0, 19.2, -10.7, -13.4),
-];
-
-// ─── USA / Canada ─────────────────────────────────────────────────────────────
-
-export const NA_CITIES: CityClimate[] = [
-  city('new_york',    'New York',   'New York',   'US',  10,  33.2, 23.6, -10.7, -14.0),
-  city('los_angeles', 'Los Angeles','Los Angeles','US',  32,  35.5, 19.3,   2.3,   0.8),
-  city('chicago',     'Chicago',    'Chicago',    'US', 189,  33.3, 23.9, -19.3, -22.5),
-  city('houston',     'Houston',    'Houston',    'US',  10,  36.6, 27.0,   1.1,  -1.5),
-  city('miami',       'Miami',      'Miami',      'US',   2,  33.7, 26.9,   6.2,   4.9),
-  city('toronto',     'Toronto',    'Toronto',    'CA', 116,  30.6, 22.8, -19.7, -22.8),
-];
-
-// ─── Asia / Middle East ───────────────────────────────────────────────────────
-
-export const ASIA_CITIES: CityClimate[] = [
-  city('dubai',    'Dubai',     'Dubai',     'AE',   5,  43.9, 24.3,   9.2,  7.4),
-  city('riyadh',   'Riyadh',    'Riyadh',    'SA', 620,  43.3, 17.7,   2.8,  0.4),
-  city('tehran',   'Tehran',    'Tehran',    'IR', 1191, 38.2, 16.5,  -4.4, -7.3),
-  city('delhi',    'Delhi',     'Delhi',     'IN', 212,  41.6, 25.5,   4.7,  2.7),
-  city('beijing',  'Beijing',   'Beijing',   'CN',  54,  35.0, 26.3,  -8.7, -11.4),
-  city('tokyo',    'Tokyo',     'Tokyo',     'JP',  22,  34.4, 27.5,  -0.6,  -2.4),
-  city('singapore','Singapore', 'Singapore', 'SG',  15,  33.3, 27.9,  21.5,  21.0),
-];
-
 // ─── All cities combined ──────────────────────────────────────────────────────
 
-export const ALL_CITIES: CityClimate[] = [
-  ...GE_CITIES,
-  ...EU_CITIES,
-  ...NA_CITIES,
-  ...ASIA_CITIES,
-];
+export const ALL_CITIES: CityClimate[] = [...GE_CITIES];
 
 export const CITY_GROUPS = [
   { label: 'საქართველო', cities: GE_CITIES },
-  { label: 'ევროპა', cities: EU_CITIES },
-  { label: 'ჩრდ. ამერიკა', cities: NA_CITIES },
-  { label: 'აზია / შ. აღმოსავლეთი', cities: ASIA_CITIES },
 ];
 
 export function getCityById(id: string): CityClimate | null {
