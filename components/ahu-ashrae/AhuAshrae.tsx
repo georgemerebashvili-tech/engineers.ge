@@ -7,7 +7,7 @@ import {
   Info, Layers,
 } from 'lucide-react';
 import type {
-  AhuWizardState, WizardStep, AhuView, AhuProject, AhuType,
+  AhuWizardState, WizardStep, AhuView, AhuProject, AhuUnit, AhuType,
   PsychrometricResults,
 } from '@/lib/ahu-ashrae/types';
 import { GE_CITIES, getCityById } from '@/lib/ahu-ashrae/climate-data';
@@ -19,12 +19,16 @@ import {
 } from '@/lib/ahu-ashrae/psychrometrics';
 import {
   listProjects, saveProject, deleteProject,
+  addUnit, updateUnit, deleteUnit, getUnit,
   loadWizardState, saveWizardState,
 } from '@/lib/ahu-ashrae/storage';
 import { getAhuTypeSpec } from '@/lib/ahu-ashrae/ahu-types-data';
 
-import { AhuProjectsList } from './AhuProjectsList';
+import { AhuProjectsRail } from './AhuProjectsRail';
 import { AhuRegister } from './AhuRegister';
+import { AhuRegisterUnit } from './AhuRegisterUnit';
+import { AhuProjectOverview } from './AhuProjectOverview';
+import { AhuLandingHint } from './AhuLandingHint';
 import { AhuTypeSelector } from './AhuTypeSelector';
 import { Step1Inputs } from './steps/Step1Inputs';
 import { Step2Psychro } from './steps/Step2Psychro';
@@ -42,13 +46,12 @@ const STEPS: { id: WizardStep; label: string; icon: React.ComponentType<{size?: 
   { id: 'summary',   label: 'შედეგი + სპეც.',      icon: FileText },
 ];
 
-// ─── Default wizard state ─────────────────────────────────────────────────────
+// ─── Default wizard state for a fresh AHU unit ────────────────────────────────
 
-function makeDefaultState(project: AhuProject): AhuWizardState {
+export function makeDefaultWizardState(project: AhuProject): AhuWizardState {
   const city = getCityById(project.location) ?? GE_CITIES[0];
   return {
     currentStep: 'inputs',
-    project,
     selectedCity: city,
     design: {
       mode: 'cooling',
@@ -130,6 +133,8 @@ export function AhuAshrae() {
   const [view, setView] = useState<AhuView>('landing');
   const [projects, setProjects] = useState<AhuProject[]>([]);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [activeUnitId, setActiveUnitId] = useState<string | null>(null);
+  const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [wizardState, setWizardState] = useState<AhuWizardState | null>(null);
 
   // Load projects from localStorage on mount
@@ -137,100 +142,209 @@ export function AhuAshrae() {
     setProjects(listProjects());
   }, []);
 
-  // Handlers
-  const handleNew = useCallback(() => setView('register'), []);
+  const refreshProjects = useCallback(() => setProjects(listProjects()), []);
 
-  const handleCreate = useCallback((p: AhuProject) => {
+  const activeProject = useMemo(
+    () => projects.find((p) => p.id === activeProjectId) ?? null,
+    [projects, activeProjectId],
+  );
+
+  const activeUnit = useMemo(
+    () => activeProject?.units.find((u) => u.id === activeUnitId) ?? null,
+    [activeProject, activeUnitId],
+  );
+
+  // ── Project handlers ──
+  const handleNewProject = useCallback(() => setView('register_project'), []);
+
+  const handleCreateProject = useCallback((p: AhuProject) => {
     saveProject(p);
-    const initial = makeDefaultState(p);
-    saveWizardState(p.id, initial);
-    setProjects(listProjects());
+    refreshProjects();
     setActiveProjectId(p.id);
-    setWizardState(initial);
-    setView('wizard');
-  }, []);
+    setActiveUnitId(null);
+    setExpandedProjects((prev) => new Set([...prev, p.id]));
+    setView('project_overview');
+  }, [refreshProjects]);
 
-  const handleOpen = useCallback((id: string) => {
-    const all = listProjects();
-    const p = all.find((x) => x.id === id);
-    if (!p) return;
-    const w = loadWizardState(id) ?? makeDefaultState(p);
-    setActiveProjectId(id);
-    setWizardState(w);
-    setView('wizard');
-  }, []);
-
-  const handleDelete = useCallback((id: string) => {
+  const handleDeleteProject = useCallback((id: string) => {
     deleteProject(id);
-    setProjects(listProjects());
+    if (id === activeProjectId) {
+      setActiveProjectId(null);
+      setActiveUnitId(null);
+      setView('landing');
+    }
+    refreshProjects();
+  }, [activeProjectId, refreshProjects]);
+
+  const handleOpenProject = useCallback((id: string) => {
+    setActiveProjectId(id);
+    setActiveUnitId(null);
+    setExpandedProjects((prev) => new Set([...prev, id]));
+    setView('project_overview');
   }, []);
 
-  const handleBackToList = useCallback(() => {
-    setActiveProjectId(null);
-    setWizardState(null);
-    setProjects(listProjects());
-    setView('landing');
+  const toggleProjectExpand = useCallback((id: string) => {
+    setExpandedProjects((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }, []);
 
+  // ── Unit handlers ──
+  const handleNewUnit = useCallback(() => {
+    if (!activeProjectId) return;
+    setView('register_ahu');
+  }, [activeProjectId]);
+
+  const handleCreateUnit = useCallback((unit: AhuUnit) => {
+    if (!activeProjectId) return;
+    addUnit(activeProjectId, unit);
+    const project = projects.find((p) => p.id === activeProjectId);
+    if (project) {
+      const initial = makeDefaultWizardState(project);
+      saveWizardState(activeProjectId, unit.id, initial);
+    }
+    refreshProjects();
+    setActiveUnitId(unit.id);
+    setExpandedProjects((prev) => new Set([...prev, activeProjectId]));
+    // Open wizard immediately
+    const fresh = projects.find((p) => p.id === activeProjectId);
+    if (fresh) {
+      setWizardState(makeDefaultWizardState(fresh));
+    }
+    setView('wizard');
+  }, [activeProjectId, projects, refreshProjects]);
+
+  const handleOpenUnit = useCallback((projectId: string, unitId: string) => {
+    const project = listProjects().find((p) => p.id === projectId);
+    const unit = project?.units.find((u) => u.id === unitId);
+    if (!project || !unit) return;
+    const w = loadWizardState(projectId, unitId) ?? makeDefaultWizardState(project);
+    setActiveProjectId(projectId);
+    setActiveUnitId(unitId);
+    setWizardState(w);
+    setExpandedProjects((prev) => new Set([...prev, projectId]));
+    setView('wizard');
+  }, []);
+
+  const handleDeleteUnit = useCallback((projectId: string, unitId: string) => {
+    deleteUnit(projectId, unitId);
+    if (unitId === activeUnitId) {
+      setActiveUnitId(null);
+      setView('project_overview');
+    }
+    refreshProjects();
+  }, [activeUnitId, refreshProjects]);
+
+  // ── Wizard ──
   const updateWizard = useCallback((partial: Partial<AhuWizardState>) => {
     setWizardState((prev) => {
       if (!prev) return prev;
       const next = { ...prev, ...partial };
-      if (activeProjectId) saveWizardState(activeProjectId, next);
+      if (activeProjectId && activeUnitId) {
+        saveWizardState(activeProjectId, activeUnitId, next);
+      }
       return next;
     });
-  }, [activeProjectId]);
+  }, [activeProjectId, activeUnitId]);
 
   const handleSelectAhuType = useCallback((type: AhuType) => {
-    if (!wizardState || !activeProjectId) return;
-    const updatedProject = { ...wizardState.project, ahuType: type };
-    saveProject(updatedProject);
-    setProjects(listProjects());
-    updateWizard({ project: updatedProject });
-  }, [wizardState, activeProjectId, updateWizard]);
+    if (!activeProjectId || !activeUnitId) return;
+    const unit = getUnit(activeProjectId, activeUnitId);
+    if (!unit) return;
+    updateUnit(activeProjectId, { ...unit, ahuType: type });
+    refreshProjects();
+  }, [activeProjectId, activeUnitId, refreshProjects]);
 
-  // ── Landing ──
-  if (view === 'landing') {
-    return (
-      <AhuProjectsList
-        projects={projects}
-        onNew={handleNew}
-        onOpen={handleOpen}
-        onDelete={handleDelete}
-      />
-    );
-  }
+  const handleBackToProject = useCallback(() => {
+    setActiveUnitId(null);
+    setWizardState(null);
+    refreshProjects();
+    setView('project_overview');
+  }, [refreshProjects]);
 
-  // ── Register ──
-  if (view === 'register') {
-    return <AhuRegister onCancel={handleBackToList} onCreate={handleCreate} />;
-  }
+  // ─── Render ───
+  return (
+    <div className="flex" style={{ background: 'var(--bg)', minHeight: 'calc(100vh - 56px)' }}>
+      {/* ── Left rail: projects ── */}
+      {view !== 'wizard' && (
+        <AhuProjectsRail
+          projects={projects}
+          activeProjectId={activeProjectId}
+          activeUnitId={activeUnitId}
+          expandedProjects={expandedProjects}
+          onNewProject={handleNewProject}
+          onOpenProject={handleOpenProject}
+          onToggleExpand={toggleProjectExpand}
+          onOpenUnit={handleOpenUnit}
+          onDeleteProject={handleDeleteProject}
+          onDeleteUnit={handleDeleteUnit}
+        />
+      )}
 
-  // ── Wizard ──
-  if (view === 'wizard' && wizardState) {
-    return (
-      <AhuWizard
-        state={wizardState}
-        onUpdate={updateWizard}
-        onBack={handleBackToList}
-        onSelectAhuType={handleSelectAhuType}
-      />
-    );
-  }
+      {/* ── Main content ── */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        {view === 'landing' && (
+          <AhuLandingHint
+            hasProjects={projects.length > 0}
+            onNewProject={handleNewProject}
+          />
+        )}
 
-  return null;
+        {view === 'register_project' && (
+          <AhuRegister
+            onCancel={() => setView(projects.length ? 'landing' : 'landing')}
+            onCreate={handleCreateProject}
+          />
+        )}
+
+        {view === 'project_overview' && activeProject && (
+          <AhuProjectOverview
+            project={activeProject}
+            onNewUnit={handleNewUnit}
+            onOpenUnit={(unitId) => handleOpenUnit(activeProject.id, unitId)}
+            onDeleteUnit={(unitId) => handleDeleteUnit(activeProject.id, unitId)}
+            onBack={() => setView('landing')}
+          />
+        )}
+
+        {view === 'register_ahu' && activeProject && (
+          <AhuRegisterUnit
+            project={activeProject}
+            onCancel={() => setView('project_overview')}
+            onCreate={handleCreateUnit}
+          />
+        )}
+
+        {view === 'wizard' && activeProject && activeUnit && wizardState && (
+          <AhuWizard
+            project={activeProject}
+            unit={activeUnit}
+            state={wizardState}
+            onUpdate={updateWizard}
+            onBack={handleBackToProject}
+            onSelectAhuType={handleSelectAhuType}
+          />
+        )}
+      </div>
+    </div>
+  );
 }
 
 // ─── Wizard ──────────────────────────────────────────────────────────────────
 
 interface WizardProps {
+  project: AhuProject;
+  unit: AhuUnit;
   state: AhuWizardState;
   onUpdate: (partial: Partial<AhuWizardState>) => void;
   onBack: () => void;
   onSelectAhuType: (type: AhuType) => void;
 }
 
-function AhuWizard({ state, onUpdate, onBack, onSelectAhuType }: WizardProps) {
+function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: WizardProps) {
   const psychro = useMemo(() => calcPsychro(state), [state.design, state.airflow, state.loads]);
   const stepIndex = STEPS.findIndex((s) => s.id === state.currentStep);
 
@@ -242,44 +356,57 @@ function AhuWizard({ state, onUpdate, onBack, onSelectAhuType }: WizardProps) {
     const set = new Set<WizardStep>();
     if (state.airflow.supplyAirflow > 0 && state.loads.sensibleCooling > 0) set.add('inputs');
     if (psychro) set.add('psychro');
-    if (state.project.ahuType) set.add('ahu_type');
+    if (unit.ahuType) set.add('ahu_type');
     return set;
-  }, [state, psychro]);
+  }, [state, psychro, unit.ahuType]);
 
-  const ahuSpec = state.project.ahuType ? getAhuTypeSpec(state.project.ahuType) : null;
+  const ahuSpec = unit.ahuType ? getAhuTypeSpec(unit.ahuType) : null;
 
   return (
-    <div className="flex flex-col" style={{ background: 'var(--bg)', minHeight: 'calc(100vh - 56px)' }}>
+    <div className="flex flex-col flex-1" style={{ background: 'var(--bg)' }}>
       {/* ── Header ── */}
       <header
-        className="border-b px-6 py-3 flex items-center justify-between"
+        className="border-b px-4 py-3 flex items-center justify-between"
         style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={onBack}
-            className="p-1.5 rounded-md transition-colors"
+            className="p-1.5 rounded-md transition-colors shrink-0"
             style={{ color: 'var(--text-3)' }}
-            title="პროექტების სია"
+            title="უკან პროექტში"
           >
             <ArrowLeft size={16} />
           </button>
           <span
-            className="inline-flex h-8 w-8 items-center justify-center rounded-lg"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg shrink-0"
             style={{ background: 'var(--blue-lt)', color: 'var(--blue)' }}
           >
             <Wind size={16} strokeWidth={2} />
           </span>
-          <div>
-            <div className="text-[9px] font-bold uppercase tracking-[0.1em]" style={{ color: 'var(--text-3)' }}>
-              ASHRAE · AHU SELECTION {ahuSpec && `· ${ahuSpec.shortLabel}`}
+          <div className="min-w-0">
+            <div className="text-[9px] font-bold uppercase tracking-[0.1em] flex items-center gap-1.5" style={{ color: 'var(--text-3)' }}>
+              <span className="truncate">{project.name}</span>
+              <ChevronRight size={9} />
+              <span>{unit.name}</span>
+              {ahuSpec && (
+                <>
+                  <ChevronRight size={9} />
+                  <span>{ahuSpec.shortLabel}</span>
+                </>
+              )}
             </div>
             <div className="text-sm font-bold" style={{ color: 'var(--navy)' }}>
-              {state.project.name}
+              {unit.name}
+              {unit.description && (
+                <span className="text-xs font-normal ml-2" style={{ color: 'var(--text-3)' }}>
+                  · {unit.description}
+                </span>
+              )}
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs font-mono" style={{ color: 'var(--text-3)' }}>
+        <div className="hidden md:flex items-center gap-2 text-xs font-mono shrink-0" style={{ color: 'var(--text-3)' }}>
           <span>ASHRAE HOF 2021</span>
           <span>·</span>
           <span>62.1</span>
@@ -335,7 +462,6 @@ function AhuWizard({ state, onUpdate, onBack, onSelectAhuType }: WizardProps) {
             })}
           </nav>
 
-          {/* Live mini summary */}
           {psychro && (
             <div
               className="mx-3 mt-4 rounded-lg p-3 border"
@@ -351,7 +477,6 @@ function AhuWizard({ state, onUpdate, onBack, onSelectAhuType }: WizardProps) {
             </div>
           )}
 
-          {/* AHU type pinned */}
           {ahuSpec && (
             <div
               className="mx-3 mt-3 rounded-lg p-3 border"
@@ -370,9 +495,8 @@ function AhuWizard({ state, onUpdate, onBack, onSelectAhuType }: WizardProps) {
           )}
         </aside>
 
-        {/* ── Main Content ── */}
+        {/* ── Step content ── */}
         <main className="flex-1 overflow-auto p-6">
-          {/* Step header */}
           <div className="flex items-center gap-2 mb-5">
             <span
               className="inline-flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold"
@@ -389,16 +513,21 @@ function AhuWizard({ state, onUpdate, onBack, onSelectAhuType }: WizardProps) {
             </span>
           </div>
 
-          {/* Step content */}
           {state.currentStep === 'inputs' && (
-            <Step1Inputs state={state} onUpdate={onUpdate} psychro={psychro} />
+            <Step1Inputs
+              project={project}
+              unit={unit}
+              state={state}
+              onUpdate={onUpdate}
+              psychro={psychro}
+            />
           )}
           {state.currentStep === 'psychro' && (
             <Step2Psychro state={state} psychro={psychro} />
           )}
           {state.currentStep === 'ahu_type' && (
             <AhuTypeSelector
-              selected={state.project.ahuType}
+              selected={unit.ahuType}
               onSelect={onSelectAhuType}
             />
           )}
@@ -406,7 +535,6 @@ function AhuWizard({ state, onUpdate, onBack, onSelectAhuType }: WizardProps) {
             <ComingSoonStep step={state.currentStep} />
           )}
 
-          {/* Nav buttons */}
           <div className="flex items-center justify-between mt-8 pt-5 border-t" style={{ borderColor: 'var(--bdr)' }}>
             <button
               disabled={stepIndex === 0}

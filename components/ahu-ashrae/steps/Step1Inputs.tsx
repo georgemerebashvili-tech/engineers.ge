@@ -2,12 +2,14 @@
 
 import React, { useCallback } from 'react';
 import { MapPin, Wind, Zap, Info } from 'lucide-react';
-import type { AhuWizardState, PsychrometricResults } from '@/lib/ahu-ashrae/types';
+import type { AhuWizardState, PsychrometricResults, AhuProject, AhuUnit } from '@/lib/ahu-ashrae/types';
 import { CITY_GROUPS, ASHRAE_621_SPACES, ashrae621MinOA } from '@/lib/ahu-ashrae/climate-data';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
+  project: AhuProject;
+  unit: AhuUnit;
   state: AhuWizardState;
   onUpdate: (partial: Partial<AhuWizardState>) => void;
   psychro?: PsychrometricResults;
@@ -15,8 +17,8 @@ interface Props {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function Step1Inputs({ state, onUpdate, psychro }: Props) {
-  const { project, selectedCity, design, airflow, loads } = state;
+export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) {
+  const { selectedCity, design, airflow, loads } = state;
 
   // ── City select ──
   const handleCityChange = useCallback((id: string) => {
@@ -67,30 +69,30 @@ export function Step1Inputs({ state, onUpdate, psychro }: Props) {
 
   return (
     <div className="space-y-5">
-      {/* ── Project Info ── */}
-      <Card icon={<Info size={14} />} title="პროექტი">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          <LabeledInput
-            label="პროექტის სახელი"
-            value={project.name}
-            onChange={(v) => onUpdate({ project: { ...project, name: v } })}
-            placeholder="AHU-01"
-          />
-          <LabeledInput
-            label="ინჟინერი"
-            value={project.engineer}
-            onChange={(v) => onUpdate({ project: { ...project, engineer: v } })}
-            placeholder="სახელი"
-          />
-          <LabeledInput
-            label="თარიღი"
-            type="date"
-            value={project.date}
-            onChange={(v) => onUpdate({ project: { ...project, date: v } })}
-          />
-          <div />
+      {/* ── Project / Unit info (read-only) ── */}
+      <div
+        className="rounded-xl border p-3 flex flex-wrap items-center gap-x-5 gap-y-1"
+        style={{ background: 'var(--sur-2)', borderColor: 'var(--bdr)' }}
+      >
+        <div className="flex items-center gap-1.5">
+          <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>პროექტი</span>
+          <span className="text-xs font-semibold" style={{ color: 'var(--navy)' }}>{project.name}</span>
         </div>
-      </Card>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>AHU</span>
+          <span className="text-xs font-bold font-mono" style={{ color: 'var(--blue)' }}>{unit.name}</span>
+        </div>
+        {project.engineer && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>ინჟინერი</span>
+            <span className="text-xs" style={{ color: 'var(--text-2)' }}>{project.engineer}</span>
+          </div>
+        )}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[9px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>თარიღი</span>
+          <span className="text-xs font-mono" style={{ color: 'var(--text-2)' }}>{unit.date}</span>
+        </div>
+      </div>
 
       {/* ── Location & Climate ── */}
       <Card icon={<MapPin size={14} />} title="მდებარეობა · ASHRAE კლიმატი">
@@ -423,35 +425,6 @@ function Card({
         </h2>
       </div>
       {children}
-    </div>
-  );
-}
-
-function LabeledInput({
-  label, value, onChange, placeholder, type = 'text',
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
-}) {
-  return (
-    <div>
-      <label className="block text-[10px] font-bold uppercase tracking-[0.08em] mb-1.5" style={{ color: 'var(--text-3)' }}>
-        {label}
-      </label>
-      <input
-        type={type}
-        className="w-full rounded-lg px-3 py-2 text-xs font-medium border"
-        style={{
-          background: 'var(--sur)', borderColor: 'var(--bdr-2)',
-          color: 'var(--text)', outline: 'none',
-        }}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-      />
     </div>
   );
 }

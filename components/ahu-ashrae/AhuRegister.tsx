@@ -31,6 +31,7 @@ export function AhuRegister({ onCancel, onCreate }: Props) {
       description: description.trim() || undefined,
       date: today(),
       modified: today(),
+      units: [],
     };
     onCreate(project);
   };

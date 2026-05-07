@@ -11,17 +11,34 @@ export type AhuType =
   | 'run_around_coil'      // Glycol run-around loop
   | 'heat_pipe';           // Phase-change refrigerant heat pipe
 
-// ─── Project / Wizard ─────────────────────────────────────────────────────────
+// ─── Project / AHU Unit ───────────────────────────────────────────────────────
 
+/**
+ * Project = building / facility / object — container for 1..N AHU units.
+ * (e.g. "ბანკის ფილიალი N3", "ბიზნეს-ცენტრი ფლორა II")
+ */
 export interface AhuProject {
-  id: string;             // unique project id (uuid / nanoid)
+  id: string;             // unique project id
   name: string;
-  location: string;       // city id
+  location: string;       // city id (default for all units)
   engineer: string;
   date: string;           // YYYY-MM-DD created
   modified: string;       // YYYY-MM-DD last modified
   description?: string;
+  units: AhuUnit[];       // 1..N AHUs in this project
+}
+
+/**
+ * AhuUnit = single AHU within a project (e.g. "AHU-01", "AHU-02 / Lobby").
+ * Wizard state lives here — each unit has its own design.
+ */
+export interface AhuUnit {
+  id: string;
+  name: string;           // e.g. "AHU-01"
+  description?: string;   // optional area / zone served
   ahuType?: AhuType;      // selected AHU style
+  date: string;           // YYYY-MM-DD created
+  modified: string;       // YYYY-MM-DD last modified
 }
 
 // ─── Climate Data ─────────────────────────────────────────────────────────────
@@ -229,13 +246,14 @@ export type WizardStep =
 // ─── Top-level View / Screen Router ───────────────────────────────────────────
 
 export type AhuView =
-  | 'landing'    // project list + new button
-  | 'register'   // create new project form
-  | 'wizard';    // step wizard for active project
+  | 'landing'           // welcome screen — no project selected
+  | 'register_project'  // create new project form
+  | 'project_overview'  // selected project: AHU list
+  | 'register_ahu'      // create new AHU within project
+  | 'wizard';           // step wizard for active AHU
 
 export interface AhuWizardState {
   currentStep: WizardStep;
-  project: AhuProject;
   selectedCity: CityClimate | null;
   design: DesignConditions;
   airflow: AirflowInputs;

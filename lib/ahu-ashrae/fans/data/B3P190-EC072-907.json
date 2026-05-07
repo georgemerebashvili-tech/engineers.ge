@@ -1,0 +1,569 @@
+{
+  "code": "B3P190-EC072-907",
+  "sourceId": 34556,
+  "familyId": 1739,
+  "family": "B9",
+  "alias": "centrifugalBackward",
+  "imageUrl": "https://app.cloudair.tech/data/afl/media/product/34556.png",
+  "spec": {
+    "phase": 1,
+    "voltageRated": 230.0,
+    "currentRated": 1.2,
+    "frequencyRated": 50.0,
+    "powerRated": 170.0,
+    "powerMaxConsumption": 183.0,
+    "speedRated": 4175.0,
+    "speedMax": 4175.0,
+    "volumeMax": 972.0,
+    "pressureStaticMax": 758.0,
+    "motorType": "EC",
+    "motorTypeControl": "EC",
+    "motorInsulationClass": "B",
+    "ipMotor": "IP44",
+    "poles": "-",
+    "temperatureOperatingMin": -25.0,
+    "temperatureOperatingMax": 60.0,
+    "diameter": 190.0,
+    "diameterCalculating": 190.0,
+    "weight": 2.6,
+    "dimensions": {
+      "A": 190,
+      "B": "106,5",
+      "C": 14,
+      "D": 170
+    }
+  },
+  "acousticOverall": {
+    "Lwa2": null,
+    "Lwa5": null,
+    "Lwa6": 74.0,
+    "Lpa2": null,
+    "Lpa2dist": null
+  },
+  "curves": [
+    {
+      "label": "10V",
+      "main": false,
+      "graphMin": 0.0,
+      "graphMax": 972.0,
+      "coefficients": {
+        "pressureStatic": [
+          840.1545346338813,
+          -0.19368454961105347,
+          -0.000881735247532459,
+          2.2217693185605155e-07
+        ],
+        "power": [
+          172.7082565831038,
+          -0.068888647657538,
+          0.00018780225270082626,
+          -1.2808561445322573e-07
+        ],
+        "speed": [
+          4148.527701782871,
+          0.08917091242467608,
+          -0.002240438018588844,
+          2.3294666477529125e-06
+        ],
+        "current": [
+          1.21129964822778,
+          -0.0004437276192996902,
+          1.1847919842969011e-06,
+          -8.060403096283799e-10
+        ]
+      },
+      "samplePoints": [
+        {
+          "volume": 0,
+          "pressureStatic": 835,
+          "power": 171,
+          "speed": 4130,
+          "current": 1.2
+        },
+        {
+          "volume": 249,
+          "pressureStatic": 758,
+          "power": 171,
+          "speed": 4130,
+          "current": 1.2
+        },
+        {
+          "volume": 569,
+          "pressureStatic": 457,
+          "power": 161,
+          "speed": 3801,
+          "current": 1.13
+        },
+        {
+          "volume": 851,
+          "pressureStatic": 201,
+          "power": 183,
+          "speed": 4135,
+          "current": 1.27
+        },
+        {
+          "volume": 918,
+          "pressureStatic": 103,
+          "power": 168,
+          "speed": 4188,
+          "current": 1.18
+        },
+        {
+          "volume": 972,
+          "pressureStatic": 0,
+          "power": 160,
+          "speed": 4175,
+          "current": 1.12
+        }
+      ],
+      "acoustic": [
+        {
+          "id_accoustic": "23235",
+          "module": "GRAPH",
+          "id_field": "45182",
+          "name": "1",
+          "volume": 0,
+          "Lwa5": "78",
+          "Lwa5_band": {
+            "65Hz": 51,
+            "125Hz": 63,
+            "250Hz": 79,
+            "500Hz": 69,
+            "1000Hz": 69,
+            "2000Hz": 65,
+            "4000Hz": 63,
+            "8000Hz": 58
+          },
+          "Lwa6": "90",
+          "Lwa6_band": {
+            "65Hz": 52,
+            "125Hz": 69,
+            "250Hz": 86,
+            "500Hz": 87,
+            "1000Hz": 86,
+            "2000Hz": 83,
+            "4000Hz": 79,
+            "8000Hz": 75
+          },
+          "Lwa2": "72",
+          "Lwa2_band": {
+            "65Hz": 53,
+            "125Hz": 56,
+            "250Hz": 71,
+            "500Hz": 69,
+            "1000Hz": 70,
+            "2000Hz": 52,
+            "4000Hz": 45,
+            "8000Hz": 42
+          },
+          "Lpa": null,
+          "Lpa_distance": null,
+          "filtr": null
+        },
+        {
+          "id_accoustic": "23236",
+          "module": "GRAPH",
+          "id_field": "45182",
+          "name": "2",
+          "volume": 250,
+          "Lwa5": "78",
+          "Lwa5_band": {
+            "65Hz": 54,
+            "125Hz": 65,
+            "250Hz": 79,
+            "500Hz": 71,
+            "1000Hz": 70,
+            "2000Hz": 67,
+            "4000Hz": 65,
+            "8000Hz": 59
+          },
+          "Lwa6": "90",
+          "Lwa6_band": {
+            "65Hz": 54,
+            "125Hz": 69,
+            "250Hz": 88,
+            "500Hz": 89,
+            "1000Hz": 87,
+            "2000Hz": 85,
+            "4000Hz": 79,
+            "8000Hz": 78
+          },
+          "Lwa2": "72",
+          "Lwa2_band": {
+            "65Hz": 55,
+            "125Hz": 55,
+            "250Hz": 73,
+            "500Hz": 69,
+            "1000Hz": 72,
+            "2000Hz": 55,
+            "4000Hz": 47,
+            "8000Hz": 43
+          },
+          "Lpa": null,
+          "Lpa_distance": null,
+          "filtr": null
+        },
+        {
+          "id_accoustic": "23237",
+          "module": "GRAPH",
+          "id_field": "45182",
+          "name": "3",
+          "volume": 500,
+          "Lwa5": "78",
+          "Lwa5_band": {
+            "65Hz": 48,
+            "125Hz": 60,
+            "250Hz": 75,
+            "500Hz": 65,
+            "1000Hz": 64,
+            "2000Hz": 61,
+            "4000Hz": 59,
+            "8000Hz": 54
+          },
+          "Lwa6": "90",
+          "Lwa6_band": {
+            "65Hz": 48,
+            "125Hz": 65,
+            "250Hz": 82,
+            "500Hz": 83,
+            "1000Hz": 82,
+            "2000Hz": 79,
+            "4000Hz": 75,
+            "8000Hz": 71
+          },
+          "Lwa2": "72",
+          "Lwa2_band": {
+            "65Hz": 49,
+            "125Hz": 52,
+            "250Hz": 67,
+            "500Hz": 63,
+            "1000Hz": 66,
+            "2000Hz": 48,
+            "4000Hz": 41,
+            "8000Hz": 38
+          },
+          "Lpa": null,
+          "Lpa_distance": null,
+          "filtr": null
+        },
+        {
+          "id_accoustic": "23238",
+          "module": "GRAPH",
+          "id_field": "45182",
+          "name": "4",
+          "volume": 750,
+          "Lwa5": "78",
+          "Lwa5_band": {
+            "65Hz": 52,
+            "125Hz": 61,
+            "250Hz": 77,
+            "500Hz": 67,
+            "1000Hz": 66,
+            "2000Hz": 63,
+            "4000Hz": 61,
+            "8000Hz": 56
+          },
+          "Lwa6": "90",
+          "Lwa6_band": {
+            "65Hz": 50,
+            "125Hz": 67,
+            "250Hz": 84,
+            "500Hz": 85,
+            "1000Hz": 84,
+            "2000Hz": 81,
+            "4000Hz": 77,
+            "8000Hz": 73
+          },
+          "Lwa2": "72",
+          "Lwa2_band": {
+            "65Hz": 51,
+            "125Hz": 54,
+            "250Hz": 69,
+            "500Hz": 65,
+            "1000Hz": 68,
+            "2000Hz": 50,
+            "4000Hz": 43,
+            "8000Hz": 40
+          },
+          "Lpa": null,
+          "Lpa_distance": null,
+          "filtr": null
+        },
+        {
+          "id_accoustic": "23239",
+          "module": "GRAPH",
+          "id_field": "45182",
+          "name": "5",
+          "volume": 950,
+          "Lwa5": "78",
+          "Lwa5_band": {
+            "65Hz": 50,
+            "125Hz": 59,
+            "250Hz": 75,
+            "500Hz": 65,
+            "1000Hz": 64,
+            "2000Hz": 61,
+            "4000Hz": 59,
+            "8000Hz": 55
+          },
+          "Lwa6": "90",
+          "Lwa6_band": {
+            "65Hz": 48,
+            "125Hz": 65,
+            "250Hz": 82,
+            "500Hz": 83,
+            "1000Hz": 82,
+            "2000Hz": 79,
+            "4000Hz": 75,
+            "8000Hz": 71
+          },
+          "Lwa2": "72",
+          "Lwa2_band": {
+            "65Hz": 49,
+            "125Hz": 52,
+            "250Hz": 67,
+            "500Hz": 63,
+            "1000Hz": 66,
+            "2000Hz": 48,
+            "4000Hz": 41,
+            "8000Hz": 38
+          },
+          "Lpa": null,
+          "Lpa_distance": null,
+          "filtr": null
+        }
+      ]
+    },
+    {
+      "label": "7.5V",
+      "main": false,
+      "graphMin": 0.0,
+      "graphMax": 844.0,
+      "coefficients": {
+        "pressureStatic": [
+          628.1491889442818,
+          -0.1995729773117234,
+          0.0001376237078084662,
+          -9.374011620488437e-07
+        ],
+        "power": [
+          113.01289664746015,
+          -0.03465680212746554,
+          0.0003535627806444036,
+          -3.8853775596369317e-07
+        ],
+        "speed": [
+          3638.065771232859,
+          0.07391712036713702,
+          -0.00029564264139443256,
+          2.4528421015900064e-07
+        ],
+        "current": [
+          0.8032984561993937,
+          -0.00024060689126178202,
+          2.431585123021775e-06,
+          -2.6710528554450643e-09
+        ]
+      },
+      "samplePoints": [
+        {
+          "volume": 0,
+          "pressureStatic": 630,
+          "power": 114,
+          "speed": 3639,
+          "current": 0.81
+        },
+        {
+          "volume": 216,
+          "pressureStatic": 575,
+          "power": 114,
+          "speed": 3639,
+          "current": 0.81
+        },
+        {
+          "volume": 402,
+          "pressureStatic": 516,
+          "power": 136,
+          "speed": 3640,
+          "current": 0.96
+        },
+        {
+          "volume": 640,
+          "pressureStatic": 318,
+          "power": 133,
+          "speed": 3630,
+          "current": 0.94
+        },
+        {
+          "volume": 743,
+          "pressureStatic": 156,
+          "power": 120,
+          "speed": 3625,
+          "current": 0.85
+        },
+        {
+          "volume": 844,
+          "pressureStatic": 1,
+          "power": 104,
+          "speed": 3640,
+          "current": 0.74
+        }
+      ],
+      "acoustic": null
+    },
+    {
+      "label": "6.5V",
+      "main": false,
+      "graphMin": 0.0,
+      "graphMax": 705.0,
+      "coefficients": {
+        "pressureStatic": [
+          464.21276434552055,
+          -0.23021398865962336,
+          0.00046330266253165705,
+          -1.5210207709292857e-06
+        ],
+        "power": [
+          68.81024832640345,
+          -0.059602093272937605,
+          0.00044006539987612083,
+          -5.137260409198728e-07
+        ],
+        "speed": [
+          3089.14573492634,
+          -0.013692127558792486,
+          5.906437683642198e-05,
+          -3.5501341939555204e-08
+        ],
+        "current": [
+          0.4886497451559655,
+          -0.00043499533161033487,
+          3.2036244771862395e-06,
+          -3.734163702113977e-09
+        ]
+      },
+      "samplePoints": [
+        {
+          "volume": 0,
+          "pressureStatic": 465,
+          "power": 69,
+          "speed": 3089,
+          "current": 0.49
+        },
+        {
+          "volume": 186,
+          "pressureStatic": 425,
+          "power": 69,
+          "speed": 3089,
+          "current": 0.49
+        },
+        {
+          "volume": 468,
+          "pressureStatic": 311,
+          "power": 87,
+          "speed": 3088,
+          "current": 0.62
+        },
+        {
+          "volume": 556,
+          "pressureStatic": 210,
+          "power": 81,
+          "speed": 3101,
+          "current": 0.58
+        },
+        {
+          "volume": 642,
+          "pressureStatic": 103,
+          "power": 76,
+          "speed": 3090,
+          "current": 0.54
+        },
+        {
+          "volume": 705,
+          "pressureStatic": 2,
+          "power": 66,
+          "speed": 3098,
+          "current": 0.47
+        }
+      ],
+      "acoustic": null
+    },
+    {
+      "label": "5.7V",
+      "main": false,
+      "graphMin": 0.0,
+      "graphMax": 539.0,
+      "coefficients": {
+        "pressureStatic": [
+          279.55025847338794,
+          -0.23522741154826812,
+          0.0007671180053521174,
+          -2.4130558362695044e-06
+        ],
+        "power": [
+          33.7740717061481,
+          -0.01964976031507344,
+          0.0002550200304398645,
+          -4.1435805176532125e-07
+        ],
+        "speed": [
+          2392.509955639151,
+          0.043264470481017905,
+          -0.0006554123148946553,
+          1.0988410300148133e-06
+        ],
+        "current": [
+          0.15029654016947935,
+          0.000532846586694094,
+          -1.5221294302829823e-06,
+          1.3301627207181543e-09
+        ]
+      },
+      "samplePoints": [
+        {
+          "volume": 0,
+          "pressureStatic": 280,
+          "power": 34,
+          "speed": 2392,
+          "current": 0.15
+        },
+        {
+          "volume": 143,
+          "pressureStatic": 253,
+          "power": 34,
+          "speed": 2392,
+          "current": 0.2
+        },
+        {
+          "volume": 265,
+          "pressureStatic": 227,
+          "power": 40,
+          "speed": 2370,
+          "current": 0.21
+        },
+        {
+          "volume": 399,
+          "pressureStatic": 158,
+          "power": 40,
+          "speed": 2389,
+          "current": 0.2
+        },
+        {
+          "volume": 486,
+          "pressureStatic": 63,
+          "power": 36,
+          "speed": 2371,
+          "current": 0.21
+        },
+        {
+          "volume": 539,
+          "pressureStatic": 1,
+          "power": 33,
+          "speed": 2403,
+          "current": 0.2
+        }
+      ],
+      "acoustic": null
+    }
+  ]
+}

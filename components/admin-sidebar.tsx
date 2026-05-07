@@ -39,6 +39,7 @@ import {
   FolderKanban,
   Droplets,
   Crown,
+  Wind,
   type LucideIcon
 } from 'lucide-react';
 import type {FeatureMap, FeatureStatus} from '@/lib/feature-flags';
@@ -405,6 +406,8 @@ export function AdminSidebar({flags}: {flags?: FeatureMap} = {}) {
         {key: 'site', label: 'საჯარო საიტი', href: '/', icon: Home},
         {key: 'calc-preview', label: 'კალკულატორები', href: '/calc', icon: FlaskConical},
         {key: 'fan-coil-hydraulics', label: 'ფ/კ ჰიდრავლიკა', href: '/calc/fan-coil-hydraulics', icon: Droplets},
+        {key: 'ahu-ashrae', label: 'AHU სელექცია (ASHRAE)', href: '/calc/ahu-ashrae', icon: Wind},
+        {key: 'fan-library', label: 'Fan ბიბლიოთეკა', href: '/calc/ahu-ashrae/fans', icon: Wind},
         {key: 'ads-preview', label: 'რეკლამის preview', href: '/ads', icon: Megaphone, flagKey: 'admin.ads-preview'},
         {
           key: 'sprinkler-sim',
