@@ -13,6 +13,9 @@ import type { ChainResult, ChainStateLabel } from '@/lib/ahu-ashrae/chain';
 import type { SectionConfig, SectionType } from '@/lib/ahu-ashrae/sections';
 import { SECTION_VISUALS } from '@/lib/ahu-ashrae/section-visuals';
 import { AflFanSelector } from './AflFanSelector';
+import {
+  getKayaModel, faceVelocity, euroventCheck, EUROVENT_MAX_VEL,
+} from '@/lib/ahu-ashrae/kaya-models';
 
 interface Props {
   state: AhuWizardState;
@@ -231,6 +234,15 @@ export function StepFan({ state, chain, onUpdate }: Props) {
       )}
 
 
+      {/* ── Eurovent compliance certificate ── */}
+      {state.kayaModelId && (
+        <EuroventCard
+          kayaModelId={state.kayaModelId}
+          flowM3h={systemQ}
+          sections={state.sections ?? []}
+        />
+      )}
+
       {/* ── Component cards ── */}
       {enabled.length > 0 ? (
         <div>
@@ -442,6 +454,149 @@ function MiniSpec({
       <div className="text-[9px]" style={{ color: 'var(--text-3)' }}>{label}</div>
       <div className="text-[11px] font-bold font-mono" style={{ color: color ?? 'var(--text)' }}>
         {value}
+      </div>
+    </div>
+  );
+}
+
+// ─── Eurovent 6/3 compliance certificate ─────────────────────────────────────
+
+function EuroventCard({
+  kayaModelId, flowM3h, sections,
+}: {
+  kayaModelId: string;
+  flowM3h: number;
+  sections: SectionConfig[];
+}) {
+  const model = getKayaModel(kayaModelId);
+  if (!model) return null;
+
+  // Collect all filter classes from enabled sections
+  const filterClasses = sections
+    .filter((s) => s.enabled && s.spec.type === 'filter')
+    .map((s) => (s.spec.params as { filterClass: string }).filterClass);
+  // Use most restrictive (lowest vel limit)
+  const worstClass = filterClasses.reduce<string | null>((worst, cls) => {
+    if (!worst) return cls;
+    return (EUROVENT_MAX_VEL[cls] ?? 2.5) < (EUROVENT_MAX_VEL[worst] ?? 2.5) ? cls : worst;
+  }, null) ?? 'G4';
+
+  const chk = euroventCheck(model, flowM3h, worstClass);
+  const velPct = chk.utilisationPct;
+  const filterAreaM2 = model.filterFaceW * model.filterFaceH;
+
+  const rows: Array<{ label: string; value: string; pass?: boolean; note?: string }> = [
+    { label: 'KAYA კორპუსი',      value: `${model.displayName} (${model.fullName.slice(0, 40)}…)` },
+    { label: 'კორპ. განაკვეთი',   value: `${(model.casingH * 1000).toFixed(0)} × ${(model.casingW * 1000).toFixed(0)} mm (H × W)` },
+    { label: 'ფილტრ. ბანკი',      value: `${model.filterCount} × 595 mm (${model.filterCols} სვ. × ${model.filterRows} რ.)` },
+    { label: 'ფილტრ. სახის ფარ.', value: `${filterAreaM2.toFixed(3)} m²` },
+    { label: 'საპ. ხარჯი',        value: `${flowM3h.toLocaleString('en-US')} m³/h` },
+    { label: 'ფილტ. კლასი',       value: filterClasses.length > 0 ? filterClasses.join(' + ') : 'G4 (default)', note: 'ყველაზე შემზღ. კლასი' },
+    {
+      label: 'სახ. სიჩქ.',
+      value: `${chk.vel.toFixed(3)} m/s`,
+      pass: chk.pass,
+      note: `ლიმ. ${chk.limit} m/s (Eurovent 6/3 · EN 13053)`,
+    },
+    {
+      label: 'გამოყ. %',
+      value: `${velPct.toFixed(1)} %`,
+      pass: velPct <= 100,
+      note: `${velPct <= 85 ? '✓ კომფ.' : velPct <= 100 ? '~ ზღვ.' : '⚠ ლიმ. გადაჭ.'}`,
+    },
+    {
+      label: 'Eurovent 6/3',
+      value: chk.pass ? '✓ PASS' : '✗ FAIL',
+      pass: chk.pass,
+      note: chk.pass ? 'ჰაერის სიჩქ. სტ. ფარ.' : 'სიჩქ. ლიმ. ჩასახ.!',
+    },
+  ];
+
+  return (
+    <div
+      className="rounded-xl border overflow-hidden"
+      style={{ background: 'var(--sur)', borderColor: chk.pass ? '#86efac' : '#fca5a5' }}
+    >
+      {/* Header */}
+      <div
+        className="flex items-center justify-between px-4 py-3 border-b"
+        style={{
+          background: chk.pass ? '#f0fdf4' : '#fff1f2',
+          borderColor: chk.pass ? '#86efac' : '#fca5a5',
+        }}
+      >
+        <div className="flex items-center gap-2">
+          {chk.pass
+            ? <CheckCircle2 size={14} style={{ color: '#16a34a' }} />
+            : <AlertTriangle size={14} style={{ color: '#dc2626' }} />
+          }
+          <span className="text-xs font-bold" style={{ color: chk.pass ? '#166534' : '#991b1b' }}>
+            Eurovent 6/3 შესაბამისობა — {model.displayName}
+          </span>
+        </div>
+        <span
+          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+          style={{
+            background: chk.pass ? '#16a34a' : '#dc2626',
+            color: '#fff',
+          }}
+        >
+          {chk.pass ? 'PASS' : 'FAIL'}
+        </span>
+      </div>
+
+      {/* Progress bar — face velocity utilisation */}
+      <div className="px-4 pt-3 pb-1">
+        <div className="flex justify-between text-[9px] mb-1" style={{ color: 'var(--text-3)' }}>
+          <span>სახ. სიჩქ. გამოყ.</span>
+          <span>{chk.vel.toFixed(3)} / {chk.limit} m/s</span>
+        </div>
+        <div className="w-full h-2.5 rounded-full overflow-hidden" style={{ background: 'var(--bdr)' }}>
+          <div
+            className="h-full rounded-full transition-all"
+            style={{
+              width: `${Math.min(100, velPct)}%`,
+              background: velPct <= 75 ? '#16a34a' : velPct <= 95 ? '#d97706' : '#dc2626',
+            }}
+          />
+        </div>
+        <div className="text-[9px] mt-0.5 text-right" style={{ color: 'var(--text-3)' }}>
+          {velPct.toFixed(1)} %
+        </div>
+      </div>
+
+      {/* Data table */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-[11px]">
+          <tbody>
+            {rows.map((r, i) => (
+              <tr
+                key={i}
+                className="border-t"
+                style={{ borderColor: 'var(--bdr)', background: i % 2 === 0 ? 'transparent' : 'var(--sur-2)' }}
+              >
+                <td className="px-4 py-1.5 font-semibold w-36 shrink-0" style={{ color: 'var(--text-3)' }}>
+                  {r.label}
+                </td>
+                <td
+                  className="px-3 py-1.5 font-mono font-bold"
+                  style={{ color: r.pass === true ? '#166534' : r.pass === false ? '#991b1b' : 'var(--text)' }}
+                >
+                  {r.value}
+                </td>
+                {r.note && (
+                  <td className="px-3 py-1.5 text-[10px]" style={{ color: 'var(--text-3)' }}>
+                    {r.note}
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="px-4 py-2 text-[9px]" style={{ color: 'var(--text-3)' }}>
+        სტ. ref: Eurovent 6/3 (2018) · EN 13053:2019 · EN ISO 16890 · ISO 29460
       </div>
     </div>
   );

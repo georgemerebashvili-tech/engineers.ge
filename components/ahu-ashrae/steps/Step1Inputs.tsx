@@ -1,7 +1,11 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { MapPin, Wind, Info } from 'lucide-react';
+import { MapPin, Wind, Info, CheckCircle2, AlertTriangle } from 'lucide-react';
+import {
+  KAYA_MODELS, modelsForFlow, getKayaModel, faceVelocity,
+  type KayaModel,
+} from '@/lib/ahu-ashrae/kaya-models';
 import type { AhuWizardState, PsychrometricResults, AhuProject, AhuUnit, CityClimate } from '@/lib/ahu-ashrae/types';
 import {
   CITY_GROUPS, ASHRAE_621_SPACES, ashrae621MinOA,
@@ -481,6 +485,13 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
             </div>
           </div>
         </div>
+
+        {/* ── KAYA model picker ── */}
+        <KayaModelPicker
+          flow={airflow.supplyAirflow}
+          selected={state.kayaModelId}
+          onChange={(id) => onUpdate({ kayaModelId: id })}
+        />
       </Card>
 
       {/* Live psychro preview — output of design inputs above */}
@@ -719,6 +730,115 @@ function BarStat({ label, value, unit, max, color }: { label: string; value: num
           style={{ width: `${pct}%`, background: color }}
         />
       </div>
+    </div>
+  );
+}
+
+// ─── KAYA model picker ───────────────────────────────────────────────────────
+
+function KayaModelPicker({
+  flow, selected, onChange,
+}: {
+  flow: number;
+  selected?: string;
+  onChange: (id: string) => void;
+}) {
+  const suitable   = modelsForFlow(flow);
+  const current    = selected ? getKayaModel(selected) : null;
+  const overloaded = current && flow > current.maxFlowM3h;
+
+  return (
+    <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--bdr)' }}>
+      <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2" style={{ color: 'var(--text-3)' }}>
+        KAYA კორპუსი — მოდელის შერჩევა
+      </div>
+
+      {/* Dropdown */}
+      <select
+        value={selected ?? ''}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border px-2.5 py-1.5 text-xs outline-none focus:ring-2"
+        style={{
+          background: 'var(--sur)',
+          borderColor: 'var(--bdr-2)',
+          color: 'var(--text)',
+          '--tw-ring-color': 'var(--blue)',
+        } as React.CSSProperties}
+      >
+        <option value="">— მოდელი არ არის შერჩეული —</option>
+        {KAYA_MODELS.map((m) => {
+          const ok = m.maxFlowM3h >= flow;
+          return (
+            <option key={m.id} value={m.id}>
+              {ok ? '✓' : '⚠'} {m.displayName} — {m.maxFlowM3h.toLocaleString('en-US')} m³/h max
+              · {m.filterCount}× 595mm · {(m.casingH * 1000).toFixed(0)}×{(m.casingW * 1000).toFixed(0)} mm
+            </option>
+          );
+        })}
+      </select>
+
+      {/* Selected model details */}
+      {current && (
+        <div
+          className="mt-2 rounded-lg border p-2.5"
+          style={{
+            background: overloaded ? '#fff7ed' : 'var(--blue-lt)',
+            borderColor: overloaded ? '#fed7aa' : 'var(--blue-bd)',
+          }}
+        >
+          <div className="flex items-center gap-1.5 mb-1.5">
+            {overloaded
+              ? <AlertTriangle size={11} style={{ color: '#d97706' }} />
+              : <CheckCircle2 size={11} style={{ color: 'var(--grn)' }} />
+            }
+            <span className="text-[10px] font-bold" style={{ color: overloaded ? '#92400e' : 'var(--navy)' }}>
+              {current.displayName}
+              {overloaded && ' — ✈ ხარჯი კორპუსის ლიმიტს აღემატება'}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-1 text-[10px]">
+            <div>
+              <span style={{ color: 'var(--text-3)' }}>ზომები</span>
+              <div className="font-mono font-bold" style={{ color: 'var(--text)' }}>
+                {(current.casingH * 1000).toFixed(0)}×{(current.casingW * 1000).toFixed(0)} mm
+              </div>
+            </div>
+            <div>
+              <span style={{ color: 'var(--text-3)' }}>ფილტრები</span>
+              <div className="font-mono font-bold" style={{ color: 'var(--text)' }}>
+                {current.filterCount}× 595mm ({current.filterCols}×{current.filterRows})
+              </div>
+            </div>
+            <div>
+              <span style={{ color: 'var(--text-3)' }}>v_face</span>
+              <div
+                className="font-mono font-bold"
+                style={{ color: overloaded ? '#c2410c' : 'var(--text)' }}
+              >
+                {faceVelocity(current, flow).toFixed(2)} m/s
+                {!overloaded && ` / ${current.ratedFaceVel} max`}
+              </div>
+            </div>
+          </div>
+          {suitable.length > 0 && !suitable.find((m) => m.id === current.id) && (
+            <div className="mt-1.5 text-[10px]" style={{ color: '#92400e' }}>
+              → შესაფ.: {suitable.map((m) => m.displayName).join(', ')}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Suitable models quick-list when nothing selected */}
+      {!current && flow > 0 && (
+        <div className="mt-1.5 text-[10px]" style={{ color: 'var(--text-3)' }}>
+          {flow.toLocaleString('en-US')} m³/h-ისთვის შ/ფ:&nbsp;
+          <span style={{ color: 'var(--blue)', fontWeight: 600 }}>
+            {suitable.length > 0
+              ? suitable.map((m) => m.displayName).join(', ')
+              : 'კატალოგი ვერ მოიცავს ამ ხარჯს'}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

@@ -305,6 +305,8 @@ export interface AhuWizardState {
    * UI can offer "reset to preset" without losing user customization on demand.
    */
   sectionPresetId?: import('./section-presets').PresetId;
+  /** KAYA casing model selected from catalog (e.g. "KAYA-4") */
+  kayaModelId?: string;
   /** AFL fan selected from the cloudair.tech catalog */
   aflFan?: AflFanSelection;
   // Calculated results

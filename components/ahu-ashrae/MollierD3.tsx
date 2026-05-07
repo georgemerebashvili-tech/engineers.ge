@@ -4,7 +4,7 @@ import React, {
   useRef, useState, useMemo, useEffect, useCallback,
 } from 'react';
 import * as d3 from 'd3';
-import { Download, RotateCcw } from 'lucide-react';
+import { Download } from 'lucide-react';
 import type { ChainResult } from '@/lib/ahu-ashrae/chain';
 import {
   satW, enthalpy, dewPoint, rhFromDbW,
@@ -15,21 +15,25 @@ import {
 } from '@/lib/ahu-ashrae/mollier-geometry';
 
 // ─── Chart dimensions ─────────────────────────────────────────────────────────
-const SVG_W = 900;
-const SVG_H = 540;
-const M = { top: 24, right: 44, bottom: 52, left: 60 } as const;
-const IW = SVG_W - M.left - M.right; // 796
-const IH = SVG_H - M.top - M.bottom; // 464
+const SVG_W = 920;
+const SVG_H = 560;
+// Generous margins so labels never clip
+const M = { top: 28, right: 24, bottom: 56, left: 72 } as const;
+const IW = SVG_W - M.left - M.right;
+const IH = SVG_H - M.top - M.bottom;
 
-const D_DOM: [number, number] = [0, 30];    // g/kg
-const H_DOM: [number, number] = [-10, 130]; // kJ/kg
+// Small left buffer so saturation curve doesn't start right at the edge
+const D_DOM: [number, number] = [-0.3, 30];
+const H_DOM: [number, number] = [-12, 132];
 
-const ISO_TEMPS = [-10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
-const RH_VALS   = [10, 20, 30, 40, 50, 60, 70, 80, 90];
-const WB_TEMPS  = [0, 5, 10, 15, 20, 25, 30];
-const SVOL_VALS = [0.78, 0.80, 0.82, 0.84, 0.86, 0.88, 0.90, 0.92];
-const X_TICKS   = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
-const Y_TICKS   = [-10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130];
+// Chart decoration constants
+const ISO_TEMPS       = [-10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
+const ISO_LABEL_TEMPS = [-10, 0, 10, 20, 30, 40, 50];
+const RH_VALS         = [10, 20, 30, 40, 50, 60, 70, 80, 90];
+const WB_TEMPS        = [5, 10, 15, 20, 25, 30];
+const SVOL_VALS       = [0.80, 0.82, 0.84, 0.86, 0.88, 0.90];
+const X_TICKS         = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
+const Y_TICKS         = [-10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130];
 
 // ─── Section colors ───────────────────────────────────────────────────────────
 const SEC_COLORS: Record<string, string> = {
@@ -47,17 +51,16 @@ function secColor(type?: string, idx?: number): string {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface HoverData {
-  cx: number; cy: number; // plot coords (for crosshair)
+  cx: number; cy: number;
   d: number; h: number;
   T: number; rh: number; tdp: number;
 }
-
 export interface MollierD3Props {
   chain?: ChainResult;
   pressure?: number;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Line generator factory ───────────────────────────────────────────────────
 function makeLine(
   xS: d3.ScaleLinear<number, number>,
   yS: d3.ScaleLinear<number, number>,
@@ -72,154 +75,103 @@ function makeLine(
 // ─── Main component ───────────────────────────────────────────────────────────
 export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
   const CLIP_ID = 'clip-mollier-d3';
-
   const svgRef  = useRef<SVGSVGElement>(null);
-  const zoomGRef = useRef<SVGGElement>(null);
-  const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
   const afRef   = useRef(0);
 
-  const [zt,    setZt]    = useState(() => d3.zoomIdentity);
   const [hover, setHover] = useState<HoverData | null>(null);
 
-  // ── Base scales (constant) ────────────────────────────────────────────────
+  // ── Scales ────────────────────────────────────────────────────────────────
   const xS = useMemo(() => d3.scaleLinear().domain(D_DOM).range([0, IW]), []);
   const yS = useMemo(() => d3.scaleLinear().domain(H_DOM).range([IH, 0]), []);
+  const ln  = useMemo(() => makeLine(xS, yS), [xS, yS]);
 
-  // ── Zoomed scales (for axis ticks, updated on zoom) ───────────────────────
-  const xZ = useMemo(() => zt.rescaleX(xS), [zt, xS]);
-  const yZ = useMemo(() => zt.rescaleY(yS), [zt, yS]);
-
-  // ── Line generator (base scale — zoom group handles transform) ────────────
-  const ln = useMemo(() => makeLine(xS, yS), [xS, yS]);
-
-  // ── Static paths (pressure-dependent only) ────────────────────────────────
+  // ── Static chart paths (recompute only on pressure change) ───────────────
   const satPath = useMemo(() => ln(satCurvePoints(pressure)) ?? '', [ln, pressure]);
-
   const rhPaths = useMemo(
     () => RH_VALS.map((rh) => ({ rh, d: ln(rhCurvePoints(rh, pressure)) ?? '' })),
     [ln, pressure],
   );
-
   const isoPaths = useMemo(
     () => ISO_TEMPS.map((T) => ({ T, d: ln(isothermSegment(T, pressure)) ?? '' })),
     [ln, pressure],
   );
-
   const wbPaths = useMemo(
     () => WB_TEMPS.map((Twb) => ({ Twb, d: ln(wetBulbSegment(Twb, pressure)) ?? '' })),
     [ln, pressure],
   );
-
   const svPaths = useMemo(
     () => SVOL_VALS.map((v) => ({ v, d: ln(specVolPts(v, pressure)) ?? '' })),
     [ln, pressure],
   );
 
-  // ── Fixed labels (inside zoom group, move with chart) ─────────────────────
+  // ── Isotherm labels: every 10 °C, placed near saturation curve end ────────
   const isoLabels = useMemo(
     () =>
-      ISO_TEMPS.map((T) => {
-        const h0 = enthalpy(T, 0);
-        if (h0 < H_DOM[0] - 2 || h0 > H_DOM[1] + 2) return null;
-        return { T, x: xS(0) + 3, y: yS(h0) };
+      ISO_LABEL_TEMPS.map((T) => {
+        const dEnd = Math.min(satW(T, pressure) * 1000, 29.5) * 0.9;
+        const hEnd = enthalpy(T, dEnd / 1000);
+        if (dEnd < 0 || hEnd < H_DOM[0] || hEnd > H_DOM[1]) return null;
+        return { T, x: xS(dEnd) - 2, y: yS(hEnd) - 5 };
       }),
-    [xS, yS],
+    [xS, yS, pressure],
   );
 
+  // ── RH labels at T ≈ 42 °C ────────────────────────────────────────────────
   const rhLabels = useMemo(() => {
-    const T_lbl = 36;
-    return [10, 20, 40, 60, 80, 90].map((rh) => {
+    const T_lbl = 42;
+    return [20, 40, 60, 80].map((rh) => {
       const w = satW(T_lbl, pressure) * (rh / 100);
       const d = w * 1000;
-      if (d > 30 || d < 0) return null;
-      return { rh, x: xS(d) + 3, y: yS(enthalpy(T_lbl, w)) };
+      if (d > 29.5 || d < 0) return null;
+      return { rh, x: xS(d) + 3, y: yS(enthalpy(T_lbl, w)) - 3 };
     });
   }, [xS, yS, pressure]);
 
+  // ── Wet-bulb labels at left edge ──────────────────────────────────────────
   const wbLabels = useMemo(
     () =>
       WB_TEMPS.map((Twb) => {
         const wSat = satW(Twb, pressure);
         const dSat = Math.min(wSat * 1000, 30);
         if (dSat <= 0) return null;
-        const hSat = enthalpy(Twb, wSat);
+        const hSat  = enthalpy(Twb, wSat);
         const slope = (4.186 * Twb) / 1000;
-        const h0 = hSat - slope * dSat;
-        const y = yS(h0);
-        if (y < -5 || y > IH + 5) return null;
-        return { Twb, x: xS(0) + 3, y: y + 10 };
+        const h0    = hSat - slope * dSat;
+        const y     = yS(h0);
+        if (y < 4 || y > IH - 4) return null;
+        return { Twb, x: xS(0) + 5, y: y + 9 };
       }),
     [xS, yS, pressure],
   );
-
-  // ── D3 zoom setup ─────────────────────────────────────────────────────────
-  useEffect(() => {
-    if (!svgRef.current || !zoomGRef.current) return;
-    const svg = d3.select(svgRef.current);
-    const g   = d3.select(zoomGRef.current);
-
-    const zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.5, 14])
-      .translateExtent([[-300, -150], [SVG_W + 300, SVG_H + 150]])
-      .on('zoom', (e) => {
-        g.attr('transform', e.transform.toString());
-        setZt(e.transform);
-      });
-
-    zoomRef.current = zoom;
-    svg.call(zoom);
-    svg.on('dblclick.zoom', () =>
-      svg.transition().duration(350).call(zoom.transform, d3.zoomIdentity),
-    );
-    return () => { svg.on('.zoom', null); };
-  }, []);
-
-  const handleReset = useCallback(() => {
-    if (!svgRef.current || !zoomRef.current) return;
-    d3.select(svgRef.current)
-      .transition()
-      .duration(300)
-      .call(zoomRef.current.transform, d3.zoomIdentity);
-  }, []);
 
   // ── Hover ─────────────────────────────────────────────────────────────────
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<SVGRectElement>) => {
       cancelAnimationFrame(afRef.current);
       afRef.current = requestAnimationFrame(() => {
-        const rect = svgRef.current!.getBoundingClientRect();
-        // Scale factor: SVG viewBox vs rendered size
+        const rect   = svgRef.current!.getBoundingClientRect();
         const scaleX = SVG_W / rect.width;
         const scaleY = SVG_H / rect.height;
-        const plotX = (e.clientX - rect.left) * scaleX - M.left;
-        const plotY = (e.clientY - rect.top)  * scaleY - M.top;
-
-        // Invert zoom transform to get base-scale coords
-        const [invX, invY] = zt.invert([plotX, plotY]);
-        const d = xS.invert(invX);
-        const h = yS.invert(invY);
-
-        if (d < -0.5 || d > 31 || h < -12 || h > 132) {
-          setHover(null);
-          return;
-        }
-        const w = Math.max(0, d) / 1000;
-        // Invert i = 1.006·T + w·(2501 + 1.86·T)  →  T = (i − 2501·w) / (1.006 + 1.86·w)
+        const plotX  = (e.clientX - rect.left) * scaleX - M.left;
+        const plotY  = (e.clientY - rect.top)  * scaleY - M.top;
+        const d = xS.invert(plotX);
+        const h = yS.invert(plotY);
+        if (d < -0.5 || d > 31 || h < -14 || h > 134) { setHover(null); return; }
+        const w   = Math.max(0, d) / 1000;
         const T   = (h - 2501 * w) / (1.006 + 1.86 * w);
         const rh  = rhFromDbW(T, w, pressure);
         const tdp = dewPoint(w, pressure);
         setHover({ cx: plotX, cy: plotY, d, h, T, rh, tdp });
       });
     },
-    [zt, xS, yS, pressure],
+    [xS, yS, pressure],
   );
-
   const handleMouseLeave = useCallback(() => {
     cancelAnimationFrame(afRef.current);
     setHover(null);
   }, []);
 
-  // ── SVG export ────────────────────────────────────────────────────────────
+  // ── SVG export ─────────────────────────────────────────────────────────────
   const handleExport = useCallback(() => {
     if (!svgRef.current) return;
     const clone = svgRef.current.cloneNode(true) as SVGSVGElement;
@@ -231,16 +183,14 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
       type: 'image/svg+xml',
     });
     const url = URL.createObjectURL(blob);
-    Object.assign(document.createElement('a'), {
-      href: url, download: 'mollier.svg',
-    }).click();
+    Object.assign(document.createElement('a'), { href: url, download: 'mollier.svg' }).click();
     setTimeout(() => URL.revokeObjectURL(url), 500);
   }, []);
 
-  // ── Process arrows + state points ─────────────────────────────────────────
-  const processLayer = useMemo(() => {
-    if (!chain || chain.states.length < 1) return null;
-    const ARR = 8, ARR_W = 4;
+  // ── Process arrows ─────────────────────────────────────────────────────────
+  const arrowLayer = useMemo(() => {
+    if (!chain || chain.states.length < 2) return null;
+    const A = 7, AW = 3.5;
     return (
       <g>
         {chain.states.slice(1).map((st, i) => {
@@ -252,139 +202,107 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
           const len = Math.hypot(dx, dy) || 1;
           const ux = dx / len, uy = dy / len;
           const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-          const nx = -uy * 16, ny = ux * 16;
+          const nx = -uy * 14, ny = ux * 14;
           const qLabel =
             st.energy != null && Math.abs(st.energy) >= 0.05
-              ? `${st.energy > 0 ? '+' : ''}${st.energy.toFixed(1)} kW`
-              : '';
+              ? `${st.energy > 0 ? '+' : ''}${st.energy.toFixed(1)} kW` : '';
           return (
             <g key={st.id}>
               <line x1={x1} y1={y1} x2={x2} y2={y2}
-                stroke={color} strokeWidth={2.5} opacity={0.9} />
-              {len > 6 && (
+                stroke={color} strokeWidth={2.2} opacity={0.85} />
+              {len > 5 && (
                 <polygon fill={color}
-                  points={`${x2},${y2} ${x2 - ux * ARR + uy * ARR_W},${y2 - uy * ARR - ux * ARR_W} ${x2 - ux * ARR - uy * ARR_W},${y2 - uy * ARR + ux * ARR_W}`} />
+                  points={`${x2},${y2} ${x2-ux*A+uy*AW},${y2-uy*A-ux*AW} ${x2-ux*A-uy*AW},${y2-uy*A+ux*AW}`} />
               )}
               {qLabel && (
                 <g>
-                  <rect x={mx + nx - 27} y={my + ny - 7} width={54} height={12}
-                    rx={3} fill={color} opacity={0.15} />
-                  <text x={mx + nx} y={my + ny + 2} fontSize={8.5} textAnchor="middle"
-                    fontWeight={700} fill={color}>
-                    {qLabel}
-                  </text>
+                  <rect x={mx+nx-24} y={my+ny-7} width={48} height={12}
+                    rx={3} fill={color} opacity={0.12} />
+                  <text x={mx+nx} y={my+ny+2} fontSize={8} textAnchor="middle"
+                    fontWeight={700} fill={color}>{qLabel}</text>
                 </g>
               )}
             </g>
           );
         })}
+      </g>
+    );
+  }, [chain, xS, yS]);
 
+  // ── State circles (numbered, T_db label, white halo) ──────────────────────
+  const stateLayer = useMemo(() => {
+    if (!chain || chain.states.length < 1) return null;
+    return (
+      <g>
         {chain.states.map((st, i) => {
-          const d  = st.state.w * 1000;
-          const h  = st.state.h;
-          const cx = xS(d), cy = yS(h);
+          const cx    = xS(st.state.w * 1000);
+          const cy    = yS(st.state.h);
           const color = secColor(st.sectionType, i);
-
-          // Dew-point vertical indicator
-          const tdp  = dewPoint(st.state.w, pressure);
-          const hDp  = enthalpy(tdp, st.state.w);
-          const cyDp = yS(hDp);
-
-          // Label position: alternate sides
-          const side   = i % 2 === 0 ? 1 : -1;
-          const ax     = cx + side * 15;
-          const anchor = side > 0 ? 'start' : 'end';
-
+          const above = i % 2 === 0;
+          const labelY = above ? cy - 13 : cy + 19;
           return (
             <g key={st.id}>
-              {cy > cyDp + 6 && (
-                <>
-                  <line x1={cx} y1={cy} x2={cx} y2={cyDp}
-                    stroke={color} strokeWidth={0.9}
-                    strokeDasharray="3 3" opacity={0.4} />
-                  <circle cx={cx} cy={cyDp} r={2.5}
-                    fill="none" stroke={color} strokeWidth={1.2} opacity={0.6} />
-                </>
-              )}
-              <circle cx={cx} cy={cy} r={7}
-                fill={color} stroke="white" strokeWidth={2} />
-              <text x={cx} y={cy + 0.5} fontSize={9.5} textAnchor="middle"
+              <circle cx={cx} cy={cy} r={9}  fill="white" opacity={0.9} />
+              <circle cx={cx} cy={cy} r={7}  fill={color} stroke="white" strokeWidth={1.8} />
+              <text x={cx} y={cy + 0.5} fontSize={8.5} textAnchor="middle"
                 dominantBaseline="middle" fontWeight={700} fill="white">
                 {i}
               </text>
-              <text x={ax} y={cy - 27} fontSize={10.5} fontWeight={700}
-                textAnchor={anchor} fill={color}>
+              {/* White outline then colored text */}
+              <text x={cx} y={labelY} fontSize={8.5} textAnchor="middle"
+                fontWeight={600} stroke="white" strokeWidth={3}
+                style={{ paintOrder: 'stroke' } as React.CSSProperties}>
                 {st.state.tdb.toFixed(1)}°C
               </text>
-              <text x={ax} y={cy - 16} fontSize={9} textAnchor={anchor} fill="#2d5a9e">
-                φ {(st.state.rh * 100).toFixed(0)}%
-              </text>
-              <text x={ax} y={cy - 5} fontSize={8.5} textAnchor={anchor} fill="#334a5a" opacity={0.8}>
-                i {h.toFixed(1)} kJ/kg
-              </text>
-              <text x={ax} y={cy + 6} fontSize={8} textAnchor={anchor} fill="#0f6e3a">
-                wb {st.state.twb.toFixed(1)}°C
+              <text x={cx} y={labelY} fontSize={8.5} textAnchor="middle"
+                fontWeight={600} fill={color}>
+                {st.state.tdb.toFixed(1)}°C
               </text>
             </g>
           );
         })}
       </g>
     );
-  }, [chain, xS, yS, pressure]);
+  }, [chain, xS, yS]);
 
-  // ── Hover tooltip (SVG group) ─────────────────────────────────────────────
+  // ── Hover tooltip (inline SVG) ─────────────────────────────────────────────
   const tooltipEl = useMemo(() => {
     if (!hover) return null;
-    const ttW = 172, ttH = 66;
-    const ttX = hover.cx + 10 + (hover.cx > IW - 190 ? -(ttW + 20) : 0);
-    const ttY = hover.cy - 72  + (hover.cy < 80      ? 80           : 0);
+    const TW = 168, TH = 66;
+    const ttX = hover.cx + 14 + (hover.cx > IW - 190 ? -(TW + 24) : 0);
+    const ttY = hover.cy - 74 + (hover.cy < 84 ? 84 : 0);
     return (
       <g transform={`translate(${M.left + ttX},${M.top + ttY})`}
         style={{ pointerEvents: 'none' }}>
-        <rect width={ttW} height={ttH} rx={5}
-          fill="white" stroke="#cbd5e1" strokeWidth={1} opacity={0.96}
-          style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,.12))' }} />
-        <text x={10} y={18} fontSize={10.5} fontWeight={700} fill="#1e293b">
-          {hover.T.toFixed(1)}°C  ·  φ {hover.rh.toFixed(0)}%
+        <rect width={TW} height={TH} rx={5}
+          fill="white" stroke="#cbd5e1" strokeWidth={1} opacity={0.97}
+          style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,.14))' } as React.CSSProperties} />
+        <text x={10} y={18} fontSize={10} fontWeight={700} fill="#1e293b">
+          {hover.T.toFixed(1)}°C · φ {hover.rh.toFixed(0)}%
         </text>
-        <text x={10} y={32} fontSize={9.5} fill="#475569">
-          d = {hover.d.toFixed(2)} g/kg
-        </text>
-        <text x={10} y={44} fontSize={9.5} fill="#475569">
-          i = {hover.h.toFixed(1)} kJ/kg
-        </text>
-        <text x={10} y={56} fontSize={9.5} fill="#0f6e3a">
-          T_dp = {hover.tdp.toFixed(1)}°C
-        </text>
+        <text x={10} y={32} fontSize={9} fill="#475569">d = {hover.d.toFixed(2)} g/kg</text>
+        <text x={10} y={44} fontSize={9} fill="#475569">i = {hover.h.toFixed(1)} kJ/kg</text>
+        <text x={10} y={57} fontSize={9} fill="#0f6e3a">T_dp = {hover.tdp.toFixed(1)}°C</text>
       </g>
     );
   }, [hover]);
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div>
       {/* Toolbar */}
       <div className="flex items-center gap-2 mb-2">
-        <button
-          onClick={handleExport}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors hover:opacity-80"
-          style={{ borderColor: 'var(--bdr)', color: 'var(--text-2)', background: 'var(--sur)' }}
-        >
+        <button onClick={handleExport}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors hover:opacity-75"
+          style={{ borderColor: 'var(--bdr)', color: 'var(--text-2)', background: 'var(--sur)' }}>
           <Download size={11} /> SVG
         </button>
-        <button
-          onClick={handleReset}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs border transition-colors hover:opacity-80"
-          style={{ borderColor: 'var(--bdr)', color: 'var(--text-2)', background: 'var(--sur)' }}
-        >
-          <RotateCcw size={11} /> Reset zoom
-        </button>
         <span className="text-[10px] ml-auto" style={{ color: 'var(--text-3)' }}>
-          scroll → zoom · drag → pan · dblclick → reset
+          hover → values
         </span>
       </div>
 
-      {/* SVG */}
+      {/* Chart */}
       <svg
         ref={svgRef}
         viewBox={`0 0 ${SVG_W} ${SVG_H}`}
@@ -397,12 +315,11 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
         </defs>
 
         <g transform={`translate(${M.left},${M.top})`}>
-          {/* ── Clipped chart area ── */}
-          <g clipPath={`url(#${CLIP_ID})`}>
 
-            {/* Zoom group — D3 sets transform on this element */}
-            <g ref={zoomGRef}>
-              {/* Background fill */}
+          {/* ── Plot area (clipped) ──────────────────────────────────────── */}
+          <g clipPath={`url(#${CLIP_ID})`}>
+            <g>
+              {/* Background */}
               <rect x={0} y={0} width={IW} height={IH} fill="#f8fafc" />
 
               {/* Grid */}
@@ -418,22 +335,22 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
               {/* Specific volume lines */}
               {svPaths.map(({ v, d }) => d && (
                 <path key={v} d={d} fill="none"
-                  stroke="#94a3b8" strokeWidth={0.55} strokeDasharray="4 6" opacity={0.3} />
+                  stroke="#94a3b8" strokeWidth={0.5} strokeDasharray="5 7" opacity={0.28} />
               ))}
 
               {/* Wet-bulb lines */}
               {wbPaths.map(({ Twb, d }) => d && (
                 <path key={Twb} d={d} fill="none"
-                  stroke="#34d399" strokeWidth={0.75} strokeDasharray="5 4" opacity={0.5} />
+                  stroke="#34d399" strokeWidth={0.7} strokeDasharray="5 4" opacity={0.45} />
               ))}
 
               {/* Isotherms */}
               {isoPaths.map(({ T, d }) => d && (
                 <path key={T} d={d} fill="none"
-                  stroke={T === 0 ? '#2d4870' : '#7a96b8'}
-                  strokeWidth={T === 0 ? 1.5 : 0.8}
+                  stroke={T === 0 ? '#334e7a' : '#8aa5c5'}
+                  strokeWidth={T === 0 ? 1.4 : 0.75}
                   strokeDasharray={T < 0 ? '4 3' : '0'}
-                  opacity={0.75}
+                  opacity={T === 0 ? 0.85 : 0.65}
                 />
               ))}
 
@@ -441,70 +358,83 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
               {rhPaths.map(({ rh, d }) => d && (
                 <path key={rh} d={d} fill="none"
                   stroke="#3b82f6" strokeWidth={0.85}
-                  strokeDasharray="4 2" opacity={0.55} />
+                  strokeDasharray="4 2" opacity={0.5} />
               ))}
 
               {/* Saturation curve */}
-              <path d={satPath} fill="none" stroke="#1d4ed8" strokeWidth={2.8} />
+              <path d={satPath} fill="none" stroke="#1d4ed8" strokeWidth={2.6} />
 
-              {/* Isotherm labels */}
+              {/* ── Labels ── */}
+
+              {/* Isotherm labels (every 10 °C, near saturation curve) */}
               {isoLabels.map((lbl) => lbl && (
-                <text key={lbl.T} x={lbl.x} y={lbl.y - 4}
-                  fontSize={9} fill="#4a5e7a" opacity={0.85}>
-                  {lbl.T > 0 ? `+${lbl.T}` : lbl.T}°C
-                </text>
+                <g key={lbl.T}>
+                  <text x={lbl.x} y={lbl.y} textAnchor="end" fontSize={8.5}
+                    stroke="white" strokeWidth={2.5} fontWeight={600} fill="white">
+                    {lbl.T > 0 ? `+${lbl.T}` : `${lbl.T}`}°
+                  </text>
+                  <text x={lbl.x} y={lbl.y} textAnchor="end" fontSize={8.5}
+                    fontWeight={600} fill="#3b5278">
+                    {lbl.T > 0 ? `+${lbl.T}` : `${lbl.T}`}°
+                  </text>
+                </g>
               ))}
 
               {/* RH labels */}
               {rhLabels.map((lbl) => lbl && (
-                <text key={lbl.rh} x={lbl.x} y={lbl.y - 3}
-                  fontSize={8.5} fill="#1d4ed8" opacity={0.7}>
-                  {lbl.rh}%
-                </text>
+                <g key={lbl.rh}>
+                  <text x={lbl.x} y={lbl.y} fontSize={8.5}
+                    stroke="white" strokeWidth={2.5} fontWeight={600} fill="white">
+                    {lbl.rh}%
+                  </text>
+                  <text x={lbl.x} y={lbl.y} fontSize={8.5}
+                    fontWeight={600} fill="#1d4ed8" opacity={0.75}>
+                    {lbl.rh}%
+                  </text>
+                </g>
               ))}
 
               {/* Wet-bulb labels */}
               {wbLabels.map((lbl) => lbl && (
                 <text key={lbl.Twb} x={lbl.x} y={lbl.y}
-                  fontSize={8} fill="#059669" opacity={0.6}>
-                  wb {lbl.Twb}°
+                  fontSize={7.5} fill="#059669" opacity={0.6}>
+                  {lbl.Twb}°wb
                 </text>
               ))}
 
-              {/* Spec-vol labels (rightmost visible tick) */}
-              {svPaths.map(({ v, d: path }) => {
-                if (!path) return null;
+              {/* Spec-vol labels */}
+              {SVOL_VALS.map((v) => {
                 const pts = specVolPts(v, pressure);
                 if (!pts.length) return null;
                 const last = pts[pts.length - 1];
-                if (last.d < 0 || last.d > 30) return null;
+                if (last.d < 1 || last.d > 29.5) return null;
                 return (
-                  <text key={v} x={xS(last.d) - 2} y={yS(last.h) - 4}
-                    fontSize={7.5} fill="#64748b" opacity={0.5} textAnchor="end">
+                  <text key={v} x={xS(last.d) - 2} y={yS(last.h) - 3}
+                    fontSize={7} fill="#94a3b8" opacity={0.55} textAnchor="end">
                     {v}
                   </text>
                 );
               })}
 
-              {/* Process layer */}
-              {processLayer}
+              {/* Process arrows */}
+              {arrowLayer}
+              {/* State circles */}
+              {stateLayer}
             </g>
 
-            {/* Crosshair (outside zoom group — stays at cursor pos) */}
+            {/* Crosshair */}
             {hover && (
               <g style={{ pointerEvents: 'none' }}>
                 <line x1={hover.cx} y1={0} x2={hover.cx} y2={IH}
-                  stroke="#0f172a" strokeWidth={0.8}
-                  strokeDasharray="3 3" opacity={0.55} />
+                  stroke="#0f172a" strokeWidth={0.8} strokeDasharray="3 3" opacity={0.45} />
                 <line x1={0} y1={hover.cy} x2={IW} y2={hover.cy}
-                  stroke="#0f172a" strokeWidth={0.8}
-                  strokeDasharray="3 3" opacity={0.55} />
-                <circle cx={hover.cx} cy={hover.cy} r={3.5}
-                  fill="#0f172a" opacity={0.8} />
+                  stroke="#0f172a" strokeWidth={0.8} strokeDasharray="3 3" opacity={0.45} />
+                <circle cx={hover.cx} cy={hover.cy} r={3}
+                  fill="#0f172a" opacity={0.7} />
               </g>
             )}
 
-            {/* Invisible hover listener */}
+            {/* Hover listener */}
             <rect x={0} y={0} width={IW} height={IH}
               fill="transparent"
               onMouseMove={handleMouseMove}
@@ -512,25 +442,25 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
             />
           </g>
 
-          {/* ── X axis (updates on zoom) ── */}
+          {/* ── X axis ──────────────────────────────────────────────────── */}
           {X_TICKS.map((d) => {
-            const x = xZ(d);
+            const x = xS(d);
             if (x < -4 || x > IW + 4) return null;
             return (
               <g key={d} transform={`translate(${x},${IH})`}>
-                <line y2={5} stroke="#94a3b8" strokeWidth={0.8} />
-                <text y={17} textAnchor="middle" fontSize={9.5} fill="#64748b">{d}</text>
+                <line y2={4} stroke="#94a3b8" strokeWidth={0.8} />
+                <text y={15} textAnchor="middle" fontSize={9.5} fill="#64748b">{d}</text>
               </g>
             );
           })}
 
-          {/* ── Y axis (updates on zoom) ── */}
+          {/* ── Y axis ──────────────────────────────────────────────────── */}
           {Y_TICKS.map((h) => {
-            const y = yZ(h);
+            const y = yS(h);
             if (y < -4 || y > IH + 4) return null;
             return (
               <g key={h} transform={`translate(0,${y})`}>
-                <line x2={-5} stroke="#94a3b8" strokeWidth={0.8} />
+                <line x2={-4} stroke="#94a3b8" strokeWidth={0.8} />
                 <text x={-8} textAnchor="end" dominantBaseline="middle"
                   fontSize={9.5} fill="#64748b">{h}</text>
               </g>
@@ -542,17 +472,16 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
             fill="none" stroke="#cbd5e1" strokeWidth={1} />
 
           {/* Axis labels */}
-          <text x={IW / 2} y={IH + 44} textAnchor="middle"
-            fontSize={11.5} fill="#475569" fontWeight={600}>
+          <text x={IW / 2} y={IH + 46} textAnchor="middle"
+            fontSize={11} fill="#475569" fontWeight={600}>
             Humidity ratio  d  (g/kg)
           </text>
-          <text
-            transform={`translate(-46,${IH / 2}) rotate(-90)`}
-            textAnchor="middle" fontSize={11.5} fill="#475569" fontWeight={600}>
+          <text transform={`translate(-54,${IH / 2}) rotate(-90)`}
+            textAnchor="middle" fontSize={11} fill="#475569" fontWeight={600}>
             Specific enthalpy  i  (kJ/kg dry air)
           </text>
 
-          {/* Hover tooltip (SVG group, above everything) */}
+          {/* Tooltip */}
           {tooltipEl}
         </g>
       </svg>
