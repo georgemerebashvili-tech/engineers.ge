@@ -54,7 +54,7 @@ const STEPS: { id: WizardStep; label: string; icon: React.ComponentType<{size?: 
   { id: 'components', label: 'კომპონენტები + 3D', icon: Boxes },
   { id: 'psychro',    label: 'ფსიქრომეტრია',  icon: Thermometer },
   { id: 'sizing',     label: 'სიზინგი + ΔP',  icon: Gauge },
-  { id: 'fan',        label: 'ვენტილატორი',   icon: Fan },
+  { id: 'fan',        label: 'კომ. შერჩევა',  icon: Boxes },
   { id: 'summary',    label: 'შეჯამება',      icon: FileText },
   { id: 'report',     label: 'რეპორტი (PDF)', icon: Download },
 ];
@@ -670,7 +670,7 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
             <StepSizing state={state} psychro={psychro} chain={chain} />
           )}
           {state.currentStep === 'fan' && (
-            <StepFan state={state} />
+            <StepFan state={state} chain={chain} />
           )}
           {state.currentStep === 'summary' && (
             <StepSummary state={state} unit={unit} psychro={psychro} chain={chain} />

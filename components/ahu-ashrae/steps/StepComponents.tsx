@@ -204,6 +204,23 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
     setSections(sections.filter((_, i) => i !== idx));
   };
 
+  const setCoilSource = (idx: number, source: string) => {
+    const next = sections.map((s, i) => {
+      if (i !== idx) return s;
+      if (s.spec.type === 'cooling_coil') {
+        return { ...s, spec: { type: 'cooling_coil' as const, params: { ...s.spec.params, source: source as 'chw' | 'dx' } } };
+      }
+      if (s.spec.type === 'preheat') {
+        return { ...s, spec: { type: 'preheat' as const, params: { ...s.spec.params, source: source as 'hot_water' | 'electric' | 'steam' } } };
+      }
+      if (s.spec.type === 'reheat') {
+        return { ...s, spec: { type: 'reheat' as const, params: { ...s.spec.params, source: source as 'hot_water' | 'electric' | 'steam' } } };
+      }
+      return s;
+    });
+    setSections(next);
+  };
+
   const setFilterForm = (idx: number, form: FilterForm) => {
     const next = sections.map((s, i) => {
       if (i !== idx || s.spec.type !== 'filter') return s;
@@ -407,6 +424,7 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
               onRemove={() => removeSection(i)}
               onSetFilterForm={(form) => setFilterForm(i, form)}
               onSetFilterClass={(cls) => setFilterClass(i, cls)}
+              onSetCoilSource={(src) => setCoilSource(i, src)}
               onDragStart={handleDragStart(i)}
               onDragOver={handleDragOver(i)}
               onDrop={handleDrop(i)}
@@ -525,6 +543,7 @@ interface RowProps {
   onRemove: () => void;
   onSetFilterForm: (form: FilterForm) => void;
   onSetFilterClass: (cls: FilterClass) => void;
+  onSetCoilSource: (source: string) => void;
   onDragStart: (e: React.DragEvent<HTMLDivElement>) => void;
   onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
   onDrop: (e: React.DragEvent<HTMLDivElement>) => void;
@@ -532,7 +551,7 @@ interface RowProps {
 }
 function SectionRow({
   section, index, total, isDragSource, dragOverPos, hasViolation,
-  onMove, onToggle, onRemove, onSetFilterForm, onSetFilterClass,
+  onMove, onToggle, onRemove, onSetFilterForm, onSetFilterClass, onSetCoilSource,
   onDragStart, onDragOver, onDrop, onDragEnd,
 }: RowProps) {
   const Icon = ICON_MAP[section.spec.type];
@@ -595,6 +614,13 @@ function SectionRow({
                 params={section.spec.params}
                 onSetClass={onSetFilterClass}
                 onSetForm={onSetFilterForm}
+              />
+            )}
+            {(section.spec.type === 'cooling_coil' || section.spec.type === 'preheat' || section.spec.type === 'reheat') && (
+              <CoilSourcePicker
+                type={section.spec.type}
+                source={section.spec.params.source}
+                onChange={onSetCoilSource}
               />
             )}
           </div>
@@ -671,6 +697,51 @@ function FilterRowPickers({
           <option key={f} value={f}>
             {FILTER_FORM_SHORT[f]}
           </option>
+        ))}
+      </select>
+    </span>
+  );
+}
+
+const COOLING_SOURCES = [
+  { value: 'chw', label: 'CHW' },
+  { value: 'dx',  label: 'DX/ფრეონი' },
+];
+const HEAT_SOURCES = [
+  { value: 'hot_water', label: 'HW' },
+  { value: 'steam',     label: 'ორთქლი' },
+  { value: 'electric',  label: 'ელ.' },
+];
+
+function CoilSourcePicker({
+  type, source, onChange,
+}: {
+  type: 'cooling_coil' | 'preheat' | 'reheat';
+  source: string;
+  onChange: (v: string) => void;
+}) {
+  const options = type === 'cooling_coil' ? COOLING_SOURCES : HEAT_SOURCES;
+  const isCooling = type === 'cooling_coil';
+  return (
+    <span
+      className="inline-flex items-center"
+      onMouseDown={(e) => e.stopPropagation()}
+      draggable={false}
+    >
+      <select
+        value={source}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded px-1 py-0.5 border text-[10px] font-mono cursor-pointer focus:outline-none focus:ring-1"
+        style={{
+          background: isCooling ? '#e0f2fe' : '#fff7ed',
+          borderColor: isCooling ? '#7dd3fc' : '#fed7aa',
+          color: isCooling ? '#0369a1' : '#c2410c',
+        }}
+        title="კოჩის გამაგრ. / გამათბ. გარემო"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
         ))}
       </select>
     </span>
