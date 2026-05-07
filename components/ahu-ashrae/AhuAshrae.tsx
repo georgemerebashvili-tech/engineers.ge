@@ -670,7 +670,7 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
             <StepSizing state={state} psychro={psychro} chain={chain} />
           )}
           {state.currentStep === 'fan' && (
-            <StepFan state={state} chain={chain} />
+            <StepFan state={state} chain={chain} onUpdate={onUpdateCascade} />
           )}
           {state.currentStep === 'summary' && (
             <StepSummary state={state} unit={unit} psychro={psychro} chain={chain} />

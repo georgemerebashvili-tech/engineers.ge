@@ -1,20 +1,23 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Fan, Filter, PanelTopOpen, Snowflake, Flame,
   ArrowLeftRight, Droplet, Volume2, Shuffle,
   Zap, Gauge, Wrench, Thermometer, AlertTriangle, CheckCircle2,
+  Search,
   type LucideIcon,
 } from 'lucide-react';
-import type { AhuWizardState } from '@/lib/ahu-ashrae/types';
+import type { AhuWizardState, AflFanSelection } from '@/lib/ahu-ashrae/types';
 import type { ChainResult, ChainStateLabel } from '@/lib/ahu-ashrae/chain';
 import type { SectionConfig, SectionType } from '@/lib/ahu-ashrae/sections';
 import { SECTION_VISUALS } from '@/lib/ahu-ashrae/section-visuals';
+import { AflFanSelector } from './AflFanSelector';
 
 interface Props {
   state: AhuWizardState;
   chain?: ChainResult;
+  onUpdate?: (patch: Partial<AhuWizardState>) => void;
 }
 
 // ─── Static lookup tables ─────────────────────────────────────────────────────
@@ -119,15 +122,27 @@ const HUM_TYPE_KA: Record<string, string> = {
 
 // ─── Exported component ───────────────────────────────────────────────────────
 
-export function StepFan({ state, chain }: Props) {
+export function StepFan({ state, chain, onUpdate }: Props) {
+  const [showSelector, setShowSelector] = useState(false);
   const enabled = state.sections?.filter((s) => s.enabled) ?? [];
-  const airflowM3s = state.airflow.supplyAirflow / 3600;
   const totalDP = chain?.totalDeltaP ?? fallbackDP(state);
-  const fanPower = (airflowM3s * totalDP) / (
-    state.fanInputs.fanEfficiency * state.fanInputs.motorEfficiency * 1000
-  );
-  const sfp = (fanPower * 1000) / airflowM3s; // W/(m³/s)
-  const sfpOk = sfp <= 1700;
+  const systemQ = state.airflow.supplyAirflow;
+  const airflowM3s = systemQ / 3600;
+
+  // Use AFL-selected fan efficiency if available, else state default
+  const fanEff   = state.aflFan?.fanEff ?? state.fanInputs.fanEfficiency;
+  const motorEff = state.fanInputs.motorEfficiency;
+  const fanPower = (airflowM3s * totalDP) / (fanEff * motorEff * 1000);
+  const sfp      = (fanPower * 1000) / airflowM3s;
+  const sfpOk    = sfp <= 1700;
+
+  const handleFanSelected = (fan: AflFanSelection) => {
+    onUpdate?.({
+      aflFan: fan,
+      fanInputs: { ...state.fanInputs, fanEfficiency: fan.fanEff },
+    });
+    setShowSelector(false);
+  };
 
   return (
     <div className="space-y-5">
@@ -149,11 +164,50 @@ export function StepFan({ state, chain }: Props) {
           SFP ≤ 1 700 W/(m³/s) — ASHRAE 90.1 / EN 13779 ლიმიტი CV სისტ.
         </p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label="ხარჯი" value={`${state.airflow.supplyAirflow.toLocaleString('en-US')} m³/h`} />
+          <Stat label="ხარჯი" value={`${systemQ.toLocaleString('en-US')} m³/h`} />
           <Stat label="ΔP სისტემა" value={`${totalDP.toFixed(0)} Pa`} />
           <Stat label="სიმძლავრე" value={`${fanPower.toFixed(2)} kW`} />
           <Stat label="SFP" value={`${sfp.toFixed(0)} W/(m³/s)`} highlight ok={sfpOk} />
         </div>
+
+        {/* AFL fan badge or picker button */}
+        <div className="mt-3 flex items-center gap-3">
+          {state.aflFan ? (
+            <div
+              className="flex-1 flex items-center justify-between rounded-lg border px-3 py-2"
+              style={{ background: 'var(--blue-lt)', borderColor: 'var(--blue-bd)' }}
+            >
+              <div>
+                <div className="text-[10px] font-bold" style={{ color: 'var(--blue)' }}>AFL · შერჩ. მოდელი</div>
+                <div className="text-xs font-bold font-mono" style={{ color: 'var(--navy)' }}>
+                  {state.aflFan.model}
+                </div>
+                <div className="text-[10px] flex gap-3 mt-0.5" style={{ color: 'var(--text-3)' }}>
+                  <span>⌀ {state.aflFan.diameterMm} mm</span>
+                  <span>η = {(state.aflFan.fanEff * 100).toFixed(1)} %</span>
+                  <span>P = {state.aflFan.powerAtDesignW.toFixed(0)} W</span>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSelector(true)}
+                className="text-[10px] font-bold px-2 py-1 rounded hover:bg-[var(--blue-bd)] transition-colors"
+                style={{ color: 'var(--blue)' }}
+              >
+                შეცვლა
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowSelector(true)}
+              className="flex items-center gap-2 rounded-lg border px-4 py-2 text-xs font-bold transition-colors hover:bg-[var(--blue-lt)]"
+              style={{ borderColor: 'var(--blue-bd)', color: 'var(--blue)', background: 'transparent' }}
+            >
+              <Search size={13} />
+              AFL კატალოგი — ვენტ. შერჩევა
+            </button>
+          )}
+        </div>
+
         {!sfpOk && (
           <div
             className="mt-3 rounded-lg border px-3 py-2 text-[11px] flex items-start gap-2"
@@ -164,6 +218,18 @@ export function StepFan({ state, chain }: Props) {
           </div>
         )}
       </div>
+
+      {/* ── AFL Fan Selector ── */}
+      {showSelector && (
+        <AflFanSelector
+          systemQ={systemQ}
+          systemDp={totalDP}
+          current={state.aflFan}
+          onSelect={handleFanSelected}
+          onClose={() => setShowSelector(false)}
+        />
+      )}
+
 
       {/* ── Component cards ── */}
       {enabled.length > 0 ? (

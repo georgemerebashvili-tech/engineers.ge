@@ -179,7 +179,10 @@ export interface HeatingCoilResult {
 // ─── Fan ──────────────────────────────────────────────────────────────────────
 
 export interface FanInputs {
-  externalStaticPressure: number;  // Pa (user-provided system resistance)
+  externalStaticPressure: number;  // Pa — supply duct system resistance (user-provided)
+  /** Pa — exhaust duct system resistance. Only relevant for balanced AHUs (HRV + recovery).
+   *  Undefined → treated as same as externalStaticPressure. */
+  exhaustExternalStaticPressure?: number;
   // Component pressure drops (calculated)
   filterDeltaP: number;     // Pa
   coolingCoilDeltaP: number; // Pa
@@ -188,6 +191,21 @@ export interface FanInputs {
   ductDeltaP: number;        // Pa
   fanEfficiency: number;     // 0–1 (default 0.65)
   motorEfficiency: number;   // 0–1 (default 0.90)
+}
+
+export interface AflFanSelection {
+  id: number;
+  model: string;
+  diameterMm: number;
+  powerRatedW: number;
+  speedRpm: number;
+  voltageV: number;
+  weightKg: number;
+  /** Computed at the system design Q from the 10 V (max) curve polynomial */
+  fanEff: number;            // 0–1
+  pressureAtDesignPa: number;
+  powerAtDesignW: number;
+  graphId: number;
 }
 
 export interface FanResult {
@@ -287,6 +305,8 @@ export interface AhuWizardState {
    * UI can offer "reset to preset" without losing user customization on demand.
    */
   sectionPresetId?: import('./section-presets').PresetId;
+  /** AFL fan selected from the cloudair.tech catalog */
+  aflFan?: AflFanSelection;
   // Calculated results
   psychro?: PsychrometricResults;
   coolingCoil?: CoolingCoilResult;
