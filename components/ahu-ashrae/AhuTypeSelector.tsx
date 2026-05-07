@@ -42,8 +42,6 @@ export function AhuTypeSelector({ selected, onSelect }: Props) {
         ))}
       </div>
 
-      {/* Comparison table */}
-      <ComparisonTable selected={selected} />
     </div>
   );
 }
@@ -310,71 +308,3 @@ function Schematic({ type, color }: { type: AhuTypeSpec['schematic']; color: str
   return null;
 }
 
-// ─── Comparison Table ────────────────────────────────────────────────────────
-
-function ComparisonTable({ selected }: { selected?: AhuType }) {
-  return (
-    <div
-      className="rounded-xl border overflow-hidden"
-      style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}
-    >
-      <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--bdr)' }}>
-        <h3 className="text-xs font-bold uppercase tracking-[0.08em]" style={{ color: 'var(--navy)' }}>
-          შედარება
-        </h3>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead>
-            <tr style={{ background: 'var(--sur-2)' }}>
-              <th className="px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>ტიპი</th>
-              <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>ηₛ %</th>
-              <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>ηₗ %</th>
-              <th className="px-3 py-2 text-right text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>ΔP Pa</th>
-              <th className="px-3 py-2 text-center text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>Contam.</th>
-              <th className="px-3 py-2 text-center text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--text-3)' }}>Frost</th>
-            </tr>
-          </thead>
-          <tbody>
-            {AHU_TYPES.map((spec) => {
-              const isSel = spec.id === selected;
-              return (
-                <tr
-                  key={spec.id}
-                  className="border-t"
-                  style={{
-                    borderColor: 'var(--bdr)',
-                    background: isSel ? 'var(--blue-lt)' : undefined,
-                    fontWeight: isSel ? 600 : 400,
-                  }}
-                >
-                  <td className="px-3 py-2">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ background: spec.accent }} />
-                      <span style={{ color: 'var(--text)' }}>{spec.title}</span>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2 text-right font-mono" style={{ color: 'var(--text)' }}>
-                    {(spec.sensibleEffMin * 100).toFixed(0)}–{(spec.sensibleEffMax * 100).toFixed(0)}
-                  </td>
-                  <td className="px-3 py-2 text-right font-mono" style={{ color: spec.latentEffMax > 0 ? 'var(--grn)' : 'var(--text-3)' }}>
-                    {spec.latentEffMax > 0 ? `${(spec.latentEffMin * 100).toFixed(0)}–${(spec.latentEffMax * 100).toFixed(0)}` : '—'}
-                  </td>
-                  <td className="px-3 py-2 text-right font-mono" style={{ color: 'var(--text)' }}>
-                    {spec.dpMin}–{spec.dpMax}
-                  </td>
-                  <td className="px-3 py-2 text-center" style={{ color: 'var(--text-2)' }}>
-                    {contaminationLabel(spec.contamination)}
-                  </td>
-                  <td className="px-3 py-2 text-center" style={{ color: spec.frostRisk === 'high' ? 'var(--ora)' : spec.frostRisk === 'medium' ? 'var(--text-2)' : 'var(--grn)' }}>
-                    {spec.frostRisk === 'high' ? 'მაღალი' : spec.frostRisk === 'medium' ? 'საშ.' : 'დაბ.'}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
