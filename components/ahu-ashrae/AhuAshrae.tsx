@@ -277,9 +277,9 @@ export function AhuAshrae() {
   }, [refreshProjects]);
 
   // ─── Render ───
-  const wrapperStyle = fullscreen
-    ? { background: 'var(--bg)', position: 'fixed' as const, inset: 0, zIndex: 60 }
-    : { background: 'var(--bg)', minHeight: 'calc(100vh - 56px)' };
+  const wrapperStyle: React.CSSProperties = fullscreen
+    ? { background: 'var(--bg)', position: 'fixed', inset: 0, zIndex: 60 }
+    : { background: 'var(--bg)', minHeight: 'calc(100vh - 56px)', position: 'relative' };
 
   return (
     <div className="flex" style={wrapperStyle}>
