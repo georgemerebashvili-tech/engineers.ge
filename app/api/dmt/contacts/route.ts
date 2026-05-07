@@ -16,6 +16,21 @@ function label(contact: Record<string, unknown>) {
   return String(contact.name || contact.company || contact.email || contact.phone || 'Contact');
 }
 
+async function nextContactId(db: ReturnType<typeof supabaseAdmin>) {
+  const {data, error} = await db
+    .from('dmt_contacts')
+    .select('id');
+
+  if (error) throw error;
+
+  let max = 0;
+  for (const row of data ?? []) {
+    const n = Number((row as {id?: unknown}).id);
+    if (Number.isInteger(n) && n > max) max = n;
+  }
+  return String(max + 1);
+}
+
 export async function GET() {
   const auth = await requireDmtUser();
   if (auth.response) return auth.response;
@@ -37,12 +52,17 @@ export async function POST(req: NextRequest) {
   if (!body || typeof body !== 'object') {
     return NextResponse.json({error: 'invalid body'}, {status: 400});
   }
+  const id = String((body as {id?: unknown}).id ?? '');
+  if (id && !/^[1-9][0-9]*$/.test(id)) {
+    return NextResponse.json({error: 'invalid_contact_id_format'}, {status: 400});
+  }
 
   const actor = dmtActor(auth.me);
   const db = supabaseAdmin();
+  const bodyWithId = {...body, id: id || await nextContactId(db)};
   const {data, error} = await db
     .from('dmt_contacts')
-    .insert(contactToDb(body, actor))
+    .insert(contactToDb(bodyWithId, actor))
     .select()
     .single();
 

@@ -5,7 +5,7 @@ import {
   contactFromDb,
   dmtActor,
   jsonError,
-  manualLeadFromDb,
+  leadFromDb,
   parseNumber,
   requireDmtUser,
 } from '@/lib/dmt/shared-state-server';
@@ -13,20 +13,19 @@ import {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-async function nextManualLeadId(db: ReturnType<typeof supabaseAdmin>) {
+async function nextLeadId(db: ReturnType<typeof supabaseAdmin>) {
   const {data, error} = await db
-    .from('dmt_manual_leads')
-    .select('id')
-    .like('id', 'M-%');
+    .from('dmt_leads')
+    .select('id');
 
   if (error) throw error;
 
-  let max = 1000;
+  let max = 0;
   for (const row of data ?? []) {
-    const match = /^M-(\d+)$/.exec(String((row as {id?: unknown}).id ?? ''));
-    if (match) max = Math.max(max, Number(match[1]));
+    const n = Number((row as {id?: unknown}).id);
+    if (Number.isInteger(n) && n > max) max = n;
   }
-  return `M-${max + 1}`;
+  return String(max + 1);
 }
 
 function contactLabel(contact: Record<string, unknown>) {
@@ -60,26 +59,31 @@ export async function POST(
   }
 
   const now = new Date().toISOString();
-  const leadId = await nextManualLeadId(db);
+  const leadId = await nextLeadId(db);
 
-  const manualLeadRow = {
+  const leadRow = {
     id: leadId,
+    name: String(contact.name ?? ''),
     company: String(contact.company ?? ''),
-    contact: String(contact.name ?? ''),
     phone: String(contact.phone ?? ''),
-    contract: parseNumber(body?.value, 0),
-    status: 'ახალი',
-    role: '',
+    email: String(contact.email ?? ''),
+    source: typeof body?.source === 'string' && body.source ? body.source : 'manual',
+    stage: typeof body?.stage === 'string' && body.stage ? body.stage : 'new',
     owner: String(body?.owner ?? actor),
-    period: '',
-    edited_by: actor,
-    edited_at: now,
+    value: parseNumber(body?.value, 0),
+    labels: [],
+    offer_status: 'offer_in_progress',
+    inventory_checked: false,
+    from_contact_id: id,
+    created_at: now,
     created_by: actor,
+    updated_at: now,
+    updated_by: actor,
   };
 
   const {data: lead, error: leadError} = await db
-    .from('dmt_manual_leads')
-    .insert(manualLeadRow)
+    .from('dmt_leads')
+    .insert(leadRow)
     .select()
     .single();
 
@@ -117,7 +121,7 @@ export async function POST(
 
   return NextResponse.json({
     contact: contactFromDb(updatedContact),
-    lead: manualLeadFromDb(lead),
+    lead: leadFromDb(lead),
     contactAuditEntry: contactAudit ? contactAuditFromDb(contactAudit) : null,
   });
 }

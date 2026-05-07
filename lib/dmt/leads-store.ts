@@ -285,15 +285,12 @@ export async function importLocalLeadsOnce() {
 }
 
 export function nextLeadId(rows: Lead[]): string {
-  let max = 1000;
+  let max = 0;
   for (const r of rows) {
-    const m = /^L-(\d+)$/.exec(r.id);
-    if (m) {
-      const n = Number(m[1]);
-      if (n > max) max = n;
-    }
+    const n = Number(r.id);
+    if (Number.isInteger(n) && n > max) max = n;
   }
-  return 'L-' + (max + 1);
+  return String(max + 1);
 }
 
 export function emptyLead(rows: Lead[], actor: string): Lead {

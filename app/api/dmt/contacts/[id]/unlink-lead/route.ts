@@ -1,6 +1,7 @@
 import {NextRequest, NextResponse} from 'next/server';
 import {supabaseAdmin} from '@/lib/supabase/admin';
 import {
+  auditFromDb,
   contactAuditFromDb,
   contactFromDb,
   dmtActor,
@@ -39,12 +40,32 @@ export async function POST(
     return NextResponse.json({error: 'not_converted'}, {status: 400});
   }
 
+  const {data: lead} = await db
+    .from('dmt_leads')
+    .select('*')
+    .eq('id', leadId)
+    .maybeSingle();
+
   const {error: deleteError} = await db
-    .from('dmt_manual_leads')
+    .from('dmt_leads')
     .delete()
     .eq('id', leadId);
 
   if (deleteError) return jsonError(deleteError);
+
+  const {data: leadAudit} = lead
+    ? await db
+      .from('dmt_leads_audit')
+      .insert({
+        at: new Date().toISOString(),
+        by: actor,
+        action: 'delete',
+        lead_id: String(leadId),
+        lead_label: contactLabel(lead),
+      })
+      .select()
+      .single()
+    : {data: null};
 
   const now = new Date().toISOString();
   const {data: updatedContact, error: updateError} = await db
@@ -80,6 +101,7 @@ export async function POST(
   return NextResponse.json({
     contact: contactFromDb(updatedContact),
     deletedLeadId: leadId,
+    leadAuditEntry: leadAudit ? auditFromDb(leadAudit) : null,
     contactAuditEntry: contactAudit ? contactAuditFromDb(contactAudit) : null,
   });
 }

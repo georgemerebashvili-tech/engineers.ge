@@ -12,6 +12,34 @@
 
 - [x] 2026-05-04 — `/dmt/leads`, `/dmt/leads/manual`, `/dmt/variables` localStorage-ში ინახავს მონაცემს → სხვა user-ს არ უჩანს. გადავიტანოთ Postgres-ზე. Task: [docs/tasks/032-dmt-shared-state-persistence.md](./tasks/032-dmt-shared-state-persistence.md). Codex ✅ 2026-05-04 — migration `0061_dmt_shared_state.sql`, DMT API routes, one-time localStorage import, UI prefs localStorage-ში დარჩა.
 
+## 🟡 DMT Contacts page — feature parity with leads + bug fixes
+
+- [ ] 2026-05-06 — `/dmt/contacts`-ს უნდა ჰქონდეს იგივე UI რაც `/dmt/leads`-ს: სვეტების drag-drop reorder, per-column ფილტრი, resize, audit history, "ლიდი თუ არა" tri-state ფილტრი. ID-ები `C-1001+` ფორმატში (უკვე implemented store-ში, defensive იყოს). UI-დან convert-to-lead და unlink-lead რეალურად მუშაობდეს. Converted contact-ს მწვანე badge `<CheckCircle2 /> ლიდი L-XXXX` + 4px green left-border on row. **Bug fixes:** `Each child in a list should have a unique "key" prop` (`<select>` options-ზე — defensive `.filter(o=>o.id)`), `[object Object]` thrown from `apiJson` (consolidate `describeApiError` helper). Task: [docs/tasks/040-contacts-page-feature-parity.md](./tasks/040-contacts-page-feature-parity.md). 🟡
+
+## 🟡 DMT Contacts page — cleanup (post-040 polish)
+
+- [x] 2026-05-07 — Task 040-ის შემდეგ ზედმეტი chrome წავშალოთ: ❌ per-column filter funnel ყოველ სვეტზე, ❌ "მე" actor pill, ❌ `ფილტრი N ×` toolbar pill. ✅ ერთი dedicated tri-state `ყველა / ლიდი / არ არის ლიდი` toolbar ფილტრი. ✅ ცხრილის ქვემოთ ყოველთვის visible horizontal scrollbar (`overflow-x: scroll` + custom `::-webkit-scrollbar`). 🔄 Lead-link UI: badge-ის ნაცვლად iOS-style toggle (ON green = "ლიდი", OFF grey = "ლიდი") — click გადააგდო convert/unlink sane default-ებით (no popover). 🔢 IDs plain integers `1, 2, 3, ...` (არა `C-1001`/`L-1001`) — `nextContactId`/`nextLeadId` + server validation + seed update. Task: [docs/tasks/041-contacts-cleanup-and-toggle.md](./tasks/041-contacts-cleanup-and-toggle.md). Codex ✅ 2026-05-07 — typecheck OK; targeted eslint OK (existing set-state-in-effect warning remains).
+
+## 🟢 DMT Contacts page — ID ribbon + optimistic toggle (post-041 polish)
+
+- [x] 2026-05-07 — ID სვეტში top-left-ზე diagonal `ლიდი` ribbon (-45° rotation, green) როცა `convertedToLeadId != null`. Lead toggle ნელია — optimistic update: toggle flip-დება instant UI-ში სანამ network მუშაობს background-ში, double-click guard `pendingLeadOps` Set-ით, error rollback ძველ state-ზე. Task: [docs/tasks/042-contacts-id-ribbon-and-optimistic-toggle.md](./tasks/042-contacts-id-ribbon-and-optimistic-toggle.md). Codex ✅ 2026-05-07 — typecheck OK; targeted eslint OK.
+
+## 🔴 DMT Contacts page — horizontal scroll bug
+
+- [x] 2026-05-07 — Task 041-მა scrollbar დაამატა, მაგრამ არ მუშაობს. Root cause: nested overflow wrappers — outer `.dmt-scroll-x` (overflow-x: scroll) + inner `overflow-y-auto` ერთმანეთს ანულებენ. Inner wrapper-ი horizontal-ს clip-ავს და outer-ს არაფერი დარჩება scroll-ისთვის. Fix: ერთ element-ზე ორივე ღერძი (`.dmt-scroll { overflow-x: scroll; overflow-y: auto; max-height: ... }`), nested wrapper-ი წაიშალოს. Task: [docs/tasks/043-contacts-fix-horizontal-scroll.md](./tasks/043-contacts-fix-horizontal-scroll.md). Codex ✅ 2026-05-07 — typecheck OK; targeted eslint OK.
+
+## 🟢 DMT Contacts page — ribbon position fix
+
+- [x] 2026-05-07 — Task 042-ის ribbon `ლიდი` top-LEFT-ზე ჯდება და ID ციფრს ფარავს. Move to top-RIGHT corner: `-left-[14px]` → `-right-[14px]`, `-rotate-45` → `rotate-45`. Task: [docs/tasks/044-contacts-ribbon-position.md](./tasks/044-contacts-ribbon-position.md). Codex ✅ 2026-05-07 — typecheck OK; targeted eslint OK.
+
+## 🔴 DMT Contacts page — convert API inserts into wrong table (FK violation)
+
+- [x] 2026-05-07 — User feedback: "ლიდიდან იშლება, მაგრამ ვერ ემატება". Root cause (DB-verified): `dmt_contacts.converted_to_lead_id` FK → `dmt_leads(id)`, მაგრამ convert API inserts new row into `dmt_manual_leads`. `dmt_leads.max_id=30`, `dmt_manual_leads.max_id=35` → next manual lead = `36` → not in `dmt_leads` → FK violation → 500 → client rollback. Unlink მუშაობს (FK-ის გარეშე null assign). Fix: convert API insert-ი `dmt_leads`-ში (ფეიდები: stage/source/owner/value/labels + `from_contact_id` back-pointer). Task: [docs/tasks/045-contacts-convert-fk-fix.md](./tasks/045-contacts-convert-fk-fix.md). Codex ✅ 2026-05-07 — convert/unlink smoke OK; typecheck OK; targeted eslint OK.
+
+## 🟡 DMT Leads + Contacts — status filter, date filter, sort, bulk delete
+
+- [ ] 2026-05-07 — `/dmt/leads`-ზე: ❌ "მე" actor pill წაიშალოს, ❌ per-column filter funnels წაიშალოს. ✅ status chip row toolbar-ში (offer_in_progress/accepted/rejected + ყველა) count badge-ებით, ✅ date range filter (`დან`/`მდე`), ✅ sort dropdown (ID / created / updated / status / company / name + asc/desc), ✅ bulk select checkbox column + floating action bar `N მონიშნული · წავშალო N`, ✅ per-row delete (already exists, no regression). იგივე ფიჩერები `/dmt/contacts`-ზე (ლიდი chips count-ებით + date range + sort + bulk delete). Shared helpers in `lib/dmt/table-state.ts` + `components/dmt/{bulk-action-bar,status-chip-row,date-range-filter,sort-dropdown}.tsx`. Task: [docs/tasks/046-leads-and-contacts-filters-sort-bulk-delete.md](./tasks/046-leads-and-contacts-filters-sort-bulk-delete.md). 🟡
+
 ## 🟡 DMT Contacts page + lead conversion
 
 - [ ] 2026-05-04 — ახალი `/dmt/contacts` გვერდი — სრული საკონტაქტო რეესტრი + "→ ლიდად გადაყვანის" ღილაკი (კომპანიის გარეშე disabled). Conversion-ის შემდეგ contact-ზე badge `→ L-NNNN`. Task: [docs/tasks/033-dmt-contacts.md](./tasks/033-dmt-contacts.md). Codex code ✅ 2026-05-04 — build/typecheck OK; DB migration apply blocked by Supabase password auth (`28P01`).

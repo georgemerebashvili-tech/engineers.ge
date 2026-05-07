@@ -1,5 +1,7 @@
 
-export type ContactSource = 'manual' | 'import' | 'website' | 'referral' | 'event';
+import {apiJson} from '@/lib/dmt/api';
+
+export type ContactSource = 'manual' | 'import' | 'website' | 'referral' | 'event' | 'cold-call';
 export type ManualOfferStatus = 'offer_in_progress' | 'offer_accepted' | 'offer_rejected';
 export type TagCategory = 'funnel' | 'quality' | 'industry' | 'channel' | 'priority' | 'general';
 export type TagSuggestion = {
@@ -44,10 +46,69 @@ export type ContactAuditEntry = {
 };
 
 export type ConvertContactBody = {
+  stage?: string;
+  source?: string;
+  owner?: string;
   value?: number;
 };
 
-export const SOURCE_ORDER: ContactSource[] = ['manual', 'import', 'website', 'referral', 'event'];
+export type ContactColumnKey =
+  | 'id'
+  | 'name'
+  | 'company'
+  | 'position'
+  | 'phone'
+  | 'email'
+  | 'tags'
+  | 'source'
+  | 'convertedTo'
+  | 'notes'
+  | 'createdAt'
+  | 'createdBy'
+  | 'updatedBy'
+  | 'updatedAt';
+
+export const CONTACT_COLUMN_ORDER: ContactColumnKey[] = [
+  'id',
+  'name',
+  'company',
+  'position',
+  'phone',
+  'email',
+  'tags',
+  'source',
+  'convertedTo',
+  'notes',
+  'createdAt',
+  'createdBy',
+  'updatedBy',
+  'updatedAt'
+];
+
+const K = {
+  order: 'dmt_contacts_col_order_v1',
+  widths: 'dmt_contacts_col_widths_v1'
+} as const;
+
+function loadLocal<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function saveLocal<T>(key: string, value: T) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {}
+}
+
+export const SOURCE_ORDER: ContactSource[] = ['manual', 'import', 'website', 'referral', 'event', 'cold-call'];
 
 export const SOURCE_META: Record<ContactSource, {label: string; bg: string; color: string; border: string}> = {
   manual: {label: 'Manual', bg: 'var(--sur-2)', color: 'var(--text-2)', border: 'var(--bdr)'},
@@ -55,22 +116,8 @@ export const SOURCE_META: Record<ContactSource, {label: string; bg: string; colo
   website: {label: 'Website', bg: 'var(--grn-lt)', color: 'var(--grn)', border: 'var(--grn-bd)'},
   referral: {label: 'Referral', bg: 'var(--ora-lt)', color: 'var(--ora)', border: 'var(--ora-bd)'},
   event: {label: 'Event', bg: '#ede9fe', color: '#7c3aed', border: '#c4b5fd'},
+  'cold-call': {label: 'Cold call', bg: 'var(--sur-2)', color: 'var(--navy)', border: 'var(--bdr-2)'},
 };
-
-async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...init,
-    headers: {'content-type': 'application/json', ...(init?.headers ?? {})},
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    const error = new Error(String(body?.error ?? `Request failed: ${res.status}`));
-    (error as Error & {status?: number; body?: unknown}).status = res.status;
-    (error as Error & {status?: number; body?: unknown}).body = body;
-    throw error;
-  }
-  return res.json() as Promise<T>;
-}
 
 export async function loadContacts(): Promise<Contact[]> {
   const data = await apiJson<{contacts: Contact[]}>('/api/dmt/contacts');
@@ -119,12 +166,12 @@ export async function unlinkLeadFromContact(
 }
 
 export function nextContactId(rows: Contact[]) {
-  let max = 1000;
+  let max = 0;
   for (const row of rows) {
-    const m = /^C-(\d+)$/.exec(row.id);
-    if (m) max = Math.max(max, Number(m[1]));
+    const n = Number(row.id);
+    if (Number.isInteger(n) && n > max) max = n;
   }
-  return 'C-' + (max + 1);
+  return String(max + 1);
 }
 
 export function emptyContact(rows: Contact[], actor: string): Contact {
@@ -147,6 +194,29 @@ export function emptyContact(rows: Contact[], actor: string): Contact {
     updatedAt: now,
     updatedBy: actor,
   };
+}
+
+export function loadColumnOrder(): ContactColumnKey[] {
+  const saved = loadLocal<string[]>(K.order, []);
+  const valid = saved.filter((key): key is ContactColumnKey =>
+    CONTACT_COLUMN_ORDER.includes(key as ContactColumnKey)
+  );
+  for (const key of CONTACT_COLUMN_ORDER) {
+    if (!valid.includes(key)) valid.push(key);
+  }
+  return valid.length ? valid : [...CONTACT_COLUMN_ORDER];
+}
+
+export function saveColumnOrder(order: ContactColumnKey[]) {
+  saveLocal(K.order, order);
+}
+
+export function loadColumnWidths(): Record<string, number> {
+  return loadLocal<Record<string, number>>(K.widths, {});
+}
+
+export function saveColumnWidths(widths: Record<string, number>) {
+  saveLocal(K.widths, widths);
 }
 
 export function fmtDate(iso: string | null): string {

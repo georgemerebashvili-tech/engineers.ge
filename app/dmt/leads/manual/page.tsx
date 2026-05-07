@@ -40,6 +40,7 @@ import {
   type VarOption,
   type VarSet
 } from '@/lib/dmt/variables';
+import {describeApiError} from '@/lib/dmt/api';
 
 type Status =
   | 'ახალი'
@@ -151,7 +152,7 @@ async function apiJson<T>(url: string, init?: RequestInit): Promise<T> {
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(String(body?.error ?? `Request failed: ${res.status}`));
+    throw new Error(describeApiError(body, res.status));
   }
   return res.json() as Promise<T>;
 }
@@ -1517,7 +1518,9 @@ function renderExtraCell(
         style={{color, background: bg, borderColor: border}}
       >
         <option value="">—</option>
-        {set?.options.map((o) => (
+        {(set?.options ?? [])
+          .filter((o) => o && typeof o.id === 'string' && o.id.length > 0)
+          .map((o) => (
           <option key={o.id} value={o.id}>
             {o.label}
           </option>

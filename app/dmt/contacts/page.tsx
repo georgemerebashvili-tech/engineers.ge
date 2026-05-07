@@ -1,143 +1,184 @@
 'use client';
 
 import {useEffect, useMemo, useRef, useState} from 'react';
-import Link from 'next/link';
-import {createPortal} from 'react-dom';
-import {ArrowRight, Check, CheckCircle2, History, Lock, Plus, Trash2, X} from 'lucide-react';
+import {
+  Download,
+  GripVertical,
+  History,
+  Plus,
+  Trash2,
+  X
+} from 'lucide-react';
 import {DmtPageShell} from '@/components/dmt/page-shell';
 import {
+  CONTACT_COLUMN_ORDER,
+  SOURCE_META,
+  SOURCE_ORDER as CONTACT_SOURCE_ORDER,
   convertContactToLead,
   createContact,
   deleteContact,
   emptyContact,
-  unlinkLeadFromContact,
   fmtDate,
+  loadColumnOrder,
+  loadColumnWidths,
   loadContacts,
   loadContactsAudit,
+  saveColumnOrder,
+  saveColumnWidths,
+  unlinkLeadFromContact,
   updateContact,
   type Contact,
   type ContactAuditEntry,
+  type ContactColumnKey,
+  type ContactSource
 } from '@/lib/dmt/contacts-store';
 import {getActor} from '@/lib/dmt/leads-store';
 
-type EditableKey = 'name' | 'company' | 'position' | 'phone' | 'email' | 'tags' | 'notes';
+const MIN_W = 80;
+const MAX_W = 640;
 
-const COLS: Array<{key: string; label: string; width: number}> = [
-  {key: 'id', label: 'ID', width: 84},
-  {key: 'name', label: 'სახელი', width: 160},
-  {key: 'company', label: 'კომპანია', width: 180},
-  {key: 'position', label: 'თანამდებობა', width: 140},
-  {key: 'phone', label: 'ტელეფონი', width: 150},
-  {key: 'email', label: 'Email', width: 200},
-  {key: 'tags', label: 'თეგები', width: 280},
-  {key: 'convertedTo', label: 'ლიდი', width: 145},
-  {key: 'notes', label: 'შენიშვნა', width: 220},
-  {key: 'updatedBy', label: 'ბოლო რედ.', width: 140},
-  {key: 'updatedAt', label: 'ბოლო დრო', width: 150},
-];
-
-function formatLeadId(id: string) {
-  return id.length <= 10 ? id : `${id.slice(0, 4)}…${id.slice(-4)}`;
-}
-
-const SOURCE_TAG_BY_SOURCE: Record<Contact['source'], string> = {
-  manual: 'Manual',
-  import: 'Import',
-  website: 'Website',
-  referral: 'Referral',
-  event: 'Event',
+type Column = {
+  key: ContactColumnKey;
+  label: string;
+  width: number;
+  readonly?: boolean;
+  align?: 'right';
 };
 
-function hasTag(tags: string[], tag: string) {
-  return tags.some((item) => item.toLowerCase() === tag.toLowerCase());
+const COLUMNS: Record<ContactColumnKey, Column> = {
+  id: {key: 'id', label: 'ID', width: 92, readonly: true},
+  name: {key: 'name', label: 'სახელი', width: 170},
+  company: {key: 'company', label: 'კომპანია', width: 180},
+  position: {key: 'position', label: 'თანამდებობა', width: 150},
+  phone: {key: 'phone', label: 'ტელეფონი', width: 150},
+  email: {key: 'email', label: 'Email', width: 210},
+  tags: {key: 'tags', label: 'თეგები', width: 250},
+  source: {key: 'source', label: 'წყარო', width: 120},
+  convertedTo: {key: 'convertedTo', label: 'ლიდი თუ არა', width: 180, readonly: true},
+  notes: {key: 'notes', label: 'შენიშვნა', width: 220},
+  createdAt: {key: 'createdAt', label: 'დამატებულია', width: 150, readonly: true},
+  createdBy: {key: 'createdBy', label: 'ვინ დაამატა', width: 140, readonly: true},
+  updatedBy: {key: 'updatedBy', label: 'რედ. ავტორი', width: 140, readonly: true},
+  updatedAt: {key: 'updatedAt', label: 'ბოლო დრო', width: 150, readonly: true}
+};
+
+type EditableKey = 'name' | 'company' | 'position' | 'phone' | 'email' | 'notes';
+type LeadFilter = 'all' | 'lead' | 'not';
+
+const LEAD_FILTER_KEY = 'dmt_contacts_lead_filter_v1';
+
+function loadLeadFilter(): LeadFilter {
+  if (typeof window === 'undefined') return 'all';
+  const saved = window.localStorage.getItem(LEAD_FILTER_KEY);
+  return saved === 'lead' || saved === 'not' ? saved : 'all';
+}
+
+function saveLeadFilter(value: LeadFilter) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(LEAD_FILTER_KEY, value);
 }
 
 export default function DmtContactsPage() {
   const [hydrated, setHydrated] = useState(false);
   const [rows, setRows] = useState<Contact[]>([]);
   const [audit, setAudit] = useState<ContactAuditEntry[]>([]);
+  const [order, setOrder] = useState<ContactColumnKey[]>(CONTACT_COLUMN_ORDER);
+  const [widths, setWidths] = useState<Record<string, number>>({});
+  const [leadFilter, setLeadFilter] = useState<LeadFilter>('all');
   const [query, setQuery] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const [dragKey, setDragKey] = useState<ContactColumnKey | null>(null);
+  const [dragOverKey, setDragOverKey] = useState<ContactColumnKey | null>(null);
+  const [resizingKey, setResizingKey] = useState<string | null>(null);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
   const [toast, setToast] = useState('');
-  const sourceMigrationStarted = useRef(false);
-  const actor = getActor();
+  const [error, setError] = useState('');
+  const [actor, setActorState] = useState('მე');
+  const [pendingLeadOps, setPendingLeadOps] = useState<Set<string>>(new Set());
+  const pendingLeadOpsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
+    setOrder(loadColumnOrder());
+    setWidths(loadColumnWidths());
+    setLeadFilter(loadLeadFilter());
+    setActorState(getActor());
+
     (async () => {
       try {
         const [contacts, history] = await Promise.all([loadContacts(), loadContactsAudit()]);
         if (cancelled) return;
         setRows(contacts);
         setAudit(history);
-      } catch (error) {
-        console.error(error);
+        setError('');
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'კონტაქტები ვერ ჩაიტვირთა');
       } finally {
         if (!cancelled) setHydrated(true);
       }
     })();
-    return () => { cancelled = true; };
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return rows.filter((row) => {
-      if (!q) return true;
-      return [
-        row.id,
-        row.name,
-        row.company,
-        row.position,
-        row.phone,
-        row.email,
-        row.notes,
-        row.tags.join(' '),
-        row.convertedToLeadId ?? '',
-      ].some((value) => value.toLowerCase().includes(q));
-    });
-  }, [query, rows]);
+  useEffect(() => {
+    if (hydrated) saveColumnOrder(order);
+  }, [hydrated, order]);
 
   useEffect(() => {
-    if (!hydrated || sourceMigrationStarted.current || typeof window === 'undefined') return;
-    if (window.localStorage.getItem('dmt_contacts_source_migrated') === '1') return;
+    if (hydrated) saveColumnWidths(widths);
+  }, [hydrated, widths]);
 
-    sourceMigrationStarted.current = true;
-    const updates = rows
-      .map((row) => ({row, tag: SOURCE_TAG_BY_SOURCE[row.source]}))
-      .filter(({row, tag}) => tag && !hasTag(row.tags, tag));
+  useEffect(() => {
+    if (hydrated) saveLeadFilter(leadFilter);
+  }, [hydrated, leadFilter]);
 
-    if (!updates.length) {
-      window.localStorage.setItem('dmt_contacts_source_migrated', '1');
-      return;
-    }
+  const orderedColumns = useMemo(() => order.map((key) => COLUMNS[key]).filter(Boolean), [order]);
+  const widthOf = (col: Column) => widths[col.key] ?? col.width;
+  const gridTemplate = `${orderedColumns.map((col) => `${widthOf(col)}px`).join(' ')} 48px`;
+  const tableMinWidth = orderedColumns.reduce((sum, col) => sum + widthOf(col), 48);
 
-    void (async () => {
-      for (const {row, tag} of updates) {
-        const nextTags = [...row.tags, tag];
-        setRows((prev) => prev.map((item) => item.id === row.id ? {...item, tags: nextTags} : item));
-        try {
-          const saved = await updateContact(row.id, {tags: nextTags});
-          setRows((prev) => prev.map((item) => item.id === row.id ? saved.contact : item));
-          if (saved.auditEntries.length) setAudit((prev) => [...saved.auditEntries, ...prev]);
-        } catch (error) {
-          console.error('Contact source tag migration failed', row.id, error);
-        }
-      }
-      window.localStorage.setItem('dmt_contacts_source_migrated', '1');
-    })();
-  }, [hydrated, rows]);
+  const showToast = (message: string) => {
+    setToast(message);
+    window.setTimeout(() => setToast(''), 2500);
+  };
+
+  const scrollToContact = (id: string) => {
+    const el = document.querySelector(`[data-contact-row="${CSS.escape(id)}"]`);
+    if (el) el.scrollIntoView({behavior: 'smooth', block: 'center'});
+    setHighlightedId(id);
+    window.setTimeout(() => setHighlightedId(null), 1500);
+  };
+
+  const exportCsv = () => {
+    const headers = orderedColumns.map((col) => col.label);
+    const lines = filtered.map((row) =>
+      orderedColumns.map((col) => csvEscape(displayForColumn(row, col.key))).join(',')
+    );
+    const blob = new Blob([[headers.join(','), ...lines].join('\n')], {type: 'text/csv;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `dmt-contacts-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
 
   const addContact = async () => {
     const contact = emptyContact(rows, actor);
     setRows((prev) => [contact, ...prev]);
     try {
       const saved = await createContact(contact);
-      setRows((prev) => prev.map((row) => row.id === contact.id ? saved.contact : row));
+      setRows((prev) => prev.map((row) => (row.id === contact.id ? saved.contact : row)));
       if (saved.auditEntry) setAudit((prev) => [saved.auditEntry!, ...prev]);
-    } catch (error) {
-      console.error(error);
+      showToast(`კონტაქტი დაემატა: ${saved.contact.id}`);
+    } catch (err) {
       setRows((prev) => prev.filter((row) => row.id !== contact.id));
-      alert('კონტაქტი ვერ შეინახა.');
+      showToast(err instanceof Error ? err.message : 'კონტაქტი ვერ შეინახა');
     }
   };
 
@@ -145,15 +186,14 @@ export default function DmtContactsPage() {
     const before = rows.find((row) => row.id === id);
     if (!before) return;
     const optimistic = {...before, ...patch, updatedAt: new Date().toISOString(), updatedBy: actor};
-    setRows((prev) => prev.map((row) => row.id === id ? optimistic : row));
+    setRows((prev) => prev.map((row) => (row.id === id ? optimistic : row)));
     try {
       const saved = await updateContact(id, patch);
-      setRows((prev) => prev.map((row) => row.id === id ? saved.contact : row));
+      setRows((prev) => prev.map((row) => (row.id === id ? saved.contact : row)));
       if (saved.auditEntries.length) setAudit((prev) => [...saved.auditEntries, ...prev]);
-    } catch (error) {
-      console.error(error);
-      setRows((prev) => prev.map((row) => row.id === id ? before : row));
-      alert('ცვლილება ვერ შეინახა.');
+    } catch (err) {
+      setRows((prev) => prev.map((row) => (row.id === id ? before : row)));
+      showToast(err instanceof Error ? err.message : 'ცვლილება ვერ შეინახა');
     }
   };
 
@@ -165,229 +205,504 @@ export default function DmtContactsPage() {
     try {
       const deleted = await deleteContact(id);
       if (deleted.auditEntry) setAudit((prev) => [deleted.auditEntry!, ...prev]);
-    } catch (error) {
-      console.error(error);
+      showToast('კონტაქტი წაიშალა');
+    } catch (err) {
       setRows((prev) => [target, ...prev]);
-      alert('კონტაქტი ვერ წაიშალა.');
+      showToast(err instanceof Error ? err.message : 'კონტაქტი ვერ წაიშალა');
     }
   };
 
-  const convert = async (contact: Contact) => {
-    if (!contact.company.trim()) return;
-    if (contact.convertedToLeadId) return;
+  const beginLeadOp = (id: string) => {
+    if (pendingLeadOpsRef.current.has(id)) return false;
+    const next = new Set(pendingLeadOpsRef.current);
+    next.add(id);
+    pendingLeadOpsRef.current = next;
+    setPendingLeadOps(next);
+    return true;
+  };
+
+  const endLeadOp = (id: string) => {
+    const next = new Set(pendingLeadOpsRef.current);
+    next.delete(id);
+    pendingLeadOpsRef.current = next;
+    setPendingLeadOps(next);
+  };
+
+  const convertToLead = async (contact: Contact) => {
+    if (!beginLeadOp(contact.id)) return;
+    const nowIso = new Date().toISOString();
+    const optimistic: Contact = {
+      ...contact,
+      convertedToLeadId: '__pending__',
+      convertedAt: nowIso,
+      convertedBy: actor,
+      updatedAt: nowIso,
+      updatedBy: actor
+    };
+    setRows((prev) => prev.map((row) => (row.id === contact.id ? optimistic : row)));
+
     try {
-      const converted = await convertContactToLead(contact.id, {});
-      setRows((prev) => prev.map((row) => row.id === contact.id ? converted.contact : row));
+      const converted = await convertContactToLead(contact.id, {
+        stage: 'new',
+        source: 'manual',
+        owner: '',
+        value: 0
+      });
+      setRows((prev) => prev.map((row) => (row.id === contact.id ? converted.contact : row)));
       if (converted.contactAuditEntry) setAudit((prev) => [converted.contactAuditEntry!, ...prev]);
-      setToast(`კონტაქტი გადავიდა → ${converted.lead.id}`);
-      setTimeout(() => setToast(''), 2500);
+      showToast(`ლიდი შეიქმნა: ${converted.lead.id}`);
     } catch (err) {
-      const anyErr = err as Error & {status?: number};
-      if (anyErr.status === 409) alert('უკვე გადაყვანილია.');
-      else if (anyErr.status === 400) alert('კომპანია აუცილებელია.');
-      else alert('გადაყვანა ვერ დასრულდა.');
+      setRows((prev) => prev.map((row) => (row.id === contact.id ? contact : row)));
+      showToast(err instanceof Error ? err.message : 'ლიდად გადაყვანა ვერ დასრულდა');
+    } finally {
+      endLeadOp(contact.id);
     }
   };
 
   const unlinkLead = async (contact: Contact) => {
     if (!contact.convertedToLeadId) return;
-    if (!confirm(`ლიდი ${contact.convertedToLeadId} წავშალო? კონტაქტი დარჩება.`)) return;
+    if (!beginLeadOp(contact.id)) return;
+    const nowIso = new Date().toISOString();
+    const optimistic: Contact = {
+      ...contact,
+      convertedToLeadId: null,
+      convertedAt: null,
+      convertedBy: null,
+      updatedAt: nowIso,
+      updatedBy: actor
+    };
+    setRows((prev) => prev.map((row) => (row.id === contact.id ? optimistic : row)));
+
     try {
       const result = await unlinkLeadFromContact(contact.id);
-      setRows((prev) => prev.map((row) => row.id === contact.id ? result.contact : row));
+      setRows((prev) => prev.map((row) => (row.id === contact.id ? result.contact : row)));
       if (result.contactAuditEntry) setAudit((prev) => [result.contactAuditEntry!, ...prev]);
-      setToast(`ლიდი ${result.deletedLeadId} წაიშალა`);
-      setTimeout(() => setToast(''), 2500);
-    } catch (error) {
-      console.error(error);
-      alert('ლიდი ვერ წაიშალა.');
+      showToast('ლიდი ამოშლილია');
+    } catch (err) {
+      setRows((prev) => prev.map((row) => (row.id === contact.id ? contact : row)));
+      showToast(err instanceof Error ? err.message : 'ლიდი ვერ ამოიშალა');
+    } finally {
+      endLeadOp(contact.id);
     }
   };
+
+  const onDragStart = (key: ContactColumnKey) => () => setDragKey(key);
+  const onDragOver = (key: ContactColumnKey) => (e: React.DragEvent) => {
+    e.preventDefault();
+    if (dragKey && dragKey !== key) setDragOverKey(key);
+  };
+  const onDrop = (key: ContactColumnKey) => (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!dragKey || dragKey === key) {
+      setDragKey(null);
+      setDragOverKey(null);
+      return;
+    }
+    setOrder((prev) => {
+      const next = prev.slice();
+      const from = next.indexOf(dragKey);
+      const to = next.indexOf(key);
+      if (from < 0 || to < 0) return prev;
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
+    setDragKey(null);
+    setDragOverKey(null);
+  };
+
+  const startResize = (key: string, startWidth: number) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResizingKey(key);
+    const startX = e.clientX;
+    const onMove = (ev: MouseEvent) => {
+      const next = Math.min(MAX_W, Math.max(MIN_W, startWidth + ev.clientX - startX));
+      setWidths((prev) => ({...prev, [key]: next}));
+    };
+    const onUp = () => {
+      setResizingKey(null);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return rows.filter((row) => {
+      if (leadFilter === 'lead' && !row.convertedToLeadId) return false;
+      if (leadFilter === 'not' && row.convertedToLeadId) return false;
+      if (q) {
+        const hit = [
+          row.id,
+          row.name,
+          row.company,
+          row.phone,
+          row.email,
+          row.tags.join(' '),
+          row.notes
+        ].some((value) => value.toLowerCase().includes(q));
+        if (!hit) return false;
+      }
+      return true;
+    });
+  }, [leadFilter, query, rows]);
 
   return (
     <DmtPageShell
       kicker="DMT · CRM"
       title="კონტაქტები"
-      subtitle="საკონტაქტო რეესტრი pipeline-ის გარეთ, manual lead conversion-ით."
-      searchPlaceholder="ძებნა კონტაქტებში..."
+      subtitle="ყველა კონტაქტი — ცოცხალი grid, ცვლილებები ავტომატურად ინახება"
+      searchPlaceholder="ძიება სახელი / კომპანია / email / ID…"
       onQueryChange={setQuery}
+      filterSlot={
+        <div className="inline-flex items-center rounded-md border border-bdr bg-sur-2 p-0.5 text-[11.5px] font-semibold">
+          <button
+            onClick={() => setLeadFilter('all')}
+            className={leadFilter === 'all'
+              ? 'rounded bg-blue px-2.5 py-1 text-white'
+              : 'px-2.5 py-1 text-text-2 hover:text-blue'}
+          >
+            ყველა
+          </button>
+          <button
+            onClick={() => setLeadFilter('lead')}
+            className={leadFilter === 'lead'
+              ? 'rounded bg-grn px-2.5 py-1 text-white'
+              : 'px-2.5 py-1 text-text-2 hover:text-grn'}
+          >
+            ლიდი
+          </button>
+          <button
+            onClick={() => setLeadFilter('not')}
+            className={leadFilter === 'not'
+              ? 'rounded bg-text-3 px-2.5 py-1 text-white'
+              : 'px-2.5 py-1 text-text-2 hover:text-text'}
+          >
+            არ არის ლიდი
+          </button>
+        </div>
+      }
       actions={
         <>
           <button
-            onClick={() => setShowHistory((v) => !v)}
-            className="inline-flex items-center gap-1.5 rounded-md border border-bdr bg-sur-2 px-3 py-1.5 text-[12px] font-semibold text-text-2 hover:border-blue hover:text-blue"
+            onClick={() => setShowHistory((value) => !value)}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[12px] font-semibold ${
+              showHistory
+                ? 'border-blue bg-blue-lt text-blue'
+                : 'border-bdr bg-sur-2 text-text-2 hover:border-blue hover:text-blue'
+            }`}
+            title="ცვლილებათა ლოგი"
           >
-            <History size={14} /> Audit
+            <History size={14} /> ისტორია · {audit.length}
           </button>
           <button
-            onClick={addContact}
+            onClick={exportCsv}
+            className="inline-flex items-center gap-1.5 rounded-md border border-bdr bg-sur-2 px-3 py-1.5 text-[12px] font-semibold text-text-2 hover:border-blue hover:text-blue"
+          >
+            <Download size={14} /> Export
+          </button>
+          <button
+            onClick={() => void addContact()}
             className="inline-flex items-center gap-1.5 rounded-md border border-blue bg-blue px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-navy-2"
           >
-            <Plus size={14} /> ახალი კონტაქტი
+            <Plus size={14} /> ახალი
           </button>
         </>
       }
     >
       {toast && (
-        <div className="fixed right-5 top-5 z-50 rounded-md border border-grn-bd bg-grn-lt px-3 py-2 text-[12px] font-semibold text-grn shadow-lg">
+        <div className="fixed right-5 top-5 z-50 rounded-md border border-grn-bd bg-grn-lt px-3 py-2 text-[12px] font-semibold text-grn shadow-card">
           {toast}
         </div>
       )}
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        <div className="min-w-0 flex-1 overflow-auto bg-sur-2/40 p-4">
-          <div className="min-w-max overflow-hidden rounded-lg border border-bdr bg-sur shadow-sm">
-            <div
-              className="grid border-b border-bdr bg-sur-2 text-[11px] font-bold uppercase tracking-[0.04em] text-text-3"
-              style={{gridTemplateColumns: `${COLS.map((c) => `${c.width}px`).join(' ')} 48px`}}
-            >
-              {COLS.map((col) => (
-                <div key={col.key} className="border-r border-bdr px-3 py-2">{col.label}</div>
-              ))}
-              <div />
-            </div>
 
-            {!hydrated ? (
-              <div className="px-4 py-10 text-center text-[13px] text-text-3">იტვირთება...</div>
-            ) : filtered.length === 0 ? (
-              <div className="px-4 py-10 text-center text-[13px] text-text-3">
-                კონტაქტი არ მოიძებნა.
+      <div className="flex h-full gap-4 px-6 py-5 md:px-8">
+        <div className="min-w-0 flex-1">
+          <div className="mb-4 grid gap-3 md:grid-cols-3">
+            <StatCard label="ნაჩვენები" value={String(filtered.length)} />
+            <StatCard label="ლიდად კონვერტ." value={String(rows.filter((row) => row.convertedToLeadId).length)} accent="grn" />
+            <StatCard label="გაუხსნელი" value={String(rows.filter((row) => !row.convertedToLeadId).length)} accent="blue" />
+          </div>
+
+          <div className="dmt-scroll rounded-[10px] border border-bdr bg-sur">
+            <div style={{minWidth: tableMinWidth}}>
+              <div
+                className="sticky top-0 z-20 grid border-b border-bdr bg-sur-2 text-[11px] font-bold text-text-3"
+                style={{gridTemplateColumns: gridTemplate}}
+              >
+                {orderedColumns.map((col) => (
+                  <HeaderCell
+                    key={col.key}
+                    col={col}
+                    width={widthOf(col)}
+                    dragging={dragKey === col.key}
+                    dragOver={dragOverKey === col.key}
+                    resizing={resizingKey === col.key}
+                    onDragStart={onDragStart(col.key)}
+                    onDragOver={onDragOver(col.key)}
+                    onDrop={onDrop(col.key)}
+                    onResizeStart={startResize(col.key, widthOf(col))}
+                  />
+                ))}
+                <div />
               </div>
-            ) : (
-              filtered.map((row) => (
-                <div
-                  key={row.id}
-                  className="grid border-b border-bdr text-[12px] text-text last:border-b-0 hover:bg-blue-lt/20"
-                  style={{gridTemplateColumns: `${COLS.map((c) => `${c.width}px`).join(' ')} 48px`}}
-                >
-                  {COLS.map((col) => (
-                    <Cell
-                      key={col.key}
-                      col={col.key}
-                      row={row}
-                      onPatch={(patch) => void patchContact(row.id, patch)}
-                      onConvert={() => void convert(row)}
-                      onUnlink={() => void unlinkLead(row)}
-                    />
-                  ))}
-                  <div className="flex items-center justify-center">
-                    <button
-                      onClick={() => void removeContact(row.id)}
-                      className="rounded p-1 text-text-3 hover:bg-red-lt hover:text-red"
-                      title="წაშლა"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+
+              {!hydrated ? (
+                <div className="px-4 py-10 text-center text-[13px] text-text-3">იტვირთება...</div>
+              ) : error ? (
+                <div className="px-4 py-10 text-center text-[13px] text-red">{error}</div>
+              ) : filtered.length === 0 ? (
+                <div className="px-4 py-10 text-center text-[13px] text-text-3">კონტაქტი არ მოიძებნა.</div>
+              ) : (
+                filtered.map((row) => (
+                  <div
+                    key={row.id}
+                    data-contact-row={row.id}
+                    className={`grid border-b border-bdr text-[12px] text-text last:border-b-0 hover:bg-blue-lt/20 ${
+                      row.convertedToLeadId ? 'border-l-4 border-l-grn' : 'border-l-4 border-l-transparent'
+                    } ${highlightedId === row.id ? 'bg-blue-lt ring-2 ring-blue-bd' : ''}`}
+                    style={{gridTemplateColumns: gridTemplate}}
+                  >
+                    {orderedColumns.map((col) => (
+                      <Cell
+                        key={col.key}
+                        col={col.key}
+                        row={row}
+                        pending={pendingLeadOps.has(row.id)}
+                        onPatch={(patch) => void patchContact(row.id, patch)}
+                        onConvert={() => void convertToLead(row)}
+                        onUnlink={() => void unlinkLead(row)}
+                      />
+                    ))}
+                    <div className="flex items-center justify-center">
+                      <button
+                        onClick={() => void removeContact(row.id)}
+                        className="rounded p-1 text-text-3 hover:bg-red-lt hover:text-red"
+                        title="წაშლა"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
         </div>
 
         {showHistory && (
-          <aside className="w-[360px] shrink-0 overflow-auto border-l border-bdr bg-sur p-3">
-            <div className="mb-2 flex items-center justify-between">
-              <div className="text-[13px] font-bold text-navy">Contacts audit</div>
-              <button onClick={() => setShowHistory(false)} className="rounded p-1 text-text-3 hover:bg-sur-2">
-                <X size={14} />
-              </button>
-            </div>
-            <div className="space-y-2">
-              {audit.length === 0 ? (
-                <div className="text-[12px] text-text-3">Audit ცარიელია.</div>
-              ) : audit.map((entry) => (
-                <div key={entry.id} className="rounded-md border border-bdr bg-sur-2 p-2 text-[11.5px]">
-                  <div className="font-semibold text-navy">{entry.action} · {entry.contactLabel}</div>
-                  <div className="mt-0.5 text-text-3">{fmtDate(entry.at)} · {entry.by}</div>
-                  {entry.column && (
-                    <div className="mt-1 text-text-2">
-                      {entry.columnLabel ?? entry.column}: {entry.before ?? ''} → {entry.after ?? ''}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </aside>
+          <AuditPanel audit={audit} onClose={() => setShowHistory(false)} onSelect={scrollToContact} />
         )}
       </div>
-
+      <style jsx global>{`
+        .dmt-scroll {
+          overflow-x: scroll;
+          overflow-y: auto;
+          max-height: calc(100vh - 280px);
+          scrollbar-width: thin;
+          scrollbar-color: var(--bdr-2) transparent;
+        }
+        .dmt-scroll::-webkit-scrollbar {
+          width: 10px;
+          height: 10px;
+        }
+        .dmt-scroll::-webkit-scrollbar-track {
+          background: var(--sur-2);
+          border-radius: 5px;
+        }
+        .dmt-scroll::-webkit-scrollbar-thumb {
+          background: var(--bdr-2);
+          border-radius: 5px;
+        }
+        .dmt-scroll::-webkit-scrollbar-thumb:hover {
+          background: var(--text-3);
+        }
+        .dmt-scroll::-webkit-scrollbar-corner {
+          background: var(--sur-2);
+        }
+      `}</style>
     </DmtPageShell>
+  );
+}
+
+function HeaderCell({
+  col,
+  width,
+  dragging,
+  dragOver,
+  resizing,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onResizeStart
+}: {
+  col: Column;
+  width: number;
+  dragging: boolean;
+  dragOver: boolean;
+  resizing: boolean;
+  onDragStart: () => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent) => void;
+  onResizeStart: (e: React.MouseEvent) => void;
+}) {
+  return (
+    <div
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      className={`group relative flex items-center gap-1 border-r border-bdr px-2 py-2 ${
+        dragging ? 'opacity-50' : ''
+      } ${dragOver ? 'bg-blue-lt' : ''}`}
+      style={{width}}
+    >
+      <GripVertical size={12} className="shrink-0 text-text-3 opacity-0 group-hover:opacity-100" />
+      <span className="min-w-0 flex-1 truncate" title={col.label}>{col.label}</span>
+      <span
+        onMouseDown={onResizeStart}
+        className={`absolute right-0 top-0 h-full w-[6px] cursor-col-resize ${resizing ? 'bg-blue' : 'hover:bg-blue-bd'}`}
+      />
+    </div>
   );
 }
 
 function Cell({
   col,
   row,
+  pending,
   onPatch,
   onConvert,
-  onUnlink,
+  onUnlink
 }: {
-  col: string;
+  col: ContactColumnKey;
   row: Contact;
+  pending: boolean;
   onPatch: (patch: Partial<Contact>) => void;
   onConvert: () => void;
   onUnlink: () => void;
 }) {
-  if (col === 'id') return <div className="border-r border-bdr px-3 py-2 font-mono text-[11px] text-text-3">{row.id}</div>;
-  if (col === 'convertedTo') return (
-    <div className="border-r border-bdr px-2 py-1.5">
-      {row.convertedToLeadId ? (
-        <span className="group/badge inline-flex items-stretch overflow-hidden rounded-full border border-grn-bd bg-grn-lt shadow-sm transition-all hover:border-grn hover:shadow">
-          <Link
-            href={`/dmt/leads/manual?highlight=${encodeURIComponent(row.convertedToLeadId)}`}
-            title={`ლიდი ${row.convertedToLeadId} — გადადი ლიდის გვერდზე`}
-            className="flex min-w-0 items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold text-grn transition-colors hover:bg-grn hover:text-white"
-          >
-            <CheckCircle2 size={13} strokeWidth={2.5} />
-            <span>ლიდი</span>
-            <span className="max-w-[100px] truncate font-mono" title={row.convertedToLeadId}>
-              {formatLeadId(row.convertedToLeadId)}
-            </span>
-          </Link>
-          <button
-            onClick={onUnlink}
-            title="ლიდის წაშლა"
-            className="flex items-center border-l border-grn-bd px-1.5 text-grn opacity-50 transition-all hover:bg-red hover:text-white hover:opacity-100"
-          >
-            <X size={12} strokeWidth={2.75} />
-          </button>
-        </span>
-      ) : !row.company.trim() ? (
+  if (col === 'id') return <ContactIdCell id={row.id} isLead={row.convertedToLeadId != null} />;
+  if (col === 'createdBy') return <AuthorCell name={row.createdBy} />;
+  if (col === 'updatedBy') return <AuthorCell name={row.updatedBy} />;
+  if (col === 'createdAt') return <ReadCell mono>{fmtDate(row.createdAt)}</ReadCell>;
+  if (col === 'updatedAt') return <ReadCell mono>{fmtDate(row.updatedAt)}</ReadCell>;
+  if (col === 'source') {
+    return (
+      <div className="border-r border-bdr px-2 py-1.5">
+        <select
+          value={row.source}
+          onChange={(e) => onPatch({source: e.target.value as ContactSource})}
+          className="h-7 w-full rounded-[5px] border border-bdr bg-sur-2 px-2 text-[11.5px] text-text focus:border-blue focus:outline-none"
+        >
+          {CONTACT_SOURCE_ORDER.map((source) => (
+            <option key={source} value={source}>{SOURCE_META[source].label}</option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+  if (col === 'convertedTo') {
+    return (
+      <ContactLeadToggle row={row} pending={pending} onConvert={onConvert} onUnlink={onUnlink} />
+    );
+  }
+  if (col === 'tags') return <TagsCell tags={row.tags} onChange={(tags) => onPatch({tags})} />;
+  return (
+    <EditableText
+      key={`${row.id}:${col}:${String(row[col as EditableKey] ?? '')}`}
+      value={String(row[col as EditableKey] ?? '')}
+      placeholder="—"
+      multiline={col === 'notes'}
+      onCommit={(value) => onPatch({[col]: value} as Partial<Contact>)}
+    />
+  );
+}
+
+function ContactIdCell({id, isLead}: {id: string; isLead: boolean}) {
+  return (
+    <div className="relative h-full overflow-hidden border-r border-bdr">
+      <div className="px-3 py-2 font-mono text-[11.5px] font-semibold text-navy">
+        {id}
+      </div>
+      {isLead && (
         <span
-          title="კონტაქტს კომპანია არ აქვს — ჯერ მიუთითე"
-          className="inline-flex cursor-not-allowed items-center gap-1.5 rounded-full border border-bdr bg-sur-2 px-2.5 py-1 text-[11px] font-semibold text-text-3 opacity-70"
+          aria-hidden
+          className="pointer-events-none absolute -right-[14px] top-[6px] w-[56px] rotate-45 select-none bg-grn text-center font-mono text-[8px] font-bold uppercase tracking-[0.06em] text-white shadow-[0_1px_0_0_var(--navy-2)]"
         >
-          <Lock size={11} strokeWidth={2.5} />
-          ლიდად
+          ლიდი
         </span>
-      ) : (
-        <button
-          title="ლიდად გადაყვანა (ყველა ლიდში დაემატება)"
-          onClick={onConvert}
-          className="group relative inline-flex items-center gap-1.5 overflow-hidden rounded-full border border-blue-bd bg-gradient-to-r from-blue-lt to-sur px-2.5 py-1 text-[11px] font-semibold text-blue shadow-sm transition-all hover:border-blue hover:from-blue hover:to-navy-2 hover:text-white hover:shadow-md hover:scale-[1.03] active:scale-[0.98]"
-        >
-          <ArrowRight size={12} strokeWidth={2.75} className="transition-transform group-hover:translate-x-0.5" />
-          ლიდად
-        </button>
       )}
     </div>
   );
-  if (col === 'tags') return (
-    <TagsCell
-      tags={row.tags}
-      onChange={(tags) => onPatch({tags})}
-    />
-  );
-  if (col === 'updatedBy') return <div className="border-r border-bdr px-3 py-2 text-text-2">{row.updatedBy}</div>;
-  if (col === 'updatedAt') return <div className="border-r border-bdr px-3 py-2 font-mono text-[11px] text-text-3">{fmtDate(row.updatedAt)}</div>;
+}
+
+function ContactLeadToggle({
+  row,
+  pending,
+  onConvert,
+  onUnlink
+}: {
+  row: Contact;
+  pending: boolean;
+  onConvert: () => void;
+  onUnlink: () => void;
+}) {
+  const isLead = row.convertedToLeadId != null;
+  const onToggle = () => {
+    if (isLead) {
+      if (!confirm('ამოვშალო ლიდი?')) return;
+      onUnlink();
+      return;
+    }
+    onConvert();
+  };
 
   return (
-    <EditableText
-      value={String(row[col as EditableKey] ?? '')}
-      placeholder="—"
-      onCommit={(value) => onPatch({[col]: value} as Partial<Contact>)}
-      multiline={col === 'notes'}
-    />
+    <div className="flex items-center gap-2 border-r border-bdr px-3 py-2">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={isLead}
+        onClick={onToggle}
+        disabled={pending}
+        className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-grn focus:ring-offset-2 ${
+          isLead ? 'bg-grn' : 'bg-text-3/40'
+        } ${pending ? 'cursor-wait opacity-60' : ''}`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-150 ${
+            isLead ? 'translate-x-[18px]' : 'translate-x-[2px]'
+          }`}
+        />
+      </button>
+      <span className={`text-[11.5px] font-semibold ${isLead ? 'text-grn' : 'text-text-3'}`}>
+        ლიდი
+      </span>
+    </div>
+  );
+}
+
+function AuthorCell({name}: {name: string}) {
+  const label = name || '—';
+  return (
+    <div className="flex items-center gap-2 border-r border-bdr px-3 py-2 text-text-2">
+      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-lt text-[10px] font-bold text-blue">
+        {label.slice(0, 1).toUpperCase()}
+      </span>
+      <span className="min-w-0 truncate">{label}</span>
+    </div>
+  );
+}
+
+function ReadCell({children, mono}: {children: React.ReactNode; mono?: boolean}) {
+  return (
+    <div className={`border-r border-bdr px-3 py-2 text-text-2 ${mono ? 'font-mono text-[11px] text-text-3' : ''}`}>
+      {children}
+    </div>
   );
 }
 
@@ -395,7 +710,7 @@ function EditableText({
   value,
   onCommit,
   placeholder,
-  multiline,
+  multiline
 }: {
   value: string;
   onCommit: (value: string) => void;
@@ -403,7 +718,6 @@ function EditableText({
   multiline?: boolean;
 }) {
   const [local, setLocal] = useState(value);
-  useEffect(() => { setLocal(value); }, [value]);
 
   const commit = () => {
     if (local !== value) onCommit(local);
@@ -431,7 +745,7 @@ function EditableText({
         onChange={(e) => setLocal(e.target.value)}
         onBlur={commit}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur();
+          if (e.key === 'Enter') e.currentTarget.blur();
         }}
         placeholder={placeholder}
         className="h-7 w-full border-0 bg-transparent text-[12px] text-text outline-none placeholder:text-text-3 focus:bg-sur"
@@ -440,178 +754,154 @@ function EditableText({
   );
 }
 
-const PRESET_TAGS: Array<{label: string; color: string; bg: string; border: string}> = [
-  {label: 'Manual',   color: 'var(--text-2)', bg: 'var(--sur-2)',    border: 'var(--bdr)'},
-  {label: 'Import',   color: 'var(--ora)',    bg: 'var(--ora-lt)',   border: 'var(--ora-bd)'},
-  {label: 'Website',  color: 'var(--blue)',   bg: 'var(--blue-lt)',  border: 'var(--blue-bd)'},
-  {label: 'Referral', color: 'var(--grn)',    bg: 'var(--grn-lt)',   border: 'var(--grn-bd)'},
-  {label: 'Event',    color: '#7c3aed',       bg: '#ede9fe',         border: '#c4b5fd'},
-];
-
-function getTagStyle(tag: string) {
-  const preset = PRESET_TAGS.find((p) => p.label.toLowerCase() === tag.toLowerCase());
-  return preset ?? {label: tag, color: 'var(--text-2)', bg: 'var(--sur-2)', border: 'var(--bdr)'};
-}
+const PRESET_TAGS = ['Manual', 'Import', 'Website', 'Referral', 'Event', 'VIP', 'Follow-up'];
 
 function TagsCell({tags, onChange}: {tags: string[]; onChange: (next: string[]) => void}) {
-  const [open, setOpen] = useState(false);
-  const [custom, setCustom] = useState('');
-  const [pos, setPos] = useState<{top: number; left: number} | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
-
-  const updatePosition = () => {
-    if (!ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    setPos({
-      top: Math.min(rect.bottom + 6, window.innerHeight - 16),
-      left: Math.min(rect.left, window.innerWidth - 276),
-    });
+  const [draft, setDraft] = useState('');
+  const addTag = (tag: string) => {
+    const clean = tag.trim();
+    if (!clean || tags.some((item) => item.toLowerCase() === clean.toLowerCase())) return;
+    onChange([...tags, clean]);
   };
-
-  const toggleOpen = () => {
-    if (open) {
-      setOpen(false);
-      setPos(null);
-      return;
-    }
-    updatePosition();
-    setOpen(true);
-  };
-
-  useEffect(() => {
-    if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (ref.current?.contains(target)) return;
-      if ((target as HTMLElement).closest('[data-tags-panel="true"]')) return;
-      setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
-    const onScroll = () => setOpen(false);
-    document.addEventListener('mousedown', onDoc);
-    document.addEventListener('keydown', onKey);
-    window.addEventListener('scroll', onScroll, true);
-    return () => {
-      document.removeEventListener('mousedown', onDoc);
-      document.removeEventListener('keydown', onKey);
-      window.removeEventListener('scroll', onScroll, true);
-    };
-  }, [open]);
-
-  const togglePreset = (tag: string) => {
-    if (tags.includes(tag)) onChange(tags.filter((t) => t !== tag));
-    else onChange([...tags, tag]);
-  };
-
-  const removeTag = (tag: string) => onChange(tags.filter((t) => t !== tag));
-
-  const addCustom = () => {
-    const trimmed = custom.trim();
-    if (!trimmed || tags.includes(trimmed)) {
-      setCustom('');
-      return;
-    }
-    onChange([...tags, trimmed]);
-    setCustom('');
-  };
-
   return (
-    <div ref={ref} className="relative border-r border-bdr px-2 py-1.5">
+    <div className="border-r border-bdr px-2 py-1.5">
       <div className="flex flex-wrap items-center gap-1">
-        {tags.map((tag) => {
-          const st = getTagStyle(tag);
-          return (
-            <span
-              key={tag}
-              className="inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[10.5px] font-semibold"
-              style={{color: st.color, background: st.bg, borderColor: st.border}}
-            >
-              {tag}
-              <button
-                onClick={() => removeTag(tag)}
-                className="rounded-full p-0.5 opacity-60 transition-all hover:bg-red hover:text-white hover:opacity-100"
-                title="წაშლა"
-              >
-                <X size={9} strokeWidth={3} />
-              </button>
-            </span>
-          );
-        })}
-        <button
-          onClick={toggleOpen}
-          title="თეგის დამატება"
-          className={`inline-flex items-center gap-1 rounded-full border border-dashed px-1.5 py-0.5 text-[10.5px] font-semibold transition-all ${
-            open
-              ? 'border-blue bg-blue-lt text-blue'
-              : 'border-bdr-2 text-text-3 hover:border-blue hover:bg-blue-lt hover:text-blue'
-          }`}
+        {tags.map((tag) => (
+          <span key={tag} className="inline-flex items-center gap-1 rounded-full border border-bdr bg-sur-2 px-1.5 py-0.5 text-[10.5px] font-semibold text-text-2">
+            {tag}
+            <button onClick={() => onChange(tags.filter((item) => item !== tag))} className="rounded-full p-0.5 hover:bg-red-lt hover:text-red">
+              <X size={9} strokeWidth={3} />
+            </button>
+          </span>
+        ))}
+        <select
+          value=""
+          onChange={(e) => {
+            addTag(e.target.value);
+            e.currentTarget.value = '';
+          }}
+          className="h-6 rounded-full border border-dashed border-bdr-2 bg-sur px-1.5 text-[10.5px] text-text-3 focus:border-blue focus:outline-none"
         >
-          <Plus size={11} strokeWidth={2.5} />
-          {tags.length === 0 ? 'თეგი' : ''}
+          <option value="">+</option>
+          {PRESET_TAGS.filter((tag) => !tags.includes(tag)).map((tag) => (
+            <option key={tag} value={tag}>{tag}</option>
+          ))}
+        </select>
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              addTag(draft);
+              setDraft('');
+            }
+          }}
+          placeholder="თეგი"
+          className="h-6 w-16 border-0 bg-transparent text-[10.5px] text-text outline-none placeholder:text-text-3"
+        />
+      </div>
+    </div>
+  );
+}
+
+function AuditPanel({
+  audit,
+  onClose,
+  onSelect
+}: {
+  audit: ContactAuditEntry[];
+  onClose: () => void;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <aside className="w-[360px] shrink-0 overflow-auto border-l border-bdr bg-sur p-3">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="text-[13px] font-bold text-navy">Contacts audit</div>
+        <button onClick={onClose} className="rounded p-1 text-text-3 hover:bg-sur-2">
+          <X size={14} />
         </button>
       </div>
-      {open && pos && createPortal(
-        <div
-          data-tags-panel="true"
-          className="fixed z-50 w-[260px] overflow-hidden rounded-lg border border-bdr bg-sur shadow-xl"
-          style={{top: pos.top, left: Math.max(8, pos.left)}}
-        >
-          <div className="border-b border-bdr px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-text-3">
-            Preset თეგები
-          </div>
-          <div className="max-h-[240px] overflow-y-auto py-1">
-            {PRESET_TAGS.map((preset) => {
-              const active = tags.includes(preset.label);
-              return (
-                <button
-                  key={preset.label}
-                  onClick={() => togglePreset(preset.label)}
-                  className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-[12px] hover:bg-sur-2"
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{background: preset.color}}
-                    />
-                    <span style={{color: active ? preset.color : 'var(--text)'}} className={active ? 'font-semibold' : ''}>
-                      {preset.label}
-                    </span>
-                  </span>
-                  {active && <Check size={13} strokeWidth={2.5} style={{color: preset.color}} />}
-                </button>
-              );
-            })}
-          </div>
-          <div className="border-t border-bdr bg-sur-2/40 px-3 py-2">
-            <div className="mb-1 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-text-3">
-              საკუთარი
-            </div>
-            <div className="flex items-center gap-1.5">
-              <input
-                value={custom}
-                onChange={(e) => setCustom(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addCustom();
-                  }
-                }}
-                placeholder="ჩაწერე..."
-                className="flex-1 rounded-md border border-bdr bg-sur px-2 py-1 text-[11.5px] text-text focus:border-blue focus:outline-none"
-              />
-              <button
-                onClick={addCustom}
-                disabled={!custom.trim()}
-                className="rounded-md border border-blue bg-blue px-2 py-1 text-[10.5px] font-semibold text-white hover:bg-navy-2 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                +
-              </button>
-            </div>
-          </div>
-        </div>
-        , document.body)}
+      <div className="space-y-2">
+        {audit.length === 0 ? (
+          <div className="text-[12px] text-text-3">Audit ცარიელია.</div>
+        ) : audit.map((entry) => (
+          <button
+            key={entry.id}
+            onClick={() => onSelect(entry.contactId)}
+            className="block w-full rounded-md border border-bdr bg-sur-2 p-2 text-left text-[11.5px] hover:border-blue-bd hover:bg-blue-lt"
+          >
+            <div className="font-semibold text-navy">{entry.action} · {entry.contactLabel}</div>
+            <div className="mt-0.5 text-text-3">{fmtDate(entry.at)} · {entry.by}</div>
+            {entry.column && (
+              <div className="mt-1 text-text-2">
+                {entry.columnLabel ?? entry.column}: {entry.before ?? ''} → {entry.after ?? ''}
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
+function valuesForColumn(row: Contact, key: ContactColumnKey): string[] {
+  switch (key) {
+    case 'id':
+      return [row.id];
+    case 'name':
+      return [row.name];
+    case 'company':
+      return [row.company];
+    case 'position':
+      return [row.position];
+    case 'phone':
+      return [row.phone];
+    case 'email':
+      return [row.email];
+    case 'tags':
+      return row.tags;
+    case 'source':
+      return [row.source];
+    case 'convertedTo':
+      return [row.convertedToLeadId ? 'lead' : 'not-lead'];
+    case 'notes':
+      return [row.notes];
+    case 'createdBy':
+      return [row.createdBy];
+    case 'createdAt':
+      return [fmtDate(row.createdAt)];
+    case 'updatedBy':
+      return [row.updatedBy];
+    case 'updatedAt':
+      return [fmtDate(row.updatedAt)];
+    default:
+      return [];
+  }
+}
+
+function displayForColumn(row: Contact, key: ContactColumnKey): string {
+  if (key === 'convertedTo') return row.convertedToLeadId ? `ლიდი ${row.convertedToLeadId}` : 'არ არის ლიდი';
+  if (key === 'source') return SOURCE_META[row.source]?.label ?? row.source;
+  if (key === 'createdAt') return fmtDate(row.createdAt);
+  if (key === 'updatedAt') return fmtDate(row.updatedAt);
+  return valuesForColumn(row, key).join('; ');
+}
+
+function csvEscape(value: string) {
+  return `"${value.replaceAll('"', '""')}"`;
+}
+
+function StatCard({label, value, accent}: {label: string; value: string; accent?: 'blue' | 'grn'}) {
+  const tone = accent === 'grn'
+    ? 'text-grn'
+    : accent === 'blue'
+      ? 'text-blue'
+      : 'text-navy';
+  return (
+    <div className="rounded-[10px] border border-bdr bg-sur px-4 py-3 shadow-card">
+      <div className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-text-3">{label}</div>
+      <div className={`mt-1 text-2xl font-bold ${tone}`}>{value}</div>
     </div>
   );
 }
