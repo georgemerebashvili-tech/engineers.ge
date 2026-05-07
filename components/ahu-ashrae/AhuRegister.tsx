@@ -67,7 +67,9 @@ export function AhuRegister({ onCancel, onCreate }: Props) {
             </div>
           </div>
         </div>
-        <Stepper current={0} />
+        <div className="mr-12">
+          <Stepper current={0} />
+        </div>
       </header>
 
       {/* Form */}

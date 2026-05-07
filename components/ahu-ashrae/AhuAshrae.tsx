@@ -4,7 +4,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Wind, Thermometer, Snowflake, Flame, Fan, Filter,
   FileText, ChevronRight, CheckCircle2, ArrowLeft,
-  Info, Layers,
+  Info, Layers, Maximize2, Minimize2,
 } from 'lucide-react';
 import type {
   AhuWizardState, WizardStep, AhuView, AhuProject, AhuUnit, AhuType,
@@ -136,11 +136,22 @@ export function AhuAshrae() {
   const [activeUnitId, setActiveUnitId] = useState<string | null>(null);
   const [expandedProjects, setExpandedProjects] = useState<Set<string>>(new Set());
   const [wizardState, setWizardState] = useState<AhuWizardState | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
 
   // Load projects from localStorage on mount
   useEffect(() => {
     setProjects(listProjects());
   }, []);
+
+  // ESC key exits fullscreen
+  useEffect(() => {
+    if (!fullscreen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setFullscreen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [fullscreen]);
 
   const refreshProjects = useCallback(() => setProjects(listProjects()), []);
 
@@ -266,8 +277,29 @@ export function AhuAshrae() {
   }, [refreshProjects]);
 
   // ─── Render ───
+  const wrapperStyle = fullscreen
+    ? { background: 'var(--bg)', position: 'fixed' as const, inset: 0, zIndex: 60 }
+    : { background: 'var(--bg)', minHeight: 'calc(100vh - 56px)' };
+
   return (
-    <div className="flex" style={{ background: 'var(--bg)', minHeight: 'calc(100vh - 56px)' }}>
+    <div className="flex" style={wrapperStyle}>
+      {/* Fullscreen toggle */}
+      <button
+        type="button"
+        onClick={() => setFullscreen((v) => !v)}
+        className="absolute top-3 right-4 z-[61] inline-flex items-center justify-center h-9 w-9 rounded-lg border transition-all"
+        style={{
+          background: fullscreen ? 'var(--navy)' : 'var(--sur)',
+          color: fullscreen ? '#fff' : 'var(--text-2)',
+          borderColor: fullscreen ? 'var(--navy)' : 'var(--bdr-2)',
+          boxShadow: 'var(--shadow-card)',
+        }}
+        title={fullscreen ? 'სრული ეკრანის გათიშვა (Esc)' : 'სრული ეკრანი'}
+        aria-label={fullscreen ? 'სრული ეკრანის გათიშვა' : 'სრული ეკრანი'}
+      >
+        {fullscreen ? <Minimize2 size={16} strokeWidth={2} /> : <Maximize2 size={16} strokeWidth={2} />}
+      </button>
+
       {/* ── Left rail: projects ── */}
       {view !== 'wizard' && (
         <AhuProjectsRail
@@ -406,7 +438,7 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
             </div>
           </div>
         </div>
-        <div className="hidden md:flex items-center gap-2 text-xs font-mono shrink-0" style={{ color: 'var(--text-3)' }}>
+        <div className="hidden md:flex items-center gap-2 text-xs font-mono shrink-0 mr-12" style={{ color: 'var(--text-3)' }}>
           <span>ASHRAE HOF 2021</span>
           <span>·</span>
           <span>62.1</span>

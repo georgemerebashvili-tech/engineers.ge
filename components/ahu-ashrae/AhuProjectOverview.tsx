@@ -55,7 +55,7 @@ export function AhuProjectOverview({
         </div>
         <button
           onClick={onNewUnit}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all shrink-0"
+          className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all shrink-0 mr-12"
           style={{ background: 'var(--blue)', color: '#fff' }}
         >
           <Plus size={14} /> ახალი AHU
