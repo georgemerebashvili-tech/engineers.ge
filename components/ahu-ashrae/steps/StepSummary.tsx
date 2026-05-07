@@ -18,7 +18,7 @@ export function StepSummary({ state, unit, psychro, chain }: Props) {
 
   // Prefer chain results when available (new section pipeline), fall back to legacy psychro
   const cooling = chain?.totalCooling ?? psychro?.coolingCapacity.total ?? 0;
-  const heating = chain?.totalHeating ?? state.loads.heatingLoad;
+  const heating = chain?.totalHeating ?? 0;
   const totalDP = chain?.totalDeltaP ?? legacyTotalDeltaP(state);
   const supplyT = chain?.supplyState.tdb ?? psychro?.supplyAir.tdb;
   const supplyRh = chain?.supplyState.rh != null ? chain.supplyState.rh : (psychro?.supplyAir.rh != null ? psychro.supplyAir.rh / 100 : undefined);

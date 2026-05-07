@@ -76,9 +76,9 @@ export function StepReport({ project, state, unit, psychro, chain }: Props) {
             ['ოთახი · ზაფხული', `${state.design.summerIndoorDB.toFixed(1)}°C / ${state.design.summerIndoorRH.toFixed(0)}% RH`],
             ['ოთახი · ზამთარი', `${state.design.winterIndoorDB.toFixed(1)}°C / ${state.design.winterIndoorRH.toFixed(0)}% RH`],
             ['ატმოს. წნევა', `${state.design.pressure.toFixed(1)} kPa`],
-            ['Sensible cooling load', `${state.loads.sensibleCooling.toFixed(1)} kW`],
-            ['Latent cooling load', `${state.loads.latentCooling.toFixed(1)} kW`],
-            ['Heating load', `${state.loads.heatingLoad.toFixed(1)} kW`],
+            ['Sensible cooling (chain)', psychro ? `${psychro.coolingCapacity.sensible.toFixed(1)} kW` : '—'],
+            ['Latent cooling (chain)', psychro ? `${psychro.coolingCapacity.latent.toFixed(1)} kW` : '—'],
+            ['Heating (chain)', chain ? `${chain.totalHeating.toFixed(1)} kW` : '—'],
           ]} />
         </Section>
 
@@ -111,7 +111,7 @@ export function StepReport({ project, state, unit, psychro, chain }: Props) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 print:gap-2">
             <Big icon={Wind} label="ხარჯი" value={state.airflow.supplyAirflow.toLocaleString('en-US')} unit="m³/h" />
             <Big icon={Snowflake} label="გაცივება" value={(chain?.totalCooling ?? psychro?.coolingCapacity.total ?? 0).toFixed(1)} unit="kW" />
-            <Big icon={Flame} label="გათბობა" value={(chain?.totalHeating ?? state.loads.heatingLoad).toFixed(1)} unit="kW" />
+            <Big icon={Flame} label="გათბობა" value={(chain?.totalHeating ?? 0).toFixed(1)} unit="kW" />
             {chain && <Big icon={Gauge} label="ჯამური ΔP" value={chain.totalDeltaP.toFixed(0)} unit="Pa" />}
             {chain && <Big icon={Droplet} label="კონდენსატი" value={(chain.totalCondensate * 3600).toFixed(2)} unit="kg/h" />}
             {chain?.supplyState && (

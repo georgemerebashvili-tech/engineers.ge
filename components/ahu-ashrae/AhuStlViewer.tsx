@@ -17,9 +17,11 @@ interface Props {
   depth?: number;  // m
 }
 
-// Procedural AHU box visualizer. Each section is a colored slab along X.
-// Will swap for real STL loaded from /public/ahu/models/<id>.stl once admin
-// catalog provides per-model files.
+// Procedural AHU box visualizer (perspective only). Each section is a colored
+// slab along X. Will swap for real STL loaded from /public/ahu/models/<id>.stl
+// once admin catalog provides per-model files. For ortho side/front/top views
+// the parent renders <AhuOrthoSchematic> instead — pure SVG technical drawing
+// with dimension chains.
 export function AhuStlViewer({ sections, height = 1.2, depth = 1.2 }: Props) {
   const totalW = sections.reduce((s, x) => s + x.width, 0);
   const cumOffsets = useMemo(() => {

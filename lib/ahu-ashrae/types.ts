@@ -268,7 +268,9 @@ export interface AhuWizardState {
   selectedCity: CityClimate | null;
   design: DesignConditions;
   airflow: AirflowInputs;
-  loads: ThermalLoads;
+  /** @deprecated Loads are computed from the section chain (Step 2+); kept
+   *  optional only for legacy localStorage rows that still carry the field. */
+  loads?: ThermalLoads;
   coolingCoilInputs: CoolingCoilInputs;
   heatingCoilInputs: HeatingCoilInputs;
   fanInputs: FanInputs;

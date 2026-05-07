@@ -14,8 +14,7 @@ import type {
 import { GE_CITIES, resolveCity } from '@/lib/ahu-ashrae/climate-data';
 import {
   statePointFromWb, statePointFromRh, mixAir,
-  supplyTFromSensible, supplyWFromLatent,
-  statePoint, apparatusDewPoint, contactFactor,
+  apparatusDewPoint, contactFactor,
   airDensity,
 } from '@/lib/ahu-ashrae/psychrometrics';
 import {
@@ -87,11 +86,6 @@ export function makeDefaultWizardState(project: AhuProject): AhuWizardState {
       floorArea: 500,
       spaceCategory: 'office',
     },
-    loads: {
-      sensibleCooling: 40,
-      latentCooling: 12,
-      heatingLoad: 30,
-    },
     coolingCoilInputs: {
       chwSupplyT: 7, chwReturnT: 12, faceVelocity: 2.25, rows: 6, fpi: 10,
     },
@@ -110,8 +104,14 @@ export function makeDefaultWizardState(project: AhuProject): AhuWizardState {
 
 // ─── Psychro calc ──────────────────────────────────────────────────────────────
 
+/** Default supply air target when chain hasn't yet defined one — typical
+ *  ASHRAE coil-leaving conditions: roomDB − 12 °C @ 90% RH off-coil. The
+ *  section pipeline (Step 3+) overrides this with the real chain output. */
+const DEFAULT_SUPPLY_DELTA_T = 12;
+const DEFAULT_SUPPLY_OFF_COIL_RH = 90;
+
 function calcPsychro(state: AhuWizardState): PsychrometricResults | undefined {
-  const { design, airflow, loads } = state;
+  const { design, airflow } = state;
   const p = design.pressure;
   try {
     // Cooling psychrometric chart uses summer design conditions
@@ -121,9 +121,8 @@ function calcPsychro(state: AhuWizardState): PsychrometricResults | undefined {
     const roomAir = statePointFromRh(design.summerIndoorDB, design.summerIndoorRH, 'R', 'ოთახის ჰაერი', p);
     const mixed = mixAir(outdoor, oaFlow, roomAir, raFlow, 'M', 'შერეული ჰაერი', p);
     const density = airDensity(mixed.tdb, mixed.w, p);
-    const supplyTdb = supplyTFromSensible(design.summerIndoorDB, loads.sensibleCooling, airflow.supplyAirflow, density);
-    const supplyW = supplyWFromLatent(roomAir.w, loads.latentCooling, airflow.supplyAirflow, density);
-    const supplyAir = statePoint(supplyTdb, supplyW, 'S', 'მიწოდების ჰაერი', p);
+    const supplyTdb = design.summerIndoorDB - DEFAULT_SUPPLY_DELTA_T;
+    const supplyAir = statePointFromRh(supplyTdb, DEFAULT_SUPPLY_OFF_COIL_RH, 'S', 'მიწოდების ჰაერი', p);
     const adp = apparatusDewPoint(mixed, supplyAir, p);
     const cf = contactFactor(mixed, supplyAir, adp);
     const massFlow = (airflow.supplyAirflow / 3600) * density;
@@ -408,7 +407,7 @@ interface WizardProps {
 }
 
 function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: WizardProps) {
-  const psychro = useMemo(() => calcPsychro(state), [state.design, state.airflow, state.loads]);
+  const psychro = useMemo(() => calcPsychro(state), [state.design, state.airflow]);
   const chain = useMemo<ChainResult | undefined>(() => {
     const sections = state.sections;
     if (!sections || sections.length === 0) return undefined;
@@ -628,7 +627,7 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
             <Step2Psychro state={state} psychro={psychro} chain={chain} />
           )}
           {state.currentStep === 'sizing' && (
-            <StepSizing state={state} psychro={psychro} />
+            <StepSizing state={state} psychro={psychro} chain={chain} />
           )}
           {state.currentStep === 'fan' && (
             <StepFan state={state} />

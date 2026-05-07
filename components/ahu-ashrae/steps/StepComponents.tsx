@@ -1,18 +1,27 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import {
-  Boxes, Box, Filter, Snowflake, Flame, Fan, Wind,
+  Boxes, Filter, Snowflake, Flame, Fan,
   ArrowLeftRight, PanelTopOpen, Shuffle, Droplet, Volume2,
   ChevronUp, ChevronDown, Trash2, Plus, RefreshCw, Power,
+  Move3d, RectangleHorizontal,
+  GripVertical, AlertTriangle, Info,
   type LucideIcon,
 } from 'lucide-react';
 import type { AhuWizardState, AhuUnit } from '@/lib/ahu-ashrae/types';
 import type { SectionConfig, SectionType } from '@/lib/ahu-ashrae/sections';
 import { getAhuTypeSpec } from '@/lib/ahu-ashrae/ahu-types-data';
-import { SECTION_VISUALS, makeDefaultParams } from '@/lib/ahu-ashrae/section-visuals';
+import { SECTION_VISUALS, makeDefaultParams, CASING_KG_PER_M } from '@/lib/ahu-ashrae/section-visuals';
 import { listPresets, buildPreset, type PresetId } from '@/lib/ahu-ashrae/section-presets';
+import {
+  validateOrder,
+  tryReorder,
+  ORDER_RULE_LEGEND,
+  type OrderViolation,
+} from '@/lib/ahu-ashrae/section-order-rules';
+import { AhuOrthoSchematic } from '../AhuOrthoSchematic';
 
 const AhuStlViewer = dynamic(
   () => import('../AhuStlViewer').then((m) => m.AhuStlViewer),
@@ -58,6 +67,17 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
   const flowLabel = ahuSpec?.shortLabel ?? '—';
   const sections = state.sections ?? [];
 
+  // Persistent list of standards violations in the current chain
+  const violations: OrderViolation[] = useMemo(() => validateOrder(sections), [sections]);
+
+  // Transient explanation shown after a rejected drag/move (auto-dismisses)
+  const [rejection, setRejection] = useState<{ msg: string; ts: number } | null>(null);
+  useEffect(() => {
+    if (!rejection) return;
+    const t = setTimeout(() => setRejection(null), 5000);
+    return () => clearTimeout(t);
+  }, [rejection]);
+
   const setSections = (next: SectionConfig[]) => {
     onUpdate({ sections: next.map((s, i) => ({ ...s, order: i })) });
   };
@@ -68,12 +88,18 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
     onUpdate({ sectionPresetId: id, sections: built });
   };
 
+  const reorderSection = (fromIdx: number, toIdx: number) => {
+    const result = tryReorder(sections, fromIdx, toIdx);
+    if (!result.ok) {
+      setRejection({ msg: result.reason, ts: Date.now() });
+      return false;
+    }
+    setSections(result.next);
+    return true;
+  };
+
   const moveSection = (idx: number, dir: -1 | 1) => {
-    const target = idx + dir;
-    if (target < 0 || target >= sections.length) return;
-    const next = [...sections];
-    [next[idx], next[target]] = [next[target], next[idx]];
-    setSections(next);
+    reorderSection(idx, idx + dir);
   };
 
   const toggleSection = (idx: number) => {
@@ -95,6 +121,40 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
     setSections([...sections, newSec]);
   };
 
+  // ── Drag-and-drop state (HTML5 native DnD) ─────────────────────────────────
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<{ idx: number; pos: 'before' | 'after' } | null>(null);
+
+  const handleDragStart = (idx: number) => (e: React.DragEvent<HTMLDivElement>) => {
+    setDragFrom(idx);
+    e.dataTransfer.effectAllowed = 'move';
+    // Some browsers refuse to start drag without a payload
+    e.dataTransfer.setData('text/plain', String(idx));
+  };
+  const handleDragOver = (idx: number) => (e: React.DragEvent<HTMLDivElement>) => {
+    if (dragFrom === null) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+    const pos = e.clientY < rect.top + rect.height / 2 ? 'before' : 'after';
+    setDragOver((prev) => (prev?.idx === idx && prev.pos === pos ? prev : { idx, pos }));
+  };
+  const handleDrop = (idx: number) => (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (dragFrom === null) return;
+    let target = idx + (dragOver?.idx === idx && dragOver.pos === 'after' ? 1 : 0);
+    // splice() math: when moving forward, the removal shifts indexes left by 1
+    if (dragFrom < target) target -= 1;
+    target = Math.max(0, Math.min(target, sections.length - 1));
+    reorderSection(dragFrom, target);
+    setDragFrom(null);
+    setDragOver(null);
+  };
+  const handleDragEnd = () => {
+    setDragFrom(null);
+    setDragOver(null);
+  };
+
   // 3D viewer: only enabled sections, mapped to box visuals
   const viewerSections = useMemo(
     () => sections
@@ -106,11 +166,21 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
     [sections],
   );
 
+  // Aggregate weight: components + casing per linear metre
+  const totalWeightKg = useMemo(() => {
+    if (viewerSections.length === 0) return 0;
+    const totalLenM = viewerSections.reduce((s, x) => s + x.width, 0);
+    const enabledTypes = sections.filter((s) => s.enabled).map((s) => s.spec.type);
+    const componentKg = enabledTypes.reduce((sum, t) => sum + (SECTION_VISUALS[t]?.weightKg ?? 0), 0);
+    const casingKg = totalLenM * CASING_KG_PER_M;
+    return componentKg + casingKg;
+  }, [sections, viewerSections]);
+
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_1fr] gap-5">
+    <div className="grid grid-cols-1 xl:grid-cols-[minmax(280px,340px)_1fr] gap-5">
       {/* ── Section editor ── */}
       <section
-        className="rounded-xl border p-5"
+        className="rounded-xl border p-4"
         style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}
       >
         <div className="flex items-center justify-between mb-3">
@@ -146,8 +216,31 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
           </div>
         </div>
 
+        {/* Persistent violation banner */}
+        {violations.length > 0 && (
+          <ViolationBanner
+            violations={violations}
+            sections={sections}
+          />
+        )}
+
+        {/* Transient drag-rejection toast */}
+        {rejection && (
+          <div
+            className="mb-3 rounded-lg border p-3 text-[11px] flex items-start gap-2"
+            style={{ background: '#fef2f2', borderColor: '#fecaca', color: '#991b1b' }}
+            role="status"
+          >
+            <AlertTriangle size={13} className="shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <div className="font-bold mb-0.5">გადატანა აკრძალულია</div>
+              <div>{rejection.msg}</div>
+            </div>
+          </div>
+        )}
+
         {/* Section list */}
-        <div className="flex flex-col gap-1.5 mb-4">
+        <div className="flex flex-col gap-1.5 mb-4" onDragEnd={handleDragEnd}>
           {sections.length === 0 && (
             <div
               className="rounded-lg border-2 border-dashed p-8 text-center text-xs"
@@ -162,56 +255,100 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
               section={s}
               index={i}
               total={sections.length}
+              isDragSource={dragFrom === i}
+              dragOverPos={dragOver?.idx === i ? dragOver.pos : null}
+              hasViolation={violations.some((v) => v.index === i || v.conflictWith === i)}
               onMove={(dir) => moveSection(i, dir)}
               onToggle={() => toggleSection(i)}
               onRemove={() => removeSection(i)}
+              onDragStart={handleDragStart(i)}
+              onDragOver={handleDragOver(i)}
+              onDrop={handleDrop(i)}
             />
           ))}
         </div>
 
         <AddSectionPicker onAdd={addSection} />
 
-        <div
-          className="mt-4 rounded-lg border p-3 text-[11px]"
-          style={{ background: 'var(--sur-2)', borderColor: 'var(--bdr)', color: 'var(--text-2)' }}
-        >
-          <strong>შენიშვნა:</strong> სექციები ცვლის ჰაერის T/W/RH/ΔP-ს თანმიმდევრულად. რასაც გათიშავ — ჯაჭვში არ მონაწილეობს. დეტალური რედაქტირება (target T, ΔP, ეფექტურობა) — შემდეგ iteration-ში.
-        </div>
+        <RuleLegend />
       </section>
 
-      {/* ── 3D viewer ── */}
-      <section
-        className="rounded-xl border p-5 flex flex-col"
-        style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}
-      >
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <Box size={16} style={{ color: 'var(--blue)' }} />
-            <h2 className="text-sm font-bold" style={{ color: 'var(--navy)' }}>
-              3D ნახვა
-            </h2>
-          </div>
-          <div className="text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
-            {viewerSections.length} სექცია
-          </div>
-        </div>
-        <p className="text-xs mb-3" style={{ color: 'var(--text-3)' }}>
-          orbit / zoom — მაუსით. სექციათა რიგი ცოცხლად აისახება.
-        </p>
-
-        <div
-          className="flex-1 rounded-lg overflow-hidden min-h-[420px] border"
-          style={{ borderColor: 'var(--bdr)', background: 'linear-gradient(180deg, #eef3f9 0%, #d8e2ee 100%)' }}
+      {/* ── Right column: side ortho (top) + 3D (bottom) ── */}
+      <div className="flex flex-col gap-5 min-w-0">
+        {/* Side ortho — always visible, dynamic */}
+        <section
+          className="rounded-xl border p-4 flex flex-col"
+          style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}
         >
-          {viewerSections.length > 0 ? (
-            <AhuStlViewer sections={viewerSections} />
-          ) : (
-            <div className="h-full flex items-center justify-center text-xs" style={{ color: 'var(--text-3)' }}>
-              არცერთი სექცია არ არის ჩართული
+          <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <RectangleHorizontal size={16} style={{ color: 'var(--blue)' }} />
+              <h2 className="text-sm font-bold" style={{ color: 'var(--navy)' }}>
+                გვერდხედი
+              </h2>
             </div>
-          )}
-        </div>
-      </section>
+            <div className="text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
+              {viewerSections.length} სექცია
+            </div>
+          </div>
+          <p className="text-xs mb-3" style={{ color: 'var(--text-3)' }}>
+            ორთოგრაფიული გვერდხედი — ზომები მმ-ში; დინამიური, კომპონენტებთან ერთად განახლდება.
+          </p>
+          <div
+            className="rounded-lg overflow-hidden border"
+            style={{ borderColor: 'var(--bdr)', background: '#f7f9fc', minHeight: 240 }}
+          >
+            {viewerSections.length > 0 ? (
+              <AhuOrthoSchematic
+                sections={viewerSections}
+                view="side"
+                weightKg={totalWeightKg}
+              />
+            ) : (
+              <div className="h-[240px] flex items-center justify-center text-xs" style={{ color: 'var(--text-3)' }}>
+                არცერთი სექცია არ არის ჩართული
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* 3D perspective — always visible, dynamic */}
+        <section
+          className="rounded-xl border p-4 flex flex-col"
+          style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}
+        >
+          <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Move3d size={16} style={{ color: 'var(--blue)' }} />
+              <h2 className="text-sm font-bold" style={{ color: 'var(--navy)' }}>
+                3D ნახვა
+              </h2>
+            </div>
+            <div className="text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
+              orbit / zoom
+            </div>
+          </div>
+          <p className="text-xs mb-3" style={{ color: 'var(--text-3)' }}>
+            პერსპექტივა — მაუსით orbit / zoom. სექციათა რიგი ცოცხლად აისახება.
+          </p>
+          <div
+            className="flex-1 rounded-lg overflow-hidden border"
+            style={{
+              borderColor: 'var(--bdr)',
+              background: 'linear-gradient(180deg, #eef3f9 0%, #d8e2ee 100%)',
+              minHeight: 360,
+            }}
+          >
+            {viewerSections.length > 0 ? (
+              <AhuStlViewer sections={viewerSections} />
+            ) : (
+              <div className="h-full flex items-center justify-center text-xs" style={{ color: 'var(--text-3)' }}>
+                არცერთი სექცია არ არის ჩართული
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
@@ -241,73 +378,198 @@ interface RowProps {
   section: SectionConfig;
   index: number;
   total: number;
+  isDragSource: boolean;
+  dragOverPos: 'before' | 'after' | null;
+  hasViolation: boolean;
   onMove: (dir: -1 | 1) => void;
   onToggle: () => void;
   onRemove: () => void;
+  onDragStart: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
+  onDrop: (e: React.DragEvent<HTMLDivElement>) => void;
 }
-function SectionRow({ section, index, total, onMove, onToggle, onRemove }: RowProps) {
+function SectionRow({
+  section, index, total, isDragSource, dragOverPos, hasViolation,
+  onMove, onToggle, onRemove,
+  onDragStart, onDragOver, onDrop,
+}: RowProps) {
   const Icon = ICON_MAP[section.spec.type];
   const visual = SECTION_VISUALS[section.spec.type];
   const enabled = section.enabled;
   return (
-    <div
-      className="flex items-center gap-2 px-2 py-2 rounded-lg border"
-      style={{
-        background: enabled ? 'var(--sur)' : 'var(--sur-2)',
-        borderColor: enabled ? 'var(--bdr)' : 'var(--bdr)',
-        opacity: enabled ? 1 : 0.55,
-      }}
-    >
-      {/* Color chip */}
-      <div className="flex flex-col gap-0.5 shrink-0">
-        <button
-          onClick={() => onMove(-1)}
-          disabled={index === 0}
-          className="p-0.5 rounded hover:bg-[var(--bdr)] disabled:opacity-30"
-          title="ზევით"
-        >
-          <ChevronUp size={10} />
-        </button>
-        <button
-          onClick={() => onMove(1)}
-          disabled={index === total - 1}
-          className="p-0.5 rounded hover:bg-[var(--bdr)] disabled:opacity-30"
-          title="ქვევით"
-        >
-          <ChevronDown size={10} />
-        </button>
-      </div>
-
-      <span
-        className="inline-flex h-7 w-7 items-center justify-center rounded-md shrink-0"
-        style={{ background: visual.color, color: '#fff' }}
+    <div className="relative">
+      {dragOverPos === 'before' && <DropIndicator side="top" />}
+      <div
+        draggable
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        className="flex items-center gap-2 px-2 py-2 rounded-lg border transition-shadow"
+        style={{
+          background: enabled ? 'var(--sur)' : 'var(--sur-2)',
+          borderColor: hasViolation ? '#f87171' : 'var(--bdr)',
+          opacity: isDragSource ? 0.4 : enabled ? 1 : 0.55,
+          boxShadow: hasViolation ? '0 0 0 1px #fca5a5 inset' : undefined,
+          cursor: 'default',
+        }}
       >
-        <Icon size={14} />
-      </span>
+        {/* Drag handle */}
+        <span
+          className="shrink-0 p-1 rounded text-[var(--text-3)] hover:bg-[var(--bdr)]"
+          style={{ cursor: 'grab' }}
+          title="გადატანა — დააჭირე და გადაიტანე"
+        >
+          <GripVertical size={13} />
+        </span>
 
-      <div className="flex-1 min-w-0">
-        <div className="text-xs font-bold truncate" style={{ color: 'var(--text)' }}>{section.label}</div>
-        <div className="text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
-          {TYPE_LABELS_KA[section.spec.type]} · #{index + 1}
+        {/* Up/Down chevrons */}
+        <div className="flex flex-col gap-0.5 shrink-0">
+          <button
+            onClick={() => onMove(-1)}
+            disabled={index === 0}
+            className="p-0.5 rounded hover:bg-[var(--bdr)] disabled:opacity-30"
+            title="ზევით"
+          >
+            <ChevronUp size={10} />
+          </button>
+          <button
+            onClick={() => onMove(1)}
+            disabled={index === total - 1}
+            className="p-0.5 rounded hover:bg-[var(--bdr)] disabled:opacity-30"
+            title="ქვევით"
+          >
+            <ChevronDown size={10} />
+          </button>
         </div>
-      </div>
 
+        <span
+          className="inline-flex h-7 w-7 items-center justify-center rounded-md shrink-0"
+          style={{ background: visual.color, color: '#fff' }}
+        >
+          <Icon size={14} />
+        </span>
+
+        <div className="flex-1 min-w-0">
+          <div className="text-xs font-bold truncate flex items-center gap-1.5" style={{ color: 'var(--text)' }}>
+            {section.label}
+            {hasViolation && (
+              <AlertTriangle size={11} style={{ color: '#dc2626' }} />
+            )}
+          </div>
+          <div className="text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
+            {TYPE_LABELS_KA[section.spec.type]} · #{index + 1}
+            {section.spec.type === 'filter' && (
+              <span className="ml-1.5 px-1 rounded" style={{ background: 'var(--blue-lt)', color: 'var(--blue)' }}>
+                {section.spec.params.filterClass}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <button
+          onClick={onToggle}
+          className="p-1.5 rounded-md transition-colors shrink-0"
+          style={{ color: enabled ? 'var(--grn)' : 'var(--text-3)' }}
+          title={enabled ? 'გათიშვა' : 'ჩართვა'}
+        >
+          <Power size={13} />
+        </button>
+        <button
+          onClick={onRemove}
+          className="p-1.5 rounded-md transition-colors shrink-0"
+          style={{ color: 'var(--text-3)' }}
+          title="წაშლა"
+        >
+          <Trash2 size={13} />
+        </button>
+      </div>
+      {dragOverPos === 'after' && <DropIndicator side="bottom" />}
+    </div>
+  );
+}
+
+function DropIndicator({ side }: { side: 'top' | 'bottom' }) {
+  return (
+    <div
+      className="absolute left-0 right-0 h-0.5 rounded-full pointer-events-none"
+      style={{
+        background: 'var(--blue)',
+        boxShadow: '0 0 0 2px rgba(21,101,192,0.25)',
+        [side]: -2,
+      } as React.CSSProperties}
+    />
+  );
+}
+
+function ViolationBanner({
+  violations, sections,
+}: {
+  violations: OrderViolation[];
+  sections: SectionConfig[];
+}) {
+  // Show first 3 unique-by-rule for compactness
+  const seen = new Set<string>();
+  const top = violations.filter((v) => {
+    if (seen.has(v.rule)) return false;
+    seen.add(v.rule);
+    return true;
+  }).slice(0, 3);
+  const more = violations.length - top.length;
+  return (
+    <div
+      className="mb-3 rounded-lg border p-3 text-[11px]"
+      style={{ background: '#fffbeb', borderColor: '#fcd34d', color: '#78350f' }}
+    >
+      <div className="flex items-center gap-1.5 mb-1.5 font-bold">
+        <AlertTriangle size={12} />
+        ჯაჭვი არღვევს AHU-ს სტანდარტს ({violations.length})
+      </div>
+      <ul className="space-y-1 list-disc pl-4">
+        {top.map((v, i) => (
+          <li key={i}>
+            <span className="font-mono opacity-70">#{v.conflictWith + 1}→#{v.index + 1}</span>{' '}
+            <span className="opacity-80">
+              ({TYPE_LABELS_KA[sections[v.conflictWith]?.spec.type] ?? '—'} → {TYPE_LABELS_KA[sections[v.index]?.spec.type] ?? '—'})
+            </span>
+            : {v.message}
+          </li>
+        ))}
+      </ul>
+      {more > 0 && (
+        <div className="mt-1.5 opacity-70">… და კიდევ {more} დარღვევა.</div>
+      )}
+    </div>
+  );
+}
+
+function RuleLegend() {
+  const [open, setOpen] = useState(false);
+  return (
+    <div
+      className="mt-4 rounded-lg border text-[11px]"
+      style={{ background: 'var(--sur-2)', borderColor: 'var(--bdr)', color: 'var(--text-2)' }}
+    >
       <button
-        onClick={onToggle}
-        className="p-1.5 rounded-md transition-colors shrink-0"
-        style={{ color: enabled ? 'var(--grn)' : 'var(--text-3)' }}
-        title={enabled ? 'გათიშვა' : 'ჩართვა'}
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 text-left"
       >
-        <Power size={13} />
+        <span className="flex items-center gap-1.5 font-bold" style={{ color: 'var(--navy)' }}>
+          <Info size={12} />
+          AHU-ს თანმიმდევრობის წესები
+        </span>
+        <ChevronDown size={12} style={{ transform: open ? 'rotate(180deg)' : undefined, transition: 'transform 0.15s' }} />
       </button>
-      <button
-        onClick={onRemove}
-        className="p-1.5 rounded-md transition-colors shrink-0"
-        style={{ color: 'var(--text-3)' }}
-        title="წაშლა"
-      >
-        <Trash2 size={13} />
-      </button>
+      {open && (
+        <ul className="px-4 pb-3 space-y-1 list-disc">
+          {ORDER_RULE_LEGEND.map((r) => (
+            <li key={r.code}>{r.ka}</li>
+          ))}
+          <li className="opacity-70 mt-2">
+            <strong>შენიშვნა:</strong> სექციები ცვლის ჰაერის T/W/RH/ΔP-ს თანმიმდევრულად.
+            რასაც გათიშავ — ჯაჭვში არ მონაწილეობს. მაუსით გადატანა (drag) შესაძლებელია მხოლოდ წესების ფარგლებში.
+          </li>
+        </ul>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { MapPin, Wind, Zap, Info } from 'lucide-react';
+import { MapPin, Wind, Info } from 'lucide-react';
 import type { AhuWizardState, PsychrometricResults, AhuProject, AhuUnit, CityClimate } from '@/lib/ahu-ashrae/types';
 import {
   CITY_GROUPS, ASHRAE_621_SPACES, ashrae621MinOA,
@@ -23,7 +23,7 @@ interface Props {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) {
-  const { selectedCity, design, airflow, loads } = state;
+  const { selectedCity, design, airflow } = state;
   const isCustom = selectedCity?.id === CUSTOM_CITY_ID;
   const balanced = isBalancedAhu(unit.ahuType);
   const exhaustAirflow = airflow.exhaustAirflow ?? airflow.supplyAirflow;
@@ -85,11 +85,6 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
     ? airflow.supplyAirflow * airflow.oaFraction
     : minOA;
   const oaFractionDisplay = airflow.supplyAirflow > 0 ? (oaM3h / airflow.supplyAirflow) * 100 : 0;
-
-  const shr = loads.sensibleCooling + loads.latentCooling > 0
-    ? loads.sensibleCooling / (loads.sensibleCooling + loads.latentCooling)
-    : 1;
-  const totalLoad = loads.sensibleCooling + loads.latentCooling;
 
   return (
     <div className="space-y-5">
@@ -440,74 +435,28 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
         </div>
       </Card>
 
-      {/* ── Thermal Loads ── */}
-      <Card icon={<Zap size={14} />} title="სითბური დატვირთვები">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            <NumInput
-              label="Qs — სენსიბ."
-              unit="kW"
-              value={loads.sensibleCooling}
-              step={0.5}
-              onChange={(v) => onUpdate({ loads: { ...loads, sensibleCooling: v } })}
-            />
-            <NumInput
-              label="Ql — ლატენტ."
-              unit="kW"
-              value={loads.latentCooling}
-              step={0.5}
-              onChange={(v) => onUpdate({ loads: { ...loads, latentCooling: v } })}
-            />
-            <NumInput
-              label="Qh — გათბობა"
-              unit="kW"
-              value={loads.heatingLoad}
-              step={0.5}
-              onChange={(v) => onUpdate({ loads: { ...loads, heatingLoad: v } })}
-            />
+      {/* Live psychro preview — output of design inputs above */}
+      {psychro && (
+        <div className="rounded-xl border p-4" style={{ background: 'var(--blue-lt)', borderColor: 'var(--blue-bd)' }}>
+          <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2" style={{ color: 'var(--blue)' }}>
+            Live — ფსიქრომეტრიული Preview
           </div>
-
-          {/* Load summary */}
-          <div className="rounded-lg p-3 border" style={{ background: 'var(--sur-2)', borderColor: 'var(--bdr)' }}>
-            <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-3" style={{ color: 'var(--text-3)' }}>
-              დატვირთვის სტრუქტურა
-            </div>
-            <BarStat label="Qs სენსიბელური" value={loads.sensibleCooling} unit="kW" max={totalLoad || 1} color="var(--blue)" />
-            <BarStat label="Ql ლატენტური" value={loads.latentCooling} unit="kW" max={totalLoad || 1} color="var(--ora)" />
-            <div className="mt-3 pt-3 border-t grid grid-cols-3 gap-2 text-center" style={{ borderColor: 'var(--bdr)' }}>
-              <StatBox label="Qt" value={`${totalLoad.toFixed(1)} kW`} />
-              <StatBox label="SHR" value={(shr * 100).toFixed(0) + '%'} highlight={shr < 0.75} />
-              <StatBox
-                label="Qs/m³"
-                value={airflow.supplyAirflow > 0 ? `${((loads.sensibleCooling * 1000) / airflow.supplyAirflow).toFixed(1)} W/m³` : '—'}
-              />
+          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+            <MiniPsychoBox label="T outdoor" tdb={psychro.outdoor.tdb} w={psychro.outdoor.w * 1000} rh={psychro.outdoor.rh} />
+            <MiniPsychoBox label="T mixed" tdb={psychro.mixed.tdb} w={psychro.mixed.w * 1000} rh={psychro.mixed.rh} />
+            <MiniPsychoBox label="T supply" tdb={psychro.supplyAir.tdb} w={psychro.supplyAir.w * 1000} rh={psychro.supplyAir.rh} />
+            <MiniPsychoBox label="T room" tdb={psychro.roomAir.tdb} w={psychro.roomAir.w * 1000} rh={psychro.roomAir.rh} />
+            <MiniPsychoBox label="ADP" tdb={psychro.adp.tdb} w={psychro.adp.w * 1000} rh={100} />
+            <div className="rounded-lg p-2 text-center" style={{ background: 'var(--sur)', border: '1px solid var(--blue-bd)' }}>
+              <div className="text-[9px] font-bold mb-1" style={{ color: 'var(--text-3)' }}>CF</div>
+              <div className="text-base font-bold font-mono" style={{ color: 'var(--blue)' }}>
+                {(psychro.contactFactor * 100).toFixed(0)}%
+              </div>
+              <div className="text-[9px]" style={{ color: 'var(--text-3)' }}>contact factor</div>
             </div>
           </div>
         </div>
-
-        {/* Live psychro preview */}
-        {psychro && (
-          <div className="mt-4 rounded-lg p-3 border" style={{ background: 'var(--blue-lt)', borderColor: 'var(--blue-bd)' }}>
-            <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2" style={{ color: 'var(--blue)' }}>
-              Live — ფსიქრომეტრიული Preview
-            </div>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-              <MiniPsychoBox label="T outdoor" tdb={psychro.outdoor.tdb} w={psychro.outdoor.w * 1000} rh={psychro.outdoor.rh} />
-              <MiniPsychoBox label="T mixed" tdb={psychro.mixed.tdb} w={psychro.mixed.w * 1000} rh={psychro.mixed.rh} />
-              <MiniPsychoBox label="T supply" tdb={psychro.supplyAir.tdb} w={psychro.supplyAir.w * 1000} rh={psychro.supplyAir.rh} />
-              <MiniPsychoBox label="T room" tdb={psychro.roomAir.tdb} w={psychro.roomAir.w * 1000} rh={psychro.roomAir.rh} />
-              <MiniPsychoBox label="ADP" tdb={psychro.adp.tdb} w={psychro.adp.w * 1000} rh={100} />
-              <div className="rounded-lg p-2 text-center" style={{ background: 'var(--sur)', border: '1px solid var(--blue-bd)' }}>
-                <div className="text-[9px] font-bold mb-1" style={{ color: 'var(--text-3)' }}>CF</div>
-                <div className="text-base font-bold font-mono" style={{ color: 'var(--blue)' }}>
-                  {(psychro.contactFactor * 100).toFixed(0)}%
-                </div>
-                <div className="text-[9px]" style={{ color: 'var(--text-3)' }}>contact factor</div>
-              </div>
-            </div>
-          </div>
-        )}
-      </Card>
+      )}
     </div>
   );
 }
@@ -722,18 +671,6 @@ function BarStat({ label, value, unit, max, color }: { label: string; value: num
           style={{ width: `${pct}%`, background: color }}
         />
       </div>
-    </div>
-  );
-}
-
-function StatBox({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
-  return (
-    <div
-      className="rounded-lg p-2"
-      style={{ background: highlight ? 'var(--ora-lt)' : 'var(--sur)', border: `1px solid ${highlight ? 'var(--ora-bd)' : 'var(--bdr)'}` }}
-    >
-      <div className="text-[9px] font-bold mb-0.5" style={{ color: 'var(--text-3)' }}>{label}</div>
-      <div className="text-xs font-bold font-mono" style={{ color: highlight ? 'var(--ora)' : 'var(--text)' }}>{value}</div>
     </div>
   );
 }

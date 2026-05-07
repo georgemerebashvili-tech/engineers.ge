@@ -3,13 +3,17 @@
 import React from 'react';
 import { Gauge, Snowflake, Flame, Filter, ArrowRight } from 'lucide-react';
 import type { AhuWizardState, PsychrometricResults } from '@/lib/ahu-ashrae/types';
+import type { ChainResult } from '@/lib/ahu-ashrae/chain';
 
 interface Props {
   state: AhuWizardState;
   psychro?: PsychrometricResults;
+  chain?: ChainResult;
 }
 
-export function StepSizing({ state, psychro }: Props) {
+export function StepSizing({ state, psychro, chain }: Props) {
+  const coolingKw = chain?.totalCooling ?? psychro?.coolingCapacity.total;
+  const heatingKw = chain?.totalHeating;
   return (
     <div className="space-y-5">
       <div
@@ -28,12 +32,12 @@ export function StepSizing({ state, psychro }: Props) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <SizingCard icon={Snowflake} title="გამაგრილებელი ხვია" rows={[
-            ['სიმძლავრე', psychro ? `${psychro.coolingCapacity.total.toFixed(1)} kW` : '—'],
+            ['სიმძლავრე', coolingKw != null ? `${coolingKw.toFixed(1)} kW` : '—'],
             ['SHR', psychro ? `${(psychro.shr * 100).toFixed(0)}%` : '—'],
             ['ΔP', `${state.fanInputs.coolingCoilDeltaP} Pa`],
           ]} />
           <SizingCard icon={Flame} title="გამათბობელი ხვია" rows={[
-            ['სიმძლავრე', `${state.loads.heatingLoad.toFixed(1)} kW`],
+            ['სიმძლავრე', heatingKw != null ? `${heatingKw.toFixed(1)} kW` : '—'],
             ['ტიპი', state.heatingCoilInputs.type === 'hot_water' ? 'water' : 'electric'],
             ['ΔP', `${state.fanInputs.heatingCoilDeltaP} Pa`],
           ]} />
