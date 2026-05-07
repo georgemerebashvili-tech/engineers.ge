@@ -145,6 +145,12 @@ export function loadWizardState(projectId: string, unitId: string): AhuWizardSta
       parsed.sectionPresetId = parsed.sectionPresetId ?? 'mixing_with_hr';
       parsed.sections = buildPreset(parsed.sectionPresetId, { oaFraction: oaF });
     }
+    // Backfill furthestReachedStep — old state predates sequential gating.
+    // Default to currentStep so the user can stay where they were and not be
+    // re-locked out of progress they had made.
+    if (!parsed.furthestReachedStep) {
+      parsed.furthestReachedStep = parsed.currentStep ?? 'ahu_type';
+    }
     return parsed as AhuWizardState;
   } catch {
     return null;

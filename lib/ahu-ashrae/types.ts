@@ -255,6 +255,12 @@ export type AhuView =
 
 export interface AhuWizardState {
   currentStep: WizardStep;
+  /** Furthest step the user has unlocked (sequential progression).
+   *  Forward jumps allowed only up to this step; everything beyond is locked. */
+  furthestReachedStep?: WizardStep;
+  /** When the user edits a setting in step N, all steps > N become "dirty"
+   *  and must be re-walked. This holds the earliest dirty step id. */
+  dirtyFromStep?: WizardStep;
   selectedCity: CityClimate | null;
   design: DesignConditions;
   airflow: AirflowInputs;

@@ -5,6 +5,7 @@ import {
   Wind, Thermometer, Fan, FileText, Download,
   ChevronRight, CheckCircle2, ArrowLeft,
   Layers, Boxes, Gauge, Maximize2, Minimize2,
+  Lock, AlertTriangle,
 } from 'lucide-react';
 import type {
   AhuWizardState, WizardStep, AhuView, AhuProject, AhuUnit, AhuType,
@@ -26,6 +27,11 @@ import { getAhuTypeSpec } from '@/lib/ahu-ashrae/ahu-types-data';
 import { buildPreset } from '@/lib/ahu-ashrae/section-presets';
 import { fromDbWb, fromDbRh } from '@/lib/ahu-ashrae/air-state';
 import { runChain, type ChainResult } from '@/lib/ahu-ashrae/chain';
+import {
+  computeStepStatuses, canNavigate, navigationPatch, dirtyAfterEdit,
+  stepIndex as flowStepIndex,
+  type StepStatus,
+} from '@/lib/ahu-ashrae/wizard-flow';
 
 import { AhuProjectsRail } from './AhuProjectsRail';
 import { AhuRegister } from './AhuRegister';
@@ -60,6 +66,7 @@ export function makeDefaultWizardState(project: AhuProject): AhuWizardState {
   const city = resolveCity(project.location, project.customCity) ?? GE_CITIES[0];
   return {
     currentStep: 'ahu_type',
+    furthestReachedStep: 'ahu_type',
     selectedCity: city,
     design: {
       summerOutdoorDB: city.summerDB,
@@ -278,8 +285,18 @@ export function AhuAshrae() {
     if (!activeProjectId || !activeUnitId) return;
     const unit = getUnit(activeProjectId, activeUnitId);
     if (!unit) return;
+    const wasSame = unit.ahuType === type;
     updateUnit(activeProjectId, { ...unit, ahuType: type });
     refreshProjects();
+    // Schema change → mark all downstream steps dirty so user re-walks them.
+    if (!wasSame) {
+      setWizardState((prev) => {
+        if (!prev) return prev;
+        const next: AhuWizardState = { ...prev, dirtyFromStep: 'inputs' };
+        saveWizardState(activeProjectId, activeUnitId, next);
+        return next;
+      });
+    }
   }, [activeProjectId, activeUnitId, refreshProjects]);
 
   const handleBackToProject = useCallback(() => {
@@ -420,17 +437,27 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
   }, [state.sections, state.design, state.airflow]);
   const stepIndex = STEPS.findIndex((s) => s.id === state.currentStep);
 
-  const goTo = useCallback((step: WizardStep) => {
-    onUpdate({ currentStep: step });
-  }, [onUpdate]);
+  // Per-step status (locked/current/completed/dirty/available)
+  const statuses = useMemo(
+    () => computeStepStatuses(state, unit, chain),
+    [state, unit, chain],
+  );
 
-  const completed = useMemo<Set<WizardStep>>(() => {
-    const set = new Set<WizardStep>();
-    if (state.airflow.supplyAirflow > 0 && state.loads.sensibleCooling > 0) set.add('inputs');
-    if (psychro) set.add('psychro');
-    if (unit.ahuType) set.add('ahu_type');
-    return set;
-  }, [state, psychro, unit.ahuType]);
+  const goTo = useCallback((step: WizardStep) => {
+    if (!canNavigate(step, state, unit, chain)) return; // gate enforced
+    onUpdate(navigationPatch(step, state));
+  }, [onUpdate, state, unit, chain]);
+
+  // Wrap onUpdate so any state change in the *current* step marks downstream dirty.
+  // Pure step-navigation calls bypass this (they pass `currentStep` in patch).
+  const onUpdateCascade = useCallback((patch: Partial<AhuWizardState>) => {
+    if ('currentStep' in patch && Object.keys(patch).length === 1) {
+      onUpdate(patch);
+      return;
+    }
+    const dirtyPatch = dirtyAfterEdit(state.currentStep, state);
+    onUpdate({ ...patch, ...dirtyPatch });
+  }, [onUpdate, state]);
 
   const ahuSpec = unit.ahuType ? getAhuTypeSpec(unit.ahuType) : null;
 
@@ -500,35 +527,29 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
           </div>
           <nav className="flex flex-col gap-0.5 px-2">
             {STEPS.map((step, i) => {
-              const active = state.currentStep === step.id;
-              const done = completed.has(step.id);
+              const status = statuses.get(step.id) ?? 'locked';
+              const isLocked = status === 'locked';
+              const tooltip = isLocked
+                ? 'ჯერ წინა ნაბიჯები დაასრულე'
+                : status === 'dirty'
+                ? 'წინა ნაბიჯში მონაცემები შეიცვალა — გადაამოწმე'
+                : status === 'completed'
+                ? 'დასრულებული'
+                : '';
               return (
                 <button
                   key={step.id}
                   onClick={() => goTo(step.id)}
-                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all w-full"
-                  style={{
-                    background: active ? 'var(--blue-lt)' : 'transparent',
-                    color: active ? 'var(--blue)' : done ? 'var(--text)' : 'var(--text-3)',
-                    borderLeft: active ? '2px solid var(--blue)' : '2px solid transparent',
-                  }}
+                  disabled={isLocked}
+                  title={tooltip}
+                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all w-full disabled:cursor-not-allowed"
+                  style={stepButtonStyle(status)}
                 >
-                  <span className="shrink-0">
-                    {done && !active ? (
-                      <CheckCircle2 size={14} strokeWidth={2} style={{ color: 'var(--grn)' }} />
-                    ) : (
-                      <span
-                        className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-full text-[9px] font-bold"
-                        style={{
-                          background: active ? 'var(--blue)' : 'var(--bdr)',
-                          color: active ? '#fff' : 'var(--text-2)',
-                        }}
-                      >
-                        {i + 1}
-                      </span>
-                    )}
-                  </span>
-                  <span className="text-xs font-medium leading-tight">{step.label}</span>
+                  <StepIcon status={status} index={i} />
+                  <span className="text-xs font-medium leading-tight flex-1">{step.label}</span>
+                  {status === 'dirty' && (
+                    <AlertTriangle size={11} style={{ color: 'var(--ora)' }} />
+                  )}
                 </button>
               );
             })}
@@ -590,7 +611,7 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
               project={project}
               unit={unit}
               state={state}
-              onUpdate={onUpdate}
+              onUpdate={onUpdateCascade}
               psychro={psychro}
             />
           )}
@@ -601,7 +622,7 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
             />
           )}
           {state.currentStep === 'components' && (
-            <StepComponents state={state} unit={unit} onUpdate={onUpdate} />
+            <StepComponents state={state} unit={unit} onUpdate={onUpdateCascade} />
           )}
           {state.currentStep === 'psychro' && (
             <Step2Psychro state={state} psychro={psychro} chain={chain} />
@@ -632,9 +653,17 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
               {stepIndex + 1} / {STEPS.length}
             </span>
             <button
-              disabled={stepIndex === STEPS.length - 1}
+              disabled={
+                stepIndex === STEPS.length - 1
+                || !canNavigate(STEPS[stepIndex + 1]?.id, state, unit, chain)
+              }
+              title={
+                stepIndex < STEPS.length - 1 && !canNavigate(STEPS[stepIndex + 1].id, state, unit, chain)
+                  ? 'მიმდინარე ნაბიჯი ჯერ ვალიდური არ არის'
+                  : ''
+              }
               onClick={() => goTo(STEPS[stepIndex + 1].id)}
-              className="px-4 py-2 text-xs font-semibold rounded-lg transition-all disabled:opacity-40"
+              className="px-4 py-2 text-xs font-semibold rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ background: 'var(--blue)', color: '#fff' }}
             >
               შემდეგი →
@@ -647,6 +676,65 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
+
+function stepButtonStyle(status: StepStatus): React.CSSProperties {
+  if (status === 'current') {
+    return {
+      background: 'var(--blue-lt)',
+      color: 'var(--blue)',
+      borderLeft: '2px solid var(--blue)',
+    };
+  }
+  if (status === 'completed') {
+    return { background: 'transparent', color: 'var(--text)', borderLeft: '2px solid transparent' };
+  }
+  if (status === 'dirty') {
+    return { background: 'var(--ora-lt)', color: 'var(--ora)', borderLeft: '2px solid var(--ora)' };
+  }
+  if (status === 'locked') {
+    return { background: 'transparent', color: 'var(--text-3)', borderLeft: '2px solid transparent', opacity: 0.55 };
+  }
+  // available (visited but not yet validated)
+  return { background: 'transparent', color: 'var(--text-2)', borderLeft: '2px solid transparent' };
+}
+
+function StepIcon({ status, index }: { status: StepStatus; index: number }) {
+  if (status === 'completed') {
+    return <CheckCircle2 size={14} strokeWidth={2} style={{ color: 'var(--grn)' }} className="shrink-0" />;
+  }
+  if (status === 'locked') {
+    return <Lock size={12} strokeWidth={2} style={{ color: 'var(--text-3)' }} className="shrink-0" />;
+  }
+  if (status === 'current') {
+    return (
+      <span
+        className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-full text-[9px] font-bold shrink-0"
+        style={{ background: 'var(--blue)', color: '#fff' }}
+      >
+        {index + 1}
+      </span>
+    );
+  }
+  if (status === 'dirty') {
+    return (
+      <span
+        className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-full text-[9px] font-bold shrink-0"
+        style={{ background: 'var(--ora)', color: '#fff' }}
+      >
+        {index + 1}
+      </span>
+    );
+  }
+  // available
+  return (
+    <span
+      className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-full text-[9px] font-bold shrink-0"
+      style={{ background: 'var(--bdr)', color: 'var(--text-2)' }}
+    >
+      {index + 1}
+    </span>
+  );
+}
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
