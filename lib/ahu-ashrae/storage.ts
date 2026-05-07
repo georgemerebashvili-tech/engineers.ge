@@ -132,6 +132,11 @@ export function loadWizardState(projectId: string, unitId: string): AhuWizardSta
       delete d.summerDB; delete d.summerWB;
       delete d.winterDB; delete d.winterRH;
     }
+    // Migrate deprecated WizardStep ids → new structure (2026-05-07)
+    const legacyStep = parsed?.currentStep as string | undefined;
+    if (legacyStep === 'cool_coil' || legacyStep === 'heat_coil' || legacyStep === 'filter') {
+      parsed.currentStep = 'sizing';
+    }
     return parsed as AhuWizardState;
   } catch {
     return null;

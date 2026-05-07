@@ -235,14 +235,14 @@ export interface HeatRecoveryResult {
 // ─── Full AHU Wizard State ────────────────────────────────────────────────────
 
 export type WizardStep =
-  | 'inputs'
-  | 'psychro'
-  | 'ahu_type'
-  | 'cool_coil'
-  | 'heat_coil'
-  | 'fan'
-  | 'filter'
-  | 'summary';
+  | 'inputs'      // საწყისი მონაცემები (climate, indoor, airflow, loads)
+  | 'ahu_type'    // AHU სქემა (mixing / 100% OA / HR / CAV-VAV)
+  | 'components'  // სექციების შერჩევა + STL 3D viewer (catalog-driven)
+  | 'psychro'     // ფსიქრომეტრიული პროცესი (drag-able points)
+  | 'sizing'      // სექციების სიზინგი (cool/heat/filter/HR + ΔP)
+  | 'fan'         // ფანის შერჩევა (total ΔP → kW, SFP)
+  | 'summary'     // სრული შეჯამება (totals, energy, dimensions)
+  | 'report';     // PDF report export
 
 // ─── Top-level View / Screen Router ───────────────────────────────────────────
 

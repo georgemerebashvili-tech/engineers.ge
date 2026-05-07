@@ -8,6 +8,34 @@
 
 ---
 
+## 🔴 AHU calc — admin catalog + wizard reorder (in-progress 2026-05-07)
+
+**Architecture:** AHU wizard = selector over admin catalog (real models, real components, real ΔP), არა აბსტრაქტული formula. ცხრილები → admin-ში; wizard ამოარჩევს airflow + flow-type-ის მიხედვით.
+
+**Wizard ახალი თანმიმდევრობა (8 step):**
+`inputs → ahu_type → components (+ STL 3D viewer) → psychro (drag points) → sizing → fan → summary → report`
+
+**Admin AHU catalog tasks:**
+- [ ] 2026-05-07 — `/admin/ahu/models` — capacity tiers (2000 / 5000 / 10000 / 15000 / 20000 m³/h) × flow type (cross-flow, counter-flow, mixing, 100% OA) + dimensions/weight/price 🔴
+- [ ] 2026-05-07 — `/admin/ahu/sections` — pre-defined section sequences per model (filter → pre-heat → cooling → re-heat → HR → fan, model-specific order) 🔴
+- [ ] 2026-05-07 — `/admin/ahu/filters` — ფილტრების კატალოგი (G4, F7, carbon, electric, etc.) + ΔP curves
+- [ ] 2026-05-07 — `/admin/ahu/coils` — water/DX coils (rows, fpi, capacity, ΔP, water Δt)
+- [ ] 2026-05-07 — `/admin/ahu/fans` — fan models with airflow/pressure curves
+- [ ] 2026-05-07 — `/admin/ahu/heat-recovery` — HR types (rotary wheel, plate, run-around) + effectiveness
+- [ ] 2026-05-07 — `/admin/ahu/components` — generic catalog (humidifiers, dampers, silencers)
+- [ ] 2026-05-07 — sidebar: `კონტენტი > AHU კატალოგი` group with all sub-tables 🔴
+
+**Wizard tasks (current session):**
+- [ ] 2026-05-07 — Reorder STEPS + WizardStep type (foundational, no functional break) 🔴
+- [ ] 2026-05-07 — Scaffold StepComponents, StepSizing, StepFan, StepSummary, StepReport
+- [ ] 2026-05-07 — STL 3D viewer (three.js + STLLoader) in StepComponents
+- [ ] 2026-05-07 — Interactive draggable i-d chart points in StepPsychro
+- [ ] 2026-05-07 — Wire StepComponents to admin catalog (model selection by airflow round-up)
+
+**Memory:** [project_ahu_catalog_architecture.md](~/.claude/projects/-Users-macbookair-Desktop-engineers-ge-engineers-ge/memory/project_ahu_catalog_architecture.md)
+
+---
+
 ## 🟢 STEP viewer prototype follow-up
 
 - [ ] 2026-04-30 — `tools/step-viewer-prototype/index.html` გავტესტოთ რეალურ `.step/.stp` ფაილებზე; თუ prototype სტაბილურად იმუშავებს, შემდეგ დავგეგმოთ engineers.ge-ში ინტეგრაცია, ხოლო smart hole/bend dimensions გადავიტანოთ server-side CAD pipeline-ზე.

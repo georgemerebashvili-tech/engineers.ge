@@ -2,9 +2,9 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
-  Wind, Thermometer, Snowflake, Flame, Fan, Filter,
-  FileText, ChevronRight, CheckCircle2, ArrowLeft,
-  Info, Layers, Maximize2, Minimize2,
+  Wind, Thermometer, Fan, FileText, Download,
+  ChevronRight, CheckCircle2, ArrowLeft,
+  Info, Layers, Boxes, Gauge, Maximize2, Minimize2,
 } from 'lucide-react';
 import type {
   AhuWizardState, WizardStep, AhuView, AhuProject, AhuUnit, AhuType,
@@ -36,14 +36,14 @@ import { Step2Psychro } from './steps/Step2Psychro';
 // ─── Step metadata ─────────────────────────────────────────────────────────────
 
 const STEPS: { id: WizardStep; label: string; icon: React.ComponentType<{size?: number; strokeWidth?: number}> }[] = [
-  { id: 'inputs',    label: 'საწყისი პარამეტრები', icon: Wind },
-  { id: 'psychro',   label: 'ფსიქრომეტრია',        icon: Thermometer },
-  { id: 'ahu_type',  label: 'AHU სტილი',           icon: Layers },
-  { id: 'cool_coil', label: 'გამაგრილ. სპირალი',   icon: Snowflake },
-  { id: 'heat_coil', label: 'გამათბ. სპირალი',     icon: Flame },
-  { id: 'fan',       label: 'ვენტილატორი',         icon: Fan },
-  { id: 'filter',    label: 'ფილტრი',              icon: Filter },
-  { id: 'summary',   label: 'შედეგი + სპეც.',      icon: FileText },
+  { id: 'inputs',     label: 'საწყისი მონაცემები',  icon: Wind },
+  { id: 'ahu_type',   label: 'AHU სქემა',           icon: Layers },
+  { id: 'components', label: 'კომპონენტები + 3D',   icon: Boxes },
+  { id: 'psychro',    label: 'ფსიქრომეტრია',        icon: Thermometer },
+  { id: 'sizing',     label: 'სიზინგი + ΔP',        icon: Gauge },
+  { id: 'fan',        label: 'ვენტილატორი',         icon: Fan },
+  { id: 'summary',    label: 'შეჯამება',            icon: FileText },
+  { id: 'report',     label: 'რეპორტი (PDF)',       icon: Download },
 ];
 
 // ─── Default wizard state for a fresh AHU unit ────────────────────────────────
