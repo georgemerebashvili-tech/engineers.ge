@@ -2,8 +2,12 @@
 
 import React, { useCallback } from 'react';
 import { MapPin, Wind, Zap, Info } from 'lucide-react';
-import type { AhuWizardState, PsychrometricResults, AhuProject, AhuUnit } from '@/lib/ahu-ashrae/types';
-import { CITY_GROUPS, ASHRAE_621_SPACES, ashrae621MinOA } from '@/lib/ahu-ashrae/climate-data';
+import type { AhuWizardState, PsychrometricResults, AhuProject, AhuUnit, CityClimate } from '@/lib/ahu-ashrae/types';
+import {
+  CITY_GROUPS, ASHRAE_621_SPACES, ashrae621MinOA,
+  CUSTOM_CITY_ID, makeCustomCity,
+} from '@/lib/ahu-ashrae/climate-data';
+import { pressureFromElevation } from '@/lib/ahu-ashrae/psychrometrics';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -19,10 +23,24 @@ interface Props {
 
 export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) {
   const { selectedCity, design, airflow, loads } = state;
+  const isCustom = selectedCity?.id === CUSTOM_CITY_ID;
 
   // ── City select ──
   const handleCityChange = useCallback((id: string) => {
-    let found = null;
+    if (id === CUSTOM_CITY_ID) {
+      const custom = makeCustomCity('');
+      onUpdate({
+        selectedCity: custom,
+        design: {
+          ...design,
+          outdoorDB: custom.summerDB,
+          outdoorWB: custom.summerMCWB,
+          pressure: custom.pressure,
+        },
+      });
+      return;
+    }
+    let found: CityClimate | null = null;
     for (const g of CITY_GROUPS) {
       found = g.cities.find((c) => c.id === id) ?? null;
       if (found) break;
@@ -38,6 +56,21 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
       },
     });
   }, [design, onUpdate]);
+
+  // ── Custom city update ──
+  const updateCustomCity = useCallback((partial: Partial<CityClimate>) => {
+    if (!selectedCity || selectedCity.id !== CUSTOM_CITY_ID) return;
+    const next: CityClimate = { ...selectedCity, ...partial };
+    if (partial.elevation !== undefined) next.pressure = pressureFromElevation(partial.elevation);
+    if (partial.name !== undefined) next.nameEn = partial.name;
+    // Sync design when ASHRAE values change
+    const designUpdate = { ...design };
+    if (partial.summerDB !== undefined && design.mode === 'cooling') designUpdate.outdoorDB = partial.summerDB;
+    if (partial.summerMCWB !== undefined && design.mode === 'cooling') designUpdate.outdoorWB = partial.summerMCWB;
+    if (partial.winterDB99 !== undefined && design.mode === 'heating') designUpdate.outdoorDB = partial.winterDB99;
+    if (next.pressure !== design.pressure) designUpdate.pressure = next.pressure;
+    onUpdate({ selectedCity: next, design: designUpdate });
+  }, [selectedCity, design, onUpdate]);
 
   // ── Mode toggle ──
   const handleModeChange = useCallback((mode: 'cooling' | 'heating') => {
@@ -118,8 +151,21 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
                   ))}
                 </optgroup>
               ))}
+              <optgroup label="ხელით">
+                <option value={CUSTOM_CITY_ID}>+ სხვა ქალაქი (ხელით შევიყვან)</option>
+              </optgroup>
             </select>
-            {selectedCity && (
+            {isCustom && (
+              <input
+                type="text"
+                value={selectedCity?.name ?? ''}
+                onChange={(e) => updateCustomCity({ name: e.target.value })}
+                placeholder="ქალაქის სახელი"
+                className="mt-1.5 w-full rounded-md px-2.5 py-1.5 text-xs border"
+                style={{ background: 'var(--blue-lt)', borderColor: 'var(--blue-bd)', color: 'var(--text)', outline: 'none' }}
+              />
+            )}
+            {selectedCity && !isCustom && (
               <div className="mt-1.5 text-[10px] font-mono flex gap-3" style={{ color: 'var(--text-3)' }}>
                 <span>{selectedCity.elevation} m ამ</span>
                 <span>{selectedCity.pressure.toFixed(2)} kPa</span>
@@ -154,7 +200,7 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
           </div>
 
           {/* ASHRAE design conditions info */}
-          {selectedCity && (
+          {selectedCity && !isCustom && (
             <div className="rounded-lg p-3 border" style={{ background: 'var(--sur-2)', borderColor: 'var(--bdr)' }}>
               <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2" style={{ color: 'var(--text-3)' }}>
                 ASHRAE HOF 2021 — {selectedCity.nameEn}
@@ -164,6 +210,23 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
                 <DataRow label="Summer MCWB" value={`${selectedCity.summerMCWB}°C`} />
                 <DataRow label="Winter 99% DB" value={`${selectedCity.winterDB99}°C`} />
                 <DataRow label="Winter 99.6% DB" value={`${selectedCity.winterDB996}°C`} />
+              </div>
+            </div>
+          )}
+          {selectedCity && isCustom && (
+            <div className="rounded-lg p-3 border" style={{ background: 'var(--blue-lt)', borderColor: 'var(--blue-bd)' }}>
+              <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2" style={{ color: 'var(--blue)' }}>
+                Climate Data — ხელით · {selectedCity.name || '—'}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <CustomNum label="Elev. m" value={selectedCity.elevation} step={10} onChange={(v) => updateCustomCity({ elevation: v })} />
+                <CustomNum label="Sum DB °C" value={selectedCity.summerDB} step={0.1} onChange={(v) => updateCustomCity({ summerDB: v })} />
+                <CustomNum label="Sum MCWB °C" value={selectedCity.summerMCWB} step={0.1} onChange={(v) => updateCustomCity({ summerMCWB: v })} />
+                <CustomNum label="Win 99% °C" value={selectedCity.winterDB99} step={0.1} onChange={(v) => updateCustomCity({ winterDB99: v })} />
+                <CustomNum label="Win 99.6% °C" value={selectedCity.winterDB996} step={0.1} onChange={(v) => updateCustomCity({ winterDB996: v })} />
+                <div className="text-[10px] font-mono flex items-end" style={{ color: 'var(--text-3)' }}>
+                  P = {selectedCity.pressure.toFixed(2)} kPa
+                </div>
               </div>
             </div>
           )}
@@ -463,6 +526,29 @@ function NumInput({
           {unit}
         </span>
       </div>
+    </div>
+  );
+}
+
+function CustomNum({
+  label, value, step = 0.1, onChange,
+}: {
+  label: string;
+  value: number;
+  step?: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>{label}</span>
+      <input
+        type="number"
+        value={value}
+        step={step}
+        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+        className="w-20 rounded-md px-2 py-0.5 text-[11px] font-mono font-bold border text-right"
+        style={{ background: 'var(--sur)', borderColor: 'var(--blue-bd)', color: 'var(--text)', outline: 'none' }}
+      />
     </div>
   );
 }

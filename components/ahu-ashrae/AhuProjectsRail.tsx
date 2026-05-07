@@ -6,7 +6,7 @@ import {
   Trash2, MapPin,
 } from 'lucide-react';
 import type { AhuProject } from '@/lib/ahu-ashrae/types';
-import { getCityById } from '@/lib/ahu-ashrae/climate-data';
+import { resolveCity } from '@/lib/ahu-ashrae/climate-data';
 import { getAhuTypeSpec } from '@/lib/ahu-ashrae/ahu-types-data';
 
 interface Props {
@@ -122,7 +122,7 @@ function ProjectRow({
   onDelete: () => void;
   onDeleteUnit: (unitId: string) => void;
 }) {
-  const city = getCityById(project.location);
+  const city = resolveCity(project.location, project.customCity);
   const hasUnits = project.units.length > 0;
 
   return (

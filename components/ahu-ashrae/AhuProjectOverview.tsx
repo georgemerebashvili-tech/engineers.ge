@@ -6,7 +6,7 @@ import {
   Trash2, ArrowRight, Layers, FileText,
 } from 'lucide-react';
 import type { AhuProject, AhuUnit } from '@/lib/ahu-ashrae/types';
-import { getCityById } from '@/lib/ahu-ashrae/climate-data';
+import { resolveCity } from '@/lib/ahu-ashrae/climate-data';
 import { getAhuTypeSpec } from '@/lib/ahu-ashrae/ahu-types-data';
 
 interface Props {
@@ -20,7 +20,7 @@ interface Props {
 export function AhuProjectOverview({
   project, onNewUnit, onOpenUnit, onDeleteUnit, onBack,
 }: Props) {
-  const city = getCityById(project.location);
+  const city = resolveCity(project.location, project.customCity);
 
   return (
     <div className="flex flex-col flex-1" style={{ background: 'var(--bg)' }}>

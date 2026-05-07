@@ -10,7 +10,7 @@ import type {
   AhuWizardState, WizardStep, AhuView, AhuProject, AhuUnit, AhuType,
   PsychrometricResults,
 } from '@/lib/ahu-ashrae/types';
-import { GE_CITIES, getCityById } from '@/lib/ahu-ashrae/climate-data';
+import { GE_CITIES, resolveCity } from '@/lib/ahu-ashrae/climate-data';
 import {
   statePointFromWb, statePointFromRh, mixAir,
   supplyTFromSensible, supplyWFromLatent,
@@ -49,7 +49,7 @@ const STEPS: { id: WizardStep; label: string; icon: React.ComponentType<{size?: 
 // ─── Default wizard state for a fresh AHU unit ────────────────────────────────
 
 export function makeDefaultWizardState(project: AhuProject): AhuWizardState {
-  const city = getCityById(project.location) ?? GE_CITIES[0];
+  const city = resolveCity(project.location, project.customCity) ?? GE_CITIES[0];
   return {
     currentStep: 'inputs',
     selectedCity: city,

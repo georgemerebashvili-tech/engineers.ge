@@ -54,8 +54,35 @@ export const CITY_GROUPS = [
   { label: 'საქართველო', cities: GE_CITIES },
 ];
 
+export const CUSTOM_CITY_ID = 'custom';
+
 export function getCityById(id: string): CityClimate | null {
   return ALL_CITIES.find((c) => c.id === id) ?? null;
+}
+
+/** Build a custom city template with sensible defaults */
+export function makeCustomCity(name = 'ხელით შეყვანილი'): CityClimate {
+  return {
+    id: CUSTOM_CITY_ID,
+    name,
+    nameEn: name,
+    country: 'XX',
+    elevation: 0,
+    pressure: 101.325,
+    summerDB: 32,
+    summerMCWB: 22,
+    winterDB99: -5,
+    winterDB996: -8,
+  };
+}
+
+/**
+ * Resolve city — handles preset cities (by id) AND custom city (per-project).
+ * Returns null only if id is unknown and no customCity provided.
+ */
+export function resolveCity(id: string, customCity?: CityClimate | null): CityClimate | null {
+  if (id === CUSTOM_CITY_ID) return customCity ?? makeCustomCity();
+  return getCityById(id);
 }
 
 // ─── ASHRAE 62.1 Ventilation Rates ───────────────────────────────────────────

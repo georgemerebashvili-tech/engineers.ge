@@ -2,8 +2,11 @@
 
 import React, { useState } from 'react';
 import { ArrowLeft, Wind, MapPin, User, FileText, Calendar, Check } from 'lucide-react';
-import type { AhuProject } from '@/lib/ahu-ashrae/types';
-import { CITY_GROUPS } from '@/lib/ahu-ashrae/climate-data';
+import type { AhuProject, CityClimate } from '@/lib/ahu-ashrae/types';
+import {
+  CITY_GROUPS, CUSTOM_CITY_ID, makeCustomCity,
+} from '@/lib/ahu-ashrae/climate-data';
+import { pressureFromElevation } from '@/lib/ahu-ashrae/psychrometrics';
 import { makeProjectId, today } from '@/lib/ahu-ashrae/storage';
 
 interface Props {
@@ -14,19 +17,39 @@ interface Props {
 export function AhuRegister({ onCancel, onCreate }: Props) {
   const [name, setName] = useState('');
   const [location, setLocation] = useState('tbilisi');
+  const [customCity, setCustomCity] = useState<CityClimate>(makeCustomCity(''));
   const [engineer, setEngineer] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
+
+  const isCustom = location === CUSTOM_CITY_ID;
+
+  const updateCustom = (partial: Partial<CityClimate>) => {
+    setCustomCity((prev) => {
+      const next = { ...prev, ...partial };
+      // Recompute pressure if elevation changed
+      if (partial.elevation !== undefined) {
+        next.pressure = pressureFromElevation(partial.elevation);
+      }
+      next.nameEn = next.name;
+      return next;
+    });
+  };
 
   const handleSubmit = () => {
     if (!name.trim()) {
       setError('პროექტის სახელი აუცილებელია');
       return;
     }
+    if (isCustom && !customCity.name.trim()) {
+      setError('ქალაქის სახელი აუცილებელია');
+      return;
+    }
     const project: AhuProject = {
       id: makeProjectId(),
       name: name.trim(),
       location,
+      customCity: isCustom ? { ...customCity, name: customCity.name.trim(), nameEn: customCity.name.trim() } : undefined,
       engineer: engineer.trim(),
       description: description.trim() || undefined,
       date: today(),
@@ -117,7 +140,7 @@ export function AhuRegister({ onCancel, onCreate }: Props) {
             <Field label="ლოკაცია" required icon={<MapPin size={12} />}>
               <select
                 value={location}
-                onChange={(e) => setLocation(e.target.value)}
+                onChange={(e) => { setLocation(e.target.value); setError(null); }}
                 className="w-full rounded-lg px-3 py-2.5 text-sm border font-medium"
                 style={{
                   background: 'var(--sur)', borderColor: 'var(--bdr-2)',
@@ -131,11 +154,114 @@ export function AhuRegister({ onCancel, onCreate }: Props) {
                     ))}
                   </optgroup>
                 ))}
+                <optgroup label="ხელით">
+                  <option value={CUSTOM_CITY_ID}>+ სხვა ქალაქი (ხელით შევიყვან)</option>
+                </optgroup>
               </select>
-              <div className="mt-1 text-[10px]" style={{ color: 'var(--text-3)' }}>
-                ASHRAE HOF 2021 — climatic design data ჩაიტვირთება ავტომატურად
-              </div>
+              {!isCustom && (
+                <div className="mt-1 text-[10px]" style={{ color: 'var(--text-3)' }}>
+                  ASHRAE HOF 2021 — climatic design data ჩაიტვირთება ავტომატურად
+                </div>
+              )}
             </Field>
+
+            {/* Custom city inputs */}
+            {isCustom && (
+              <div
+                className="rounded-lg p-3 border space-y-3"
+                style={{ background: 'var(--blue-lt)', borderColor: 'var(--blue-bd)' }}
+              >
+                <div className="text-[9px] font-bold uppercase tracking-[0.1em]" style={{ color: 'var(--blue)' }}>
+                  ASHRAE Climate Data — ხელით შეყვანა
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <RegField label="ქალაქის სახელი *">
+                    <input
+                      type="text"
+                      value={customCity.name}
+                      onChange={(e) => updateCustom({ name: e.target.value })}
+                      placeholder="მაგ. ხაშური"
+                      className="w-full rounded-md px-2.5 py-1.5 text-xs border"
+                      style={{ background: 'var(--sur)', borderColor: 'var(--bdr-2)', color: 'var(--text)', outline: 'none' }}
+                    />
+                  </RegField>
+                  <RegField label="ქვეყანა">
+                    <input
+                      type="text"
+                      value={customCity.country}
+                      onChange={(e) => updateCustom({ country: e.target.value.toUpperCase() })}
+                      placeholder="GE"
+                      maxLength={3}
+                      className="w-full rounded-md px-2.5 py-1.5 text-xs border font-mono uppercase"
+                      style={{ background: 'var(--sur)', borderColor: 'var(--bdr-2)', color: 'var(--text)', outline: 'none' }}
+                    />
+                  </RegField>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  <RegNum
+                    label="სიმაღლე"
+                    unit="m"
+                    value={customCity.elevation}
+                    step={10}
+                    onChange={(v) => updateCustom({ elevation: v })}
+                  />
+                  <RegNum
+                    label="ატ. წნევა"
+                    unit="kPa"
+                    value={Number(customCity.pressure.toFixed(2))}
+                    step={0.1}
+                    onChange={(v) => updateCustom({ pressure: v })}
+                  />
+                  <div />
+                </div>
+
+                <div className="text-[9px] font-bold uppercase tracking-[0.08em] pt-1" style={{ color: 'var(--blue)' }}>
+                  Summer Cooling — 0.4%
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <RegNum
+                    label="DB (Dry Bulb)"
+                    unit="°C"
+                    value={customCity.summerDB}
+                    step={0.1}
+                    onChange={(v) => updateCustom({ summerDB: v })}
+                  />
+                  <RegNum
+                    label="MCWB (Wet Bulb)"
+                    unit="°C"
+                    value={customCity.summerMCWB}
+                    step={0.1}
+                    onChange={(v) => updateCustom({ summerMCWB: v })}
+                  />
+                </div>
+
+                <div className="text-[9px] font-bold uppercase tracking-[0.08em] pt-1" style={{ color: 'var(--blue)' }}>
+                  Winter Heating Design
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <RegNum
+                    label="99% DB"
+                    unit="°C"
+                    value={customCity.winterDB99}
+                    step={0.1}
+                    onChange={(v) => updateCustom({ winterDB99: v })}
+                  />
+                  <RegNum
+                    label="99.6% DB"
+                    unit="°C"
+                    value={customCity.winterDB996}
+                    step={0.1}
+                    onChange={(v) => updateCustom({ winterDB996: v })}
+                  />
+                </div>
+
+                <div className="text-[10px] pt-1" style={{ color: 'var(--text-3)' }}>
+                  ეს მონაცემები შენ მაგრად ცვლილებადია wizard-ის Step 1 ეკრანზეც.
+                </div>
+              </div>
+            )}
 
             {/* Engineer */}
             <Field label="ინჟინერი" icon={<User size={12} />}>
@@ -210,6 +336,51 @@ function Field({
         </span>
       </label>
       {children}
+    </div>
+  );
+}
+
+function RegField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-[9px] font-bold uppercase tracking-[0.08em] mb-1" style={{ color: 'var(--text-3)' }}>
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function RegNum({
+  label, unit, value, onChange, step = 1,
+}: {
+  label: string;
+  unit: string;
+  value: number;
+  onChange: (v: number) => void;
+  step?: number;
+}) {
+  return (
+    <div>
+      <label className="block text-[9px] font-bold uppercase tracking-[0.08em] mb-1" style={{ color: 'var(--text-3)' }}>
+        {label}
+      </label>
+      <div className="flex rounded-md border overflow-hidden" style={{ borderColor: 'var(--bdr-2)' }}>
+        <input
+          type="number"
+          step={step}
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+          className="flex-1 min-w-0 px-2 py-1.5 text-xs font-mono"
+          style={{ background: 'var(--sur)', color: 'var(--text)', outline: 'none' }}
+        />
+        <span
+          className="px-1.5 flex items-center text-[9px] font-bold shrink-0"
+          style={{ background: 'var(--sur-2)', color: 'var(--text-3)', borderLeft: '1px solid var(--bdr)' }}
+        >
+          {unit}
+        </span>
+      </div>
     </div>
   );
 }

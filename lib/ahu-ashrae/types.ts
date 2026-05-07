@@ -20,7 +20,8 @@ export type AhuType =
 export interface AhuProject {
   id: string;             // unique project id
   name: string;
-  location: string;       // city id (default for all units)
+  location: string;       // city id (default for all units), or 'custom'
+  customCity?: CityClimate; // when location === 'custom'
   engineer: string;
   date: string;           // YYYY-MM-DD created
   modified: string;       // YYYY-MM-DD last modified
