@@ -168,10 +168,12 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
                 ASHRAE HOF 2021 — {selectedCity.nameEn}
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-                <DataRow label="Summer 0.4% DB" value={`${selectedCity.summerDB}°C`} />
-                <DataRow label="Summer MCWB" value={`${selectedCity.summerMCWB}°C`} />
-                <DataRow label="Winter 99% DB" value={`${selectedCity.winterDB99}°C`} />
-                <DataRow label="Winter 99.6% DB" value={`${selectedCity.winterDB996}°C`} />
+                <DataRow label="ზაფხ. 0.4% DB · Summer DB" value={`${selectedCity.summerDB}°C`} />
+                <DataRow label="ზაფხ. MCWB · Summer MCWB" value={`${selectedCity.summerMCWB}°C`} />
+                <DataRow label="ზამთ. 99% DB · Winter DB" value={`${selectedCity.winterDB99}°C`} />
+                <DataRow label="ზამთ. 99.6% DB · Winter DB" value={`${selectedCity.winterDB996}°C`} />
+                <DataRow label="სიმაღლე · Elevation" value={`${selectedCity.elevation} m`} />
+                <DataRow label="ატ. წნევა · Pressure" value={`${design.pressure.toFixed(2)} kPa`} />
               </div>
             </div>
           )}
@@ -181,14 +183,18 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
                 Climate Data — ხელით · {selectedCity.name || '—'}
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <CustomNum label="Elev. m" value={selectedCity.elevation} step={10} onChange={(v) => updateCustomCity({ elevation: v })} />
-                <CustomNum label="Sum DB °C" value={selectedCity.summerDB} step={0.1} onChange={(v) => updateCustomCity({ summerDB: v })} />
-                <CustomNum label="Sum MCWB °C" value={selectedCity.summerMCWB} step={0.1} onChange={(v) => updateCustomCity({ summerMCWB: v })} />
-                <CustomNum label="Win 99% °C" value={selectedCity.winterDB99} step={0.1} onChange={(v) => updateCustomCity({ winterDB99: v })} />
-                <CustomNum label="Win 99.6% °C" value={selectedCity.winterDB996} step={0.1} onChange={(v) => updateCustomCity({ winterDB996: v })} />
-                <div className="text-[10px] font-mono flex items-end" style={{ color: 'var(--text-3)' }}>
-                  P = {selectedCity.pressure.toFixed(2)} kPa
-                </div>
+                <CustomNum label="სიმაღლე · Elev." unit="m" value={selectedCity.elevation} step={10} onChange={(v) => updateCustomCity({ elevation: v })} />
+                <CustomNum label="ზაფხ. DB · Sum DB" unit="°C" value={selectedCity.summerDB} step={0.1} onChange={(v) => updateCustomCity({ summerDB: v })} />
+                <CustomNum label="ზაფხ. MCWB · Sum MCWB" unit="°C" value={selectedCity.summerMCWB} step={0.1} onChange={(v) => updateCustomCity({ summerMCWB: v })} />
+                <CustomNum label="ზამთ. 99% · Win 99%" unit="°C" value={selectedCity.winterDB99} step={0.1} onChange={(v) => updateCustomCity({ winterDB99: v })} />
+                <CustomNum label="ზამთ. 99.6% · Win 99.6%" unit="°C" value={selectedCity.winterDB996} step={0.1} onChange={(v) => updateCustomCity({ winterDB996: v })} />
+                <CustomNum
+                  label="ატ. წნევა · Pressure"
+                  unit="kPa"
+                  value={Number(design.pressure.toFixed(2))}
+                  step={0.01}
+                  onChange={(v) => onUpdate({ design: { ...design, pressure: v } })}
+                />
               </div>
             </div>
           )}
@@ -196,19 +202,25 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
 
         {/* Design conditions — Summer + Winter, each with own outdoor + indoor */}
         <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Summer (cooling) */}
+          {/* Summer (cooling) — outdoor must be hotter than indoor */}
           <SeasonGroup title="ზაფხული · გაგრილება" icon="❄" accent="var(--blue)">
             <NumInput
               label="გარე DB"
               unit="°C"
               value={design.summerOutdoorDB}
               onChange={(v) => onUpdate({ design: { ...design, summerOutdoorDB: v } })}
+              error={design.summerOutdoorDB <= design.summerIndoorDB
+                ? 'გარე DB უნდა > შიდა-ზე (გაგრილება)'
+                : undefined}
             />
             <NumInput
               label="გარე WB"
               unit="°C"
               value={design.summerOutdoorWB}
               onChange={(v) => onUpdate({ design: { ...design, summerOutdoorWB: v } })}
+              error={design.summerOutdoorWB > design.summerOutdoorDB
+                ? 'WB ≤ DB უნდა იყოს'
+                : undefined}
             />
             <NumInput
               label="შიდა DB"
@@ -225,13 +237,16 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
             />
           </SeasonGroup>
 
-          {/* Winter (heating) */}
+          {/* Winter (heating) — outdoor must be colder than indoor */}
           <SeasonGroup title="ზამთარი · გათბობა" icon="🔥" accent="var(--ora)">
             <NumInput
               label="გარე DB"
               unit="°C"
               value={design.winterOutdoorDB}
               onChange={(v) => onUpdate({ design: { ...design, winterOutdoorDB: v } })}
+              error={design.winterOutdoorDB >= design.winterIndoorDB
+                ? 'გარე DB უნდა < შიდა-ზე (გათბობა)'
+                : undefined}
             />
             <NumInput
               label="გარე RH"
@@ -254,17 +269,6 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
               onChange={(v) => onUpdate({ design: { ...design, winterIndoorRH: v } })}
             />
           </SeasonGroup>
-        </div>
-
-        {/* Atmospheric pressure */}
-        <div className="mt-3 grid grid-cols-2 md:grid-cols-3 gap-3">
-          <NumInput
-            label="ატ. წნევა"
-            unit="kPa"
-            value={design.pressure}
-            step={0.1}
-            onChange={(v) => onUpdate({ design: { ...design, pressure: v } })}
-          />
         </div>
       </Card>
 
@@ -535,7 +539,7 @@ function InfoTip({ text }: { text: string }) {
 }
 
 function NumInput({
-  label, unit, value, onChange, min, max, step = 1,
+  label, unit, value, onChange, min, max, step = 1, error,
 }: {
   label: string;
   unit: string;
@@ -544,13 +548,15 @@ function NumInput({
   min?: number;
   max?: number;
   step?: number;
+  error?: string;
 }) {
+  const borderColor = error ? 'var(--red)' : 'var(--bdr-2)';
   return (
     <div>
       <label className="block text-[10px] font-bold uppercase tracking-[0.08em] mb-1.5" style={{ color: 'var(--text-3)' }}>
         {label}
       </label>
-      <div className="flex rounded-lg border overflow-hidden" style={{ borderColor: 'var(--bdr-2)' }}>
+      <div className="flex rounded-lg border overflow-hidden" style={{ borderColor }}>
         <input
           type="number"
           className="flex-1 min-w-0 px-3 py-2 text-xs font-mono font-medium bg-sur"
@@ -568,27 +574,35 @@ function NumInput({
           {unit}
         </span>
       </div>
+      {error && (
+        <div className="mt-1 text-[9px] font-medium leading-tight" style={{ color: 'var(--red)' }}>
+          ⚠ {error}
+        </div>
+      )}
     </div>
   );
 }
 
 function CustomNum({
-  label, value, step = 0.1, onChange,
+  label, value, step = 0.1, onChange, unit,
 }: {
   label: string;
   value: number;
   step?: number;
   onChange: (v: number) => void;
+  unit?: string;
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>{label}</span>
+      <span className="text-[10px] leading-tight" style={{ color: 'var(--text-3)' }}>
+        {label}{unit ? <span className="opacity-60"> · {unit}</span> : null}
+      </span>
       <input
         type="number"
         value={value}
         step={step}
         onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
-        className="w-20 rounded-md px-2 py-0.5 text-[11px] font-mono font-bold border text-right"
+        className="w-24 rounded-md px-2 py-0.5 text-[11px] font-mono font-bold border text-right"
         style={{ background: 'var(--sur)', borderColor: 'var(--blue-bd)', color: 'var(--text)', outline: 'none' }}
       />
     </div>

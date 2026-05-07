@@ -31,6 +31,7 @@
 - [ ] 2026-05-07 — STL 3D viewer (three.js + STLLoader) in StepComponents
 - [ ] 2026-05-07 — Interactive draggable i-d chart points in StepPsychro
 - [ ] 2026-05-07 — Wire StepComponents to admin catalog (model selection by airflow round-up)
+- [ ] 2026-05-07 — AHU full i18n via next-intl (`messages/*.json` ahu namespace) — labels currently bilingual KA·EN in code; should resolve from locale (en/ru/tr/az/hy)
 
 **Memory:** [project_ahu_catalog_architecture.md](~/.claude/projects/-Users-macbookair-Desktop-engineers-ge-engineers-ge/memory/project_ahu_catalog_architecture.md)
 
