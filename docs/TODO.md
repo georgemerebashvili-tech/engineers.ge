@@ -26,14 +26,25 @@
 - [ ] 2026-05-07 — sidebar: `კონტენტი > AHU კატალოგი` group with all sub-tables 🔴
 
 **Wizard tasks (current session):**
-- [ ] 2026-05-07 — Reorder STEPS + WizardStep type (foundational, no functional break) 🔴
-- [ ] 2026-05-07 — Scaffold StepComponents, StepSizing, StepFan, StepSummary, StepReport
-- [ ] 2026-05-07 — STL 3D viewer (three.js + STLLoader) in StepComponents
+- [x] 2026-05-07 — Reorder STEPS + WizardStep type (foundational, no functional break) 🔴
+- [x] 2026-05-07 — Scaffold StepComponents, StepSizing, StepFan, StepSummary, StepReport
+- [x] 2026-05-07 — Procedural AHU 3D viewer (R3F box + sections) — STL upgrade pending catalog
 - [ ] 2026-05-07 — Interactive draggable i-d chart points in StepPsychro
 - [ ] 2026-05-07 — Wire StepComponents to admin catalog (model selection by airflow round-up)
 - [ ] 2026-05-07 — AHU full i18n via next-intl (`messages/*.json` ahu namespace) — labels currently bilingual KA·EN in code; should resolve from locale (en/ru/tr/az/hy)
 
-**Memory:** [project_ahu_catalog_architecture.md](~/.claude/projects/-Users-macbookair-Desktop-engineers-ge-engineers-ge/memory/project_ahu_catalog_architecture.md)
+**Pro-grade i-d chart + report (Marsh-level quality bar):**
+Reference: https://drajmarsh.bitbucket.io/psychro-chart2d.html
+
+- [ ] 2026-05-07 — Comfort overlays on i-d chart: Givoni / ASHRAE 55-2017 / ISO 7730 PMV / EN 15251 / Outdoor Heat Index 🔴
+- [ ] 2026-05-07 — Auto-narrative generator (`lib/ahu-ashrae/narrate.ts`): each state-transition → Georgian sentence with input/process/output + standard reference 🔴
+- [ ] 2026-05-07 — StepSummary live narrative log (running journal as user navigates wizard)
+- [ ] 2026-05-07 — StepReport full sequential story + equations + standards-compliance flags (SFP vs 90.1, IAQ vs 62.1, comfort vs 55) → PDF
+- [ ] 2026-05-07 — Reference study: read drajmarsh.bitbucket.io psychro-chart2d source for comfort polygon coordinates
+
+**Memory:**
+- [project_ahu_catalog_architecture.md](~/.claude/projects/-Users-macbookair-Desktop-engineers-ge-engineers-ge/memory/project_ahu_catalog_architecture.md)
+- [project_ahu_psychro_quality_bar.md](~/.claude/projects/-Users-macbookair-Desktop-engineers-ge-engineers-ge/memory/project_ahu_psychro_quality_bar.md)
 
 ---
 

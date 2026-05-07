@@ -264,6 +264,17 @@ export interface AhuWizardState {
   fanInputs: FanInputs;
   filterInputs: FilterInputs;
   hrInputs: HeatRecoveryInputs;
+  /**
+   * Section pipeline (ordered). Source of truth for the new section-based calc.
+   * Legacy single-coil/-filter inputs above are kept until the legacy UI is
+   * fully removed. Storage migration backfills this from a default preset.
+   */
+  sections?: import('./sections').SectionConfig[];
+  /**
+   * Selected preset id used to build the default sections array — kept so the
+   * UI can offer "reset to preset" without losing user customization on demand.
+   */
+  sectionPresetId?: import('./section-presets').PresetId;
   // Calculated results
   psychro?: PsychrometricResults;
   coolingCoil?: CoolingCoilResult;

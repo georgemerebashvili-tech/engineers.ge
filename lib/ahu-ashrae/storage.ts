@@ -1,5 +1,6 @@
 // LocalStorage persistence for AHU projects + units
 import type { AhuProject, AhuUnit, AhuWizardState } from './types';
+import { buildPreset } from './section-presets';
 
 const PROJECTS_KEY = 'ahu_projects_v2';
 const WIZARD_KEY_PREFIX = 'ahu_wizard_';  // suffix: <projectId>_<unitId>
@@ -136,6 +137,13 @@ export function loadWizardState(projectId: string, unitId: string): AhuWizardSta
     const legacyStep = parsed?.currentStep as string | undefined;
     if (legacyStep === 'cool_coil' || legacyStep === 'heat_coil' || legacyStep === 'filter') {
       parsed.currentStep = 'sizing';
+    }
+    // Backfill section pipeline if missing — gives existing AHUs a default chain
+    // so the new section-based UI/calc has something to display immediately.
+    if (!parsed.sections || !Array.isArray(parsed.sections) || parsed.sections.length === 0) {
+      const oaF = (parsed.airflow as { oaFraction?: number } | undefined)?.oaFraction ?? 0.3;
+      parsed.sectionPresetId = parsed.sectionPresetId ?? 'mixing_with_hr';
+      parsed.sections = buildPreset(parsed.sectionPresetId, { oaFraction: oaF });
     }
     return parsed as AhuWizardState;
   } catch {

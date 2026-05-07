@@ -4,7 +4,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Wind, Thermometer, Fan, FileText, Download,
   ChevronRight, CheckCircle2, ArrowLeft,
-  Info, Layers, Boxes, Gauge, Maximize2, Minimize2,
+  Layers, Boxes, Gauge, Maximize2, Minimize2,
 } from 'lucide-react';
 import type {
   AhuWizardState, WizardStep, AhuView, AhuProject, AhuUnit, AhuType,
@@ -23,6 +23,9 @@ import {
   loadWizardState, saveWizardState,
 } from '@/lib/ahu-ashrae/storage';
 import { getAhuTypeSpec } from '@/lib/ahu-ashrae/ahu-types-data';
+import { buildPreset } from '@/lib/ahu-ashrae/section-presets';
+import { fromDbWb, fromDbRh } from '@/lib/ahu-ashrae/air-state';
+import { runChain, type ChainResult } from '@/lib/ahu-ashrae/chain';
 
 import { AhuProjectsRail } from './AhuProjectsRail';
 import { AhuRegister } from './AhuRegister';
@@ -32,6 +35,11 @@ import { AhuLandingHint } from './AhuLandingHint';
 import { AhuTypeSelector } from './AhuTypeSelector';
 import { Step1Inputs } from './steps/Step1Inputs';
 import { Step2Psychro } from './steps/Step2Psychro';
+import { StepComponents } from './steps/StepComponents';
+import { StepSizing } from './steps/StepSizing';
+import { StepFan } from './steps/StepFan';
+import { StepSummary } from './steps/StepSummary';
+import { StepReport } from './steps/StepReport';
 
 // ─── Step metadata ─────────────────────────────────────────────────────────────
 
@@ -88,6 +96,8 @@ export function makeDefaultWizardState(project: AhuProject): AhuWizardState {
     },
     filterInputs: { mervRating: 11, preFilter: true, faceVelocity: 2.5 },
     hrInputs: { type: 'rotary_wheel', sensibleEffectiveness: 0.75, latentEffectiveness: 0.70 },
+    sectionPresetId: 'mixing_with_hr',
+    sections: buildPreset('mixing_with_hr', { supplyTdb: 14, oaFraction: 0.30 }),
   };
 }
 
@@ -382,6 +392,32 @@ interface WizardProps {
 
 function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: WizardProps) {
   const psychro = useMemo(() => calcPsychro(state), [state.design, state.airflow, state.loads]);
+  const chain = useMemo<ChainResult | undefined>(() => {
+    const sections = state.sections;
+    if (!sections || sections.length === 0) return undefined;
+    try {
+      const oaFraction = Math.max(0.01, Math.min(1, state.airflow.oaFraction));
+      // Mass flow at OA-side intake: full supply mDot scaled by OA fraction
+      // (mixing_box later restores to full flow). Approximate density from outdoor.
+      const supplyM3s = state.airflow.supplyAirflow / 3600;
+      const oaM3s = supplyM3s * oaFraction;
+      const oaState = fromDbWb(
+        state.design.summerOutdoorDB,
+        state.design.summerOutdoorWB,
+        oaM3s * 1.18, // ρ ≈ 1.18 kg/m³ at typical summer OA conditions
+        state.design.pressure,
+      );
+      const returnState = fromDbRh(
+        state.design.summerIndoorDB,
+        state.design.summerIndoorRH / 100,
+        supplyM3s * 1.18,
+        state.design.pressure,
+      );
+      return runChain({ outdoor: oaState, returnState, sections });
+    } catch {
+      return undefined;
+    }
+  }, [state.sections, state.design, state.airflow]);
   const stepIndex = STEPS.findIndex((s) => s.id === state.currentStep);
 
   const goTo = useCallback((step: WizardStep) => {
@@ -558,17 +594,29 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
               psychro={psychro}
             />
           )}
-          {state.currentStep === 'psychro' && (
-            <Step2Psychro state={state} psychro={psychro} />
-          )}
           {state.currentStep === 'ahu_type' && (
             <AhuTypeSelector
               selected={unit.ahuType}
               onSelect={onSelectAhuType}
             />
           )}
-          {!['inputs', 'psychro', 'ahu_type'].includes(state.currentStep) && (
-            <ComingSoonStep step={state.currentStep} />
+          {state.currentStep === 'components' && (
+            <StepComponents state={state} unit={unit} onUpdate={onUpdate} />
+          )}
+          {state.currentStep === 'psychro' && (
+            <Step2Psychro state={state} psychro={psychro} />
+          )}
+          {state.currentStep === 'sizing' && (
+            <StepSizing state={state} psychro={psychro} />
+          )}
+          {state.currentStep === 'fan' && (
+            <StepFan state={state} />
+          )}
+          {state.currentStep === 'summary' && (
+            <StepSummary state={state} unit={unit} psychro={psychro} chain={chain} />
+          )}
+          {state.currentStep === 'report' && (
+            <StepReport state={state} unit={unit} />
           )}
 
           <div className="flex items-center justify-between mt-8 pt-5 border-t" style={{ borderColor: 'var(--bdr)' }}>
@@ -609,26 +657,3 @@ function MiniStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ComingSoonStep({ step }: { step: WizardStep }) {
-  return (
-    <div
-      className="rounded-xl border p-8 flex flex-col items-center gap-4 text-center"
-      style={{ background: 'var(--sur)', borderColor: 'var(--bdr)', borderStyle: 'dashed' }}
-    >
-      <div
-        className="inline-flex h-12 w-12 items-center justify-center rounded-full"
-        style={{ background: 'var(--blue-lt)' }}
-      >
-        <Info size={22} style={{ color: 'var(--blue)' }} />
-      </div>
-      <div>
-        <div className="font-bold text-sm mb-1" style={{ color: 'var(--navy)' }}>
-          მალე
-        </div>
-        <div className="text-xs" style={{ color: 'var(--text-3)' }}>
-          <span className="font-mono">{step}</span> ნაბიჯი მომდევნო iteration-ში
-        </div>
-      </div>
-    </div>
-  );
-}
