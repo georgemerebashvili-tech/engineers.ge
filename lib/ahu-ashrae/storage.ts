@@ -145,6 +145,18 @@ export function loadWizardState(projectId: string, unitId: string): AhuWizardSta
       parsed.sectionPresetId = parsed.sectionPresetId ?? 'mixing_with_hr';
       parsed.sections = buildPreset(parsed.sectionPresetId, { oaFraction: oaF });
     }
+    // Backfill systemDesign for states created before Step 1 intent fields were added.
+    if (!parsed.systemDesign) {
+      parsed.systemDesign = {
+        coolingSystem: 'chilled_water',
+        heatingSystem: 'hot_water',
+        chwSupplyT: 6, chwReturnT: 12,
+        hwSupplyT: 80, hwReturnT: 60,
+        electricKw: 0,
+        filterStages: ['G4', 'F7'],
+        humidifier: 'none',
+      };
+    }
     // Backfill furthestReachedStep — old state predates sequential gating.
     // Default to currentStep so the user can stay where they were and not be
     // re-locked out of progress they had made.

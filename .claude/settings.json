@@ -74,7 +74,17 @@
       "Bash(grep -n \"^      <section\\\\|^      </section\\\\|^    <div\\\\|^    </div\\\\|^      </div\\\\|^      <div\\\\|^  return\\\\|^  \\);$\\\\|^}$\" /Users/macbookair/Desktop/engineers.ge/engineers.ge/components/ahu-ashrae/steps/StepComponents.tsx)",
       "Bash(awk 'NR>=395 && NR<=410 {print NR\": \"$0}')",
       "Bash(awk 'NR>=60 && NR<=110 {print NR\": \"$0}')",
-      "Bash(git stash *)"
+      "Bash(git stash *)",
+      "Bash(git -C /Users/macbookair/Desktop/engineers.ge/engineers.ge add components/ahu-ashrae/steps/StepComponents.tsx)",
+      "Bash(git -C /Users/macbookair/Desktop/engineers.ge/engineers.ge commit -m ' *)",
+      "Bash(git -C /Users/macbookair/Desktop/engineers.ge/engineers.ge status)",
+      "Bash(git -C /Users/macbookair/Desktop/engineers.ge/engineers.ge log --oneline -3)",
+      "Bash(git -C /Users/macbookair/Desktop/engineers.ge/engineers.ge show c103fd2 --stat)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:app.cloudair.tech)",
+      "WebFetch(domain:hvac-eng.com)",
+      "WebFetch(domain:www.tme.com)"
     ],
     "additionalDirectories": [
       "/Users/macbookair/Desktop/engineers.ge/engineers.ge/app",

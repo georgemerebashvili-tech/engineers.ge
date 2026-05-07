@@ -97,6 +97,15 @@ export function makeDefaultWizardState(project: AhuProject): AhuWizardState {
     },
     filterInputs: { mervRating: 11, preFilter: true, faceVelocity: 2.5 },
     hrInputs: { type: 'rotary_wheel', sensibleEffectiveness: 0.75, latentEffectiveness: 0.70 },
+    systemDesign: {
+      coolingSystem: 'chilled_water',
+      heatingSystem: 'hot_water',
+      chwSupplyT: 6, chwReturnT: 12,
+      hwSupplyT: 80, hwReturnT: 60,
+      electricKw: 0,
+      filterStages: ['G4', 'F7'],
+      humidifier: 'none',
+    },
     sectionPresetId: 'mixing_with_hr',
     sections: buildPreset('mixing_with_hr', { supplyTdb: 14, oaFraction: 0.30 }),
   };

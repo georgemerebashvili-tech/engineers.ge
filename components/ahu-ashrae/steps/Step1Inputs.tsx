@@ -1,12 +1,15 @@
 'use client';
 
 import React, { useCallback } from 'react';
-import { MapPin, Wind, Info, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { MapPin, Wind, Info, CheckCircle2, AlertTriangle, SlidersHorizontal } from 'lucide-react';
 import {
   KAYA_MODELS, modelsForFlow, getKayaModel, faceVelocity,
   type KayaModel,
 } from '@/lib/ahu-ashrae/kaya-models';
-import type { AhuWizardState, PsychrometricResults, AhuProject, AhuUnit, CityClimate } from '@/lib/ahu-ashrae/types';
+import type {
+  AhuWizardState, PsychrometricResults, AhuProject, AhuUnit, CityClimate,
+  CoolingSystemType, HeatingSystemType, FilterStageKey, HumidifierType, SystemDesignIntent,
+} from '@/lib/ahu-ashrae/types';
 import {
   CITY_GROUPS, ASHRAE_621_SPACES, ashrae621MinOA,
   CUSTOM_CITY_ID, makeCustomCity,
@@ -494,6 +497,12 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
         />
       </Card>
 
+      {/* ── System Design Intent ── */}
+      <SystemDesignCard
+        intent={state.systemDesign ?? DEFAULT_SYSTEM_DESIGN}
+        onUpdate={(sd) => onUpdate({ systemDesign: sd })}
+      />
+
       {/* Live psychro preview — output of design inputs above */}
       {psychro && (
         <div className="rounded-xl border p-4" style={{ background: 'var(--blue-lt)', borderColor: 'var(--blue-bd)' }}>
@@ -839,6 +848,209 @@ function KayaModelPicker({
           </span>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── System Design Intent ─────────────────────────────────────────────────────
+
+const DEFAULT_SYSTEM_DESIGN: SystemDesignIntent = {
+  coolingSystem: 'chilled_water',
+  heatingSystem: 'hot_water',
+  chwSupplyT: 6, chwReturnT: 12,
+  hwSupplyT: 80, hwReturnT: 60,
+  electricKw: 0,
+  filterStages: ['G4', 'F7'],
+  humidifier: 'none',
+};
+
+const FILTER_STAGES: { key: FilterStageKey; label: string; iso: string; tier: 'coarse' | 'fine' | 'hepa' | 'uvc' }[] = [
+  { key: 'G2', label: 'G2', iso: 'Coarse 35%', tier: 'coarse' },
+  { key: 'G4', label: 'G4', iso: 'Coarse 60%', tier: 'coarse' },
+  { key: 'F7', label: 'F7', iso: 'ePM1 55%',  tier: 'fine' },
+  { key: 'F9', label: 'F9', iso: 'ePM1 80%',  tier: 'fine' },
+  { key: 'H14', label: 'H14', iso: 'HEPA 99.995%', tier: 'hepa' },
+  { key: 'UVC', label: 'UV-C', iso: 'გერმ.',   tier: 'uvc' },
+];
+
+const TIER_COLORS: Record<string, string> = {
+  coarse: '#64748b',
+  fine: 'var(--blue)',
+  hepa: '#7c3aed',
+  uvc: '#0891b2',
+};
+
+function SystemDesignCard({
+  intent, onUpdate,
+}: {
+  intent: SystemDesignIntent;
+  onUpdate: (sd: SystemDesignIntent) => void;
+}) {
+  const set = <K extends keyof SystemDesignIntent>(k: K, v: SystemDesignIntent[K]) =>
+    onUpdate({ ...intent, [k]: v });
+
+  const toggleStage = (key: FilterStageKey) => {
+    const has = intent.filterStages.includes(key);
+    const next = has
+      ? intent.filterStages.filter((s) => s !== key)
+      : [...intent.filterStages, key];
+    set('filterStages', next);
+  };
+
+  const COOLING_OPTIONS: { v: CoolingSystemType; label: string }[] = [
+    { v: 'chilled_water', label: 'Water Coil' },
+    { v: 'dx', label: 'DX Coil' },
+    { v: 'none', label: '∅' },
+  ];
+  const HEATING_OPTIONS: { v: HeatingSystemType; label: string }[] = [
+    { v: 'hot_water', label: 'Water Coil' },
+    { v: 'electric', label: 'Electric' },
+    { v: 'steam', label: 'Steam' },
+    { v: 'none', label: '∅' },
+  ];
+  const HUMIDIFIER_OPTIONS: { v: HumidifierType; label: string }[] = [
+    { v: 'none', label: 'არ არის' },
+    { v: 'steam', label: 'ორთქლი' },
+    { v: 'evaporative', label: 'ორთქლ./აორთ.' },
+    { v: 'ultrasonic', label: 'ულტ.' },
+  ];
+
+  return (
+    <Card icon={<SlidersHorizontal size={14} />} title="სისტემის კონფიგურაცია">
+      <div className="space-y-4">
+
+        {/* Cooling + Heating system type */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Cooling */}
+          <div>
+            <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'var(--text-3)' }}>
+              გაგრილება
+            </div>
+            <SegPicker
+              options={COOLING_OPTIONS}
+              value={intent.coolingSystem}
+              onChange={(v) => set('coolingSystem', v)}
+              activeColor="var(--blue)"
+            />
+            {intent.coolingSystem === 'chilled_water' && (
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <NumInput label="CHW მიწ." unit="°C" value={intent.chwSupplyT} step={1} min={1} max={20}
+                  onChange={(v) => set('chwSupplyT', v)} />
+                <NumInput label="CHW დაბ." unit="°C" value={intent.chwReturnT} step={1} min={1} max={25}
+                  onChange={(v) => set('chwReturnT', v)} />
+              </div>
+            )}
+          </div>
+
+          {/* Heating */}
+          <div>
+            <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'var(--text-3)' }}>
+              გათბობა
+            </div>
+            <SegPicker
+              options={HEATING_OPTIONS}
+              value={intent.heatingSystem}
+              onChange={(v) => set('heatingSystem', v)}
+              activeColor="var(--ora)"
+            />
+            {intent.heatingSystem === 'hot_water' && (
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <NumInput label="HW მიწ." unit="°C" value={intent.hwSupplyT} step={5} min={40} max={120}
+                  onChange={(v) => set('hwSupplyT', v)} />
+                <NumInput label="HW დაბ." unit="°C" value={intent.hwReturnT} step={5} min={30} max={100}
+                  onChange={(v) => set('hwReturnT', v)} />
+              </div>
+            )}
+            {intent.heatingSystem === 'electric' && (
+              <div className="mt-2">
+                <NumInput label="სიმძლავრე" unit="kW" value={intent.electricKw} step={0.5} min={0}
+                  onChange={(v) => set('electricKw', v)} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Filter stages */}
+        <div>
+          <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2" style={{ color: 'var(--text-3)' }}>
+            ფილტრაციის საფეხურები
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {FILTER_STAGES.map(({ key, label, iso, tier }) => {
+              const active = intent.filterStages.includes(key);
+              const col = TIER_COLORS[tier];
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => toggleStage(key)}
+                  className="flex flex-col items-center rounded-lg px-3 py-1.5 border transition-all"
+                  style={{
+                    borderColor: active ? col : 'var(--bdr)',
+                    background: active ? col + '18' : 'var(--sur-2)',
+                    minWidth: 52,
+                  }}
+                >
+                  <span className="text-[11px] font-bold font-mono" style={{ color: active ? col : 'var(--text-3)' }}>
+                    {label}
+                  </span>
+                  <span className="text-[9px] leading-tight mt-0.5" style={{ color: active ? col : 'var(--text-3)', opacity: 0.8 }}>
+                    {iso}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {intent.filterStages.length > 0 && (
+            <div className="mt-1.5 text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
+              {intent.filterStages.join(' → ')}
+            </div>
+          )}
+        </div>
+
+        {/* Humidifier */}
+        <div>
+          <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-1.5" style={{ color: 'var(--text-3)' }}>
+            დატენიანება
+          </div>
+          <SegPicker
+            options={HUMIDIFIER_OPTIONS}
+            value={intent.humidifier}
+            onChange={(v) => set('humidifier', v)}
+            activeColor="var(--blue)"
+          />
+        </div>
+
+      </div>
+    </Card>
+  );
+}
+
+function SegPicker<T extends string>({
+  options, value, onChange, activeColor,
+}: {
+  options: { v: T; label: string }[];
+  value: T;
+  onChange: (v: T) => void;
+  activeColor: string;
+}) {
+  return (
+    <div className="flex rounded-lg border overflow-hidden" style={{ borderColor: 'var(--bdr-2)' }}>
+      {options.map(({ v, label }) => (
+        <button
+          key={v}
+          type="button"
+          onClick={() => onChange(v)}
+          className="flex-1 py-1.5 text-[10px] font-semibold transition-all truncate px-1"
+          style={
+            value === v
+              ? { background: activeColor, color: '#fff' }
+              : { background: 'var(--sur)', color: 'var(--text-3)' }
+          }
+        >
+          {label}
+        </button>
+      ))}
     </div>
   );
 }

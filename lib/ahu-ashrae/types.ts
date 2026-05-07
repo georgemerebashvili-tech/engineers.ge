@@ -254,6 +254,31 @@ export interface HeatRecoveryResult {
   ashrae901Required: boolean;     // ASHRAE 90.1 §6.5.6.1 mandate
 }
 
+// ─── System Design Intent ────────────────────────────────────────────────────
+
+export type CoolingSystemType = 'chilled_water' | 'dx' | 'none';
+export type HeatingSystemType = 'hot_water' | 'electric' | 'steam' | 'none';
+export type FilterStageKey = 'G2' | 'G4' | 'F7' | 'F9' | 'H14' | 'UVC';
+export type HumidifierType = 'steam' | 'evaporative' | 'ultrasonic' | 'none';
+
+/** High-level system intent captured in Step 1 — tells later steps what is
+ *  physically installed so they can compute the right ΔP, capacity, and stages. */
+export interface SystemDesignIntent {
+  coolingSystem: CoolingSystemType;
+  heatingSystem: HeatingSystemType;
+  // Chilled-water fluid temps (used when coolingSystem = 'chilled_water')
+  chwSupplyT: number;  // °C  default 6
+  chwReturnT: number;  // °C  default 12
+  // Hot-water fluid temps (used when heatingSystem = 'hot_water')
+  hwSupplyT: number;   // °C  default 80
+  hwReturnT: number;   // °C  default 60
+  // Electric heater rated capacity (used when heatingSystem = 'electric')
+  electricKw: number;  // kW
+  // Ordered filtration stages (e.g. G2 pre + F7 main + H14 final)
+  filterStages: FilterStageKey[];
+  humidifier: HumidifierType;
+}
+
 // ─── Full AHU Wizard State ────────────────────────────────────────────────────
 
 export type WizardStep =
@@ -309,6 +334,8 @@ export interface AhuWizardState {
   kayaModelId?: string;
   /** AFL fan selected from the cloudair.tech catalog */
   aflFan?: AflFanSelection;
+  /** System design intent — set in Step 1, consumed by all later steps. */
+  systemDesign?: SystemDesignIntent;
   // Calculated results
   psychro?: PsychrometricResults;
   coolingCoil?: CoolingCoilResult;
