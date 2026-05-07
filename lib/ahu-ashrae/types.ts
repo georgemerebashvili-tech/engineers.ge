@@ -4,12 +4,12 @@
 // ─── AHU Type / Heat Recovery Configuration ───────────────────────────────────
 
 export type AhuType =
-  | 'crossflow_plate'      // Cross-flow plate HX (recuperator)
-  | 'counterflow_plate'    // Counter-flow plate HX (recuperator)
-  | 'direct_flow_rotor'    // Sensible rotary wheel
-  | 'enthalpy_rotor'       // Total energy / enthalpy wheel
-  | 'run_around_coil'      // Glycol run-around loop
-  | 'heat_pipe';           // Phase-change refrigerant heat pipe
+  | 'supply_only'          // Single-direction supply (no recovery, no coils)
+  | 'hrv'                  // Energy recovery ventilator: supply + exhaust + recuperator only
+  | 'crossflow_plate'      // Full AHU with cross-flow plate HX
+  | 'counterflow_plate'    // Full AHU with counter-flow plate HX
+  | 'direct_flow_rotor'    // Full AHU with sensible rotary wheel
+  | 'run_around_coil';     // Full AHU with glycol run-around loop
 
 // ─── Project / AHU Unit ───────────────────────────────────────────────────────
 

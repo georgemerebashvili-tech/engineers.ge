@@ -190,6 +190,46 @@ function Schematic({ type, color }: { type: AhuTypeSpec['schematic']; color: str
   const arrowSupply = '#1f6fd4';
   const arrowExhaust = '#c05010';
 
+  if (type === 'supply') {
+    return (
+      <svg width={w} height={h} viewBox="0 0 56 36" fill="none">
+        {/* duct outline */}
+        <rect x="14" y="13" width="28" height="10" stroke={stroke} strokeWidth="1.5" rx="2" fill="none" />
+        {/* single supply arrow through */}
+        <path d="M3 18 H53" stroke={arrowSupply} strokeWidth="1.8" markerEnd="url(#sup-blue)" />
+        <defs>
+          <marker id="sup-blue" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill={arrowSupply} />
+          </marker>
+        </defs>
+      </svg>
+    );
+  }
+
+  if (type === 'hrv') {
+    return (
+      <svg width={w} height={h} viewBox="0 0 56 36" fill="none">
+        {/* casing */}
+        <rect x="14" y="6" width="28" height="24" stroke={stroke} strokeWidth="1.5" rx="2" fill="none" />
+        {/* X — counterflow-style heat exchange */}
+        <path d="M18 10 L38 26" stroke={stroke} strokeWidth="1" />
+        <path d="M38 10 L18 26" stroke={stroke} strokeWidth="1" />
+        {/* supply (top) */}
+        <path d="M3 12 H53" stroke={arrowSupply} strokeWidth="1.5" markerEnd="url(#hrv-blue)" />
+        {/* exhaust (bottom) */}
+        <path d="M53 24 H3" stroke={arrowExhaust} strokeWidth="1.5" strokeDasharray="3 2" markerEnd="url(#hrv-ora)" />
+        <defs>
+          <marker id="hrv-blue" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill={arrowSupply} />
+          </marker>
+          <marker id="hrv-ora" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+            <path d="M0,0 L6,3 L0,6 Z" fill={arrowExhaust} />
+          </marker>
+        </defs>
+      </svg>
+    );
+  }
+
   if (type === 'crossflow') {
     return (
       <svg width={w} height={h} viewBox="0 0 56 36" fill="none">
@@ -266,25 +306,8 @@ function Schematic({ type, color }: { type: AhuTypeSpec['schematic']; color: str
     );
   }
 
-  // heat pipe
-  return (
-    <svg width={w} height={h} viewBox="0 0 56 36" fill="none">
-      <rect x="20" y="4" width="16" height="28" stroke={stroke} strokeWidth="1.5" fill="none" rx="2" />
-      <path d="M24 8 V28" stroke={stroke} strokeWidth="0.8" />
-      <path d="M28 8 V28" stroke={stroke} strokeWidth="0.8" />
-      <path d="M32 8 V28" stroke={stroke} strokeWidth="0.8" />
-      <path d="M3 12 H20" stroke={arrowSupply} strokeWidth="1.5" markerEnd="url(#hp-blue)" />
-      <path d="M53 24 H36" stroke={arrowExhaust} strokeWidth="1.5" markerEnd="url(#hp-ora)" />
-      <defs>
-        <marker id="hp-blue" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-          <path d="M0,0 L6,3 L0,6 Z" fill={arrowSupply} />
-        </marker>
-        <marker id="hp-ora" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-          <path d="M0,0 L6,3 L0,6 Z" fill={arrowExhaust} />
-        </marker>
-      </defs>
-    </svg>
-  );
+  // fallback (shouldn't be reached — all schematic values handled above)
+  return null;
 }
 
 // ─── Comparison Table ────────────────────────────────────────────────────────

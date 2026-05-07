@@ -8,7 +8,7 @@ export interface AhuTypeSpec {
   title: string;            // Georgian display name
   titleEn: string;          // English standard name
   shortLabel: string;       // for compact UI
-  category: 'plate' | 'rotor' | 'fluid' | 'phase';
+  category: 'supply' | 'hrv' | 'plate' | 'rotor' | 'fluid';
   // Performance
   sensibleEffMin: number;   // 0–1
   sensibleEffMax: number;
@@ -29,10 +29,46 @@ export interface AhuTypeSpec {
   ashraeRef: string;
   // Visual identity
   accent: string;           // CSS color var
-  schematic: 'crossflow' | 'counterflow' | 'rotor' | 'glycol' | 'heatpipe';
+  schematic: 'supply' | 'hrv' | 'crossflow' | 'counterflow' | 'rotor' | 'glycol';
 }
 
 export const AHU_TYPES: AhuTypeSpec[] = [
+  {
+    id: 'supply_only',
+    title: 'წინდინება (Direct flow)',
+    titleEn: 'Direct-Flow Supply (Coils Only, No Recovery)',
+    shortLabel: 'Direct flow',
+    category: 'supply',
+    sensibleEffMin: 0, sensibleEffMax: 0,
+    latentEffMin: 0,   latentEffMax: 0,
+    dpMin: 0, dpMax: 0,
+    contamination: 'none',
+    frostRisk: 'low',
+    bestFor: 'მცირე საცხოვრებელი, სათავსოები, სარდაფი — მიწოდების მარტივი ვენტილაცია ხვიებით',
+    notFor: 'მაღალი ეფექტურობა — რეკუპერაციის გარეშე ენერგია იკარგება გაწოვილ ჰაერთან',
+    description: 'ცალმხრივი ნაკადი: გარე ჰაერი → ფილტრი → ხვიები (გათბობა/გაგრილება) → ვენტილატორი → ოთახი. რეკუპერატორი არ არის, მხოლოდ ხვიები ამუშავებს ჰაერის ტემპერატურას/ტენიანობას. მარტივი და იაფი.',
+    ashraeRef: 'ASHRAE HVAC Apps ch.4 (residential / small commercial)',
+    accent: 'var(--text-2)',
+    schematic: 'supply',
+  },
+  {
+    id: 'hrv',
+    title: 'ენერგო-რეკუპერაცია (HRV / HRU)',
+    titleEn: 'Energy Recovery Ventilator (HRV/HRU)',
+    shortLabel: 'HRV',
+    category: 'hrv',
+    sensibleEffMin: 0.65, sensibleEffMax: 0.90,
+    latentEffMin: 0,      latentEffMax: 0,
+    dpMin: 100, dpMax: 250,
+    contamination: 'none',
+    frostRisk: 'medium',
+    bestFor: 'საცხოვრებელი / პატარა ოფისი — დაბალანსებული მოდინება + გაწოვა + რეკუპერატორი ხვიების გარეშე',
+    notFor: 'ცენტრალური მაღალი სიმძლავრე — coil-ები ცალკე AHU-ში სჯობს',
+    description: 'მცირე მოწყობილობა: მიმწოდი + უკუვენტილატორი + რეკუპერატორი (ფირფიტა ან როტორი) ერთ კარკასში. ხვიები არ არის — სუფთა ვენტილაციური ერთეული.',
+    ashraeRef: 'ASHRAE HVAC Apps ch.1 (HRV/ERV)',
+    accent: 'var(--grn)',
+    schematic: 'hrv',
+  },
   {
     id: 'crossflow_plate',
     title: 'ჯვარედინ-ნაკადიანი რეკუპერატორი',
@@ -71,8 +107,8 @@ export const AHU_TYPES: AhuTypeSpec[] = [
   },
   {
     id: 'direct_flow_rotor',
-    title: 'პირდაპირნაკადიანი როტორი',
-    titleEn: 'Direct Flow Rotary Wheel (Sensible)',
+    title: 'მბრუნავი როტორი (sensible)',
+    titleEn: 'Sensible Rotary Wheel',
     shortLabel: 'Sensible Wheel',
     category: 'rotor',
     sensibleEffMin: 0.70, sensibleEffMax: 0.85,
@@ -85,24 +121,6 @@ export const AHU_TYPES: AhuTypeSpec[] = [
     description: 'მბრუნავი მატრიცა ალუმინის/ფოლადის. მხოლოდ სენსიბელური სითბო. დაბალი ΔP, ნაკლები გათოშვის რისკი ვიდრე ფირფიტას.',
     ashraeRef: 'ASHRAE HVAC S&E ch.26.3',
     accent: 'var(--ora)',
-    schematic: 'rotor',
-  },
-  {
-    id: 'enthalpy_rotor',
-    title: 'ენთალპიური როტორი',
-    titleEn: 'Enthalpy Wheel (Total Energy)',
-    shortLabel: 'Enthalpy Wheel',
-    category: 'rotor',
-    sensibleEffMin: 0.70, sensibleEffMax: 0.85,
-    latentEffMin: 0.65,   latentEffMax: 0.80,
-    dpMin: 175, dpMax: 350,
-    contamination: 'low',
-    frostRisk: 'low',
-    bestFor: 'ნოტიო კლიმატი (ბათუმი, ფოთი), რესტორნები, საცხოვრებელი — სითბოც და ტენიც',
-    notFor: 'ლაბორატორიები / IC-რუმები — ნებისმიერი ჰიგროსკოპული მიგრაცია მიუღებელია',
-    description: 'მბრუნავი ჰიგროსკოპული მატრიცა (silica gel / molecular sieve). გადააქვს როგორც სითბო, ასევე ტენი. მაქსიმუმი ენერგიის მიმოცვლა.',
-    ashraeRef: 'ASHRAE HVAC S&E ch.26.3 + ASHRAE 62.1 §5.16',
-    accent: 'var(--grn)',
     schematic: 'rotor',
   },
   {
@@ -122,24 +140,6 @@ export const AHU_TYPES: AhuTypeSpec[] = [
     ashraeRef: 'ASHRAE HVAC S&E ch.26.5',
     accent: 'var(--blue)',
     schematic: 'glycol',
-  },
-  {
-    id: 'heat_pipe',
-    title: 'სითბური მილი (Heat Pipe)',
-    titleEn: 'Heat Pipe',
-    shortLabel: 'Heat Pipe',
-    category: 'phase',
-    sensibleEffMin: 0.45, sensibleEffMax: 0.65,
-    latentEffMin: 0,      latentEffMax: 0,
-    dpMin: 100, dpMax: 250,
-    contamination: 'none',
-    frostRisk: 'low',
-    bestFor: 'საავადმყოფოები, ლაბორატორიები — მოძრავი ნაწილების გარეშე, ნულოვანი დაბინძურება',
-    notFor: 'მაღალი ეფექტურობის მოთხოვნები — ფირფიტა/როტორი უპირატესობს',
-    description: 'ფაზობრივი გადასვლა — ცეცხცეცხლი მაცივარი მილებში. მოძრავი ნაწილების გარეშე, ჩუმი, ულტრა-საიმედო. ჰაერის ნაკადები ერთ კონსტრუქციაშია, მაგრამ ფიზიკურად განცალკევებული.',
-    ashraeRef: 'ASHRAE HVAC S&E ch.26.6',
-    accent: 'var(--ora)',
-    schematic: 'heatpipe',
   },
 ];
 

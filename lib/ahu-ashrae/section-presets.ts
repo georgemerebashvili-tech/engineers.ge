@@ -152,8 +152,8 @@ const PRESETS: Record<PresetId, PresetSpec> = {
         section('damper', 0, 'OA Damper', { openFraction: 1, baseDeltaP: 20 }),
         section('filter', 1, 'წინა G4', { filterClass: 'G4', useAverageDeltaP: true }),
         section('mixing_box', 2, 'შერევის ყუთი', { outsideAirFraction: oaF }),
-        section('heat_recovery', 3, 'Enthalpy wheel', {
-          hrType: 'rotary_enthalpy', sensibleEff: 0.78, latentEff: 0.65, deltaP: 110,
+        section('heat_recovery', 3, 'Counter-flow HR', {
+          hrType: 'counterflow_plate', sensibleEff: 0.80, latentEff: 0, deltaP: 130,
         }),
         section('filter', 4, 'F7', { filterClass: 'F7', useAverageDeltaP: true }),
         section('preheat', 5, 'წინა გათბობა', { source: 'hot_water', targetTdb: 5, deltaP: 50 }),

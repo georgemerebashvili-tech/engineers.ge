@@ -53,13 +53,6 @@ export function AhuProjectOverview({
             </div>
           </div>
         </div>
-        <button
-          onClick={onNewUnit}
-          className="flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg transition-all shrink-0"
-          style={{ background: 'var(--blue)', color: '#fff' }}
-        >
-          <Plus size={14} /> ახალი AHU
-        </button>
       </header>
 
       {/* Project info */}
@@ -106,6 +99,7 @@ export function AhuProjectOverview({
                   onDelete={() => onDeleteUnit(u.id)}
                 />
               ))}
+              <NewUnitCard onClick={onNewUnit} />
             </div>
           </>
         )}
@@ -153,6 +147,34 @@ function EmptyUnits({ onNewUnit }: { onNewUnit: () => void }) {
         <Plus size={14} /> ახალი AHU
       </button>
     </div>
+  );
+}
+
+function NewUnitCard({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group relative rounded-xl border-2 border-dashed p-4 transition-all hover:-translate-y-0.5 flex flex-col items-center justify-center gap-2 min-h-[180px]"
+      style={{
+        background: 'var(--sur-2)',
+        borderColor: 'var(--blue-bd)',
+        color: 'var(--blue)',
+      }}
+    >
+      <span
+        className="inline-flex h-10 w-10 items-center justify-center rounded-xl transition-transform group-hover:scale-110"
+        style={{ background: 'var(--blue-lt)', color: 'var(--blue)' }}
+      >
+        <Plus size={18} strokeWidth={2.2} />
+      </span>
+      <div className="text-sm font-bold" style={{ color: 'var(--navy)' }}>
+        ახალი AHU
+      </div>
+      <div className="text-[10px]" style={{ color: 'var(--text-3)' }}>
+        ASHRAE სელექციის დაწყება
+      </div>
+    </button>
   );
 }
 

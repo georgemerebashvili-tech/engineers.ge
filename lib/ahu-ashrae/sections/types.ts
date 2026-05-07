@@ -63,8 +63,8 @@ export interface MixingBoxParams {
 
 export type HeatRecoveryType =
   | 'crossflow_plate' | 'counterflow_plate'
-  | 'rotary_sensible' | 'rotary_enthalpy'
-  | 'run_around_coil' | 'heat_pipe';
+  | 'rotary_sensible'
+  | 'run_around_coil';
 
 export interface HeatRecoveryParams {
   hrType: HeatRecoveryType;

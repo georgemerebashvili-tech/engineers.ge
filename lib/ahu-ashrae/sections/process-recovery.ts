@@ -61,8 +61,6 @@ function typeLabel(t: HeatRecoveryParams['hrType']): string {
     case 'crossflow_plate': return 'cross-flow plate';
     case 'counterflow_plate': return 'counter-flow plate';
     case 'rotary_sensible': return 'rotary wheel (sensible)';
-    case 'rotary_enthalpy': return 'enthalpy wheel';
     case 'run_around_coil': return 'run-around (glycol)';
-    case 'heat_pipe': return 'heat pipe';
   }
 }

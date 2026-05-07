@@ -9,12 +9,12 @@ import { listPresets } from '@/lib/ahu-ashrae/section-presets';
 
 const TIERS = [2000, 5000, 10000, 15000, 20000];
 const FLOW_TYPES = [
+  { id: 'supply_only',       label: 'Supply only' },
+  { id: 'hrv',               label: 'HRV / HRU' },
   { id: 'crossflow_plate',   label: 'Cross-flow plate' },
   { id: 'counterflow_plate', label: 'Counter-flow plate' },
   { id: 'rotary_sensible',   label: 'Rotary wheel (sensible)' },
-  { id: 'rotary_enthalpy',   label: 'Enthalpy wheel' },
   { id: 'run_around_coil',   label: 'Run-around coil' },
-  { id: 'heat_pipe',         label: 'Heat pipe' },
 ];
 
 interface TabSpec {
