@@ -146,10 +146,10 @@ export function Step2Psychro({ state, psychro, chain }: Props) {
                 <div key={p.id} className="flex items-center gap-1.5">
                   <span
                     className="inline-block w-2.5 h-2.5 rounded-full"
-                    style={{ background: chainColor(i, chain.states.length) }}
+                    style={{ background: stateColor(i, p.sectionType) }}
                   />
                   <span style={{ color: 'var(--text-2)' }}>
-                    <strong style={{ color: chainColor(i, chain.states.length) }}>s{i}</strong> {p.label}
+                    <strong style={{ color: stateColor(i, p.sectionType) }}>s{i}</strong> {p.label}
                   </span>
                 </div>
               ))}
@@ -217,9 +217,9 @@ export function Step2Psychro({ state, psychro, chain }: Props) {
                 {chain.states.map((p, i) => (
                   <tr key={p.id} className="border-t" style={{ borderColor: 'var(--bdr)' }}>
                     <Td>
-                      <span className="inline-block w-2 h-2 rounded-full" style={{ background: chainColor(i, chain.states.length) }} />
+                      <span className="inline-block w-2 h-2 rounded-full" style={{ background: stateColor(i, p.sectionType) }} />
                     </Td>
-                    <Td><span className="font-bold font-mono" style={{ color: chainColor(i, chain.states.length) }}>s{i}</span></Td>
+                    <Td><span className="font-bold font-mono" style={{ color: stateColor(i, p.sectionType) }}>s{i}</span></Td>
                     <Td><span style={{ color: 'var(--text-2)' }}>{p.label}</span></Td>
                     <Td align="right" mono>{p.state.tdb.toFixed(2)}</Td>
                     <Td align="right" mono>{p.state.twb.toFixed(2)}</Td>
@@ -624,16 +624,8 @@ function PsychroChart({ psychro, chain, overlay, processArrows, metrics, showGri
             />
           )}
 
-          {/* Chain process line */}
-          {chain && (
-            <Scatter
-              data={chain.states.map((s) => ({ tdb: s.state.tdb, w: s.state.w * 1000 }))}
-              line={{ stroke: 'var(--navy)', strokeWidth: 1.5 }}
-              shape={() => <></>}
-              legendType="none"
-              isAnimationActive={false}
-            />
-          )}
+          {/* Chain process: colored per-section segments with arrows + Q badges */}
+          {chain && <ProcessSegmentLayer key={`seg-${chain.states.length}`} chain={chain} />}
 
           {/* Chain state markers */}
           {chain && (
@@ -642,7 +634,7 @@ function PsychroChart({ psychro, chain, overlay, processArrows, metrics, showGri
                 tdb: s.state.tdb,
                 w: s.state.w * 1000,
                 name: `s${i}`,
-                color: chainColor(i, chain.states.length),
+                color: stateColor(i, s.sectionType),
               }))}
               shape={(props: any) => {
                 const { cx, cy, payload } = props;
@@ -700,6 +692,80 @@ function PsychroChart({ psychro, chain, overlay, processArrows, metrics, showGri
 }
 
 // ─── SVG injectors (use Recharts 3 axis-scale hooks) ──────────────────────────
+
+function segmentColor(type?: string): string {
+  switch (type) {
+    case 'preheat':
+    case 'reheat':      return '#c2410c';
+    case 'cooling_coil': return '#1d4ed8';
+    case 'humidifier':  return '#0891b2';
+    case 'heat_recovery': return '#7c3aed';
+    case 'fan':         return '#64748b';
+    case 'mixing_box':  return '#059669';
+    default:            return '#94a3b8';
+  }
+}
+
+function stateColor(i: number, sectionType?: string): string {
+  return i === 0 ? '#c05010' : segmentColor(sectionType);
+}
+
+function formatQ(kw: number): string {
+  if (Math.abs(kw) < 0.05) return '';
+  return `${kw > 0 ? '+' : ''}${kw.toFixed(1)} kW`;
+}
+
+function ProcessSegmentLayer({ chain }: { chain: ChainResult }) {
+  const xScale = useXAxisScale();
+  const yScale = useYAxisScale();
+  if (!xScale || !yScale || chain.states.length < 2) return null;
+  return (
+    <g style={{ pointerEvents: 'none' }}>
+      {chain.states.slice(1).map((st, i) => {
+        const prev = chain.states[i];
+        const x1 = xScale(prev.state.tdb) ?? 0;
+        const y1 = yScale(prev.state.w * 1000) ?? 0;
+        const x2 = xScale(st.state.tdb) ?? 0;
+        const y2 = yScale(st.state.w * 1000) ?? 0;
+        const color = segmentColor(st.sectionType);
+        const dx = x2 - x1, dy = y2 - y1;
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len, uy = dy / len;
+        const head = 8, wing = 4;
+        const hx1 = x2 - ux * head + uy * wing;
+        const hy1 = y2 - uy * head - ux * wing;
+        const hx2 = x2 - ux * head - uy * wing;
+        const hy2 = y2 - uy * head + ux * wing;
+        const mx = (x1 + x2) / 2;
+        const my = (y1 + y2) / 2;
+        const qLabel = st.energy != null ? formatQ(st.energy) : '';
+        // offset badge perpendicular to line to avoid overlap
+        const px = -uy * 14, py = ux * 14;
+        return (
+          <g key={st.id}>
+            <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth={2} />
+            {len > 4 && (
+              <polygon points={`${x2},${y2} ${hx1},${hy1} ${hx2},${hy2}`} fill={color} />
+            )}
+            {qLabel && (
+              <g>
+                <rect
+                  x={mx + px - 22} y={my + py - 8}
+                  width={44} height={13} rx={3}
+                  fill={color} opacity={0.18}
+                />
+                <text
+                  x={mx + px} y={my + py + 2}
+                  fontSize={9} textAnchor="middle" fontWeight={700} fill={color}
+                >{qLabel}</text>
+              </g>
+            )}
+          </g>
+        );
+      })}
+    </g>
+  );
+}
 
 function ComfortPolygon({ overlay }: { overlay: ComfortOverlay }) {
   const xScale = useXAxisScale();
@@ -761,16 +827,6 @@ function ProcessArrows({ arrows }: { arrows: ProcessArrow[] }) {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function chainColor(i: number, total: number): string {
-  if (i === 0) return '#c05010';
-  if (i === total - 1) return '#1f6fd4';
-  const t = total > 2 ? (i - 1) / (total - 2) : 0;
-  const r = Math.round(26 + t * 5);
-  const g = Math.round(58 + t * 53);
-  const b = Math.round(107 + t * 105);
-  return `rgb(${r}, ${g}, ${b})`;
-}
 
 function pointColor(label: string): string {
   switch (label) {

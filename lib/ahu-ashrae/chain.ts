@@ -29,6 +29,8 @@ export interface ChainStateLabel {
   sensible?: number;
   /** Latent component (kW). Set for humidification / dehumidification. */
   latent?: number;
+  /** SectionType of the section that produced this state — used for chart coloring. */
+  sectionType?: string;
 }
 
 export interface ChainResult {
@@ -113,6 +115,7 @@ export function runChain({ outdoor, returnState, sections }: ChainInputs): Chain
       energy: r.energy,
       sensible: r.sensible,
       latent: r.latent,
+      sectionType: s.spec.type,
     });
     journal.push(r.narrative);
   });
