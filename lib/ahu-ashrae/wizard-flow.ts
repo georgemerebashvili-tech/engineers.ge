@@ -139,7 +139,7 @@ export function canNavigate(
 
 /**
  * After a navigation, return the patch to apply: bump furthest if we moved
- * forward; clear dirty flag if we passed through it.
+ * forward. Dirty is cleared only via explicit user acknowledgement (banner).
  */
 export function navigationPatch(
   target: WizardStep,
@@ -147,16 +147,10 @@ export function navigationPatch(
 ): Partial<AhuWizardState> {
   const targetIdx = stepIndex(target);
   const furthestIdx = stepIndex(state.furthestReachedStep ?? state.currentStep);
-  const dirtyIdx = state.dirtyFromStep ? stepIndex(state.dirtyFromStep) : -1;
 
   const patch: Partial<AhuWizardState> = { currentStep: target };
   if (targetIdx > furthestIdx) {
     patch.furthestReachedStep = target;
-  }
-  // If we navigate to or past the dirty step, clear dirty
-  // (user is acknowledging the recompute by stepping through)
-  if (dirtyIdx >= 0 && targetIdx >= dirtyIdx) {
-    patch.dirtyFromStep = undefined;
   }
   return patch;
 }

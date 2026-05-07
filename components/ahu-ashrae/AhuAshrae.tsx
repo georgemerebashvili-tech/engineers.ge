@@ -28,7 +28,7 @@ import { fromDbWb, fromDbRh } from '@/lib/ahu-ashrae/air-state';
 import { runChain, type ChainResult } from '@/lib/ahu-ashrae/chain';
 import {
   computeStepStatuses, canNavigate, navigationPatch, dirtyAfterEdit,
-  stepIndex as flowStepIndex,
+  stepIndex as flowStepIndex, STEP_ORDER,
   type StepStatus,
 } from '@/lib/ahu-ashrae/wizard-flow';
 
@@ -604,6 +604,46 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
               {STEPS[stepIndex]?.id}
             </span>
           </div>
+
+          {/* ── Dirty-step banner ──────────────────────────────────────── */}
+          {state.dirtyFromStep && flowStepIndex(state.currentStep) >= flowStepIndex(state.dirtyFromStep) && (() => {
+            const changedStepId = STEP_ORDER[flowStepIndex(state.dirtyFromStep!) - 1] as WizardStep;
+            const changedLabel = STEPS.find((s) => s.id === changedStepId)?.label ?? '—';
+            return (
+              <div
+                className="mb-5 rounded-xl border px-4 py-3 flex items-start gap-3"
+                style={{ background: 'var(--ora-lt)', borderColor: 'var(--ora-bd)' }}
+              >
+                <AlertTriangle size={15} style={{ color: 'var(--ora)', flexShrink: 0, marginTop: 1 }} />
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-bold mb-0.5" style={{ color: 'var(--ora)' }}>
+                    პარამეტრები განახლდა — გადახედე ამ ნაბიჯის შედეგებს
+                  </div>
+                  <div className="text-[11px]" style={{ color: 'var(--text-2)' }}>
+                    «{changedLabel}»-ში ცვლილება მოხდა. ქვემოთ ნაჩვენები შედეგები უკვე განახლებულია — დარწმუნდი, რომ ყველაფერი სწორია.
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => goTo(changedStepId)}
+                    className="text-[11px] font-semibold px-3 py-1.5 rounded-lg border transition-all"
+                    style={{ borderColor: 'var(--ora-bd)', color: 'var(--ora)', background: 'var(--sur)' }}
+                  >
+                    ← {changedLabel}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onUpdate({ dirtyFromStep: undefined })}
+                    className="text-[11px] font-semibold px-3 py-1.5 rounded-lg border transition-all"
+                    style={{ borderColor: 'var(--bdr-2)', color: 'var(--text-2)', background: 'var(--sur)' }}
+                  >
+                    გავეცანი ✓
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
 
           {state.currentStep === 'inputs' && (
             <Step1Inputs
