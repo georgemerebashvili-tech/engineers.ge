@@ -133,14 +133,22 @@ export function Step2Psychro({ state, psychro, chain }: Props) {
             {/* Legend */}
             <div className="mt-3 flex flex-wrap gap-3 text-[10px]">
               {overlay && (
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className="inline-block w-3 h-3 rounded-sm border"
-                    style={{ background: overlay.fill, borderColor: overlay.border }}
-                  />
-                  <span style={{ color: 'var(--text-2)' }}>{overlay.label}</span>
-                  <span className="font-mono" style={{ color: 'var(--text-3)' }}>· {overlay.reference}</span>
-                </div>
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className="inline-block w-3 h-3 rounded-sm border"
+                      style={{ background: overlay.fill, borderColor: overlay.border }}
+                    />
+                    <span style={{ color: 'var(--text-2)' }}>{overlay.label}</span>
+                    <span className="font-mono" style={{ color: 'var(--text-3)' }}>· {overlay.reference}</span>
+                  </div>
+                  {overlay.zones?.filter((z) => z.label).map((z, i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <span className="inline-block w-3 h-3 rounded-sm" style={{ background: z.fill }} />
+                      <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>{z.label}</span>
+                    </div>
+                  ))}
+                </>
               )}
               {chain && chain.states.map((p, i) => (
                 <div key={p.id} className="flex items-center gap-1.5">
@@ -766,17 +774,27 @@ function ComfortPolygon({ overlay }: { overlay: ComfortOverlay }) {
   const xScale = useXAxisScale();
   const yScale = useYAxisScale();
   if (!xScale || !yScale) return null;
-  const pts = overlay.vertices
-    .map((v) => `${xScale(v.tdb)},${yScale(v.w)}`)
-    .join(' ');
+
+  const renderPoly = (
+    verts: { tdb: number; w: number }[],
+    fill: string,
+    border: string,
+    key: string,
+  ) => {
+    const pts = verts.map((v) => `${xScale(v.tdb) ?? 0},${yScale(v.w) ?? 0}`).join(' ');
+    return (
+      <polygon key={key} points={pts} fill={fill} stroke={border} strokeWidth={1.2}
+        style={{ pointerEvents: 'none' }} />
+    );
+  };
+
   return (
-    <polygon
-      points={pts}
-      fill={overlay.fill}
-      stroke={overlay.border}
-      strokeWidth={1.5}
-      style={{ pointerEvents: 'none' }}
-    />
+    <g style={{ pointerEvents: 'none' }}>
+      {renderPoly(overlay.vertices, overlay.fill, overlay.border, 'main')}
+      {overlay.zones?.map((z, i) =>
+        renderPoly(z.vertices, z.fill, z.border, `z${i}`)
+      )}
+    </g>
   );
 }
 
