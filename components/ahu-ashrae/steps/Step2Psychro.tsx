@@ -7,8 +7,9 @@ import {
 } from 'lucide-react';
 import {
   ResponsiveContainer, Scatter, XAxis, YAxis,
-  CartesianGrid, Tooltip, Customized,
+  CartesianGrid, Tooltip,
   ComposedChart,
+  useXAxisScale, useYAxisScale,
 } from 'recharts';
 import type { AhuWizardState, PsychrometricResults } from '@/lib/ahu-ashrae/types';
 import type { ChainResult } from '@/lib/ahu-ashrae/chain';
@@ -553,14 +554,7 @@ function PsychroChart({ psychro, chain, overlay, processArrows, metrics, showGri
           />
 
           {/* Comfort overlay polygon */}
-          {overlay && (
-            <Customized
-              key={`overlay-${overlay.id}-${overlay.vertices[0].tdb.toFixed(2)}`}
-              component={(props: { xAxisMap?: Record<string, { scale: (v: number) => number }>; yAxisMap?: Record<string, { scale: (v: number) => number }> }) => (
-                <ComfortPolygon overlay={overlay} {...props} />
-              )}
-            />
-          )}
+          {overlay && <ComfortPolygon key={`overlay-${overlay.id}-${overlay.vertices[0].tdb.toFixed(2)}`} overlay={overlay} />}
 
           {/* Constant W (= vapour-pressure) horizontal lines */}
           {wConstLines.map((line) => (
@@ -624,11 +618,9 @@ function PsychroChart({ psychro, chain, overlay, processArrows, metrics, showGri
 
           {/* Process overlay arrows (educational) */}
           {processArrows.length > 0 && (
-            <Customized
+            <ProcessArrows
               key={`proc-${processArrows.map((a) => a.id).join('-')}`}
-              component={(props: { xAxisMap?: Record<string, { scale: (v: number) => number }>; yAxisMap?: Record<string, { scale: (v: number) => number }> }) => (
-                <ProcessArrows arrows={processArrows} {...props} />
-              )}
+              arrows={processArrows}
             />
           )}
 
@@ -707,19 +699,11 @@ function PsychroChart({ psychro, chain, overlay, processArrows, metrics, showGri
   );
 }
 
-// ─── SVG injectors ────────────────────────────────────────────────────────────
+// ─── SVG injectors (use Recharts 3 axis-scale hooks) ──────────────────────────
 
-interface PolygonProps {
-  overlay: ComfortOverlay;
-  xAxisMap?: Record<string, { scale: (v: number) => number }>;
-  yAxisMap?: Record<string, { scale: (v: number) => number }>;
-}
-function ComfortPolygon({ overlay, xAxisMap, yAxisMap }: PolygonProps) {
-  if (!xAxisMap || !yAxisMap) return null;
-  const xKey = Object.keys(xAxisMap)[0];
-  const yKey = Object.keys(yAxisMap)[0];
-  const xScale = xAxisMap[xKey]?.scale;
-  const yScale = yAxisMap[yKey]?.scale;
+function ComfortPolygon({ overlay }: { overlay: ComfortOverlay }) {
+  const xScale = useXAxisScale();
+  const yScale = useYAxisScale();
   if (!xScale || !yScale) return null;
   const pts = overlay.vertices
     .map((v) => `${xScale(v.tdb)},${yScale(v.w)}`)
@@ -729,31 +713,23 @@ function ComfortPolygon({ overlay, xAxisMap, yAxisMap }: PolygonProps) {
       points={pts}
       fill={overlay.fill}
       stroke={overlay.border}
-      strokeWidth={1}
-      strokeDasharray="3 3"
+      strokeWidth={1.5}
+      style={{ pointerEvents: 'none' }}
     />
   );
 }
 
-interface ArrowsProps {
-  arrows: ProcessArrow[];
-  xAxisMap?: Record<string, { scale: (v: number) => number }>;
-  yAxisMap?: Record<string, { scale: (v: number) => number }>;
-}
-function ProcessArrows({ arrows, xAxisMap, yAxisMap }: ArrowsProps) {
-  if (!xAxisMap || !yAxisMap) return null;
-  const xKey = Object.keys(xAxisMap)[0];
-  const yKey = Object.keys(yAxisMap)[0];
-  const xScale = xAxisMap[xKey]?.scale;
-  const yScale = yAxisMap[yKey]?.scale;
+function ProcessArrows({ arrows }: { arrows: ProcessArrow[] }) {
+  const xScale = useXAxisScale();
+  const yScale = useYAxisScale();
   if (!xScale || !yScale) return null;
   return (
     <g>
       {arrows.map((a) => {
-        const x1 = xScale(a.from.tdb);
-        const y1 = yScale(a.from.w);
-        const x2 = xScale(a.to.tdb);
-        const y2 = yScale(a.to.w);
+        const x1 = xScale(a.from.tdb) ?? 0;
+        const y1 = yScale(a.from.w) ?? 0;
+        const x2 = xScale(a.to.tdb) ?? 0;
+        const y2 = yScale(a.to.w) ?? 0;
         // Arrowhead — small triangle at tip
         const dx = x2 - x1;
         const dy = y2 - y1;
