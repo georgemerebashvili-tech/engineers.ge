@@ -1,9 +1,8 @@
 'use client';
 
-import React, { Suspense, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Edges, Environment } from '@react-three/drei';
-import * as THREE from 'three';
+import { OrbitControls, Edges } from '@react-three/drei';
 
 export interface AhuSection {
   id: string;
@@ -40,11 +39,10 @@ export function AhuStlViewer({ sections, height = 1.2, depth = 1.2 }: Props) {
       camera={{ position: [4, 2.5, 4.5], fov: 35 }}
       style={{ background: 'transparent' }}
     >
-      <ambientLight intensity={0.55} />
-      <directionalLight position={[5, 8, 4]} intensity={1.1} castShadow />
-      <Suspense fallback={null}>
-        <Environment preset="warehouse" />
-      </Suspense>
+      <ambientLight intensity={0.7} />
+      <hemisphereLight args={['#dde6f5', '#3a4a66', 0.5]} />
+      <directionalLight position={[5, 8, 4]} intensity={1.2} castShadow />
+      <directionalLight position={[-4, 3, -3]} intensity={0.4} />
 
       {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -height / 2 - 0.01, 0]} receiveShadow>
