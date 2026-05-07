@@ -538,6 +538,18 @@ function InfoTip({ text }: { text: string }) {
   );
 }
 
+function clamp(v: number, min?: number, max?: number): number {
+  if (min !== undefined && v < min) return min;
+  if (max !== undefined && v > max) return max;
+  return v;
+}
+
+function roundToStep(v: number, step: number): number {
+  // Avoid floating-point drift like 0.30000000000000004
+  const decimals = (step.toString().split('.')[1] ?? '').length;
+  return Number(v.toFixed(decimals));
+}
+
 function NumInput({
   label, unit, value, onChange, min, max, step = 1, error,
 }: {
@@ -551,22 +563,53 @@ function NumInput({
   error?: string;
 }) {
   const borderColor = error ? 'var(--red)' : 'var(--bdr-2)';
+  const dec = () => onChange(clamp(roundToStep(value - step, step), min, max));
+  const inc = () => onChange(clamp(roundToStep(value + step, step), min, max));
+  const atMin = min !== undefined && value <= min;
+  const atMax = max !== undefined && value >= max;
   return (
     <div>
       <label className="block text-[10px] font-bold uppercase tracking-[0.08em] mb-1.5" style={{ color: 'var(--text-3)' }}>
         {label}
       </label>
       <div className="flex rounded-lg border overflow-hidden" style={{ borderColor }}>
+        <button
+          type="button"
+          onClick={dec}
+          disabled={atMin}
+          className="px-2 flex items-center justify-center text-sm font-bold shrink-0 transition-colors disabled:opacity-30"
+          style={{ background: 'var(--sur-2)', color: 'var(--text-2)', borderRight: '1px solid var(--bdr)', minWidth: 28 }}
+          aria-label="შემცირება"
+          tabIndex={-1}
+        >
+          −
+        </button>
         <input
           type="number"
-          className="flex-1 min-w-0 px-3 py-2 text-xs font-mono font-medium bg-sur"
+          className="flex-1 min-w-0 px-2 py-2 text-xs font-mono font-medium text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-inner-spin-button]:m-0"
           style={{ color: 'var(--text)', outline: 'none', background: 'var(--sur)' }}
           value={value}
           min={min}
           max={max}
           step={step}
-          onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+          onChange={(e) => {
+            const raw = e.target.value;
+            if (raw === '' || raw === '-') return;
+            const n = parseFloat(raw);
+            if (!Number.isNaN(n)) onChange(clamp(n, min, max));
+          }}
         />
+        <button
+          type="button"
+          onClick={inc}
+          disabled={atMax}
+          className="px-2 flex items-center justify-center text-sm font-bold shrink-0 transition-colors disabled:opacity-30"
+          style={{ background: 'var(--sur-2)', color: 'var(--text-2)', borderLeft: '1px solid var(--bdr)', minWidth: 28 }}
+          aria-label="გაზრდა"
+          tabIndex={-1}
+        >
+          +
+        </button>
         <span
           className="px-2 flex items-center text-[10px] font-bold shrink-0"
           style={{ background: 'var(--sur-2)', color: 'var(--text-3)', borderLeft: '1px solid var(--bdr)' }}
