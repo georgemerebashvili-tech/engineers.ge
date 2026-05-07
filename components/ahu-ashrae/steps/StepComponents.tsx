@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import {
   Boxes, Filter, Snowflake, Flame, Fan,
   ArrowLeftRight, PanelTopOpen, Shuffle, Droplet, Volume2,
-  ChevronUp, ChevronDown, Trash2, Plus, RefreshCw, Power,
+  ChevronUp, ChevronDown, Trash2, Plus, Power,
   Move3d, RectangleHorizontal,
   GripVertical, AlertTriangle, Info,
   type LucideIcon,
@@ -14,7 +14,6 @@ import type { AhuWizardState, AhuUnit } from '@/lib/ahu-ashrae/types';
 import type { SectionConfig, SectionType } from '@/lib/ahu-ashrae/sections';
 import { getAhuTypeSpec } from '@/lib/ahu-ashrae/ahu-types-data';
 import { SECTION_VISUALS, makeDefaultParams, CASING_KG_PER_M } from '@/lib/ahu-ashrae/section-visuals';
-import { listPresets, buildPreset, type PresetId } from '@/lib/ahu-ashrae/section-presets';
 import {
   validateOrder,
   tryReorder,
@@ -80,12 +79,6 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
 
   const setSections = (next: SectionConfig[]) => {
     onUpdate({ sections: next.map((s, i) => ({ ...s, order: i })) });
-  };
-
-  const handlePresetChange = (id: PresetId) => {
-    const oaF = state.airflow.oaFraction ?? 0.3;
-    const built = buildPreset(id, { oaFraction: oaF });
-    onUpdate({ sectionPresetId: id, sections: built });
   };
 
   const reorderSection = (fromIdx: number, toIdx: number) => {
@@ -183,14 +176,11 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
         className="rounded-xl border p-4"
         style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}
       >
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Boxes size={16} style={{ color: 'var(--blue)' }} />
-            <h2 className="text-sm font-bold" style={{ color: 'var(--navy)' }}>
-              სექციათა ჯაჭვი
-            </h2>
-          </div>
-          <PresetSelector value={state.sectionPresetId} onChange={handlePresetChange} />
+        <div className="flex items-center gap-2 mb-3">
+          <Boxes size={16} style={{ color: 'var(--blue)' }} />
+          <h2 className="text-sm font-bold" style={{ color: 'var(--navy)' }}>
+            სექციათა ჯაჭვი
+          </h2>
         </div>
 
         {/* Selected model summary */}
@@ -354,25 +344,6 @@ export function StepComponents({ state, unit, onUpdate }: Props) {
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-
-function PresetSelector({ value, onChange }: { value?: PresetId; onChange: (id: PresetId) => void }) {
-  return (
-    <div className="flex items-center gap-2">
-      <RefreshCw size={12} style={{ color: 'var(--text-3)' }} />
-      <select
-        value={value ?? ''}
-        onChange={(e) => onChange(e.target.value as PresetId)}
-        className="text-[11px] font-medium rounded-md border px-2 py-1"
-        style={{ borderColor: 'var(--bdr-2)', background: 'var(--sur)', color: 'var(--text)' }}
-      >
-        <option value="" disabled>preset…</option>
-        {listPresets().map((p) => (
-          <option key={p.id} value={p.id}>{p.label}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
 
 interface RowProps {
   section: SectionConfig;
