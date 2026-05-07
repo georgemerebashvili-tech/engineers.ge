@@ -283,21 +283,22 @@ export function AhuAshrae() {
 
   return (
     <div className="flex" style={wrapperStyle}>
-      {/* Fullscreen toggle */}
+      {/* Fullscreen toggle — matches calc-frame style (top-right of content area, below AHU header) */}
       <button
         type="button"
         onClick={() => setFullscreen((v) => !v)}
-        className="absolute top-3 right-4 z-[61] inline-flex items-center justify-center h-9 w-9 rounded-lg border transition-all"
+        className="absolute right-4 z-[61] inline-flex items-center justify-center h-16 w-16 rounded-xl border-2 transition-colors backdrop-blur"
         style={{
-          background: fullscreen ? 'var(--navy)' : 'var(--sur)',
+          top: '5rem',
+          background: fullscreen ? 'var(--navy)' : 'rgba(255,255,255,0.92)',
           color: fullscreen ? '#fff' : 'var(--text-2)',
           borderColor: fullscreen ? 'var(--navy)' : 'var(--bdr-2)',
-          boxShadow: 'var(--shadow-card)',
+          boxShadow: '0 4px 14px rgba(0,0,0,.08)',
         }}
         title={fullscreen ? 'სრული ეკრანის გათიშვა (Esc)' : 'სრული ეკრანი'}
         aria-label={fullscreen ? 'სრული ეკრანის გათიშვა' : 'სრული ეკრანი'}
       >
-        {fullscreen ? <Minimize2 size={16} strokeWidth={2} /> : <Maximize2 size={16} strokeWidth={2} />}
+        {fullscreen ? <Minimize2 size={28} strokeWidth={2.25} /> : <Maximize2 size={28} strokeWidth={2.25} />}
       </button>
 
       {/* ── Left rail: projects ── */}
@@ -438,7 +439,7 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
             </div>
           </div>
         </div>
-        <div className="hidden md:flex items-center gap-2 text-xs font-mono shrink-0 mr-12" style={{ color: 'var(--text-3)' }}>
+        <div className="hidden md:flex items-center gap-2 text-xs font-mono shrink-0" style={{ color: 'var(--text-3)' }}>
           <span>ASHRAE HOF 2021</span>
           <span>·</span>
           <span>62.1</span>
