@@ -7,7 +7,7 @@ import {
   ArrowLeftRight, PanelTopOpen, Shuffle, Droplet, Volume2,
   ChevronUp, ChevronDown, Trash2, Plus, Power, Zap,
   Move3d, RectangleHorizontal, RectangleVertical, Square,
-  GripVertical, AlertTriangle, Info, Thermometer,
+  GripVertical, AlertTriangle, Info,
   type LucideIcon,
 } from 'lucide-react';
 import type { AhuWizardState, AhuUnit } from '@/lib/ahu-ashrae/types';
@@ -269,16 +269,33 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
     setDragOver(null);
   };
 
-  // 3D viewer: only enabled sections, mapped to box visuals
+  // Enabled sections mapped to viewer data + process state from chain
   const viewerSections = useMemo(
     () => sections
       .filter((s) => s.enabled)
-      .map((s) => {
+      .map((s, i) => {
         const v = SECTION_VISUALS[s.spec.type];
-        return { id: s.id, label: s.label, color: v.color, width: v.width3D, type: s.spec.type };
+        // chain.states[0] = outdoor inlet; chain.states[i+1] = outlet of enabled section i
+        const outletNode = chain?.states[i + 1];
+        return {
+          id: s.id,
+          label: s.label,
+          color: v.color,
+          width: v.width3D,
+          type: s.spec.type,
+          outletTdb: outletNode?.state.tdb,
+          outletRh: outletNode?.state.rh,
+          outletW: outletNode?.state.w,
+          energyKw: outletNode?.energy,
+          deltaP: outletNode?.deltaP,
+        };
       }),
-    [sections],
+    [sections, chain],
   );
+
+  const inletState = chain?.states[0]
+    ? { tdb: chain.states[0].state.tdb, rh: chain.states[0].state.rh, w: chain.states[0].state.w }
+    : undefined;
 
   // Aggregate weight: components + casing per linear metre
   const totalWeightKg = useMemo(() => {
@@ -432,6 +449,7 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
                 sections={viewerSections}
                 view={viewMode}
                 weightKg={totalWeightKg}
+                inletState={inletState}
               />
             )
           ) : (
@@ -442,7 +460,6 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
         </div>
       </section>
     </div>
-    {chain && chain.states.length >= 2 && <ProcessWaterfall chain={chain} />}
     </div>
   );
 }
@@ -807,174 +824,6 @@ function ViewerLoading() {
     <div className="h-full flex items-center justify-center text-xs" style={{ color: 'var(--text-3)' }}>
       3D viewer იტვირთება…
     </div>
-  );
-}
-
-// ─── Process Waterfall ────────────────────────────────────────────────────────
-
-function ProcessWaterfall({ chain }: { chain: ChainResult }) {
-  const { states, totalCooling, totalHeating, totalDeltaP } = chain;
-
-  return (
-    <section
-      className="rounded-xl border p-4"
-      style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <Thermometer size={16} style={{ color: 'var(--blue)' }} />
-          <h2 className="text-sm font-bold" style={{ color: 'var(--navy)' }}>
-            ჰაერის პროცესი — სექციებით
-          </h2>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          {totalCooling > 0.05 && (
-            <span className="text-[11px] font-bold font-mono px-2 py-0.5 rounded-md"
-              style={{ background: '#eff6ff', color: '#1d4ed8' }}>
-              ∑ Q_cool = {totalCooling.toFixed(1)} kW
-            </span>
-          )}
-          {totalHeating > 0.05 && (
-            <span className="text-[11px] font-bold font-mono px-2 py-0.5 rounded-md"
-              style={{ background: '#fff7ed', color: '#c2410c' }}>
-              ∑ Q_heat = {totalHeating.toFixed(1)} kW
-            </span>
-          )}
-          <span className="text-[11px] font-bold font-mono px-2 py-0.5 rounded-md"
-            style={{ background: 'var(--sur-2)', color: 'var(--text-2)', border: '1px solid var(--bdr-2)' }}>
-            ∑ ΔP = {totalDeltaP.toFixed(0)} Pa
-          </span>
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-[11px] border-collapse">
-          <thead>
-            <tr style={{ color: 'var(--text-3)' }}>
-              {['#', 'სექცია', 'T_out (°C)', 'ΔT (K)', 'RH', 'W (g/kg)', 'Q (kW)', 'ΔP (Pa)'].map((h) => (
-                <th
-                  key={h}
-                  className="py-1.5 pr-3 text-right font-bold text-[10px] uppercase tracking-[0.06em] whitespace-nowrap"
-                  style={{ borderBottom: '1px solid var(--bdr-2)' }}
-                >
-                  {h === '#' || h === 'სექცია' ? (
-                    <span className="text-left block">{h}</span>
-                  ) : h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {states.map((s, i) => {
-              const prev = i > 0 ? states[i - 1] : null;
-              const dT = prev != null ? s.state.tdb - prev.state.tdb : null;
-              const energy = s.energy ?? null;
-
-              return (
-                <tr
-                  key={s.id}
-                  style={{
-                    borderBottom: '1px solid var(--bdr)',
-                    background: i === 0
-                      ? 'var(--blue-lt)'
-                      : i % 2 === 0 ? 'transparent' : 'var(--sur-2)',
-                  }}
-                >
-                  {/* # */}
-                  <td className="py-1.5 pr-3 font-mono text-left"
-                    style={{ color: 'var(--text-3)', width: 24 }}>
-                    {i}
-                  </td>
-
-                  {/* Label */}
-                  <td className="py-1.5 pr-4 text-left">
-                    <span className="font-semibold whitespace-nowrap"
-                      style={{ color: i === 0 ? 'var(--blue)' : 'var(--text)' }}>
-                      {i === 0 ? 'გარე ჰაერი' : s.label}
-                    </span>
-                  </td>
-
-                  {/* T_out */}
-                  <td className="py-1.5 pr-3 text-right font-mono font-bold whitespace-nowrap"
-                    style={{ color: 'var(--navy)' }}>
-                    {s.state.tdb.toFixed(1)}
-                  </td>
-
-                  {/* ΔT */}
-                  <td className="py-1.5 pr-3 text-right font-mono whitespace-nowrap"
-                    style={{
-                      color: dT == null ? 'var(--text-3)'
-                        : dT < -0.15 ? '#1d4ed8'
-                        : dT > 0.15 ? '#c2410c'
-                        : 'var(--text-3)',
-                      fontWeight: dT != null && Math.abs(dT) > 0.15 ? 600 : 400,
-                    }}>
-                    {dT == null ? '—' : (dT >= 0 ? '+' : '') + dT.toFixed(1)}
-                  </td>
-
-                  {/* RH */}
-                  <td className="py-1.5 pr-3 text-right font-mono"
-                    style={{ color: 'var(--text-2)' }}>
-                    {(s.state.rh * 100).toFixed(0)}%
-                  </td>
-
-                  {/* W */}
-                  <td className="py-1.5 pr-3 text-right font-mono"
-                    style={{ color: 'var(--text-2)' }}>
-                    {(s.state.w * 1000).toFixed(2)}
-                  </td>
-
-                  {/* Q */}
-                  <td className="py-1.5 pr-3 text-right">
-                    {energy == null || Math.abs(energy) < 0.05
-                      ? <span style={{ color: 'var(--text-3)' }}>—</span>
-                      : energy < 0
-                        ? <span className="font-mono font-bold px-1.5 py-0.5 rounded"
-                            style={{ background: '#eff6ff', color: '#1d4ed8' }}>
-                            {energy.toFixed(1)}
-                          </span>
-                        : <span className="font-mono font-bold px-1.5 py-0.5 rounded"
-                            style={{ background: '#fff7ed', color: '#c2410c' }}>
-                            +{energy.toFixed(1)}
-                          </span>
-                    }
-                  </td>
-
-                  {/* ΔP */}
-                  <td className="py-1.5 text-right font-mono"
-                    style={{ color: 'var(--text-2)' }}>
-                    {s.deltaP == null ? '—' : s.deltaP.toFixed(0)}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Supply state footer */}
-      <div className="mt-3 pt-3 border-t flex items-center gap-4 flex-wrap"
-        style={{ borderColor: 'var(--bdr)' }}>
-        <span className="text-[10px] font-bold uppercase tracking-[0.06em]"
-          style={{ color: 'var(--text-3)' }}>
-          საკვები ჰაერი →
-        </span>
-        <span className="text-xs font-mono font-bold" style={{ color: 'var(--navy)' }}>
-          {chain.supplyState.tdb.toFixed(1)}°C
-        </span>
-        <span className="text-xs font-mono" style={{ color: 'var(--text-2)' }}>
-          RH {(chain.supplyState.rh * 100).toFixed(0)}%
-        </span>
-        <span className="text-xs font-mono" style={{ color: 'var(--text-2)' }}>
-          W = {(chain.supplyState.w * 1000).toFixed(2)} g/kg
-        </span>
-        <span className="text-xs font-mono" style={{ color: 'var(--text-2)' }}>
-          h = {chain.supplyState.h.toFixed(1)} kJ/kg
-        </span>
-      </div>
-    </section>
   );
 }
 

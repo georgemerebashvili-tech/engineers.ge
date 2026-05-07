@@ -621,7 +621,7 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
             />
           )}
           {state.currentStep === 'components' && (
-            <StepComponents state={state} unit={unit} onUpdate={onUpdateCascade} />
+            <StepComponents state={state} unit={unit} onUpdate={onUpdateCascade} chain={chain} />
           )}
           {state.currentStep === 'psychro' && (
             <Step2Psychro state={state} psychro={psychro} chain={chain} />

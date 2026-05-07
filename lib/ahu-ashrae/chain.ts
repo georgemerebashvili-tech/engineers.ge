@@ -21,6 +21,14 @@ export interface ChainStateLabel {
   label: string;
   /** AirState at this point in the chain */
   state: AirState;
+  /** Pressure drop across the section that produced this state (Pa). Undefined for the initial outdoor state. */
+  deltaP?: number;
+  /** Net energy (kW): positive = heating, negative = cooling. Undefined for initial outdoor state. */
+  energy?: number;
+  /** Sensible component (kW). Set for heating/cooling coils. */
+  sensible?: number;
+  /** Latent component (kW). Set for humidification / dehumidification. */
+  latent?: number;
 }
 
 export interface ChainResult {
@@ -101,6 +109,10 @@ export function runChain({ outdoor, returnState, sections }: ChainInputs): Chain
       id: `s${i + 1}-${s.id}`,
       label: s.label,
       state: r.outlet,
+      deltaP: r.deltaP,
+      energy: r.energy,
+      sensible: r.sensible,
+      latent: r.latent,
     });
     journal.push(r.narrative);
   });
