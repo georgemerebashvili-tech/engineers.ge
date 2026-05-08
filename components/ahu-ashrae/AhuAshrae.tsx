@@ -11,6 +11,7 @@ import type {
   AhuWizardState, WizardStep, AhuView, AhuProject, AhuUnit, AhuType,
   PsychrometricResults,
 } from '@/lib/ahu-ashrae/types';
+import { syncSectionsFromIntent } from '@/lib/ahu-ashrae/sync-design-intent';
 import { GE_CITIES, resolveCity } from '@/lib/ahu-ashrae/climate-data';
 import {
   statePointFromWb, statePointFromRh, mixAir,
@@ -281,7 +282,11 @@ export function AhuAshrae() {
   const updateWizard = useCallback((partial: Partial<AhuWizardState>) => {
     setWizardState((prev) => {
       if (!prev) return prev;
-      const next = { ...prev, ...partial };
+      let next = { ...prev, ...partial };
+      // When systemDesign changes, sync section pipeline params immediately
+      if (partial.systemDesign && next.sections?.length) {
+        next = { ...next, sections: syncSectionsFromIntent(next.sections, partial.systemDesign) };
+      }
       if (activeProjectId && activeUnitId) {
         saveWizardState(activeProjectId, activeUnitId, next);
       }
