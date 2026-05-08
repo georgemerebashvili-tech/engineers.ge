@@ -489,12 +489,6 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
           </div>
         </div>
 
-        {/* ── KAYA model picker ── */}
-        <KayaModelPicker
-          flow={airflow.supplyAirflow}
-          selected={state.kayaModelId}
-          onChange={(id) => onUpdate({ kayaModelId: id })}
-        />
       </Card>
 
       {/* ── System Design Intent ── */}
@@ -968,44 +962,6 @@ function SystemDesignCard({
               </div>
             )}
           </div>
-        </div>
-
-        {/* Filter stages */}
-        <div>
-          <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2" style={{ color: 'var(--text-3)' }}>
-            ფილტრაციის საფეხურები
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {FILTER_STAGES.map(({ key, label, iso, tier }) => {
-              const active = intent.filterStages.includes(key);
-              const col = TIER_COLORS[tier];
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => toggleStage(key)}
-                  className="flex flex-col items-center rounded-lg px-3 py-1.5 border transition-all"
-                  style={{
-                    borderColor: active ? col : 'var(--bdr)',
-                    background: active ? col + '18' : 'var(--sur-2)',
-                    minWidth: 52,
-                  }}
-                >
-                  <span className="text-[11px] font-bold font-mono" style={{ color: active ? col : 'var(--text-3)' }}>
-                    {label}
-                  </span>
-                  <span className="text-[9px] leading-tight mt-0.5" style={{ color: active ? col : 'var(--text-3)', opacity: 0.8 }}>
-                    {iso}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          {intent.filterStages.length > 0 && (
-            <div className="mt-1.5 text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
-              {intent.filterStages.join(' → ')}
-            </div>
-          )}
         </div>
 
         {/* Humidifier */}

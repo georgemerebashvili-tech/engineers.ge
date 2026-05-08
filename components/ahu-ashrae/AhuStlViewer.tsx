@@ -38,8 +38,9 @@ export function AhuStlViewer({ sections, height = 1.2, depth = 1.2 }: Props) {
     <Canvas
       shadows
       dpr={[1, 2]}
-      camera={{ position: [4, 2.5, 4.5], fov: 35 }}
-      style={{ background: 'transparent' }}
+      camera={{ position: [3, 1.8, 3.5], fov: 45 }}
+      style={{ width: '100%', height: '100%', background: 'transparent' }}
+      resize={{ scroll: false, debounce: { scroll: 50, resize: 0 } }}
     >
       <ambientLight intensity={0.7} />
       <hemisphereLight args={['#dde6f5', '#3a4a66', 0.5]} />
@@ -48,7 +49,7 @@ export function AhuStlViewer({ sections, height = 1.2, depth = 1.2 }: Props) {
 
       {/* Floor */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -height / 2 - 0.01, 0]} receiveShadow>
-        <planeGeometry args={[12, 12]} />
+        <planeGeometry args={[5, 5]} />
         <meshStandardMaterial color="#e8eef6" />
       </mesh>
 
@@ -83,7 +84,7 @@ export function AhuStlViewer({ sections, height = 1.2, depth = 1.2 }: Props) {
         maxDistance={14}
         maxPolarAngle={Math.PI / 2 - 0.05}
       />
-      <gridHelper args={[12, 12, '#a8b8d0', '#c4d4e8']} position={[0, -height / 2, 0]} />
+      <gridHelper args={[5, 5, '#a8b8d0', '#c4d4e8']} position={[0, -height / 2, 0]} />
     </Canvas>
   );
 }

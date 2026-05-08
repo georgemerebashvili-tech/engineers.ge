@@ -119,9 +119,6 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
         </div>
       )}
 
-      {/* ── Component palette ── */}
-      <ComponentPalette />
-
       {/* ── AHU section schematic ── */}
       <section
         className="rounded-xl border p-4"
@@ -158,6 +155,11 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
         {violations.length > 0 && (
           <ViolationBanner violations={violations} sections={sections} />
         )}
+
+        {/* Component palette — inside the AHU card, below the strip */}
+        <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--bdr)' }}>
+          <ComponentPalette />
+        </div>
       </section>
 
       {/* ── 3D / Ortho viewer ── */}
@@ -192,7 +194,7 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
             background: viewMode === 'persp'
               ? 'linear-gradient(180deg, #eef3f9 0%, #d8e2ee 100%)'
               : '#f7f9fc',
-            minHeight: 480,
+            height: 300,
           }}
         >
           {viewerSections.length > 0 ? (
@@ -207,7 +209,7 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
               />
             )
           ) : (
-            <div className="h-full flex items-center justify-center text-xs" style={{ color: 'var(--text-3)', minHeight: 480 }}>
+            <div className="h-full flex items-center justify-center text-xs" style={{ color: 'var(--text-3)' }}>
               ჩართული სექცია არ არის — გადაიტანეთ კომპონენტი სქემაში
             </div>
           )}
