@@ -19,11 +19,9 @@ import { isBalancedAhu } from './ahu-types-data';
 
 export const STEP_ORDER: WizardStep[] = [
   'ahu_type',
-  'inputs',
-  'components',
+  'inputs',   // includes components (3D schematic merged here)
   'psychro',
-  'sizing',
-  'fan',
+  'sizing',   // includes fan selection (merged here)
   'summary',
   'report',
 ];
@@ -51,19 +49,22 @@ export function isStepValid(
       const supplyOk = state.airflow.supplyAirflow > 0;
       const exhaustOk = !isBalancedAhu(unit.ahuType)
         || (state.airflow.exhaustAirflow ?? state.airflow.supplyAirflow) > 0;
+      const hasSections = Array.isArray(state.sections) && state.sections.filter((s) => s.enabled).length > 0;
       return supplyOk
         && exhaustOk
         && state.design.summerOutdoorDB > -50
-        && state.design.summerIndoorDB > -50;
+        && state.design.summerIndoorDB > -50
+        && hasSections;
     }
     case 'components':
+      // Retired — merged into 'inputs'. Keep case for backward-compat validation calls.
       return Array.isArray(state.sections) && state.sections.filter((s) => s.enabled).length > 0;
     case 'psychro':
       return Boolean(chain && chain.states.length >= 2);
     case 'sizing':
       return Boolean(chain && chain.totalDeltaP > 0);
     case 'fan':
-      // Fan section in chain produces non-zero motor energy
+      // Retired — merged into 'sizing'. Keep for backward-compat.
       return Boolean(chain && chain.journal.some((j) => j.sectionLabel.toLowerCase().includes('ვენტილატორი')));
     case 'summary':
       return Boolean(chain && chain.states.length >= 3);

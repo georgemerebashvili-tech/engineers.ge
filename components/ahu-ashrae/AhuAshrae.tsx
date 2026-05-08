@@ -50,14 +50,12 @@ import { StepReport } from './steps/StepReport';
 // ─── Step metadata ─────────────────────────────────────────────────────────────
 
 const STEPS: { id: WizardStep; label: string; icon: React.ComponentType<{size?: number; strokeWidth?: number}> }[] = [
-  { id: 'ahu_type',   label: 'AHU სქემა',     icon: Layers },
-  { id: 'inputs',     label: 'პარამეტრები',   icon: Wind },
-  { id: 'components', label: 'კომპონენტები + 3D', icon: Boxes },
-  { id: 'psychro',    label: 'ფსიქრომეტრია',  icon: Thermometer },
-  { id: 'sizing',     label: 'სიზინგი + ΔP',  icon: Gauge },
-  { id: 'fan',        label: 'კომ. შერჩევა',  icon: Boxes },
-  { id: 'summary',    label: 'შეჯამება',      icon: FileText },
-  { id: 'report',     label: 'რეპორტი (PDF)', icon: Download },
+  { id: 'ahu_type', label: 'AHU სქემა',              icon: Layers },
+  { id: 'inputs',   label: 'პარამეტრები + კომპ.',    icon: Wind },
+  { id: 'psychro',  label: 'ფსიქრომეტრია',           icon: Thermometer },
+  { id: 'sizing',   label: 'სიზინგი + ΔP + ვენტ.',  icon: Gauge },
+  { id: 'summary',  label: 'შეჯამება',               icon: FileText },
+  { id: 'report',   label: 'რეპორტი (PDF)',           icon: Download },
 ];
 
 // ─── Default wizard state for a fresh AHU unit ────────────────────────────────
@@ -660,21 +658,27 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
             );
           })()}
 
-          {state.currentStep === 'inputs' && (
-            <Step1Inputs
-              project={project}
-              unit={unit}
-              state={state}
-              onUpdate={onUpdateCascade}
-              psychro={psychro}
-            />
-          )}
           {state.currentStep === 'ahu_type' && (
             <AhuTypeSelector
               selected={unit.ahuType}
               onSelect={onSelectAhuType}
             />
           )}
+          {state.currentStep === 'inputs' && (
+            <>
+              <Step1Inputs
+                project={project}
+                unit={unit}
+                state={state}
+                onUpdate={onUpdateCascade}
+                psychro={psychro}
+              />
+              <div className="mt-6">
+                <StepComponents state={state} unit={unit} onUpdate={onUpdateCascade} chain={chain} />
+              </div>
+            </>
+          )}
+          {/* legacy redirect — should not happen after storage migration */}
           {state.currentStep === 'components' && (
             <StepComponents state={state} unit={unit} onUpdate={onUpdateCascade} chain={chain} />
           )}
@@ -682,8 +686,14 @@ function AhuWizard({ project, unit, state, onUpdate, onBack, onSelectAhuType }: 
             <Step2Psychro state={state} psychro={psychro} chain={chain} />
           )}
           {state.currentStep === 'sizing' && (
-            <StepSizing state={state} psychro={psychro} chain={chain} />
+            <>
+              <StepSizing state={state} psychro={psychro} chain={chain} />
+              <div className="mt-6">
+                <StepFan state={state} chain={chain} onUpdate={onUpdateCascade} />
+              </div>
+            </>
           )}
+          {/* legacy redirect — should not happen after storage migration */}
           {state.currentStep === 'fan' && (
             <StepFan state={state} chain={chain} onUpdate={onUpdateCascade} />
           )}

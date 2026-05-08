@@ -141,6 +141,11 @@ export function loadWizardState(projectId: string, unitId: string): AhuWizardSta
     if (legacyStep === 'cool_coil' || legacyStep === 'heat_coil' || legacyStep === 'filter') {
       parsed.currentStep = 'sizing';
     }
+    // Remap retired steps: 'components' → 'inputs', 'fan' → 'sizing' (2026-05-08)
+    const STEP_REMAP: Record<string, string> = { components: 'inputs', fan: 'sizing' };
+    if (parsed.currentStep        && STEP_REMAP[parsed.currentStep])        parsed.currentStep        = STEP_REMAP[parsed.currentStep];
+    if (parsed.furthestReachedStep && STEP_REMAP[parsed.furthestReachedStep]) parsed.furthestReachedStep = STEP_REMAP[parsed.furthestReachedStep];
+    if (parsed.dirtyFromStep       && STEP_REMAP[parsed.dirtyFromStep])       parsed.dirtyFromStep       = STEP_REMAP[parsed.dirtyFromStep];
     // Backfill section pipeline if missing — gives existing AHUs a default chain
     // so the new section-based UI/calc has something to display immediately.
     if (!parsed.sections || !Array.isArray(parsed.sections) || parsed.sections.length === 0) {
