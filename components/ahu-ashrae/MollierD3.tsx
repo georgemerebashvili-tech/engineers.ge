@@ -10,7 +10,7 @@ import {
   satW, enthalpy, dewPoint, rhFromDbW,
 } from '@/lib/ahu-ashrae/psychrometrics';
 import {
-  satCurvePoints, rhCurvePoints, isothermSegment, wetBulbSegment, specVolPts,
+  satCurvePoints, rhCurvePoints, isothermSegment, wetBulbSegment,
   type IdPt,
 } from '@/lib/ahu-ashrae/mollier-geometry';
 import {
@@ -25,19 +25,18 @@ const M = { top: 28, right: 24, bottom: 56, left: 72 } as const;
 const IW = SVG_W - M.left - M.right;
 const IH = SVG_H - M.top - M.bottom;
 
-const D_DOM: [number, number] = [-0.3, 30];
-const H_DOM: [number, number] = [-12, 132];
+const D_DOM: [number, number] = [-0.3, 25];
+const H_DOM: [number, number] = [-12, 95];
 
-/** Clips the upper-left dead zone — no HVAC state exists above this temperature */
+/** Clips dead zone — no HVAC process above this temperature */
 const T_CLIP = 50;
 
 const ISO_TEMPS       = [-10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
 const ISO_LABEL_TEMPS = [-10, 0, 10, 20, 30, 40, 50];
 const RH_VALS         = [10, 20, 30, 40, 50, 60, 70, 80, 90];
 const WB_TEMPS        = [5, 10, 15, 20, 25, 30];
-const SVOL_VALS       = [0.80, 0.82, 0.84, 0.86, 0.88, 0.90];
-const X_TICKS         = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30];
-const Y_TICKS         = [-10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130];
+const X_TICKS         = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
+const Y_TICKS         = [-10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90];
 
 // ─── Section colors ───────────────────────────────────────────────────────────
 const SEC_COLORS: Record<string, string> = {
@@ -93,8 +92,9 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
   // ── Trapezoid clip (T=T_CLIP isotherm as upper boundary) ─────────────────
   // At d=0: h=enthalpy(50,0)≈50.3 kJ/kg  →  clips dead zone upper-left
   // At d=30: h=enthalpy(50,0.03)≈128 kJ/kg  →  near chart top
-  const clipYL = yS(enthalpy(T_CLIP, 0));
-  const clipYR = yS(enthalpy(T_CLIP, D_DOM[1] / 1000));
+  const clipYL = Math.max(0, yS(enthalpy(T_CLIP, 0)));
+  // Isotherm may exit the top of chart before reaching right edge — clamp to 0
+  const clipYR = Math.max(0, yS(enthalpy(T_CLIP, D_DOM[1] / 1000)));
   const clipPts = `0,${IH} ${IW},${IH} ${IW},${clipYR.toFixed(1)} 0,${clipYL.toFixed(1)}`;
 
   // ── Static chart paths ────────────────────────────────────────────────────
@@ -111,11 +111,6 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
     () => WB_TEMPS.map((Twb) => ({ Twb, d: ln(wetBulbSegment(Twb, pressure)) ?? '' })),
     [ln, pressure],
   );
-  const svPaths = useMemo(
-    () => SVOL_VALS.map((v) => ({ v, d: ln(specVolPts(v, pressure)) ?? '' })),
-    [ln, pressure],
-  );
-
   // ── Comfort overlay ───────────────────────────────────────────────────────
   const overlay = useMemo(() => getOverlay(overlayId), [overlayId]);
 
@@ -151,25 +146,27 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
     );
   }, [overlay, toIdSvg]);
 
-  // ── Isotherm labels ───────────────────────────────────────────────────────
+  // ── Isotherm labels — placed near saturation curve ───────────────────────
   const isoLabels = useMemo(
     () =>
-      ISO_LABEL_TEMPS.map((T) => {
-        const dEnd = Math.min(satW(T, pressure) * 1000, 29.5) * 0.9;
+      ISO_TEMPS.map((T) => {
+        const dSat = satW(T, pressure) * 1000;
+        const dEnd = Math.min(dSat, D_DOM[1] - 0.3) * 0.88;
+        if (dEnd < 0) return null;
         const hEnd = enthalpy(T, dEnd / 1000);
-        if (dEnd < 0 || hEnd < H_DOM[0] || hEnd > H_DOM[1]) return null;
-        return { T, x: xS(dEnd) - 2, y: yS(hEnd) - 5 };
+        if (hEnd < H_DOM[0] || hEnd > H_DOM[1]) return null;
+        return { T, x: xS(dEnd) - 2, y: yS(hEnd) - 4 };
       }),
     [xS, yS, pressure],
   );
 
-  // ── RH labels at T ≈ 42°C ─────────────────────────────────────────────────
+  // ── RH labels — placed at T ≈ 28°C along each RH curve ─────────────────
   const rhLabels = useMemo(() => {
-    const T_lbl = 42;
-    return [20, 40, 60, 80].map((rh) => {
+    const T_lbl = 28;
+    return [20, 30, 40, 50, 60, 70, 80].map((rh) => {
       const w = satW(T_lbl, pressure) * (rh / 100);
       const d = w * 1000;
-      if (d > 29.5 || d < 0) return null;
+      if (d > D_DOM[1] - 0.5 || d < 0) return null;
       return { rh, x: xS(d) + 3, y: yS(enthalpy(T_lbl, w)) - 3 };
     });
   }, [xS, yS, pressure]);
@@ -203,7 +200,7 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
         const plotY  = (e.clientY - rect.top)  * scaleY - M.top;
         const d = xS.invert(plotX);
         const h = yS.invert(plotY);
-        if (d < -0.5 || d > 31 || h < -14 || h > 134) { setHover(null); return; }
+        if (d < -0.5 || d > 26 || h < -14 || h > 96) { setHover(null); return; }
         const w   = Math.max(0, d) / 1000;
         const T   = (h - 2501 * w) / (1.006 + 1.86 * w);
         // Don't show tooltip in clipped dead zone
@@ -387,64 +384,60 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
           {/* ── Plot area (clipped to trapezoid) ────────────────────────── */}
           <g clipPath={`url(#${CLIP_ID})`}>
             {/* Background */}
-            <rect x={0} y={0} width={IW} height={IH} fill="#f8fafc" />
+            <rect x={0} y={0} width={IW} height={IH} fill="#ffffff" />
 
-            {/* Grid */}
+            {/* Grid — vertical (d) */}
             {X_TICKS.map((d) => (
               <line key={d} x1={xS(d)} y1={0} x2={xS(d)} y2={IH}
-                stroke="#e2e8f0" strokeWidth={0.4} />
+                stroke="#d4dde8" strokeWidth={0.5} />
             ))}
+            {/* Enthalpy reference lines (i = const) — horizontal, slightly bolder */}
             {Y_TICKS.map((h) => (
               <line key={h} x1={0} y1={yS(h)} x2={IW} y2={yS(h)}
-                stroke="#e2e8f0" strokeWidth={0.4} />
+                stroke="#c8d5e2" strokeWidth={0.6} />
             ))}
 
             {/* Comfort overlay (below chart curves) */}
             {comfortEl}
 
-            {/* Specific volume lines */}
-            {svPaths.map(({ v, d }) => d && (
-              <path key={v} d={d} fill="none"
-                stroke="#94a3b8" strokeWidth={0.5} strokeDasharray="5 7" opacity={0.28} />
-            ))}
-
             {/* Wet-bulb lines */}
             {wbPaths.map(({ Twb, d }) => d && (
               <path key={Twb} d={d} fill="none"
-                stroke="#34d399" strokeWidth={0.7} strokeDasharray="5 4" opacity={0.45} />
+                stroke="#2e7d32" strokeWidth={0.7} strokeDasharray="4 5" opacity={0.4} />
             ))}
 
             {/* Isotherms */}
             {isoPaths.map(({ T, d }) => d && (
               <path key={T} d={d} fill="none"
-                stroke={T === 0 ? '#334e7a' : '#8aa5c5'}
-                strokeWidth={T === 0 ? 1.4 : 0.75}
-                strokeDasharray={T < 0 ? '4 3' : '0'}
-                opacity={T === 0 ? 0.85 : 0.65}
+                stroke={T === 0 ? '#1e3a5f' : '#4a6e96'}
+                strokeWidth={T === 0 ? 1.6 : 0.95}
+                strokeDasharray={T < 0 ? '5 3' : undefined}
+                opacity={T === 0 ? 1 : 0.85}
               />
             ))}
 
-            {/* RH curves */}
+            {/* RH curves — solid, not dashed */}
             {rhPaths.map(({ rh, d }) => d && (
               <path key={rh} d={d} fill="none"
-                stroke="#3b82f6" strokeWidth={0.85}
-                strokeDasharray="4 2" opacity={0.5} />
+                stroke="#1d4ed8" strokeWidth={rh === 90 ? 1.0 : 0.85}
+                opacity={0.55} />
             ))}
 
             {/* Saturation curve */}
-            <path d={satPath} fill="none" stroke="#1d4ed8" strokeWidth={2.6} />
+            <path d={satPath} fill="none" stroke="#1e3a5f" strokeWidth={2.8} />
 
             {/* ── Labels ── */}
 
             {/* Isotherm labels */}
             {isoLabels.map((lbl) => lbl && (
               <g key={lbl.T}>
-                <text x={lbl.x} y={lbl.y} textAnchor="end" fontSize={8.5}
-                  stroke="white" strokeWidth={2.5} fontWeight={600} fill="white">
+                <text x={lbl.x} y={lbl.y} textAnchor="end" fontSize={9}
+                  stroke="white" strokeWidth={3} strokeLinejoin="round"
+                  fontWeight={700} fill="white" style={{ paintOrder: 'stroke' } as React.CSSProperties}>
                   {lbl.T > 0 ? `+${lbl.T}` : `${lbl.T}`}°
                 </text>
-                <text x={lbl.x} y={lbl.y} textAnchor="end" fontSize={8.5}
-                  fontWeight={600} fill="#3b5278">
+                <text x={lbl.x} y={lbl.y} textAnchor="end" fontSize={9}
+                  fontWeight={700} fill="#1e3a5f">
                   {lbl.T > 0 ? `+${lbl.T}` : `${lbl.T}`}°
                 </text>
               </g>
@@ -454,11 +447,13 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
             {rhLabels.map((lbl) => lbl && (
               <g key={lbl.rh}>
                 <text x={lbl.x} y={lbl.y} fontSize={8.5}
-                  stroke="white" strokeWidth={2.5} fontWeight={600} fill="white">
+                  stroke="white" strokeWidth={2.5} strokeLinejoin="round"
+                  fontWeight={600} fill="white"
+                  style={{ paintOrder: 'stroke' } as React.CSSProperties}>
                   {lbl.rh}%
                 </text>
                 <text x={lbl.x} y={lbl.y} fontSize={8.5}
-                  fontWeight={600} fill="#1d4ed8" opacity={0.75}>
+                  fontWeight={600} fill="#1d4ed8" opacity={0.85}>
                   {lbl.rh}%
                 </text>
               </g>
@@ -467,24 +462,10 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
             {/* Wet-bulb labels */}
             {wbLabels.map((lbl) => lbl && (
               <text key={lbl.Twb} x={lbl.x} y={lbl.y}
-                fontSize={7.5} fill="#059669" opacity={0.6}>
+                fontSize={8} fill="#2e7d32" opacity={0.65} fontStyle="italic">
                 {lbl.Twb}°wb
               </text>
             ))}
-
-            {/* Spec-vol labels */}
-            {SVOL_VALS.map((v) => {
-              const pts = specVolPts(v, pressure);
-              if (!pts.length) return null;
-              const last = pts[pts.length - 1];
-              if (last.d < 1 || last.d > 29.5) return null;
-              return (
-                <text key={v} x={xS(last.d) - 2} y={yS(last.h) - 3}
-                  fontSize={7} fill="#94a3b8" opacity={0.55} textAnchor="end">
-                  {v}
-                </text>
-              );
-            })}
 
             {/* Process arrows */}
             {arrowLayer}
@@ -511,23 +492,14 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
             />
           </g>
 
-          {/* ── T_CLIP boundary — drawn outside clip, shows the slant edge ── */}
-          <line
-            x1={0} y1={clipYL} x2={IW} y2={clipYR}
-            stroke="#94a3b8" strokeWidth={0.7} strokeDasharray="5 4" opacity={0.45}
-          />
-          <text x={5} y={clipYL - 4} fontSize={7} fill="#94a3b8" opacity={0.6}>
-            {T_CLIP}°C max
-          </text>
-
           {/* ── X axis ──────────────────────────────────────────────────── */}
           {X_TICKS.map((d) => {
             const x = xS(d);
             if (x < -4 || x > IW + 4) return null;
             return (
               <g key={d} transform={`translate(${x},${IH})`}>
-                <line y2={4} stroke="#94a3b8" strokeWidth={0.8} />
-                <text y={15} textAnchor="middle" fontSize={9.5} fill="#64748b">{d}</text>
+                <line y2={5} stroke="#64748b" strokeWidth={0.9} />
+                <text y={16} textAnchor="middle" fontSize={10} fill="#374151" fontWeight={500}>{d}</text>
               </g>
             );
           })}
@@ -538,9 +510,9 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
             if (y < -4 || y > IH + 4) return null;
             return (
               <g key={h} transform={`translate(0,${y})`}>
-                <line x2={-4} stroke="#94a3b8" strokeWidth={0.8} />
-                <text x={-8} textAnchor="end" dominantBaseline="middle"
-                  fontSize={9.5} fill="#64748b">{h}</text>
+                <line x2={-5} stroke="#64748b" strokeWidth={0.9} />
+                <text x={-9} textAnchor="end" dominantBaseline="middle"
+                  fontSize={10} fill="#374151" fontWeight={500}>{h}</text>
               </g>
             );
           })}
@@ -548,16 +520,16 @@ export function MollierD3({ chain, pressure = 101.325 }: MollierD3Props) {
           {/* Trapezoid chart border (matches clip boundary) */}
           <polygon
             points={`0,${clipYL.toFixed(1)} ${IW},${clipYR.toFixed(1)} ${IW},${IH} 0,${IH}`}
-            fill="none" stroke="#cbd5e1" strokeWidth={1}
+            fill="none" stroke="#94a3b8" strokeWidth={1.2}
           />
 
           {/* Axis labels */}
           <text x={IW / 2} y={IH + 46} textAnchor="middle"
-            fontSize={11} fill="#475569" fontWeight={600}>
+            fontSize={12} fill="#1e293b" fontWeight={700}>
             Humidity ratio  d  (g/kg)
           </text>
-          <text transform={`translate(-54,${IH / 2}) rotate(-90)`}
-            textAnchor="middle" fontSize={11} fill="#475569" fontWeight={600}>
+          <text transform={`translate(-56,${IH / 2}) rotate(-90)`}
+            textAnchor="middle" fontSize={12} fill="#1e293b" fontWeight={700}>
             Specific enthalpy  i  (kJ/kg dry air)
           </text>
 

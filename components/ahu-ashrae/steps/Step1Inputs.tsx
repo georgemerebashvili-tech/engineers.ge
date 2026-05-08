@@ -491,34 +491,6 @@ export function Step1Inputs({ project, unit, state, onUpdate, psychro }: Props) 
 
       </Card>
 
-      {/* ── System Design Intent ── */}
-      <SystemDesignCard
-        intent={state.systemDesign ?? DEFAULT_SYSTEM_DESIGN}
-        onUpdate={(sd) => onUpdate({ systemDesign: sd })}
-      />
-
-      {/* Live psychro preview — output of design inputs above */}
-      {psychro && (
-        <div className="rounded-xl border p-4" style={{ background: 'var(--blue-lt)', borderColor: 'var(--blue-bd)' }}>
-          <div className="text-[9px] font-bold uppercase tracking-[0.1em] mb-2" style={{ color: 'var(--blue)' }}>
-            Live — ფსიქრომეტრიული Preview
-          </div>
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
-            <MiniPsychoBox label="T outdoor" tdb={psychro.outdoor.tdb} w={psychro.outdoor.w * 1000} rh={psychro.outdoor.rh} />
-            <MiniPsychoBox label="T mixed" tdb={psychro.mixed.tdb} w={psychro.mixed.w * 1000} rh={psychro.mixed.rh} />
-            <MiniPsychoBox label="T supply" tdb={psychro.supplyAir.tdb} w={psychro.supplyAir.w * 1000} rh={psychro.supplyAir.rh} />
-            <MiniPsychoBox label="T room" tdb={psychro.roomAir.tdb} w={psychro.roomAir.w * 1000} rh={psychro.roomAir.rh} />
-            <MiniPsychoBox label="ADP" tdb={psychro.adp.tdb} w={psychro.adp.w * 1000} rh={100} />
-            <div className="rounded-lg p-2 text-center" style={{ background: 'var(--sur)', border: '1px solid var(--blue-bd)' }}>
-              <div className="text-[9px] font-bold mb-1" style={{ color: 'var(--text-3)' }}>CF</div>
-              <div className="text-base font-bold font-mono" style={{ color: 'var(--blue)' }}>
-                {(psychro.contactFactor * 100).toFixed(0)}%
-              </div>
-              <div className="text-[9px]" style={{ color: 'var(--text-3)' }}>contact factor</div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -848,7 +820,7 @@ function KayaModelPicker({
 
 // ─── System Design Intent ─────────────────────────────────────────────────────
 
-const DEFAULT_SYSTEM_DESIGN: SystemDesignIntent = {
+export const DEFAULT_SYSTEM_DESIGN: SystemDesignIntent = {
   coolingSystem: 'chilled_water',
   heatingSystem: 'hot_water',
   chwSupplyT: 6, chwReturnT: 12,
@@ -874,7 +846,7 @@ const TIER_COLORS: Record<string, string> = {
   uvc: '#0891b2',
 };
 
-function SystemDesignCard({
+export function SystemDesignCard({
   intent, onUpdate,
 }: {
   intent: SystemDesignIntent;

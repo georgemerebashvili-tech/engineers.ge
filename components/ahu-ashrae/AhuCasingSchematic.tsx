@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X, ChevronLeft, ChevronRight, Plus,
   PanelTopOpen, Filter, Shuffle, ArrowLeftRight,
@@ -70,6 +70,19 @@ export function AhuCasingSchematic({ housings, violatedIds, onHousingsChange, on
       .reduce((sum, s) => sum + SECTION_VISUALS[s!.spec.type].width3D, 0) * 1000,
   );
 
+  // Track active palette/slot drag globally so all valid empty slots light up
+  const [globalDrag, setGlobalDrag] = useState<DragPayload | null>(null);
+  useEffect(() => {
+    const onStart = () => requestAnimationFrame(() => setGlobalDrag(getActiveDrag()));
+    const onEnd   = () => setGlobalDrag(null);
+    document.addEventListener('dragstart', onStart);
+    document.addEventListener('dragend',   onEnd);
+    return () => {
+      document.removeEventListener('dragstart', onStart);
+      document.removeEventListener('dragend',   onEnd);
+    };
+  }, []);
+
   function addHousing() {
     onHousingsChange([...housings, { id: makeHousingId(), slots: { left: null, center: null, right: null } }]);
   }
@@ -107,6 +120,7 @@ export function AhuCasingSchematic({ housings, violatedIds, onHousingsChange, on
                 total={housings.length}
                 violatedIds={violatedIds}
                 allHousings={housings}
+                globalDrag={globalDrag}
                 onHousingsChange={onHousingsChange}
                 onDropError={onDropError}
               />
@@ -144,11 +158,12 @@ interface HousingCardProps {
   total: number;
   violatedIds: ReadonlySet<string>;
   allHousings: HousingSection[];
+  globalDrag: DragPayload | null;
   onHousingsChange: (h: HousingSection[]) => void;
   onDropError: (msg: string | null) => void;
 }
 
-function HousingCard({ housing, index, total, violatedIds, allHousings, onHousingsChange, onDropError }: HousingCardProps) {
+function HousingCard({ housing, index, total, violatedIds, allHousings, globalDrag, onHousingsChange, onDropError }: HousingCardProps) {
   const hasViolation = SLOT_KEYS.some(k => {
     const s = housing.slots[k];
     return s && violatedIds.has(s.id);
@@ -277,6 +292,7 @@ function HousingCard({ housing, index, total, violatedIds, allHousings, onHousin
               slotKey={slotKey}
               section={housing.slots[slotKey]}
               isViolation={!!(housing.slots[slotKey] && violatedIds.has(housing.slots[slotKey]!.id))}
+              globalDrag={globalDrag}
               onDrop={(payload) => handleDrop(slotKey, payload)}
               onRemove={() => clearSlot(slotKey)}
               onParamsChange={(p) => updateSlotParams(slotKey, p)}
@@ -297,16 +313,21 @@ interface SlotZoneProps {
   slotKey: SlotKey;
   section: SectionConfig | null;
   isViolation: boolean;
+  globalDrag: DragPayload | null;
   onDrop: (payload: DragPayload) => void;
   onRemove: () => void;
   onParamsChange: (params: unknown) => void;
 }
 
-function SlotZone({ housing, slotKey, section, isViolation, onDrop, onRemove, onParamsChange }: SlotZoneProps) {
+function SlotZone({ housing, slotKey, section, isViolation, globalDrag, onDrop, onRemove, onParamsChange }: SlotZoneProps) {
   const [dragState, setDragState] = useState<DragState>('none');
   const [isDragging, setIsDragging] = useState(false);
 
   const slotLabel = slotKey === 'left' ? 'L' : slotKey === 'center' ? 'C' : 'R';
+
+  // Pre-highlight: valid empty slot during active drag (before hover)
+  const preValid = !section && !!globalDrag
+    && (SLOT_RULES[globalDrag.sectionType]?.allowed ?? []).includes(slotKey);
 
   function computeDragState(): DragState {
     const drag = getActiveDrag();
@@ -395,12 +416,14 @@ function SlotZone({ housing, slotKey, section, isViolation, onDrop, onRemove, on
 
   // Empty slot — drop target
   const bgColor =
-    dragState === 'valid'   ? 'var(--blue-lt, #eff6ff)' :
+    dragState === 'valid'   ? '#dbeafe' :
     dragState === 'invalid' ? '#fef2f2' :
+    preValid                ? '#eff6ff' :
     'transparent';
   const borderColor =
     dragState === 'valid'   ? 'var(--blue, #2563eb)' :
     dragState === 'invalid' ? '#fca5a5' :
+    preValid                ? '#93c5fd' :
     'transparent';
 
   return (
@@ -416,12 +439,17 @@ function SlotZone({ housing, slotKey, section, isViolation, onDrop, onRemove, on
         minHeight: 100,
         background: bgColor,
         border: `1.5px dashed ${borderColor}`,
-        transition: 'background 0.1s, border-color 0.1s',
+        transition: 'background 0.12s, border-color 0.12s',
       }}
     >
       <span
         className="text-[9px] font-bold"
-        style={{ color: dragState !== 'none' ? (dragState === 'valid' ? 'var(--blue)' : '#ef4444') : 'var(--bdr)' }}
+        style={{
+          color: dragState === 'valid' ? 'var(--blue)' :
+                 dragState === 'invalid' ? '#ef4444' :
+                 preValid ? '#93c5fd' :
+                 'var(--bdr)',
+        }}
       >
         {slotLabel}
       </span>

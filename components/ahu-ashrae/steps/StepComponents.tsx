@@ -16,6 +16,7 @@ import { validateOrder, type OrderViolation } from '@/lib/ahu-ashrae/section-ord
 import { AhuOrthoSchematic, type AhuOrthoView } from '../AhuOrthoSchematic';
 import { AhuCasingSchematic } from '../AhuCasingSchematic';
 import { ComponentPalette } from '../ComponentPalette';
+import { SystemDesignCard, DEFAULT_SYSTEM_DESIGN } from './Step1Inputs';
 
 type AhuViewMode = 'persp' | AhuOrthoView;
 
@@ -47,7 +48,6 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
     [sections, unit.ahuType],
   );
 
-  // Set of section IDs that are part of a violation — passed to schematic for highlight
   const violatedIds: ReadonlySet<string> = useMemo(() => {
     const ids = new Set<string>();
     violations.forEach(v => {
@@ -71,7 +71,7 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
     });
   }
 
-  // ── 3D viewer data ─────────────────────────────────────────────────────────
+  // ── 3D viewer data ──────────────────────────────────────────────────────────
 
   const viewerSections = useMemo(
     () => sections.filter((s) => s.enabled).map((s, i) => {
@@ -93,13 +93,15 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
   const totalWeightKg = useMemo(() => {
     if (viewerSections.length === 0) return 0;
     const totalLenM = viewerSections.reduce((s, x) => s + x.width, 0);
-    const componentKg = sections.filter((s) => s.enabled).reduce((sum, s) => sum + (SECTION_VISUALS[s.spec.type]?.weightKg ?? 0), 0);
+    const componentKg = sections.filter((s) => s.enabled).reduce(
+      (sum, s) => sum + (SECTION_VISUALS[s.spec.type]?.weightKg ?? 0), 0,
+    );
     return componentKg + totalLenM * CASING_KG_PER_M;
   }, [sections, viewerSections]);
 
   const [viewMode, setViewMode] = useState<AhuViewMode>('persp');
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-5">
@@ -119,21 +121,20 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
         </div>
       )}
 
-      {/* ── AHU section schematic ── */}
+      {/* ── AHU კორპუსი — schematic + palette + system config + viewer ── */}
       <section
-        className="rounded-xl border p-4"
+        className="rounded-xl border p-4 space-y-4"
         style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}
       >
-        <div className="flex items-center gap-2 mb-3">
+        {/* Header */}
+        <div className="flex items-center gap-2">
           <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
             <rect x="1" y="3" width="13" height="9" rx="1" stroke="var(--blue)" strokeWidth="1.5" />
             <line x1="4" y1="3" x2="4" y2="12" stroke="var(--blue)" strokeWidth="1" />
             <line x1="8" y1="3" x2="8" y2="12" stroke="var(--blue)" strokeWidth="1" />
             <line x1="12" y1="3" x2="12" y2="12" stroke="var(--blue)" strokeWidth="1" />
           </svg>
-          <h2 className="text-sm font-bold" style={{ color: 'var(--navy)' }}>
-            AHU კორპუსი
-          </h2>
+          <h2 className="text-sm font-bold" style={{ color: 'var(--navy)' }}>AHU კორპუსი</h2>
           <span className="ml-auto text-[9px]" style={{ color: 'var(--text-3)' }}>
             L = upstream · C = center · R = downstream
           </span>
@@ -145,6 +146,7 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
           )}
         </div>
 
+        {/* Casing schematic */}
         <AhuCasingSchematic
           housings={housings}
           violatedIds={violatedIds}
@@ -156,63 +158,63 @@ export function StepComponents({ state, unit, onUpdate, chain }: Props) {
           <ViolationBanner violations={violations} sections={sections} />
         )}
 
-        {/* Component palette — inside the AHU card, below the strip */}
-        <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--bdr)' }}>
+        {/* ── Component palette ── */}
+        <div className="pt-3" style={{ borderTop: '1px solid var(--bdr)' }}>
           <ComponentPalette />
         </div>
-      </section>
 
-      {/* ── 3D / Ortho viewer ── */}
-      <section
-        className="rounded-xl border p-4 flex flex-col"
-        style={{ background: 'var(--sur)', borderColor: 'var(--bdr)' }}
-      >
-        <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <Box size={16} style={{ color: 'var(--blue)' }} />
-            <h2 className="text-sm font-bold" style={{ color: 'var(--navy)' }}>
-              {viewMode === 'persp' ? '3D ნახვა' : 'ორთოგრაფიული ხედი'}
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <ViewModeToolbar value={viewMode} onChange={setViewMode} />
-            <span className="text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
-              {viewerSections.length} სექცია
-            </span>
-          </div>
+        {/* ── System config ── */}
+        <div style={{ borderTop: '1px solid var(--bdr)', paddingTop: 0 }}>
+          <SystemDesignCard
+            intent={state.systemDesign ?? DEFAULT_SYSTEM_DESIGN}
+            onUpdate={(sd) => onUpdate({ systemDesign: sd })}
+          />
         </div>
-        <p className="text-xs mb-3" style={{ color: 'var(--text-3)' }}>
-          {viewMode === 'persp'
-            ? 'orbit / zoom — მაუსით. სექციათა რიგი ცოცხლად აისახება.'
-            : 'ორთოგრაფიული ხედი — ზომები მმ-ში, სრული გაბარიტი + წონა title block-ში.'}
-        </p>
 
-        <div
-          className="rounded-lg overflow-hidden border"
-          style={{
-            borderColor: 'var(--bdr)',
-            background: viewMode === 'persp'
-              ? 'linear-gradient(180deg, #eef3f9 0%, #d8e2ee 100%)'
-              : '#f7f9fc',
-            height: 300,
-          }}
-        >
-          {viewerSections.length > 0 ? (
-            viewMode === 'persp' ? (
-              <AhuStlViewer sections={viewerSections} />
-            ) : (
-              <AhuOrthoSchematic
-                sections={viewerSections}
-                view={viewMode}
-                weightKg={totalWeightKg}
-                inletState={inletState}
-              />
-            )
-          ) : (
-            <div className="h-full flex items-center justify-center text-xs" style={{ color: 'var(--text-3)' }}>
-              ჩართული სექცია არ არის — გადაიტანეთ კომპონენტი სქემაში
+        {/* ── 3D / Ortho viewer ── */}
+        <div className="pt-1" style={{ borderTop: '1px solid var(--bdr)' }}>
+          <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Box size={14} style={{ color: 'var(--blue)' }} />
+              <span className="text-xs font-bold" style={{ color: 'var(--navy)' }}>
+                {viewMode === 'persp' ? '3D ნახვა' : 'ორთოგრაფიული ხედი'}
+              </span>
             </div>
-          )}
+            <div className="flex items-center gap-2">
+              <ViewModeToolbar value={viewMode} onChange={setViewMode} />
+              <span className="text-[10px] font-mono" style={{ color: 'var(--text-3)' }}>
+                {viewerSections.length} სექცია
+              </span>
+            </div>
+          </div>
+
+          <div
+            className="rounded-lg overflow-hidden border"
+            style={{
+              borderColor: 'var(--bdr)',
+              background: viewMode === 'persp'
+                ? 'linear-gradient(180deg, #eef3f9 0%, #d8e2ee 100%)'
+                : '#f7f9fc',
+              height: 520,
+            }}
+          >
+            {viewerSections.length > 0 ? (
+              viewMode === 'persp' ? (
+                <AhuStlViewer sections={viewerSections} />
+              ) : (
+                <AhuOrthoSchematic
+                  sections={viewerSections}
+                  view={viewMode}
+                  weightKg={totalWeightKg}
+                  inletState={inletState}
+                />
+              )
+            ) : (
+              <div className="h-full flex items-center justify-center text-xs" style={{ color: 'var(--text-3)' }}>
+                ჩართული სექცია არ არის — გადაიტანეთ კომპონენტი სქემაში
+              </div>
+            )}
+          </div>
         </div>
       </section>
     </div>
@@ -254,7 +256,7 @@ function ViolationBanner({ violations, sections }: { violations: OrderViolation[
   const top = violations.filter((v) => { if (seen.has(v.rule)) return false; seen.add(v.rule); return true; }).slice(0, 3);
   const more = violations.length - top.length;
   return (
-    <div className="mt-3 rounded-lg border p-3 text-[11px]"
+    <div className="rounded-lg border p-3 text-[11px]"
       style={{ background: '#fffbeb', borderColor: '#fcd34d', color: '#78350f' }}>
       <div className="flex items-center gap-1.5 mb-1.5 font-bold">
         <AlertTriangle size={12} /> სტანდარტის დარღვევა ({violations.length})
