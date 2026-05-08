@@ -9,6 +9,10 @@
 import type { AirState } from '../air-state';
 import type { NarrativeBullet } from '../narrate';
 
+/** Physical alignment of the component element within its housing section.
+ *  left = upstream face · center = full cross-section · right = downstream face */
+export type SlotPosition = 'left' | 'center' | 'right';
+
 export type SectionType =
   | 'damper'
   | 'filter'
@@ -177,6 +181,36 @@ export interface SectionConfig {
   order: number;
   /** Discriminated union holds both type tag and params */
   spec: SectionParams;
+  /** Where the component element sits inside the section housing.
+   *  Undefined → computed from type+form default by getDefaultSlot(). */
+  slotPosition?: SlotPosition;
 }
 
 export type SectionProcessor<P> = (inlet: AirState, params: P, sectionId: string, sectionLabel: string) => SectionResult;
+
+// ─── Housing Section (3-slot physical casing box) ─────────────────────────────
+
+export type SlotKey = 'left' | 'center' | 'right';
+export const SLOT_KEYS: SlotKey[] = ['left', 'center', 'right'];
+
+/** One physical AHU casing box — holds up to 3 components (one per slot). */
+export interface HousingSection {
+  id: string;
+  slots: {
+    left:   SectionConfig | null;
+    center: SectionConfig | null;
+    right:  SectionConfig | null;
+  };
+}
+
+/** Flatten housing sections → ordered SectionConfig[] for chain calculation.
+ *  Order within a box: left → center → right (upstream first). */
+export function flattenHousings(housings: HousingSection[]): SectionConfig[] {
+  return housings.flatMap(hs =>
+    SLOT_KEYS.map(k => hs.slots[k]).filter((s): s is SectionConfig => s !== null),
+  );
+}
+
+export function makeHousingId(): string {
+  return `hs_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+}

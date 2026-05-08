@@ -21,7 +21,7 @@ import {
 import {
   listProjects, saveProject, deleteProject,
   addUnit, updateUnit, deleteUnit, getUnit,
-  loadWizardState, saveWizardState,
+  loadWizardState, saveWizardState, buildHousingSections,
 } from '@/lib/ahu-ashrae/storage';
 import { getAhuTypeSpec } from '@/lib/ahu-ashrae/ahu-types-data';
 import { buildPreset } from '@/lib/ahu-ashrae/section-presets';
@@ -109,6 +109,7 @@ export function makeDefaultWizardState(project: AhuProject): AhuWizardState {
     },
     sectionPresetId: 'mixing_with_hr',
     sections: buildPreset('mixing_with_hr', { supplyTdb: 14, oaFraction: 0.30 }),
+    housingSections: buildHousingSections(buildPreset('mixing_with_hr', { supplyTdb: 14, oaFraction: 0.30 })),
   };
 }
 

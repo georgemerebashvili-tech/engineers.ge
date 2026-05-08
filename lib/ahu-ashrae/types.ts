@@ -325,6 +325,9 @@ export interface AhuWizardState {
    * fully removed. Storage migration backfills this from a default preset.
    */
   sections?: import('./sections').SectionConfig[];
+  /** Housing sections — the 3-slot UI data model. Source of truth for StepComponents.
+   *  Synced to `sections` via flattenHousings() on every change. */
+  housingSections?: import('./sections').HousingSection[];
   /**
    * Selected preset id used to build the default sections array — kept so the
    * UI can offer "reset to preset" without losing user customization on demand.

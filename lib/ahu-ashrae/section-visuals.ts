@@ -3,7 +3,7 @@
  * Pure / serializable; no React imports.
  */
 
-import type { SectionType } from './sections';
+import type { SectionType, SectionConfig, SlotPosition } from './sections';
 
 export interface SectionVisual {
   /** Hex color used for the 3D box face and chart marker */
@@ -35,6 +35,47 @@ export const SECTION_VISUALS: Record<SectionType, SectionVisual> = {
 /** Galvanized double-skin AHU casing/frame weight per linear metre (typical
  *  1.2 m × 1.2 m cross-section AHU). */
 export const CASING_KG_PER_M = 80;
+
+// ─── Slot position rules ───────────────────────────────────────────────────────
+
+export interface SlotRule {
+  /** Default position when no explicit slotPosition is set */
+  default: SlotPosition;
+  /** Which positions are physically valid for this component type */
+  allowed: SlotPosition[];
+  /** Override default by filter form (for filter type only) */
+  formOverrides?: Partial<Record<string, SlotPosition>>;
+}
+
+export const SLOT_RULES: Record<SectionType, SlotRule> = {
+  // Damper: a flat blade array — sits at inlet face (left) or outlet face (right)
+  damper:        { default: 'left',   allowed: ['left', 'right'] },
+  // Filter: depends on form. Bag/pocket faces upstream (left); panel spans full face (center)
+  filter:        { default: 'center', allowed: ['left', 'center', 'right'],
+                   formOverrides: { bag: 'left', pleated: 'left' } },
+  // Mixing box / coils / HR: full cross-section contact required → center only
+  mixing_box:    { default: 'center', allowed: ['center'] },
+  heat_recovery: { default: 'center', allowed: ['center'] },
+  preheat:       { default: 'center', allowed: ['center'] },
+  cooling_coil:  { default: 'center', allowed: ['center'] },
+  reheat:        { default: 'center', allowed: ['center'] },
+  // Humidifier: spray nozzle header typically at right (downstream side)
+  humidifier:    { default: 'right',  allowed: ['center', 'right'] },
+  // Fan: always centered in casing
+  fan:           { default: 'center', allowed: ['center'] },
+  // Silencer: baffle pack usually at inlet side of section
+  silencer:      { default: 'left',   allowed: ['left', 'center'] },
+};
+
+/** Compute the effective slot for a section, accounting for filter form overrides. */
+export function getDefaultSlot(section: SectionConfig): SlotPosition {
+  const rule = SLOT_RULES[section.spec.type];
+  if (section.spec.type === 'filter') {
+    const form = (section.spec.params as { form?: string }).form ?? 'panel';
+    return rule.formOverrides?.[form] ?? rule.default;
+  }
+  return rule.default;
+}
 
 /** Default params factory for adding a new section of a given type. */
 export function makeDefaultParams(type: SectionType): unknown {

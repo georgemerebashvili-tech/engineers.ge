@@ -1,6 +1,9 @@
 // LocalStorage persistence for AHU projects + units
 import type { AhuProject, AhuUnit, AhuWizardState } from './types';
+import type { SectionConfig } from './sections';
 import { buildPreset } from './section-presets';
+import { makeHousingId } from './sections/types';
+import { getDefaultSlot } from './section-visuals';
 
 const PROJECTS_KEY = 'ahu_projects_v2';
 const WIZARD_KEY_PREFIX = 'ahu_wizard_';  // suffix: <projectId>_<unitId>
@@ -163,6 +166,11 @@ export function loadWizardState(projectId: string, unitId: string): AhuWizardSta
     if (!parsed.furthestReachedStep) {
       parsed.furthestReachedStep = parsed.currentStep ?? 'ahu_type';
     }
+    // Backfill housingSections from flat sections[] if missing.
+    if (!parsed.housingSections || !Array.isArray(parsed.housingSections) || parsed.housingSections.length === 0) {
+      const secs: SectionConfig[] = Array.isArray(parsed.sections) ? parsed.sections : [];
+      parsed.housingSections = buildHousingSections(secs);
+    }
     return parsed as AhuWizardState;
   } catch {
     return null;
@@ -172,6 +180,24 @@ export function loadWizardState(projectId: string, unitId: string): AhuWizardSta
 export function saveWizardState(projectId: string, unitId: string, state: AhuWizardState): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(WIZARD_KEY_PREFIX + projectId + '_' + unitId, JSON.stringify(state));
+}
+
+// ─── Housing sections builder ─────────────────────────────────────────────────
+
+/** Build a HousingSection array from a flat SectionConfig[].
+ *  Used both in loadWizardState migration and makeDefaultWizardState. */
+export function buildHousingSections(sections: SectionConfig[]): import('./sections').HousingSection[] {
+  return sections.map((s) => {
+    const slot = s.slotPosition ?? getDefaultSlot(s);
+    return {
+      id: makeHousingId(),
+      slots: {
+        left:   slot === 'left'   ? s : null,
+        center: slot === 'center' ? s : null,
+        right:  slot === 'right'  ? s : null,
+      },
+    };
+  });
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
