@@ -90,11 +90,24 @@ export async function recordFailure(
     const row = await readRow(bucket, key);
     const now = new Date();
 
-    // Auto-reset counter if the lock already expired (clean slate).
+    // Two things start a fresh streak: a lock that has run its course, and a
+    // row nobody has touched for a whole lock window (so six typos spread over
+    // months can't add up to a lockout).
+    //
+    // The previous condition was `locked_until ? expired : true`, which called
+    // every row without an ACTIVE lock "expired" — so fail_count was rewritten
+    // to 1 on every failure and `fails >= maxFails` was unreachable. No bucket
+    // in this app had ever locked: a production row still read fail_count 1
+    // after nine consecutive failed logins.
     const lockedUntil = row?.locked_until ? new Date(row.locked_until) : null;
-    const expired = lockedUntil ? lockedUntil.getTime() <= now.getTime() : true;
+    const lockExpired =
+      lockedUntil !== null && lockedUntil.getTime() <= now.getTime();
+    const lastAttemptMs = row?.last_attempt
+      ? new Date(row.last_attempt).getTime()
+      : 0;
+    const streakStale = now.getTime() - lastAttemptMs > s.lockMs;
 
-    const fails = (expired ? 0 : row?.fail_count ?? 0) + 1;
+    const fails = (lockExpired || streakStale ? 0 : row?.fail_count ?? 0) + 1;
     let newLock: string | null = null;
 
     if (fails >= s.maxFails) {
