@@ -35,6 +35,18 @@ export function LoginForm() {
         body: JSON.stringify({username, password})
       });
       if (!res.ok) {
+        if (res.status === 429) {
+          const body = (await res.json().catch(() => null)) as {
+            retry_after_seconds?: number;
+          } | null;
+          const secs = body?.retry_after_seconds;
+          setError(
+            secs
+              ? `ბევრი მცდელობა — სცადე ${Math.ceil(secs / 60)} წუთში`
+              : 'ბევრი მცდელობა — სცადე მოგვიანებით'
+          );
+          return;
+        }
         setError('Invalid credentials');
         return;
       }
