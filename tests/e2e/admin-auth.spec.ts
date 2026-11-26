@@ -22,8 +22,9 @@ import {SignJWT} from 'jose';
  * (lib/admin-session-token.ts), so nothing secret lives in the app code.
  *
  * Magic-link note: the server hands out at most 6 mails per clock hour, and the
- * block below uses all of them in the worst case. Rerunning it inside the same
- * hour needs a fresh dev server (the dev claim store is per process).
+ * block below always uses all of them (its last test is the burst that spends
+ * the rest, then checks the honest 429). Rerunning it inside the same hour
+ * needs a fresh dev server (the dev claim store is per process).
  */
 
 const AUTH_SECRET =
@@ -56,16 +57,23 @@ const now = () => Math.floor(Date.now() / 1000);
 
 /** A token exactly as the app signs a session (override any field to make a bad one). */
 async function adminToken(
-  o: {sub?: string; scope?: string; aud?: string; exp?: number; raw?: boolean} = {}
+  o: {
+    sub?: string;
+    scope?: string;
+    aud?: string;
+    exp?: number;
+    raw?: boolean;
+    noExp?: boolean;
+  } = {}
 ): Promise<string> {
   const key = o.raw ? encoder.encode(AUTH_SECRET) : await derive('admin-session/v1');
-  return new SignJWT({scope: o.scope ?? 'admin'})
+  const jwt = new SignJWT({scope: o.scope ?? 'admin'})
     .setProtectedHeader({alg: 'HS256'})
     .setSubject(o.sub ?? ADMIN_USER)
     .setAudience(o.aud ?? 'engineers.ge/admin')
-    .setIssuedAt(now() - 10)
-    .setExpirationTime(o.exp ?? now() + 3600)
-    .sign(key);
+    .setIssuedAt(now() - 10);
+  if (!o.noExp) jwt.setExpirationTime(o.exp ?? now() + 3600);
+  return jwt.sign(key);
 }
 
 /** A DMT session as lib/dmt/auth.ts signs it: raw AUTH_SECRET, no audience. */
@@ -156,6 +164,36 @@ test.describe('admin gate · anonymous', () => {
     expectRedirectToLogin(await get(request, '/admin/launch-checklist'));
   });
 
+  // Next serves the same page under dotted variants (`/sazeo.rsc`, and
+  // `/sazeo.segments/...` once segment prefetch is on). Each must be gated
+  // exactly like the page itself, not only the `/root/` form.
+  for (const path of [
+    '/sazeo.rsc',
+    '/sazeo.segments/_tree.segment.rsc',
+    '/tag-console.segments/_tree.segment.rsc',
+    '/audit.sazeo.rsc'
+  ]) {
+    test(`dotted variant ${path} is gated`, async ({request}) => {
+      expectRedirectToLogin(await get(request, path, {rsc: true}));
+    });
+  }
+
+  // /audit.sazeo is the owner's internal blueprint workspace (docs/TODO.md says
+  // "Auth-gated"); its HTML lives in public/audit.sazeo and must not be world-readable.
+  for (const path of [
+    '/audit.sazeo',
+    '/audit.sazeo/iot-bms-blueprint.html',
+    '/audit.sazeo/decisions/routing-architecture.html'
+  ]) {
+    test(`${path} redirects an anonymous visitor`, async ({request}) => {
+      expectRedirectToLogin(await get(request, path));
+    });
+    test(`control: ${path} opens for a signed-in admin`, async ({request}) => {
+      const res = await get(request, path, {cookie: await adminToken()});
+      expect(res.status()).toBe(200);
+    });
+  }
+
   test('the public admin pages stay public', async ({request}) => {
     for (const path of ['/admin', '/admin/forgot', '/admin/magic']) {
       const res = await get(request, path);
@@ -200,6 +238,7 @@ test.describe('admin session · what counts as an admin', () => {
     ['wrong scope', () => adminToken({scope: 'dmt'})],
     ['wrong audience', () => adminToken({aud: 'engineers.ge/dmt'})],
     ['expired', () => adminToken({exp: now() - 60})],
+    ['no expiry claim', () => adminToken({noExp: true})],
     ['signed with the raw secret', () => adminToken({raw: true})]
   ];
   for (const [label, mint] of BAD) {
@@ -213,8 +252,14 @@ test.describe('admin session · what counts as an admin', () => {
     const res = await get(request, '/admin/launch-checklist', {cookie});
     expect(res.status()).toBe(200);
     expect(await res.text()).toContain('AUTH_SECRET (admin JWT signing)');
-    const api = await request.get('/sazeo/api/state', {headers: {cookie: `admin_jwt=${cookie}`}});
-    expect(api.status()).not.toBe(401);
+    // Not a redirect (the proxy must leave /sazeo/api/* alone) and not a 401 (the
+    // session is accepted). The route itself then talks to Supabase, so on a dev
+    // server without it the answer is a 500: only "not 307/308/401" can be asserted.
+    const api = await request.get('/sazeo/api/state', {
+      headers: {cookie: `admin_jwt=${cookie}`},
+      maxRedirects: 0
+    });
+    expect([307, 308, 401]).not.toContain(api.status());
   });
 
   test('password login issues a session the gate accepts', async ({request}) => {
@@ -234,10 +279,41 @@ test.describe('admin session · what counts as an admin', () => {
 
 /* ------------------------------------------------------------ magic link */
 
+test.describe('magic link · request guard (no mail involved)', () => {
+  test.setTimeout(90_000);
+
+  // A cross-site <form enctype="text/plain"> can POST a JSON-looking body
+  // without a CORS preflight; both routes must refuse anything that is not a
+  // same-origin application/json request. All of these are refused BEFORE any
+  // mail slot or token is touched.
+  for (const path of ['/api/admin/magic-link/request', '/api/admin/magic-link/consume']) {
+    test(`${path} refuses text/plain`, async ({request}) => {
+      const res = await request.post(path, {
+        headers: {'content-type': 'text/plain'},
+        data: JSON.stringify({email: 'stranger@example.test', t: 'x'})
+      });
+      expect(res.status()).toBe(415);
+      expect(await res.json()).toEqual({error: 'unsupported_media_type'});
+    });
+
+    test(`${path} refuses a cross-site browser request`, async ({request}) => {
+      const res = await request.post(path, {
+        headers: {'sec-fetch-site': 'cross-site'},
+        data: {email: 'stranger@example.test', t: 'x'}
+      });
+      expect(res.status()).toBe(403);
+      expect(await res.json()).toEqual({error: 'forbidden'});
+    });
+  }
+});
+
 type Mail = {auth?: string; to: string[]; from: string; subject: string; html: string; text: string};
 
 test.describe.serial('magic link · end to end (needs a Resend mock)', () => {
   test.setTimeout(90_000);
+  // The group spends single-use tokens and the hourly mail slots, so a retry
+  // would only rerun against a spent server and hide the first failure's cause.
+  test.describe.configure({retries: 0});
   test.skip(
     !MOCK_RESEND_URL,
     'set MAGIC_E2E_RESEND_URL=http://127.0.0.1:<port> and start the dev server with RESEND_API_URL=<same url>'
@@ -282,8 +358,9 @@ test.describe.serial('magic link · end to end (needs a Resend mock)', () => {
     });
 
   // A fresh client address per call, so failed attempts in one test can never
-  // add up to the per-IP lock (6 invalid tokens in 10 minutes) for another.
-  const randomIp = () => `198.51.100.${200 + Math.floor(Math.random() * 50)}`;
+  // add up to the per-IP lock (6 invalid tokens in 10 minutes) for another, and
+  // a rerun inside 60 s never meets the per-IP mail gap of the previous run.
+  const randomIp = () => `198.51.100.${1 + Math.floor(Math.random() * 250)}`;
 
   const consume = (request: APIRequestContext, t: string) =>
     request.post('/api/admin/magic-link/consume', {
@@ -293,7 +370,7 @@ test.describe.serial('magic link · end to end (needs a Resend mock)', () => {
 
   test('request → mail → consume → admin session', async ({request}) => {
     const before = mails.length;
-    const res = await requestLink(request, ` ${RECOVERY_EMAIL.toUpperCase()} `, '198.51.100.10');
+    const res = await requestLink(request, ` ${RECOVERY_EMAIL.toUpperCase()} `, randomIp());
     expect(res.status()).toBe(200);
     expect(await res.json()).toEqual({ok: true});
 
@@ -381,7 +458,7 @@ test.describe.serial('magic link · end to end (needs a Resend mock)', () => {
 
   test('a non-matching address gets the same answer and no mail', async ({request}) => {
     const before = mails.length;
-    const res = await requestLink(request, 'stranger@example.test', '198.51.100.20');
+    const res = await requestLink(request, 'stranger@example.test', randomIp());
     expect(res.status()).toBe(200);
     expect(await res.json()).toEqual({ok: true});
     await new Promise((r) => setTimeout(r, 500));
@@ -389,12 +466,13 @@ test.describe.serial('magic link · end to end (needs a Resend mock)', () => {
   });
 
   test('a malformed address is a 400, not a silent 200', async ({request}) => {
-    const res = await requestLink(request, 'not-an-email', '198.51.100.30');
+    const res = await requestLink(request, 'not-an-email', randomIp());
     expect(res.status()).toBe(400);
   });
 
-  test('parallel requests from different IPs never exceed the hourly slot cap', async () => {
+  test('parallel requests from different IPs: exactly the hourly cap is sent, the rest get an honest 429', async () => {
     // Runs last: it deliberately burns whatever slots are left.
+    const mailsBefore = mails.length;
     const ctxs = await Promise.all(
       Array.from({length: 10}, () => pwRequest.newContext({baseURL: test.info().project.use.baseURL}))
     );
@@ -402,15 +480,47 @@ test.describe.serial('magic link · end to end (needs a Resend mock)', () => {
       const results = await Promise.all(
         ctxs.map((c, i) => requestLink(c, RECOVERY_EMAIL, `203.0.113.${100 + i}`))
       );
+      const statuses = results.map((r) => r.status());
       for (const r of results) {
-        expect(r.status()).toBe(200);
-        expect(await r.json()).toEqual({ok: true});
+        expect([200, 429], 'a matched request is either sent (200) or refused honestly (429)').toContain(
+          r.status()
+        );
+        const body = (await r.json()) as {ok?: boolean; error?: string; wait_seconds?: number};
+        if (r.status() === 200) expect(body).toEqual({ok: true});
+        else expect(body.error).toBe('throttled');
       }
       await new Promise((r) => setTimeout(r, 1000));
+
+      // Every 200 for the matching address is exactly one mail, and nothing else sent one.
+      const sentNow = mails.length - mailsBefore;
+      expect(statuses.filter((s) => s === 200).length).toBe(sentNow);
+
       const hourAtEnd = Math.floor(Date.now() / 3_600_000);
-      // 6 slots per clock hour for the whole site; this file crossed an hour boundary at most once.
-      const cap = hourAtEnd === hourAtStart ? 6 : 12;
-      expect(mails.length).toBeLessThanOrEqual(cap);
+      const sameHour = hourAtEnd === hourAtStart;
+      if (sameHour) {
+        // 6 slots for the whole site: 1 sent by the first test + the 5 left, no more, no fewer.
+        expect(mails.length).toBe(6);
+      } else {
+        // The file crossed a clock-hour boundary once: two sets of 6 slots, never beyond.
+        expect(mails.length).toBeGreaterThanOrEqual(6);
+        expect(mails.length).toBeLessThanOrEqual(12);
+      }
+
+      if (sameHour) {
+        // The cap is used up: EVERYONE (matching address or not) now gets the same
+        // honest 429 with the seconds to the next hour, never a silent 200.
+        for (const email of [RECOVERY_EMAIL, 'stranger@example.test']) {
+          const r = await requestLink(ctxs[0], email, randomIp());
+          const stillSameHour = Math.floor(Date.now() / 3_600_000) === hourAtStart;
+          if (!stillSameHour) break;
+          expect(r.status(), email).toBe(429);
+          const body = (await r.json()) as {error?: string; wait_seconds?: number};
+          expect(body.error).toBe('throttled');
+          expect(body.wait_seconds).toBeGreaterThan(0);
+          expect(body.wait_seconds).toBeLessThanOrEqual(3600);
+        }
+        expect(mails.length).toBe(6);
+      }
     } finally {
       await Promise.all(ctxs.map((c) => c.dispose()));
     }

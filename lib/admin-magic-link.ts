@@ -52,13 +52,17 @@ export async function mintMagicToken(): Promise<string | null> {
     .sign(key);
 }
 
+const JTI_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;
+
 export type MagicVerifyResult =
   | {ok: true; jti: string}
-  | {ok: false; reason: 'expired' | 'invalid'};
+  | {ok: false; reason: 'expired'; jti: string | null}
+  | {ok: false; reason: 'invalid'};
 
 /**
  * `expired` is returned only for a token whose signature verified (jose checks
- * the signature before the claims), so it is safe to audit-log; every other
+ * the signature before the claims), so it is safe to audit-log, and it carries
+ * the token id so the log can be limited to one row per token; every other
  * failure is `invalid`.
  */
 export async function verifyMagicToken(token: string): Promise<MagicVerifyResult> {
@@ -72,12 +76,19 @@ export async function verifyMagicToken(token: string): Promise<MagicVerifyResult
     });
     if (payload.scope !== MAGIC_SCOPE) return {ok: false, reason: 'invalid'};
     const jti = payload.jti;
-    if (typeof jti !== 'string' || !/^[A-Za-z0-9_-]{16,64}$/.test(jti)) {
+    if (typeof jti !== 'string' || !JTI_PATTERN.test(jti)) {
       return {ok: false, reason: 'invalid'};
     }
     return {ok: true, jti};
   } catch (e) {
-    if (e instanceof errors.JWTExpired) return {ok: false, reason: 'expired'};
+    if (e instanceof errors.JWTExpired) {
+      const jti = e.payload?.jti;
+      return {
+        ok: false,
+        reason: 'expired',
+        jti: typeof jti === 'string' && JTI_PATTERN.test(jti) ? jti : null
+      };
+    }
     return {ok: false, reason: 'invalid'};
   }
 }
@@ -102,11 +113,15 @@ function memoryClaimsEnabled(): boolean {
   );
 }
 
+function memoryClaims(): Set<string> {
+  const g = globalThis as ClaimGlobal;
+  return (g.__adminMagicClaims ??= new Set<string>());
+}
+
 /** Atomically claims `bucket=admin_magic, key=<key>`; only the first caller gets 'claimed'. */
 async function claimRow(key: string): Promise<ClaimResult> {
   if (memoryClaimsEnabled()) {
-    const g = globalThis as ClaimGlobal;
-    const set = (g.__adminMagicClaims ??= new Set<string>());
+    const set = memoryClaims();
     if (set.has(key)) return 'taken';
     set.add(key);
     return 'claimed';
@@ -127,9 +142,11 @@ async function claimRow(key: string): Promise<ClaimResult> {
   }
 }
 
+const HOUR_MS = 3_600_000;
+
 /** Claims one of the 6 mail slots of the current clock hour. 'taken' = none left. */
 export async function claimSendSlot(nowMs: number = Date.now()): Promise<ClaimResult> {
-  const hour = Math.floor(nowMs / 3_600_000);
+  const hour = Math.floor(nowMs / HOUR_MS);
   for (let n = 0; n < MAGIC_SEND_SLOTS_PER_HOUR; n++) {
     const r = await claimRow(`send:${hour}:${n}`);
     if (r !== 'taken') return r;
@@ -137,12 +154,83 @@ export async function claimSendSlot(nowMs: number = Date.now()): Promise<ClaimRe
   return 'taken';
 }
 
+/**
+ * Read-only: are all 6 slots of the current clock hour used? Slots are claimed
+ * in order 0..5, so slot 5 existing means every slot is gone. This is global
+ * state, independent of any submitted address, so the request route can answer
+ * it honestly (429) to EVERYONE instead of the silent 200 that left the owner
+ * waiting for a mail that was never sent. It is only an early answer: the
+ * atomic claim in claimSendSlot stays the real guard, so a read error here
+ * simply falls through to it.
+ */
+export async function sendSlotsExhausted(nowMs: number = Date.now()): Promise<boolean> {
+  const key = `send:${Math.floor(nowMs / HOUR_MS)}:${MAGIC_SEND_SLOTS_PER_HOUR - 1}`;
+  if (memoryClaimsEnabled()) return memoryClaims().has(key);
+  try {
+    const {data, error} = await supabaseAdmin()
+      .from('rate_limits')
+      .select('key')
+      .eq('bucket', RL_BUCKET)
+      .eq('key', key)
+      .limit(1);
+    if (error) {
+      console.error('[admin-magic] slot check failed', error.message);
+      return false;
+    }
+    return Boolean(data && data.length > 0);
+  } catch (e) {
+    console.error('[admin-magic] slot check failed', e instanceof Error ? e.message : e);
+    return false;
+  }
+}
+
+/** Seconds until the next clock hour, when a fresh set of 6 slots opens. */
+export function secondsUntilNextSlotHour(nowMs: number = Date.now()): number {
+  const next = (Math.floor(nowMs / HOUR_MS) + 1) * HOUR_MS;
+  return Math.max(1, Math.ceil((next - nowMs) / 1000));
+}
+
 /** First caller for this token id wins; everyone else gets 'taken'. */
 export function claimTokenUse(jti: string): Promise<ClaimResult> {
   return claimRow(`used:${jti}`);
 }
 
+/**
+ * True only for the first caller per (token id, reason). Replaying one real
+ * link (expired or already used) must not write one audit row per request, so
+ * the consume route logs a failure only when this claims. A store error means
+ * "do not log": the audit trail is not worth a flood.
+ */
+export async function claimFailureNotice(jti: string, reason: 'expired' | 'used'): Promise<boolean> {
+  return (await claimRow(`failed:${jti}:${reason}`)) === 'claimed';
+}
+
 /* ---------------------------------------------------------------- helpers */
+
+/**
+ * Guard for the two JSON POST routes. A cross-site `<form enctype="text/plain">`
+ * can POST a JSON-looking body without a CORS preflight, so the routes must not
+ * accept anything but a same-origin `application/json` request:
+ *  - `Sec-Fetch-Site` (sent by every current browser) must be `same-origin`
+ *    (or `none`); absent = a non-browser client such as curl or the test
+ *    runner, which is not a CSRF vector, so it passes;
+ *  - the body must declare `application/json` (a cross-site request cannot,
+ *    without a preflight the server never answers).
+ * Returns the error to send, or null when the request may proceed.
+ */
+export function rejectUnsafeJsonPost(
+  headers: Headers
+): {status: 403 | 415; error: 'forbidden' | 'unsupported_media_type'} | null {
+  const site = headers.get('sec-fetch-site')?.trim().toLowerCase();
+  if (site && site !== 'same-origin' && site !== 'none') {
+    return {status: 403, error: 'forbidden'};
+  }
+  const type = headers.get('content-type')?.trim().toLowerCase() ?? '';
+  if (type !== 'application/json' && !type.startsWith('application/json;')) {
+    return {status: 415, error: 'unsupported_media_type'};
+  }
+  return null;
+}
 
 /** Constant-time string equality (hash first so lengths do not matter). */
 export function safeEqual(a: string, b: string): boolean {
@@ -266,15 +354,17 @@ export type SendResult = 'sent' | 'logged' | 'failed';
 
 /**
  * Sends the link through Resend (`POST ${RESEND_API_URL}/emails`).
- * RESEND_API_URL exists so tests can point the dev server at a local mock;
- * leave it unset in production. With neither RESEND_API_KEY nor RESEND_API_URL
- * set, outside production, the link is printed to the server console instead
- * (never in production: a log line there would be a credential in a log).
+ * RESEND_API_URL exists so tests can point the dev server at a local mock; it
+ * is IGNORED in production, so a stray copy of a dev env file can never send
+ * the Resend key and the login link to another host. With neither
+ * RESEND_API_KEY nor RESEND_API_URL set, outside production, the link is
+ * printed to the server console instead (never in production: a log line
+ * there would be a credential in a log).
  */
 export async function sendMagicMail(opts: {to: string; link: string}): Promise<SendResult> {
-  const key = readEnv('RESEND_API_KEY');
-  const apiUrl = readEnv('RESEND_API_URL');
   const isProd = process.env.NODE_ENV === 'production';
+  const key = readEnv('RESEND_API_KEY');
+  const apiUrl = isProd ? '' : readEnv('RESEND_API_URL');
 
   if (!isProd && !key && !apiUrl) {
     console.log('[admin-magic] dev mode, no mail provider — login link:', opts.link);

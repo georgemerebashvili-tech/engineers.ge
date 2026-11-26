@@ -1,6 +1,12 @@
 import {NextResponse, type NextRequest} from 'next/server';
 import {z} from 'zod';
-import {claimTokenUse, ipRateKey, verifyMagicToken} from '@/lib/admin-magic-link';
+import {
+  claimFailureNotice,
+  claimTokenUse,
+  ipRateKey,
+  rejectUnsafeJsonPost,
+  verifyMagicToken
+} from '@/lib/admin-magic-link';
 import {issueSession, getSession} from '@/lib/auth';
 import {readEnv} from '@/lib/admin-session-token';
 import {getIp, logAdminAction} from '@/lib/admin-audit';
@@ -22,6 +28,11 @@ const NO_STORE = {'cache-control': 'no-store'};
  * fails closed — password login keeps working.
  */
 export async function POST(req: NextRequest) {
+  const unsafe = rejectUnsafeJsonPost(req.headers);
+  if (unsafe) {
+    return NextResponse.json({error: unsafe.error}, {status: unsafe.status, headers: NO_STORE});
+  }
+
   // Double click / second tab: already signed in, nothing to consume.
   if (await getSession()) {
     return NextResponse.json({ok: true}, {headers: NO_STORE});
@@ -50,14 +61,20 @@ export async function POST(req: NextRequest) {
   const verdict = await verifyMagicToken(body.t);
   if (!verdict.ok) {
     if (verdict.reason === 'expired') {
-      // The signature verified, so this is a real (old) link: safe to log.
-      await logAdminAction({
-        actor: 'anonymous',
-        action: 'admin.magic_link_failed',
-        target_type: 'admin_magic_link',
-        metadata: {reason: 'expired'},
-        ip
-      });
+      // The signature verified, so this is a real (old) link. Whoever holds it
+      // can replay it forever, so it counts toward the per-IP lock like any
+      // other failure, and is logged once per token, not once per request.
+      await recordFailure('login', failKey);
+      if (verdict.jti && (await claimFailureNotice(verdict.jti, 'expired'))) {
+        await logAdminAction({
+          actor: 'anonymous',
+          action: 'admin.magic_link_failed',
+          target_type: 'admin_magic_link',
+          target_id: verdict.jti,
+          metadata: {reason: 'expired'},
+          ip
+        });
+      }
       return NextResponse.json({error: 'expired'}, {status: 400, headers: NO_STORE});
     }
     // Forged / garbled / wrong key: count it, never log it (no flooding).
@@ -81,14 +98,19 @@ export async function POST(req: NextRequest) {
     );
   }
   if (claim === 'taken') {
-    await logAdminAction({
-      actor: 'anonymous',
-      action: 'admin.magic_link_failed',
-      target_type: 'admin_magic_link',
-      target_id: verdict.jti,
-      metadata: {reason: 'used'},
-      ip
-    });
+    // Same as `expired`: a replayed link counts toward the lock, and is logged
+    // once per token.
+    await recordFailure('login', failKey);
+    if (await claimFailureNotice(verdict.jti, 'used')) {
+      await logAdminAction({
+        actor: 'anonymous',
+        action: 'admin.magic_link_failed',
+        target_type: 'admin_magic_link',
+        target_id: verdict.jti,
+        metadata: {reason: 'used'},
+        ip
+      });
+    }
     return NextResponse.json({error: 'used'}, {status: 400, headers: NO_STORE});
   }
 

@@ -43,7 +43,15 @@ export async function logAdminAction(input: LogInput): Promise<void> {
   }
 }
 
+/**
+ * Client IP for rate limits and the audit log. `x-vercel-forwarded-for` is set
+ * by the platform and cannot be supplied by the client; `x-forwarded-for` is
+ * the fallback (local dev, other hosts) and, behind a proxy that appends rather
+ * than overwrites, its first entry is client-controlled.
+ */
 export function getIp(headers: Headers): string | null {
+  const platform = headers.get('x-vercel-forwarded-for')?.split(',')[0].trim();
+  if (platform) return platform;
   const fwd = headers.get('x-forwarded-for');
   if (fwd) return fwd.split(',')[0].trim();
   return headers.get('x-real-ip')?.trim() ?? null;
