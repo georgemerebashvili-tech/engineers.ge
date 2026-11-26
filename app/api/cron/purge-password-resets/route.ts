@@ -1,4 +1,5 @@
 import {NextResponse, type NextRequest} from 'next/server';
+import {isAuthorizedCron} from '@/lib/cron-auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
@@ -6,14 +7,8 @@ export const dynamic = 'force-dynamic';
 
 // Weekly cron: purge consumed/expired password reset tokens.
 export async function GET(req: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  const authHeader = req.headers.get('authorization') ?? '';
-  const vercelCron = req.headers.get('x-vercel-cron') === '1';
-
-  if (!vercelCron) {
-    if (!secret || authHeader !== `Bearer ${secret}`) {
-      return NextResponse.json({error: 'unauthorized'}, {status: 401});
-    }
+  if (!isAuthorizedCron(req)) {
+    return NextResponse.json({error: 'unauthorized'}, {status: 401});
   }
 
   try {

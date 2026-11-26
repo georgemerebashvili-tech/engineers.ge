@@ -1,4 +1,5 @@
 import {NextResponse, type NextRequest} from 'next/server';
+import {isAuthorizedCron} from '@/lib/cron-auth';
 import {supabaseAdmin} from '@/lib/supabase/admin';
 
 export const runtime = 'nodejs';
@@ -6,16 +7,10 @@ export const dynamic = 'force-dynamic';
 
 // Vercel Cron calls this weekly. Purges stale rate-limit rows (non-locked,
 // older than 30 days) via the purge_rate_limits() RPC.
-// Protected by CRON_SECRET header or x-vercel-cron: 1.
+// Protected by CRON_SECRET (see lib/cron-auth.ts).
 export async function GET(req: NextRequest) {
-  const secret = process.env.CRON_SECRET;
-  const authHeader = req.headers.get('authorization') ?? '';
-  const vercelCron = req.headers.get('x-vercel-cron') === '1';
-
-  if (!vercelCron) {
-    if (!secret || authHeader !== `Bearer ${secret}`) {
-      return NextResponse.json({error: 'unauthorized'}, {status: 401});
-    }
+  if (!isAuthorizedCron(req)) {
+    return NextResponse.json({error: 'unauthorized'}, {status: 401});
   }
 
   try {
