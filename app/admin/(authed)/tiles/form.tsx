@@ -223,14 +223,6 @@ export function HeroAdsForm({initial, initialOwner = HERO_OWNER_DEFAULTS}: Props
                 placeholder="HVAC ინჟინერი · ენტერპრენერი"
               />
             </Field>
-            <Field label="ბიო (bio tile)">
-              <textarea
-                value={owner.bio}
-                onChange={(e) => setOwner((o) => ({...o, bio: e.target.value}))}
-                className="input min-h-[140px] resize-y leading-relaxed"
-                placeholder="ვინ ხარ, რატომ შექმენი საიტი, 3-5 წინადადება"
-              />
-            </Field>
             <Field label="Image URL (auto-filled ატვირთვის შემდეგ)">
               <input
                 type="url"

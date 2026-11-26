@@ -21,7 +21,7 @@ const bi = (ka: string, en: string): Bilingual => ({ka, en});
 
 export const BRAND = bi('გიორგი მერებაშვილი', 'Giorgi Merebashvili');
 
-export const NAV_ARIA_LABEL = 'მთავარი მენიუ';
+export const NAV_ARIA_LABEL = bi('მთავარი მენიუ', 'Main menu');
 
 /** `label` is a plain string for "Sazeo", which the design never translates. */
 export const NAV_LINKS: ReadonlyArray<{href: string; label: Bilingual | string}> = [
@@ -34,7 +34,7 @@ export const NAV_LINKS: ReadonlyArray<{href: string; label: Bilingual | string}>
   {href: '#contact', label: bi('კონტაქტი', 'Contact')}
 ];
 
-export const THEME_BUTTON_LABEL = 'თემის შეცვლა';
+export const THEME_BUTTON_LABEL = bi('თემის შეცვლა', 'Switch theme');
 
 /* -------------------------------------------------------------------- hero */
 
@@ -46,7 +46,7 @@ export const HERO = {
   headline: bi('პროექტიდან მომსახურებამდე', 'From design to service'),
   future: bi('ერთად შევქმნათ უკეთესი მომავალი', 'Let’s build a better future together'),
   cta: bi('ჩემი ისტორია', 'My story'),
-  companiesAriaLabel: 'კომპანიები',
+  companiesAriaLabel: bi('კომპანიები', 'Companies'),
   companiesTitle: bi('კომპანიები და საქმიანობის მიმართულებები', 'Companies and ventures')
 } as const;
 
@@ -95,9 +95,9 @@ export const TIMELINE_COPY = {
     'ინჟინრისა და მეწარმის ისტორია ბავშვობიდან დღემდე.',
     "An engineer's and entrepreneur's journey from childhood to today."
   ),
-  yearsAriaLabel: 'წლების არჩევა',
-  prevYear: 'წინა წელი',
-  nextYear: 'შემდეგი წელი',
+  yearsAriaLabel: bi('წლების არჩევა', 'Choose a year'),
+  prevYear: bi('წინა წელი', 'Previous year'),
+  nextYear: bi('შემდეგი წელი', 'Next year'),
   directionsHeading: bi('ამ წლის მიმართულებები', 'Focus areas this year'),
   help: bi(
     'აირჩიე წელი ან გამოიყენე ისრები. მიმართულებაზე დაჭერით გაიხსნება დეტალები.',
@@ -281,12 +281,14 @@ export const EXPERTISE_ITEMS: readonly ExpertiseItem[] = [
 ];
 
 export const EXPERTISE_COPY = {
-  prevSlide: 'წინა სლაიდი',
-  nextSlide: 'შემდეგი სლაიდი'
+  prevSlide: bi('წინა სლაიდი', 'Previous slide'),
+  nextSlide: bi('შემდეგი სლაიდი', 'Next slide'),
+  /** Appended to the row's name: "პროექტირება — ხუთბარათიანი მოძრავი ბლოკი". */
+  carouselSuffix: bi('ხუთბარათიანი მოძრავი ბლოკი', 'five-card carousel')
 };
 
 export const MODAL_COPY = {
-  close: 'დახურვა',
+  close: bi('დახურვა', 'Close'),
   emptyPhotos: bi('ამ ეტაპის ფოტოები ჯერ დასამატებელია.', 'Images will be added for this milestone.')
 };
 
@@ -312,38 +314,36 @@ export const SAZEO = {
 export const GALLERY_COPY = {
   heading: bi('გალერეა', 'Gallery'),
   sub: bi('სადემონსტრაციო ფოტოები — შესაცვლელია რეალური მასალით.', 'Demo imagery — to be replaced with real project photos.'),
-  back: 'წინა ფოტო',
-  forward: 'შემდეგი ფოტო',
+  back: bi('წინა ფოტო', 'Previous photo'),
+  forward: bi('შემდეგი ფოტო', 'Next photo'),
+  /** Prefix of each card's accessible name; the visible label follows it ("გახსენით ფოტო: პროექტირება"). */
+  openPhoto: bi('გახსენით ფოტო', 'Open photo'),
   modalKicker: 'GALLERY',
   modalText: bi(
     'სადემონსტრაციო ფოტო — რეალური მასალით შესაცვლელია.',
     'Demonstration photo, to be replaced with real content.'
   ),
-  title: 'ფოტოს გადიდება'
+  title: bi('ფოტოს გადიდება', 'Enlarge photo')
 };
 
 /** `label` is a plain string for "BMS / Sazeo", which the design never translates. */
 export const GALLERY_ITEMS: ReadonlyArray<{
   label: Bilingual | string;
-  ariaLabel: string;
   alt: string;
   image: DemoImage;
 }> = [
   {
     label: bi('პროექტირება', 'Design'),
-    ariaLabel: 'გახსენით ფოტო: პროექტირება',
     alt: 'სადემონსტრაციო პროექტის ფოტო',
     image: IMG.design
   },
   {
     label: bi('კონტროლერები', 'Controllers'),
-    ariaLabel: 'გახსენით ფოტო: კონტროლერები',
     alt: 'სადემონსტრაციო კონტროლერის ფოტო',
     image: IMG.controllers
   },
   {
     label: 'BMS / Sazeo',
-    ariaLabel: 'გახსენით ფოტო: BMS / Sazeo',
     alt: 'სადემონსტრაციო BMS ფოტო',
     image: IMG.sazeo
   }

@@ -2,7 +2,7 @@
 
 import clsx from 'clsx';
 import {useEffect, useRef, type ReactNode} from 'react';
-import {MILESTONES, TIMELINE_COPY, YEAR_VALUES, type MilestoneIcon} from './content';
+import {MILESTONES, TIMELINE_COPY, YEAR_VALUES, pick, type Lang, type MilestoneIcon} from './content';
 import {smoothBehavior} from './motion';
 import styles from './portfolio.module.css';
 
@@ -57,7 +57,7 @@ function Glyph({icon}: {icon: MilestoneIcon}) {
  * The year ruler: prev/next buttons, arrow keys while focus is inside it, swipe, milestone icons,
  * and the selected year centred in view.
  */
-export function YearStrip({year, onChange}: {year: number; onChange: (year: number) => void}) {
+export function YearStrip({year, lang, onChange}: {year: number; lang: Lang; onChange: (year: number) => void}) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const centredOnce = useRef(false);
   const touchStartX = useRef<number | null>(null);
@@ -91,7 +91,7 @@ export function YearStrip({year, onChange}: {year: number; onChange: (year: numb
     <div
       className={styles.yearNavigation}
       role="group"
-      aria-label={TIMELINE_COPY.yearsAriaLabel}
+      aria-label={pick(TIMELINE_COPY.yearsAriaLabel, lang)}
       onKeyDown={(event) => {
         if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
         const delta = event.key === 'ArrowRight' ? 1 : -1;
@@ -101,7 +101,7 @@ export function YearStrip({year, onChange}: {year: number; onChange: (year: numb
         move(delta);
       }}
     >
-      <button type="button" className={styles.yearSide} aria-label={TIMELINE_COPY.prevYear} onClick={() => move(-1)}>
+      <button type="button" className={styles.yearSide} aria-label={pick(TIMELINE_COPY.prevYear, lang)} onClick={() => move(-1)}>
         ‹
       </button>
       <div
@@ -141,7 +141,7 @@ export function YearStrip({year, onChange}: {year: number; onChange: (year: numb
           ))}
         </div>
       </div>
-      <button type="button" className={styles.yearSide} aria-label={TIMELINE_COPY.nextYear} onClick={() => move(1)}>
+      <button type="button" className={styles.yearSide} aria-label={pick(TIMELINE_COPY.nextYear, lang)} onClick={() => move(1)}>
         ›
       </button>
     </div>
