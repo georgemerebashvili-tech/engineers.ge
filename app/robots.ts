@@ -1,9 +1,8 @@
 import type {MetadataRoute} from 'next';
+import {canonicalSiteUrl} from '@/lib/site-url';
 
 export default function robots(): MetadataRoute.Robots {
-  const base =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://engineers.ge');
+  const base = canonicalSiteUrl();
 
   return {
     rules: [

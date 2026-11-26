@@ -1,10 +1,9 @@
 import type {MetadataRoute} from 'next';
 import {CALCULATORS} from '@/lib/calculators';
+import {canonicalSiteUrl} from '@/lib/site-url';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://engineers.ge');
+  const base = canonicalSiteUrl();
 
   const now = new Date();
 
