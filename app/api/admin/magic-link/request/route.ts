@@ -7,8 +7,11 @@ import {
   ipRateKey,
   magicLinkOrigin,
   mintMagicToken,
+  rejectUnsafeJsonPost,
   safeEqual,
-  sendMagicMail
+  secondsUntilNextSlotHour,
+  sendMagicMail,
+  sendSlotsExhausted
 } from '@/lib/admin-magic-link';
 import {readEnv} from '@/lib/admin-session-token';
 import {getIp, logAdminAction} from '@/lib/admin-audit';
@@ -23,16 +26,39 @@ const Body = z.object({
 
 const OK = () => NextResponse.json({ok: true});
 
+const hourlyLimit = () => {
+  const wait = secondsUntilNextSlotHour();
+  return NextResponse.json(
+    {error: 'throttled', wait_seconds: wait},
+    {status: 429, headers: {'retry-after': String(wait)}}
+  );
+};
+
 /**
  * POST /api/admin/magic-link/request {email}
  *
  * Sends a one-time login link, but only when `email` equals
- * ADMIN_RECOVERY_EMAIL. Every request that gets past the per-IP gap answers
- * `200 {ok:true}` whether or not the address matched (no account oracle); the
- * only non-200 answers are global states (not configured, throttled, provider
- * down, store down) — see the notes on each branch.
+ * ADMIN_RECOVERY_EMAIL. Every request that gets past the per-IP gap and the
+ * hourly cap answers `200 {ok:true}` whether or not the address matched (no
+ * account oracle); the only non-200 answers are global states (not
+ * configured, throttled, provider down, store down) — see the notes on each
+ * branch.
+ *
+ * The hourly cap (6 mails per clock hour for the whole site) is answered
+ * honestly: once it is used up EVERY request gets `429 throttled` with the
+ * seconds to the next hour, whatever address it carries. A silent 200 there
+ * would tell the owner "sent" while nothing was sent, and anyone who knows the
+ * address could use the 6 slots up and keep him out without a sign. The price:
+ * someone guessing addresses learns a guess was right once the cap trips (it
+ * costs him 6 mails to the owner and 6 minutes per guess from one IP); an
+ * address is not a secret, so that is accepted. If the owner is ever locked out
+ * this way the fallbacks are the password login, or rotating ADMIN_PASS_HASH in
+ * the Vercel environment.
  */
 export async function POST(req: NextRequest) {
+  const unsafe = rejectUnsafeJsonPost(req.headers);
+  if (unsafe) return NextResponse.json({error: unsafe.error}, {status: unsafe.status});
+
   let body: z.infer<typeof Body>;
   try {
     body = Body.parse(await req.json());
@@ -73,16 +99,21 @@ export async function POST(req: NextRequest) {
     return OK();
   }
 
+  // Hourly cap already used up → say so, to everybody, before looking at the
+  // address (global state, so it reveals nothing about any mailbox).
+  if (await sendSlotsExhausted()) return hourlyLimit();
+
   if (!safeEqual(body.email, recoveryEmail)) return OK();
 
   // Matched: at most 6 mails per clock hour for the whole site, claimed
-  // atomically. No slot left → send nothing, still 200 (no oracle). A store
-  // error → send nothing and say so (only reachable on a match, accepted).
+  // atomically. The slot can still be gone here when requests race for the
+  // last one → the same honest 429. A store error → send nothing and say so
+  // (only reachable on a match, accepted).
   const slot = await claimSendSlot();
   if (slot === 'error') {
     return NextResponse.json({error: 'temporarily_unavailable'}, {status: 503});
   }
-  if (slot === 'taken') return OK();
+  if (slot === 'taken') return hourlyLimit();
 
   const token = await mintMagicToken();
   if (!token) {

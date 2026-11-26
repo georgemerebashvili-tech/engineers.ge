@@ -47,12 +47,17 @@ async function gateDmt(req: NextRequest): Promise<NextResponse | null> {
 // before rendering, i.e. here. The layouts keep their own getSession() checks
 // as defence in depth.
 //
-// Gated: every /admin/* page except the public ones below, plus /sazeo/* and
-// /tag-console/*. /sazeo/api/* is NOT gated here: `events` (developer bearer
+// Gated: every /admin/* page except the public ones below, plus /sazeo/*,
+// /tag-console/* and /audit.sazeo (the page AND its static blueprints under
+// public/audit.sazeo, which this proxy answers before the file is served).
+// A root also matches when followed by `.` and not only `/` (`/sazeo.rsc`,
+// `/sazeo.segments/_tree.segment.rsc`: Next's RSC and segment-prefetch
+// variants of the same page), so a future change to those features cannot
+// reopen the leak. /sazeo/api/* is NOT gated here: `events` (developer bearer
 // token) and `github-webhook` (HMAC) are machine endpoints that authenticate
 // themselves, the other three check getSession() and answer 401 JSON.
-// Not covered: /audit.sazeo (no gate in its layout either) and /api/* (the
-// matcher excludes it; every admin route checks getSession() itself).
+// Not covered: /api/* (the matcher excludes it; every admin route checks
+// getSession() itself).
 const PUBLIC_ADMIN_PATHS = new Set(['/admin', '/admin/forgot', '/admin/magic']);
 
 function canonicalPath(pathname: string): string {
@@ -66,13 +71,18 @@ function canonicalPath(pathname: string): string {
   return p || '/';
 }
 
+/** `/root`, `/root/...` and the dotted variants `/root.rsc`, `/root.segments/...`. */
+function isUnder(p: string, root: string): boolean {
+  return p === root || p.startsWith(root + '/') || p.startsWith(root + '.');
+}
+
 function isAdminGatedPath(pathname: string): boolean {
   const p = canonicalPath(pathname);
-  if (p === '/admin' || p.startsWith('/admin/')) return !PUBLIC_ADMIN_PATHS.has(p);
-  if (p === '/sazeo' || p.startsWith('/sazeo/')) {
+  if (isUnder(p, '/admin')) return !PUBLIC_ADMIN_PATHS.has(p);
+  if (isUnder(p, '/sazeo')) {
     return !(p === '/sazeo/api' || p.startsWith('/sazeo/api/'));
   }
-  return p === '/tag-console' || p.startsWith('/tag-console/');
+  return isUnder(p, '/tag-console') || isUnder(p, '/audit.sazeo');
 }
 
 async function gateAdmin(req: NextRequest): Promise<NextResponse | null> {

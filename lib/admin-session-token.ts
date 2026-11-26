@@ -111,7 +111,10 @@ export async function verifyAdminToken(
   try {
     const {payload} = await jwtVerify(token, key, {
       algorithms: ['HS256'],
-      audience: ADMIN_AUDIENCE
+      audience: ADMIN_AUDIENCE,
+      // A session without `exp` would never expire: require it, so the 7-day
+      // bound holds even if a future signing path forgets setExpirationTime.
+      requiredClaims: ['exp']
     });
     if (payload.scope !== ADMIN_SCOPE) return null;
     if (payload.sub !== adminUser) return null;

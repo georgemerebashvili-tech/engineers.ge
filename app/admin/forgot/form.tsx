@@ -10,6 +10,12 @@ const ERRORS: Record<string, string> = {
   send_failed: 'წერილი ვერ გაიგზავნა — სცადე მოგვიანებით'
 };
 
+/** Short gap between two requests → seconds; the hourly mail limit → minutes plus the password fallback. */
+function waitMessage(seconds: number): string {
+  if (seconds <= 90) return `დაიცადე ${seconds} წამი`;
+  return `მეილების საათობრივი ლიმიტი ამოიწურა — სცადე ${Math.ceil(seconds / 60)} წუთში ან შედი პაროლით`;
+}
+
 export function ForgotForm() {
   const [email, setEmail] = useState('');
   const [msg, setMsg] = useState<{kind: 'ok' | 'err'; text: string} | null>(null);
@@ -35,7 +41,7 @@ export function ForgotForm() {
         wait_seconds?: number;
       };
       if (res.status === 429) {
-        setMsg({kind: 'err', text: `დაიცადე ${data.wait_seconds ?? 60} წამი`});
+        setMsg({kind: 'err', text: waitMessage(data.wait_seconds ?? 60)});
         return;
       }
       if (!res.ok) {
