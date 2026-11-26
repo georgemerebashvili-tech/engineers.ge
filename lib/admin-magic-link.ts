@@ -353,17 +353,30 @@ export function renderMagicMail(link: string): {subject: string; html: string; t
 export type SendResult = 'sent' | 'logged' | 'failed';
 
 /**
+ * The admin login mail has its OWN key and sender: `ADMIN_MAIL_RESEND_API_KEY`
+ * and `ADMIN_MAIL_FROM` — never the site-wide `RESEND_API_KEY` / `MAIL_FROM`.
+ * Measured 27.11.2026: setting the site-wide key to enable this one mail
+ * switched on ~10 other dormant mail flows at once (user e-mail verification
+ * and password reset, TBC/construction onboarding passwords and resets, tender
+ * announcements to suppliers), all sending from the admin's sender domain.
+ * A dedicated variable keeps enabling admin sign-in from enabling anything else.
+ */
+export function adminMailKey(): string {
+  return readEnv('ADMIN_MAIL_RESEND_API_KEY');
+}
+
+/**
  * Sends the link through Resend (`POST ${RESEND_API_URL}/emails`).
  * RESEND_API_URL exists so tests can point the dev server at a local mock; it
  * is IGNORED in production, so a stray copy of a dev env file can never send
  * the Resend key and the login link to another host. With neither
- * RESEND_API_KEY nor RESEND_API_URL set, outside production, the link is
- * printed to the server console instead (never in production: a log line
- * there would be a credential in a log).
+ * ADMIN_MAIL_RESEND_API_KEY nor RESEND_API_URL set, outside production, the
+ * link is printed to the server console instead (never in production: a log
+ * line there would be a credential in a log).
  */
 export async function sendMagicMail(opts: {to: string; link: string}): Promise<SendResult> {
   const isProd = process.env.NODE_ENV === 'production';
-  const key = readEnv('RESEND_API_KEY');
+  const key = adminMailKey();
   const apiUrl = isProd ? '' : readEnv('RESEND_API_URL');
 
   if (!isProd && !key && !apiUrl) {
@@ -371,7 +384,7 @@ export async function sendMagicMail(opts: {to: string; link: string}): Promise<S
     return 'logged';
   }
 
-  const from = readEnv('MAIL_FROM') || DEFAULT_MAIL_FROM;
+  const from = readEnv('ADMIN_MAIL_FROM') || DEFAULT_MAIL_FROM;
   const mail = renderMagicMail(opts.link);
   const base = (apiUrl || DEFAULT_RESEND_URL).replace(/\/+$/, '');
   try {

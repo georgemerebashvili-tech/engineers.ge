@@ -119,12 +119,16 @@ export default async function LaunchChecklistPage() {
           howTo: 'ADMIN_PASS_HASH-ის გენერაცია: `node -e "require(\'bcryptjs\').hash(\'YOUR_PASS\',10).then(console.log)"`. Vercel env-ში შეინახე.'
         },
         {
-          label: 'ADMIN_RECOVERY_EMAIL',
-          status: envStatus('ADMIN_RECOVERY_EMAIL'),
+          label: 'ADMIN_RECOVERY_EMAIL + ADMIN_MAIL_RESEND_API_KEY',
+          status:
+            envStatus('ADMIN_RECOVERY_EMAIL') === 'done' &&
+            envStatus('ADMIN_MAIL_RESEND_API_KEY') === 'done'
+              ? 'done'
+              : 'pending',
           detail:
-            'ერთადერთი მისამართი რომელიც `/admin/forgot`-ზე მეილით შესვლის (magic link) ბმულს იღებს. საჭიროებს RESEND_API_KEY-ს; VERCEL_TOKEN/VERCEL_PROJECT_ID არ სჭირდება.',
+            'ერთადერთი მისამართი რომელიც `/admin/forgot`-ზე მეილით შესვლის (magic link) ბმულს იღებს. ამ წერილს საკუთარი გასაღები აქვს (`ADMIN_MAIL_RESEND_API_KEY`, `ADMIN_MAIL_FROM`) — საერთო RESEND_API_KEY-ს არ კითხულობს, რადგან ის ~10 სხვა მეილის ფუნქციას რთავს. VERCEL_TOKEN/VERCEL_PROJECT_ID არ სჭირდება.',
           howTo:
-            'Vercel → Env Variables → Production: `ADMIN_RECOVERY_EMAIL=your@email.com`.'
+            'Vercel → Env Variables → Production: `ADMIN_RECOVERY_EMAIL`, `ADMIN_MAIL_RESEND_API_KEY` (Resend, sending-only), `ADMIN_MAIL_FROM`.'
         },
         {
           label: 'VERCEL_TOKEN + VERCEL_PROJECT_ID (+optional TEAM_ID, DEPLOY_HOOK_URL)',

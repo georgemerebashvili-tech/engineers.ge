@@ -33,10 +33,15 @@ told the user "sent" anyway. Replaced by a single-use sign-in link:
 - **Rejected: binding the link to the requesting browser (nonce cookie).** Anyone can trigger a fresh link into the
   mailbox, so binding protects only against someone who sees the link but not the mailbox — while it breaks the
   phone / mail-app in-app-browser case for the owner. Short TTL + single use + fragment + click-to-confirm instead.
-- Config (production env): `ADMIN_RECOVERY_EMAIL=ceo@sazeo.io` (owner's choice, 26.11.2026), `RESEND_API_KEY` (not yet —
-  owner chose a new password first), `MAIL_FROM` (Resend test sender `onboarding@resend.dev` works only for the Resend
-  account's own address; otherwise verify the domain). Until the key exists the page says plainly that e-mail sign-in is
-  not enabled (503 `email_not_configured`).
+- Config (production env): `ADMIN_RECOVERY_EMAIL=ceo@sazeo.io` (owner's choice, 26.11.2026),
+  **`ADMIN_MAIL_RESEND_API_KEY` + `ADMIN_MAIL_FROM` — its own variables, never the site-wide `RESEND_API_KEY`/`MAIL_FROM`.**
+  Measured 27.11.2026: setting the site-wide key to enable this one mail switched on ~10 dormant mail flows at once
+  (user verification/reset, TBC/construction onboarding passwords and resets, tender mails to suppliers), all sending
+  from `sazeo.io`; it was removed again within ~15 min (Resend log: only the admin link went out in that window).
+  Key = a Resend key on the Sazeo account (owner: „sazeo გამოიყენე"), `sending_access`, restricted to `sazeo.io`,
+  named „engineers.ge ADMIN_MAIL (magic link only…)" — revocable without touching Sazeo's own keys. Sender
+  `engineers.ge <no-reply@sazeo.io>`. Without the key the page says plainly that e-mail sign-in is not enabled (503).
+  The site-wide `RESEND_API_KEY` stays unset: turning on the user/TBC/construction mails is a separate owner decision.
 - `/admin/password` (needs `VERCEL_TOKEN`/`VERCEL_PROJECT_ID`, absent in production) now says so before the user types.
 
 ## 2026-11-27 — `/georgemerebashvili` portfolio = the owner's own design, standalone
