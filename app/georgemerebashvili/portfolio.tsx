@@ -5,6 +5,7 @@ import Image from 'next/image';
 import {Fragment, useCallback, useEffect, useState} from 'react';
 import {useTheme} from '@/components/theme-provider';
 import {
+  AWARD_ITEMS,
   AWARDS,
   BRAND,
   COMPANIES,
@@ -17,7 +18,6 @@ import {
   SAZEO,
   THEME_BUTTON_LABEL,
   TIMELINE_COPY,
-  IMG,
   pick,
   resolveText,
   type Lang
@@ -163,14 +163,13 @@ export function Portfolio({initialLang}: {initialLang: Lang}) {
                   <div
                     key={company.name}
                     className={clsx(styles.companyCard, company.selected && styles.selected)}
-                    title={company.title}
                   >
                     <div className={styles.companyThumb}>
                       <Image
                         src={company.image.src}
                         width={company.image.width}
                         height={company.image.height}
-                        alt={company.alt}
+                        alt={pick(company.alt, lang)}
                         unoptimized
                       />
                     </div>
@@ -192,9 +191,10 @@ export function Portfolio({initialLang}: {initialLang: Lang}) {
             </div>
             <YearStrip year={year} lang={lang} onChange={setYear} />
           </div>
-          <ExpertiseRows lang={lang} year={year} onOpenModal={openModal} />
+          {/* right under the strip: a year's story must appear where the year was picked, not below five carousels */}
           <StoryCard year={year} lang={lang} onOpenModal={openModal} />
           <p className={styles.timelineHelp}>{pick(TIMELINE_COPY.help, lang)}</p>
+          <ExpertiseRows lang={lang} year={year} onOpenModal={openModal} />
         </section>
 
         <section className={styles.sazeo} id="sazeo">
@@ -214,29 +214,36 @@ export function Portfolio({initialLang}: {initialLang: Lang}) {
               <div key={highlight.en}>{pick(highlight, lang)}</div>
             ))}
           </div>
-          <Image src={IMG.sazeo.src} width={IMG.sazeo.width} height={IMG.sazeo.height} alt={SAZEO.imageAlt} unoptimized />
+          <Image
+            className={styles.sazeoMark}
+            src={SAZEO.image.src}
+            width={SAZEO.image.width}
+            height={SAZEO.image.height}
+            alt={pick(SAZEO.imageAlt, lang)}
+            unoptimized
+          />
         </section>
 
         <Gallery lang={lang} onOpenModal={openModal} />
 
-        <section className={clsx(styles.lower, styles.white)} id="awards">
-          <h2 className={styles.sectionHeading}>{pick(AWARDS.heading, lang)}</h2>
-          <p className={styles.sectionSub}>{pick(AWARDS.sub, lang)}</p>
-          <div className={styles.awardGrid}>
-            {AWARDS.cards.map((card) => (
-              <div key={card.title.en} className={styles.awardCard}>
-                <strong>{pick(card.title, lang)}</strong>
-                <span className={styles.demoPill}>{AWARDS.pill}</span>
-                <p>{pick(card.text, lang)}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* no verified awards yet: no section (and no nav link, see NAV_LINKS) */}
+        {AWARD_ITEMS.length > 0 && (
+          <section className={clsx(styles.lower, styles.white)} id="awards">
+            <h2 className={styles.sectionHeading}>{pick(AWARDS.heading, lang)}</h2>
+            <div className={styles.awardGrid}>
+              {AWARD_ITEMS.map((card) => (
+                <div key={card.title.en} className={styles.awardCard}>
+                  <strong>{pick(card.title, lang)}</strong>
+                  <p>{pick(card.text, lang)}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className={styles.contact} id="contact">
           <h2>{pick(CONTACT.heading, lang)}</h2>
           <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>
-          <p>{pick(CONTACT.note, lang)}</p>
         </section>
       </main>
 

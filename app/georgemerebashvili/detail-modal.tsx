@@ -2,14 +2,14 @@
 
 import Image from 'next/image';
 import {useEffect, useId, useRef} from 'react';
-import {MODAL_COPY, pick, resolveText, type Bilingual, type DemoImage, type Lang} from './content';
+import {MODAL_COPY, pick, resolveText, type Bilingual, type Lang, type PortfolioImage} from './content';
 import styles from './portfolio.module.css';
 
 export type ModalContent = {
   kicker: string;
   title: Bilingual | string;
   text: Bilingual | string;
-  images: readonly DemoImage[];
+  images: readonly PortfolioImage[];
 };
 
 /** What the page keeps while a dialog is open: its content and the control that opened it. */
@@ -23,7 +23,7 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabi
  * The design's detail dialog (expertise cards, year directions, gallery photos), with the focus
  * handling the design lacked: focus moves into the dialog on open, Tab stays inside it, and focus
  * returns to the control that opened it on close. Escape, the backdrop and × close it; the page
- * behind does not scroll while it is open.
+ * behind does not scroll while it is open. Text and photos are drawn only when there are some.
  */
 export function DetailModal({
   content,
@@ -82,6 +82,7 @@ export function DetailModal({
   };
 
   const title = resolveText(content.title, lang);
+  const text = resolveText(content.text, lang);
 
   return (
     <div className={styles.modal}>
@@ -100,16 +101,14 @@ export function DetailModal({
         </button>
         <span className={styles.storyKicker}>{content.kicker}</span>
         <h2 id={titleId}>{title}</h2>
-        <p>{resolveText(content.text, lang)}</p>
-        <div className={styles.modalGrid}>
-          {content.images.length === 0 ? (
-            <div className={styles.emptyPhoto}>{pick(MODAL_COPY.emptyPhotos, lang)}</div>
-          ) : (
-            content.images.map((image) => (
+        {text && <p>{text}</p>}
+        {content.images.length > 0 && (
+          <div className={styles.modalGrid}>
+            {content.images.map((image) => (
               <Image key={image.src} src={image.src} width={image.width} height={image.height} alt={title} unoptimized />
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
