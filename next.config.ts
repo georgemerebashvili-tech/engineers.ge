@@ -99,7 +99,10 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {source: '/admin/:path*', headers: [...SECURITY_HEADERS, ...ADMIN_FRAME_HEADER]},
-      {source: '/((?!admin).*)', headers: [...SECURITY_HEADERS, ...DEFAULT_FRAME_HEADER]}
+      {source: '/((?!admin).*)', headers: [...SECURITY_HEADERS, ...DEFAULT_FRAME_HEADER]},
+      // Magic-link landing page: nothing about it should leave in a Referer.
+      // Listed last on purpose — when two rules set the same header the last wins.
+      {source: '/admin/magic', headers: [{key: 'Referrer-Policy', value: 'no-referrer'}]}
     ];
   }
 };

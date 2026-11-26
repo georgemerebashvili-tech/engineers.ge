@@ -115,7 +115,7 @@ export function LoginForm() {
           href="/admin/forgot"
           className="text-xs text-fg-muted hover:text-accent hover:underline"
         >
-          დაგავიწყდა პაროლი?
+          დაგავიწყდა პაროლი? შედი მეილით
         </Link>
       </div>
     </form>

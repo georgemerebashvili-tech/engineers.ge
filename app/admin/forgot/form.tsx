@@ -3,6 +3,13 @@
 import Link from 'next/link';
 import {useState, useTransition} from 'react';
 
+const ERRORS: Record<string, string> = {
+  email_not_configured: 'მეილით შესვლა ჯერ არ არის ჩართული',
+  temporarily_unavailable:
+    'სერვერი დროებით ვერ ამოწმებს — სცადე მოგვიანებით ან შედი პაროლით',
+  send_failed: 'წერილი ვერ გაიგზავნა — სცადე მოგვიანებით'
+};
+
 export function ForgotForm() {
   const [email, setEmail] = useState('');
   const [msg, setMsg] = useState<{kind: 'ok' | 'err'; text: string} | null>(null);
@@ -12,26 +19,35 @@ export function ForgotForm() {
     e.preventDefault();
     setMsg(null);
     start(async () => {
-      const res = await fetch('/api/admin/password-reset/request', {
-        method: 'POST',
-        headers: {'content-type': 'application/json'},
-        body: JSON.stringify({email})
-      });
-      if (res.status === 429) {
-        const data = (await res.json().catch(() => ({}))) as {wait_seconds?: number};
-        setMsg({
-          kind: 'err',
-          text: `ძალიან ხშირად ცდილობ. სცადე ${data.wait_seconds ?? 120} წმ-ში.`
+      let res: Response;
+      try {
+        res = await fetch('/api/admin/magic-link/request', {
+          method: 'POST',
+          headers: {'content-type': 'application/json'},
+          body: JSON.stringify({email})
         });
+      } catch {
+        setMsg({kind: 'err', text: 'კავშირი ვერ დამყარდა — სცადე მოგვიანებით'});
+        return;
+      }
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        wait_seconds?: number;
+      };
+      if (res.status === 429) {
+        setMsg({kind: 'err', text: `დაიცადე ${data.wait_seconds ?? 60} წამი`});
         return;
       }
       if (!res.ok) {
-        setMsg({kind: 'err', text: 'მოთხოვნა ვერ გაიგზავნა.'});
+        setMsg({
+          kind: 'err',
+          text: ERRORS[data.error ?? ''] ?? 'მოთხოვნა ვერ გაიგზავნა.'
+        });
         return;
       }
       setMsg({
         kind: 'ok',
-        text: 'თუ მისამართი სწორია, აღდგენის ბმული გაგზავნილია ელფოსტაზე. შეამოწმე Inbox / Spam.'
+        text: 'თუ მისამართი სწორია, შესასვლელი ბმული გაგზავნილია ელფოსტაზე. შეამოწმე Inbox / Spam. ბმული მოქმედებს 15 წუთი.'
       });
       setEmail('');
     });
@@ -41,7 +57,7 @@ export function ForgotForm() {
     <form onSubmit={submit} className="space-y-4">
       <div className="space-y-1">
         <label htmlFor="recovery-email" className="text-sm">
-          აღდგენის ელფოსტა
+          ადმინის ელფოსტა
         </label>
         <input
           id="recovery-email"
@@ -54,11 +70,12 @@ export function ForgotForm() {
           required
         />
         <p className="text-xs text-fg-muted">
-          მხოლოდ ADMIN_RECOVERY_EMAIL-ზე რეგისტრირებული მისამართი მიიღებს ბმულს.
+          ბმულს მიიღებს მხოლოდ ადმინის მისამართი. ბმული მოქმედებს 15 წუთი და მხოლოდ ერთხელ.
         </p>
       </div>
       {msg && (
         <p
+          role="status"
           className={`text-sm ${
             msg.kind === 'ok' ? 'text-emerald-600' : 'text-danger'
           }`}
@@ -71,7 +88,7 @@ export function ForgotForm() {
         disabled={pending}
         className="w-full rounded-lg bg-accent text-accent-fg py-2 font-medium disabled:opacity-60"
       >
-        {pending ? '…' : 'აღდგენის ბმულის გამოგზავნა'}
+        {pending ? '…' : 'ბმულის გამოგზავნა'}
       </button>
       <div className="text-center">
         <Link href="/admin" className="text-xs text-fg-muted hover:underline">
