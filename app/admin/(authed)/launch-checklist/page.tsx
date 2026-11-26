@@ -122,7 +122,7 @@ export default async function LaunchChecklistPage() {
           label: 'ADMIN_RECOVERY_EMAIL',
           status: envStatus('ADMIN_RECOVERY_EMAIL'),
           detail:
-            'ერთადერთი მისამართი რომელიც `/admin/forgot`-ის ბმულებს იღებს. საჭიროებს RESEND_API_KEY-ს და VERCEL_TOKEN/VERCEL_PROJECT_ID-ს.',
+            'ერთადერთი მისამართი რომელიც `/admin/forgot`-ზე მეილით შესვლის (magic link) ბმულს იღებს. საჭიროებს RESEND_API_KEY-ს; VERCEL_TOKEN/VERCEL_PROJECT_ID არ სჭირდება.',
           howTo:
             'Vercel → Env Variables → Production: `ADMIN_RECOVERY_EMAIL=your@email.com`.'
         },
@@ -134,7 +134,7 @@ export default async function LaunchChecklistPage() {
               ? 'done'
               : 'pending',
           detail:
-            'საჭიროა admin პაროლის შეცვლისთვის (`/admin/password`) და აღდგენისთვის (`/admin/reset`) — rotate-ს Vercel env API-ზე.',
+            'საჭიროა მხოლოდ admin პაროლის შეცვლისთვის (`/admin/password`) — rotate-ს Vercel env API-ზე. მეილით შესვლას (`/admin/forgot`) არ სჭირდება.',
           howTo:
             'Token: https://vercel.com/account/tokens (scope: Full Account). Project ID: Vercel → Settings → General. Optional DEPLOY_HOOK_URL triggers auto-redeploy after rotation.'
         },
