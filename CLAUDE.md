@@ -93,7 +93,8 @@ User-მა მოგცა **სრული autonomous execution** უფლ�
 
 The portfolio page is a 1:1 port of the owner-supplied HTML design: standalone route outside `(withSidebar)`, its own
 palette (CSS variables on the page root) and Noto Sans Georgian. `docs/DESIGN_RULES.md` does not apply to this page;
-content changes only on the owner's word (`docs/TODO.md` → „პორტფოლიო … შესავსები").
+content changes only on the owner's word (`docs/TODO.md` → „პორტფოლიო … შესავსები"). Nothing placeholder-like may
+reach the screen: an empty section is not rendered (owner, 27.11.2026).
 
 ## პრიორიტეტი (pipeline)
 
