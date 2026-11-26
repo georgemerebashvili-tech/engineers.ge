@@ -2,6 +2,7 @@ import {NextResponse, type NextRequest} from 'next/server';
 import {z} from 'zod';
 import {
   MAGIC_IP_GAP_MS,
+  adminMailKey,
   buildMagicLink,
   claimSendSlot,
   ipRateKey,
@@ -72,7 +73,8 @@ export async function POST(req: NextRequest) {
     Boolean(recoveryEmail) &&
     Boolean(readEnv('ADMIN_USER')) &&
     Boolean(process.env.AUTH_SECRET?.trim()) &&
-    (!isProd || Boolean(readEnv('RESEND_API_KEY')));
+    // Its own key, never the site-wide RESEND_API_KEY (see adminMailKey).
+    (!isProd || Boolean(adminMailKey()));
 
   // Global configuration state, independent of the submitted address, so it
   // reveals nothing about any mailbox.
