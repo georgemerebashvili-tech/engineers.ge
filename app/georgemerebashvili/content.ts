@@ -2,8 +2,8 @@
  * Text and data of /georgemerebashvili, ported verbatim from the owner's supplied design
  * (data-ka / data-en pairs in the markup, timelineData / expertiseItems in its script).
  *
- * Placeholder wording ("შესავსებია", "DEMO", "სადემონსტრაციო", "KAIA", the footer) is deliberately
- * kept as written: the owner decides those. Nothing in this file is plain site copy.
+ * Placeholder wording ("შესავსებია", "DEMO", "სადემონსტრაციო", the footer) is deliberately kept as
+ * written: the owner decides those. The design's "KAIA" was corrected to "KAYA" on the owner's word (27.11.2026).
  */
 
 export type Lang = 'ka' | 'en';
@@ -69,7 +69,7 @@ export const COMPANIES: ReadonlyArray<{
   alt: string;
   image: DemoImage;
 }> = [
-  {name: 'KAIA', monogram: 'K', title: DEMO_PHOTO_TITLE, alt: 'სადემონსტრაციო ფოტო — KAIA', image: IMG.design},
+  {name: 'KAYA', monogram: 'K', title: DEMO_PHOTO_TITLE, alt: 'სადემონსტრაციო ფოტო — KAYA', image: IMG.design},
   {
     name: 'Sazeo',
     monogram: 'S',
@@ -79,10 +79,10 @@ export const COMPANIES: ReadonlyArray<{
     image: IMG.sazeo
   },
   {
-    name: 'KAIA Engineering',
+    name: 'KAYA Engineering',
     monogram: 'K',
     title: DEMO_PHOTO_TITLE,
-    alt: 'სადემონსტრაციო ფოტო — KAIA Engineering',
+    alt: 'სადემონსტრაციო ფოტო — KAYA Engineering',
     image: IMG.controllers
   }
 ];
