@@ -131,7 +131,13 @@ export function YearStrip({year, lang, onChange}: {year: number; lang: Lang; onC
               {MILESTONES[value] && (
                 <span className={styles.milestoneIcons}>
                   {MILESTONES[value].map(({icon, label}) => (
-                    <span key={icon + label} className={styles.milestonePill} title={label} role="img" aria-label={label}>
+                    <span
+                      key={icon + label.en}
+                      className={styles.milestonePill}
+                      title={pick(label, lang)}
+                      role="img"
+                      aria-label={pick(label, lang)}
+                    >
                       <Glyph icon={icon} />
                     </span>
                   ))}

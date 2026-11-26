@@ -9,14 +9,16 @@ import styles from './portfolio.module.css';
 
 const SCROLL_STEP = 380;
 
+/** The photo strip. With no items it renders nothing (the nav link goes with it, see NAV_LINKS). */
 export function Gallery({lang, onOpenModal}: {lang: Lang; onOpenModal: OpenModalHandler}) {
   const stripRef = useRef<HTMLDivElement>(null);
   const scroll = (left: number) => stripRef.current?.scrollBy({left, behavior: smoothBehavior()});
 
+  if (GALLERY_ITEMS.length === 0) return null;
+
   return (
     <section className={styles.lower} id="gallery">
       <h2 className={styles.sectionHeading}>{pick(GALLERY_COPY.heading, lang)}</h2>
-      <p className={styles.sectionSub}>{pick(GALLERY_COPY.sub, lang)}</p>
       <div className={styles.galleryWrap}>
         <div ref={stripRef} className={styles.galleryStrip}>
           {GALLERY_ITEMS.map((item) => {
@@ -34,7 +36,7 @@ export function Gallery({lang, onOpenModal}: {lang: Lang; onOpenModal: OpenModal
                     {
                       kicker: GALLERY_COPY.modalKicker,
                       title: label,
-                      text: pick(GALLERY_COPY.modalText, lang),
+                      text: '',
                       images: [item.image]
                     },
                     event.currentTarget

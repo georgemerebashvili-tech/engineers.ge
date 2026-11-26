@@ -1,9 +1,13 @@
 /**
- * Text and data of /georgemerebashvili, ported verbatim from the owner's supplied design
+ * Text and data of /georgemerebashvili, ported from the owner's supplied design
  * (data-ka / data-en pairs in the markup, timelineData / expertiseItems in its script).
  *
- * Placeholder wording ("შესავსებია", "DEMO", "სადემონსტრაციო", the footer) is deliberately kept as
- * written: the owner decides those. The design's "KAIA" was corrected to "KAYA" on the owner's word (27.11.2026).
+ * Placeholders are not shown (owner's word, 27.11.2026): a year without real content is not offered
+ * on the strip, and a section without real items (gallery, awards) renders nothing and drops its nav
+ * link. The data shapes stay, so adding a year to TIMELINE_DATA / MILESTONES, an item to
+ * GALLERY_ITEMS or a card to AWARD_ITEMS brings it back without touching a component. Nothing here
+ * may be invented: only what the owner stated or what is verified goes in. The design's "KAIA" was
+ * corrected to "KAYA" on the owner's word (27.11.2026).
  */
 
 export type Lang = 'ka' | 'en';
@@ -23,17 +27,6 @@ export const BRAND = bi('გიორგი მერებაშვილი', 
 
 export const NAV_ARIA_LABEL = bi('მთავარი მენიუ', 'Main menu');
 
-/** `label` is a plain string for "Sazeo", which the design never translates. */
-export const NAV_LINKS: ReadonlyArray<{href: string; label: Bilingual | string}> = [
-  {href: '#home', label: bi('მთავარი', 'Home')},
-  {href: '#timeline', label: bi('თაიმლაინი', 'Timeline')},
-  {href: '#expertise', label: bi('მიმართულებები', 'Expertise')},
-  {href: '#sazeo', label: 'Sazeo'},
-  {href: '#gallery', label: bi('გალერეა', 'Gallery')},
-  {href: '#awards', label: bi('ჯილდოები', 'Awards')},
-  {href: '#contact', label: bi('კონტაქტი', 'Contact')}
-];
-
 export const THEME_BUTTON_LABEL = bi('თემის შეცვლა', 'Switch theme');
 
 /* -------------------------------------------------------------------- hero */
@@ -50,40 +43,32 @@ export const HERO = {
   companiesTitle: bi('კომპანიები და საქმიანობის მიმართულებები', 'Companies and ventures')
 } as const;
 
-const DEMO_PHOTO_TITLE = 'სადემონსტრაციო ფოტო — შემდგომ შეიცვლება რეალური ფოტოთი';
+export type PortfolioImage = {src: string; width: number; height: number};
 
-export type DemoImage = {src: string; width: number; height: number};
-
-/** Demo thumbnails exactly as supplied (public/georgemerebashvili). */
-export const IMG = {
-  design: {src: '/georgemerebashvili/demo-1.jpg', width: 218, height: 143},
-  sazeo: {src: '/georgemerebashvili/demo-2.jpg', width: 300, height: 125},
-  controllers: {src: '/georgemerebashvili/demo-3.jpg', width: 160, height: 128}
-} as const satisfies Record<string, DemoImage>;
+/**
+ * Company logos (public/georgemerebashvili/logos), WebP with alpha, cut at 2x of the largest size
+ * they are shown at: the KAYA wordmark (cropped to its ink, 420x66) in a ~210px card slot, the
+ * Sazeo app mark (256x256) at 128px in the Sazeo section.
+ */
+export const LOGOS = {
+  kaya: {src: '/georgemerebashvili/logos/kaya.webp', width: 420, height: 66},
+  sazeo: {src: '/georgemerebashvili/logos/sazeo.webp', width: 256, height: 256}
+} as const satisfies Record<string, PortfolioImage>;
 
 export const COMPANIES: ReadonlyArray<{
   name: string;
   monogram: string;
   selected?: boolean;
-  title: string;
-  alt: string;
-  image: DemoImage;
+  alt: Bilingual;
+  image: PortfolioImage;
 }> = [
-  {name: 'KAYA', monogram: 'K', title: DEMO_PHOTO_TITLE, alt: 'სადემონსტრაციო ფოტო — KAYA', image: IMG.design},
-  {
-    name: 'Sazeo',
-    monogram: 'S',
-    selected: true,
-    title: DEMO_PHOTO_TITLE,
-    alt: 'სადემონსტრაციო ფოტო — Sazeo',
-    image: IMG.sazeo
-  },
+  {name: 'KAYA', monogram: 'K', alt: bi('KAYA ლოგო', 'KAYA logo'), image: LOGOS.kaya},
+  {name: 'Sazeo', monogram: 'S', selected: true, alt: bi('Sazeo ლოგო', 'Sazeo logo'), image: LOGOS.sazeo},
   {
     name: 'KAYA Engineering',
     monogram: 'K',
-    title: DEMO_PHOTO_TITLE,
-    alt: 'სადემონსტრაციო ფოტო — KAYA Engineering',
-    image: IMG.controllers
+    alt: bi('KAYA Engineering ლოგო', 'KAYA Engineering logo'),
+    image: LOGOS.kaya
   }
 ];
 
@@ -105,138 +90,78 @@ export const TIMELINE_COPY = {
   )
 };
 
-export type YearDirection = {text: string; photos: readonly DemoImage[]};
+export type YearDirection = {text: string; photos: readonly PortfolioImage[]};
 export type YearRecord = {
-  demo: boolean;
-  title: string;
+  /** A plain string is Georgian-only, as in the design; a pair follows the page language. */
+  title: Bilingual | string;
+  /** Empty = no paragraph is shown. */
   text: string;
+  /** Printed after the year in the card's kicker ("2018 / SAZEO"); absent = the year alone. */
+  tag?: string;
+  /** Focus-area buttons of the year; empty = the panel is not shown. */
   directions: Record<string, YearDirection>;
 };
 
 const dir = (text: string): YearDirection => ({text, photos: []});
 
-/** The design's timelineData, as written. Years 1995, 2000, 2010, 2015 and 2025 are not in
- *  YEAR_VALUES, so no control reaches them (kept: the owner may add those years later). */
+/**
+ * Years with a written story: the two verified ones (the design's timelineData, as written). A
+ * milestone year with nothing more to say needs no record here: yearRecord() builds its card from MILESTONES.
+ */
 const TIMELINE_DATA: Record<number, YearRecord> = {
-  1995: {
-    demo: true,
-    title: 'ადრეული წლები',
-    text: 'ბავშვობისა და პირველი ტექნიკური ინტერესების ისტორია — რეალური ინფორმაციით შესავსებია.',
-    directions: {'ინტერესები': dir('სადემონსტრაციო ჩანაწერი.'), 'სწავლა': dir('სადემონსტრაციო ჩანაწერი.')}
-  },
-  2000: {
-    demo: true,
-    title: 'პირველი ნაბიჯები',
-    text: 'ბავშვობის პერიოდის ისტორია შესავსებია.',
-    directions: {'სწავლა': dir('რეალური ისტორია დასამატებელია.')}
-  },
-  2005: {
-    demo: true,
-    title: 'პროფესიული განვითარება',
-    text: 'პროფესიული განვითარების ეტაპი — შესავსებია.',
-    directions: {'ინჟინერია': dir('რეალური პროექტები დასამატებელია.')}
-  },
-  2010: {
-    demo: true,
-    title: 'საინჟინრო საქმიანობა',
-    text: 'პროექტებისა და საქმიანობის აღწერა შესავსებია.',
-    directions: {'პროექტირება': dir('პროექტების აღწერა შესავსებია.'), 'მონტაჟი': dir('მონტაჟების აღწერა შესავსებია.')}
-  },
-  2015: {
-    demo: true,
-    title: 'ავტომატიზაციის მიმართულება',
-    text: 'საქმიანობის დეტალები დასაზუსტებელია.',
-    directions: {'BMS': dir('შესავსებია.'), 'ინჟინერია': dir('შესავსებია.')}
-  },
   2018: {
-    demo: false,
     title: 'კომპანიის დაარსება',
     text: '2018 წელს დაარსდა შპს „ციფრული მართვის ტექნოლოგიები“ (ს/კ 405285926). ბრენდის განვითარების გზა: DMT → Sazero → Sazeo.',
+    tag: 'SAZEO',
     directions: {
       'კომპანია': dir('შპს „ციფრული მართვის ტექნოლოგიები“ დაარსდა 2018 წელს.'),
       'ბრენდის განვითარება': dir('DMT → Sazero → Sazeo. ეტაპების ზუსტი თარიღები დასაზუსტებელია.')
     }
   },
   2023: {
-    demo: false,
     title: 'Sazeo-ს MVP საქართველოში',
     text: '2023 წელს საქართველოში შეიქმნა Sazeo-ს MVP.',
+    tag: 'SAZEO',
     directions: {
       'პროგრამული პლატფორმა': dir(
         'Sazeo-ს პროგრამული უზრუნველყოფა მუშაობს საკუთარ კონტროლერებთან და შენობაში უკვე არსებულ მოწყობილობებთან.'
       ),
       'BMS / IoT': dir('MVP საქართველოში — 2023 წელი.')
     }
-  },
-  2025: {
-    demo: true,
-    title: 'განვითარების ეტაპი',
-    text: 'დადასტურებული პროექტები და მიღწევები დასამატებელია.',
-    directions: {'განვითარება': dir('დასამატებელია.')}
-  },
-  2026: {
-    demo: true,
-    title: 'დღევანდელი ეტაპი',
-    text: 'მიმდინარე პროექტები და მიღწევები შესავსებია.',
-    directions: {'Sazeo': dir('მიმდინარე ეტაპის აღწერა შესავსებია.')}
   }
 };
 
-/** Placeholder the design generates for every regular five-year mark (1987, 1992, ...). */
-function placeholderRecord(): YearRecord {
-  const missing = 'მონაცემები შესავსებია.';
-  return {
-    demo: true,
-    title: 'ისტორია შესავსებია',
-    text: 'ამ წლის რეალური ბიოგრაფიული ისტორია და პროექტები დასამატებელია.',
-    directions: {
-      'პროექტირება': dir(missing),
-      'წარმოება': dir(missing),
-      'მონტაჟი': dir(missing),
-      'ზედამხედველობა': dir(missing),
-      'სერვისი': dir(missing)
-    }
-  };
-}
+export type MilestoneIcon = 'baby' | 'school' | 'graduation' | 'briefcase';
 
-/** 1987 is the first year; five-year ticks continue toward the present. */
-const FIVE_YEAR_TICKS = [1987, 1992, 1997, 2002, 2007, 2012, 2017, 2022];
+/** The design's milestone map (icons under the strip). Its years are on the strip even without a TIMELINE_DATA record. */
+export const MILESTONES: Record<number, ReadonlyArray<{icon: MilestoneIcon; label: Bilingual}>> = {
+  1987: [{icon: 'baby', label: bi('დაბადება', 'Birth')}],
+  1992: [{icon: 'school', label: bi('სკოლა', 'School')}],
+  2005: [
+    {icon: 'graduation', label: bi('უნივერსიტეტი', 'University')},
+    {icon: 'briefcase', label: bi('სამუშაო / მეწარმეობა', 'Work / entrepreneurship')}
+  ],
+  2008: [{icon: 'graduation', label: bi('მაგისტრატურა', "Master's degree")}]
+};
 
-/** Years the strip offers: the regular five-year marks, the verified milestone years and today. */
+/** The strip offers exactly the years that have something to show: milestones and written records. */
 export const YEAR_VALUES: readonly number[] = [
-  ...new Set([...FIVE_YEAR_TICKS, 2005, 2008, 2018, 2023, 2026])
+  ...new Set([...Object.keys(MILESTONES), ...Object.keys(TIMELINE_DATA)].map(Number))
 ].sort((a, b) => a - b);
 
 export const DEFAULT_YEAR = 2018;
 
-/**
- * Record for a year. The design had no record for 2008 (a strip year with a milestone icon), so
- * selecting it threw a TypeError; it now gets the same placeholder as the other unwritten years.
- */
+/** Record for a year of YEAR_VALUES. A milestone year without a record is its milestone label(s) and nothing else. */
 export function yearRecord(year: number): YearRecord {
-  return TIMELINE_DATA[year] ?? placeholderRecord();
+  const written = TIMELINE_DATA[year];
+  if (written) return written;
+  const labels = (MILESTONES[year] ?? []).map(({label}) => label);
+  return {
+    title: bi(labels.map((label) => label.ka).join(' · '), labels.map((label) => label.en).join(' · ')),
+    text: '',
+    directions: {}
+  };
 }
-
-export type MilestoneIcon = 'baby' | 'school' | 'graduation' | 'briefcase';
-
-export const MILESTONES: Record<number, ReadonlyArray<{icon: MilestoneIcon; label: string}>> = {
-  1987: [{icon: 'baby', label: 'დაბადება'}],
-  1992: [{icon: 'school', label: 'სკოლა'}],
-  2005: [
-    {icon: 'graduation', label: 'უნივერსიტეტი'},
-    {icon: 'briefcase', label: 'სამუშაო / მეწარმეობა'}
-  ],
-  2008: [{icon: 'graduation', label: 'მაგისტრატურა'}]
-};
-
-export const STORY_COPY = {
-  verifiedBadge: bi('დადასტურებული ფაქტი', 'Verified fact'),
-  demoBadge: bi('შესავსებია', 'To be completed'),
-  demoNote: bi(
-    'სადემონსტრაციო ისტორია — არ წარმოადგენს დადასტურებულ ბიოგრაფიას.',
-    'Demo history — not verified biography.'
-  )
-};
 
 /* --------------------------------------------------------------- expertise */
 
@@ -288,8 +213,7 @@ export const EXPERTISE_COPY = {
 };
 
 export const MODAL_COPY = {
-  close: bi('დახურვა', 'Close'),
-  emptyPhotos: bi('ამ ეტაპის ფოტოები ჯერ დასამატებელია.', 'Images will be added for this milestone.')
+  close: bi('დახურვა', 'Close')
 };
 
 /* ------------------------------------------------------------------ sazeo */
@@ -306,82 +230,63 @@ export const SAZEO = {
     bi('პროგრამა საკუთარ კონტროლერებთან ერთად', 'Software paired with proprietary controllers'),
     bi('შენობაში არსებული მოწყობილობების ინტეგრაცია', 'Integration with existing building equipment')
   ],
-  imageAlt: 'სადემონსტრაციო ტექნოლოგიური გამოსახულება'
+  image: LOGOS.sazeo,
+  imageAlt: bi('Sazeo ლოგო', 'Sazeo logo')
 } as const;
 
 /* ---------------------------------------------------------------- gallery */
 
 export const GALLERY_COPY = {
   heading: bi('გალერეა', 'Gallery'),
-  sub: bi('სადემონსტრაციო ფოტოები — შესაცვლელია რეალური მასალით.', 'Demo imagery — to be replaced with real project photos.'),
   back: bi('წინა ფოტო', 'Previous photo'),
   forward: bi('შემდეგი ფოტო', 'Next photo'),
   /** Prefix of each card's accessible name; the visible label follows it ("გახსენით ფოტო: პროექტირება"). */
   openPhoto: bi('გახსენით ფოტო', 'Open photo'),
   modalKicker: 'GALLERY',
-  modalText: bi(
-    'სადემონსტრაციო ფოტო — რეალური მასალით შესაცვლელია.',
-    'Demonstration photo, to be replaced with real content.'
-  ),
   title: bi('ფოტოს გადიდება', 'Enlarge photo')
 };
 
-/** `label` is a plain string for "BMS / Sazeo", which the design never translates. */
+/**
+ * Real project photos. Empty today, so the gallery section and its nav link are not rendered; the
+ * first item brings both back. `label` is a plain string for names the design never translates.
+ */
 export const GALLERY_ITEMS: ReadonlyArray<{
   label: Bilingual | string;
   alt: string;
-  image: DemoImage;
-}> = [
-  {
-    label: bi('პროექტირება', 'Design'),
-    alt: 'სადემონსტრაციო პროექტის ფოტო',
-    image: IMG.design
-  },
-  {
-    label: bi('კონტროლერები', 'Controllers'),
-    alt: 'სადემონსტრაციო კონტროლერის ფოტო',
-    image: IMG.controllers
-  },
-  {
-    label: 'BMS / Sazeo',
-    alt: 'სადემონსტრაციო BMS ფოტო',
-    image: IMG.sazeo
-  }
-];
+  image: PortfolioImage;
+}> = [];
 
 /* ----------------------------------------------------------------- awards */
 
 export const AWARDS = {
-  heading: bi('ჯილდოები და სერტიფიკატები', 'Awards and certificates'),
-  sub: bi('სექცია შეივსება მხოლოდ დადასტურებული დოკუმენტებით.', 'This section will only contain verified documents.'),
-  pill: 'შესავსებია',
-  cards: [
-    {
-      title: bi('ჯილდოები', 'Awards'),
-      text: bi(
-        'დასამატებელია სათაური, გამცემი, წელი და დოკუმენტის სკანი.',
-        'Title, issuing organization, year, and scan are pending.'
-      )
-    },
-    {
-      title: bi('სერტიფიკატები', 'Certificates'),
-      text: bi(
-        'დასამატებელია დადასტურებული სერტიფიკატები და სკანები.',
-        'Verified certificates and scans are pending.'
-      )
-    }
-  ]
+  heading: bi('ჯილდოები და სერტიფიკატები', 'Awards and certificates')
 };
+
+/** Verified awards and certificates only. Empty today, so the awards section and its nav link are not rendered. */
+export const AWARD_ITEMS: ReadonlyArray<{title: Bilingual; text: Bilingual}> = [];
 
 /* ---------------------------------------------------------------- contact */
 
 export const CONTACT = {
   heading: bi('კონტაქტი', 'Contact'),
-  email: 'ceo@sazeo.io',
-  note: bi('ტელეფონი და სოციალური ქსელების ბმულები — შესავსებია.', 'Phone number and social links will be added.')
+  email: 'ceo@sazeo.io'
 };
 
-export const FOOTER = bi(
-  '© 2026 გიორგი მერებაშვილი · პორტფოლიოს სადემონსტრაციო ვერსია',
-  '© 2026 Giorgi Merebashvili · Demo portfolio'
-);
+export const FOOTER = bi('© 2026 გიორგი მერებაშვილი', '© 2026 Giorgi Merebashvili');
+
+/* ------------------------------------------------------------- navigation */
+
+/**
+ * The header links, in page order. Declared after the section data because gallery and awards are
+ * linked only while they have something to show. `label` is a plain string for "Sazeo", which the
+ * design never translates.
+ */
+export const NAV_LINKS: ReadonlyArray<{href: string; label: Bilingual | string}> = [
+  {href: '#home', label: bi('მთავარი', 'Home')},
+  {href: '#timeline', label: bi('თაიმლაინი', 'Timeline')},
+  {href: '#expertise', label: bi('მიმართულებები', 'Expertise')},
+  {href: '#sazeo', label: 'Sazeo'},
+  ...(GALLERY_ITEMS.length > 0 ? [{href: '#gallery', label: GALLERY_COPY.heading}] : []),
+  ...(AWARD_ITEMS.length > 0 ? [{href: '#awards', label: bi('ჯილდოები', 'Awards')}] : []),
+  {href: '#contact', label: bi('კონტაქტი', 'Contact')}
+];

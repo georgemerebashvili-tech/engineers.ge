@@ -1,54 +1,52 @@
 'use client';
 
-import {STORY_COPY, TIMELINE_COPY, pick, yearRecord, type Lang} from './content';
+import clsx from 'clsx';
+import {TIMELINE_COPY, pick, resolveText, yearRecord, type Lang} from './content';
 import type {OpenModalHandler} from './detail-modal';
 import styles from './portfolio.module.css';
 
 /**
- * The selected year's story: badge, kicker, title, text, demo note and the focus-area buttons.
- *
- * The design's own stylesheet ends with `#storyCard{display:none!important}`, so this card is built
- * and kept up to date but not shown (ported as is; showing it again is a one-line CSS change in
- * portfolio.module.css). Text is plain React text, never innerHTML.
+ * The selected year's story: the big year, the kicker, the title, the text and the focus-area
+ * buttons. What a year does not have is not drawn: no text, no paragraph; no focus areas, no panel
+ * (a milestone year is its label and nothing else). Text is plain React text, never innerHTML.
  */
 export function StoryCard({year, lang, onOpenModal}: {year: number; lang: Lang; onOpenModal: OpenModalHandler}) {
   const record = yearRecord(year);
-  const kicker = `${year} / ${record.demo ? 'DEMO' : 'SAZEO'}`;
+  const kicker = record.tag ? `${year} / ${record.tag}` : String(year);
+  const directions = Object.entries(record.directions);
 
   return (
     <div className={styles.storyPanel} id="storyCard" aria-live="polite">
       <div className={styles.storyVisual}>
-        <span className={styles.storyStamp}>
-          {record.demo ? `DEMO · ${pick(STORY_COPY.demoBadge, lang)}` : pick(STORY_COPY.verifiedBadge, lang)}
-        </span>
         <strong>{year}</strong>
       </div>
-      <div className={styles.storyContent}>
+      <div className={clsx(styles.storyContent, directions.length === 0 && styles.storyContentSolo)}>
         <div className={styles.storyDescription}>
           <span className={styles.storyKicker}>{kicker}</span>
-          <h3 data-testid="story-title">{record.title}</h3>
-          <p>{record.text}</p>
-          <div className={styles.demoNote}>{record.demo ? pick(STORY_COPY.demoNote, lang) : ''}</div>
+          <h3 data-testid="story-title">{resolveText(record.title, lang)}</h3>
+          {record.text && <p>{record.text}</p>}
         </div>
-        <div className={styles.directionPanel}>
-          <h4>{pick(TIMELINE_COPY.directionsHeading, lang)}</h4>
-          <div className={styles.directionTags}>
-            {Object.entries(record.directions).map(([name, direction]) => (
-              <button
-                key={name}
-                type="button"
-                onClick={(event) =>
-                  onOpenModal(
-                    {kicker, title: name, text: direction.text, images: direction.photos},
-                    event.currentTarget
-                  )
-                }
-              >
-                {name}
-              </button>
-            ))}
+        {directions.length > 0 && (
+          <div className={styles.directionPanel}>
+            <h4>{pick(TIMELINE_COPY.directionsHeading, lang)}</h4>
+            <div className={styles.directionTags}>
+              {directions.map(([name, direction]) => (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={(event) =>
+                    onOpenModal(
+                      {kicker, title: name, text: direction.text, images: direction.photos},
+                      event.currentTarget
+                    )
+                  }
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

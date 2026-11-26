@@ -4,8 +4,10 @@
  * Scoping. The design styled bare body/header/section/button/a/*, so every selector is re-rooted under
  * .root and nothing here can reach the rest of the site (nor can the site's global element rules reach
  * the page: this sheet is unlayered, so it also beats Tailwind's preflight).
- *   - ids that are real anchors/hooks (#timeline, #gallery, #years, #yearViewport, #storyCard) stay as
+ *   - ids that are real anchors/hooks (#timeline, #gallery, #years, #yearViewport) stay as
  *     :global(#id): the design's cascade leans on id specificity and the nav links need the real ids.
+ *     (#storyCard stays in the markup as a hook, but no rule targets it: the design's own
+ *     `#storyCard{display:none!important}` and `.timelineHelp` hide rule was dropped on the owner's word, 27.11.2026.)
  *   - `body.dark` became `html.dark`: the page's dark palette follows the SITE theme
  *     (components/theme-provider.tsx toggles the `dark` class on <html>), see the dark block below.
  *   - dropped as dead: rules for markup the design does not contain (.cycle*, .expertise-card*, ...)
@@ -218,20 +220,10 @@
   padding: 25px 30px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
   min-width: 0;
 }
 .root .storyVisual:before { content: '⌁'; color: #ffffff12; font-size: 190px; position: absolute; right: 12px; top: -65px; }
-.root .storyStamp {
-  display: inline-flex;
-  align-self: flex-start;
-  background: #ffffff21;
-  border: 1px solid #ffffff48;
-  border-radius: 30px;
-  font-size: 12px;
-  padding: 7px 12px;
-  position: relative;
-}
 .root .storyVisual strong {
   font-size: clamp(66px,7vw,115px);
   font-weight: 850;
@@ -246,11 +238,12 @@
   padding: 30px 33px;
   gap: 38px;
 }
+/* a year without focus areas: the description takes the whole card (3 classes, so it also wins inside the media blocks) */
+.root .storyContent.storyContentSolo { grid-template-columns: minmax(0,1fr); }
 .root .storyDescription { min-width: 0; }
 .root .storyKicker { font-size: 14px; color: var(--orange); font-weight: 800; }
 .root .storyDescription h3 { font-size: clamp(21px,1.85vw,28px); margin: 9px 0 9px; }
 .root .storyDescription p { color: var(--muted); font-size: 15px; line-height: 1.75; margin: 0; }
-.root .demoNote { font-size: 12px; color: #8b704c; margin-top: 12px; }
 .root .directionPanel {
   border-left: 1px solid var(--stroke);
   padding-left: 29px;
@@ -275,7 +268,7 @@
 }
 .root .directionTags button:hover { background: #fff0e4; border-color: #ffb77e; }
 .root .directionTags button:before { content: '▸'; color: var(--orange); margin-right: 6px; }
-.root .timelineHelp { text-align: right; color: #8492a4; font-size: 12px; margin: 10px 4px 0; }
+.root .timelineHelp { text-align: right; color: var(--muted); font-size: 12px; margin: 10px 4px 0; }
 .root .sazeo {
   display: grid;
   grid-template-columns: 180px minmax(220px,1fr) minmax(290px,1.1fr) 260px;
@@ -301,8 +294,7 @@
 .root .sazeo img { display: block; width: 100%; max-height: 154px; object-fit: cover; border-radius: 10px; }
 .root .lower { padding: 50px clamp(20px,3.8vw,65px); background: var(--bg); }
 .root .lower.white { background: #fff; }
-.root .sectionHeading { font-size: 32px; margin: 0 0 10px; }
-.root .sectionSub { font-size: 14px; color: var(--muted); margin: 0 0 21px; }
+.root .sectionHeading { font-size: 32px; margin: 0 0 21px; }
 .root .galleryWrap { position: relative; }
 .root .galleryStrip {
   display: flex;
@@ -339,19 +331,9 @@
 .root .awardCard { border: 1px solid var(--stroke); border-radius: 12px; background: #fff; padding: 25px; min-height: 160px; }
 .root .awardCard strong { display: block; font-size: 19px; margin-bottom: 12px; }
 .root .awardCard p { font-size: 14px; color: var(--muted); line-height: 1.5; }
-.root .demoPill {
-  font-size: 11px;
-  color: #a85900;
-  background: #fff2e7;
-  border-radius: 4px;
-  padding: 4px 7px;
-  display: inline-block;
-  font-weight: 750;
-}
 .root .contact { background: #0d263f; color: #fff; padding: 40px clamp(20px,3.8vw,65px); }
 .root .contact h2 { font-size: 31px; margin: 0 0 16px; }
 .root .contact a { font-size: 19px; color: #ff9140; text-decoration: none; font-weight: 750; }
-.root .contact p { font-size: 13px; color: #b8c6d6; }
 .root footer { background: #08192c; color: #9cacbf; font-size: 12px; padding: 15px clamp(20px,3.8vw,65px); }
 /* above the site's cookie banner (fixed, z-100, later in the DOM), which would otherwise paint over the dialog */
 .root .modal { position: fixed; inset: 0; z-index: 110; display: grid; place-items: center; padding: 20px; }
@@ -382,7 +364,6 @@
 }
 .root .modalGrid { display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 13px; margin-top: 20px; }
 .root .modalGrid img { width: 100%; height: 165px; object-fit: cover; border-radius: 9px; }
-.root .emptyPhoto { background: #f0f4f9; color: #61758f; border-radius: 9px; padding: 20px; font-size: 14px; }
 :global(html.dark) .root {
   --ink: #ecf4ff;
   --muted: #b7c8dd;
@@ -453,7 +434,7 @@
   .root .yearItem { min-width: 79px; font-size: 13px; }
   .root .yearSide { width: 32px; height: 32px; }
   .root .storyPanel { display: block; }
-  .root .storyVisual { min-height: 165px; padding: 20px; flex-direction: row; align-items: center; }
+  .root .storyVisual { min-height: 112px; padding: 20px; flex-direction: row; align-items: center; }
   .root .storyVisual strong { font-size: 72px; }
   .root .storyContent { padding: 22px; display: block; }
   .root .storyDescription h3 { font-size: 21px; }
@@ -628,7 +609,6 @@
 }
 
 /*Compact timeline and five-across discipline carousel*/
-.root :global(#storyCard), .root .timelineHelp { display: none !important; }
 .root :global(#timeline) { padding-top: 22px; padding-bottom: 32px; }
 .root :global(#timeline) .timelineUpper { margin-bottom: 14px; }
 .root :global(#timeline) .expertiseSection { background: transparent; padding: 9px 0 0; max-width: 100%; overflow: hidden; }
@@ -658,8 +638,17 @@
   overflow: hidden;
   border-radius: 12px;
 }
-.root .companyThumb { height: 82px; width: 100%; overflow: hidden; border-radius: 7px; background: #23405b; }
-.root .companyThumb img { height: 100%; width: 100%; object-fit: cover; display: block; transition: transform .3s ease; }
+/* Logos sit on a light tile in both themes: the hero is navy in light and dark mode alike, and the KAYA
+   wordmark is a single #366ba1 that disappears on navy (measured: one opaque colour, alpha-weighted luminance 100/255). */
+.root .companyThumb {
+  height: 82px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 7px;
+  background: #f6f9fc;
+  padding: 10px 12px;
+}
+.root .companyThumb img { height: 100%; width: 100%; object-fit: contain; display: block; transition: transform .3s ease; }
 .root .companyCard:hover .companyThumb img { transform: scale(1.035); }
 .root .companyCard .companyMonogram { display: none; }
 .root .companyCard strong {
@@ -724,7 +713,7 @@
 @media (max-width: 700px) {
   .root .companyCards { gap: 6px; }
   .root .companyCard { padding: 5px !important; min-height: 106px !important; }
-  .root .companyThumb { height: 64px; }
+  .root .companyThumb { height: 64px; padding: 8px 6px; }
   .root .companyCard strong { font-size: 10px !important; min-height: 28px; padding: 0 2px; }
   .root :global(#gallery) .galleryCard { flex-basis: 82%; max-width: 350px; }
   .root :global(#gallery) .galleryPhoto { height: 210px; }
@@ -984,3 +973,5 @@
 
 /* ---- Ported-image sizing (the design's <img> had no width/height attributes; next/image writes them) ---- */
 .root .sazeo img { height: auto; }
+/* the app mark is a square: shown at its own 128px (cut at 256 for 2x), not stretched to the 260px column */
+.root .sazeo .sazeoMark { width: 128px; height: 128px; max-height: none; object-fit: contain; border-radius: 0; justify-self: end; }
