@@ -47,8 +47,13 @@ told the user "sent" anyway. Replaced by a single-use sign-in link:
 ## 2026-11-27 — `/georgemerebashvili` portfolio = the owner's own design, standalone
 The owner supplied a single-file HTML portfolio (ChatGPT, 2.9 MB, 98 % base64 images). Ported 1:1 to
 `app/georgemerebashvili/` outside the `(withSidebar)` group (own header, own palette and Noto Sans Georgian — an intentional
-deviation from DESIGN_RULES for this one page, owner's design wins). Content kept exactly as supplied, placeholders
-included, until the owner replaces them. The home-page `storyabout.me` badge now links here; the old bio/timeline modal,
+deviation from DESIGN_RULES for this one page, owner's design wins). Content as supplied; on 27.11.2026 the owner
+asked to finish the visual first („ჯერ ვიზუალი … მერე ადმინში ასატვირთი მენიუ“): every placeholder is gone from the
+screen (filler years, demo photos, awards cards, „შესავსებია“ lines), an empty section and its nav link simply do not
+render, the year story card the design hid is visible, the company cards show the real KAYA / Sazeo logos, and
+„KAIA“ reads „KAYA“. Shown years = the design's milestones (1987, 1992, 2005, 2008) + the verified 2018 and 2023;
+nothing was invented. Locked by `tests/e2e/portfolio.spec.ts` (placeholder scan over text, attributes and every
+dialog, both languages). Next: the admin editor for this content. The home-page `storyabout.me` badge now links here; the old bio/timeline modal,
 `/admin/story` and `/api/admin/story-events` were removed (superseded; their 5 events were never edited from the seed).
 The DB table `hero_owner_story_events` and the `hero_owner.bio` column are left in place, unused.
 
