@@ -9,8 +9,6 @@ import {
   type HeroAdSlot,
   type HeroOwner
 } from '@/lib/hero-ads';
-import {DEFAULT_STORY_EVENTS, type StoryEvent} from '@/lib/story-timeline';
-import {CrownButton, StoryTimelineModal} from '@/components/story-timeline';
 
 type Tile = {
   name: string;
@@ -28,13 +26,14 @@ type Tile = {
   promoBadge?: string;
   personalName?: string;
   personalTitle?: string;
-  bio?: string;
   expired?: boolean;
   formatHint?: string;
 };
 
 type LightboxState = {img: string; label: string} | null;
-type BioState = {name: string; title: string; bio: string; img?: string} | null;
+
+/** The owner's portfolio page; the headline tile's storyabout.me badge links here. */
+const PORTFOLIO_HREF = '/georgemerebashvili';
 
 const DEFAULT_SLOTS = getDefaultHeroAdSlots();
 
@@ -115,8 +114,7 @@ function buildTileMap(slots: HeroAdSlot[], owner: HeroOwner) {
       kind: 'headline' as const,
       img: owner.image_url,
       personalName: owner.name,
-      personalTitle: owner.title,
-      bio: owner.bio
+      personalTitle: owner.title
     },
     site: toPhotoTile(slot('site'), owner.name),
     cta: toPhotoTile(slot('cta'), owner.name),
@@ -170,11 +168,12 @@ type CellProps = {
   ownerName?: string;
   promoBadge?: string;
   onOpen?: (state: LightboxState) => void;
-  onBio?: (state: BioState) => void;
+  /** Admin previews render the badge as a plain label so a stray click cannot leave an unsaved form. */
+  badgeIsStatic?: boolean;
 };
 
 function Cell(props: CellProps) {
-  const {x = 0, y = 0, width = 0, height = 0, depth = 0, onOpen, onBio} = props;
+  const {x = 0, y = 0, width = 0, height = 0, depth = 0, onOpen, badgeIsStatic = false} = props;
 
   if (depth !== 2 || width < 2 || height < 2) return null;
 
@@ -198,7 +197,6 @@ function Cell(props: CellProps) {
   if (kind === 'headline') {
     const personalName = props.payload?.personalName ?? '';
     const personalTitle = props.payload?.personalTitle ?? '';
-    const bioText = props.payload?.bio ?? '';
     const clipId = `clip-headline-${Math.round(x)}-${Math.round(y)}`;
     const nameFs = Math.max(13, Math.min(20, innerW / 14));
     const titleFs = Math.max(10, Math.min(12, innerW / 22));
@@ -260,39 +258,13 @@ function Cell(props: CellProps) {
           stroke="rgba(255,255,255,0.15)"
           strokeWidth={1}
         />
-        {bioText && innerW > 130 && (() => {
+        {innerW > 130 && (() => {
           const btnW = 106;
           const btnH = 22;
           const bx = innerX + innerW - btnW - 8;
           const by = innerY + 8;
-          return (
-            <g
-              onClick={(e) => {
-                e.stopPropagation();
-                onBio?.({
-                  name: personalName,
-                  title: personalTitle,
-                  bio: bioText,
-                  img
-                });
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onBio?.({
-                    name: personalName,
-                    title: personalTitle,
-                    bio: bioText,
-                    img
-                  });
-                }
-              }}
-              tabIndex={0}
-              style={{cursor: 'pointer'}}
-              role="button"
-              aria-label={`storyabout.me${personalName ? `: ${personalName}` : ''}`}
-            >
+          const pill = (
+            <>
               <rect
                 x={bx}
                 y={by}
@@ -316,7 +288,18 @@ function Cell(props: CellProps) {
               >
                 storyabout.me
               </text>
-            </g>
+            </>
+          );
+          if (badgeIsStatic) return <g aria-hidden="true">{pill}</g>;
+          return (
+            <a
+              href={PORTFOLIO_HREF}
+              onClick={(e) => e.stopPropagation()}
+              style={{cursor: 'pointer'}}
+              aria-label={`storyabout.me${personalName ? `: ${personalName}` : ''}`}
+            >
+              {pill}
+            </a>
           );
         })()}
         {innerW > 100 && innerH > 70 && (
@@ -567,27 +550,21 @@ function Cell(props: CellProps) {
 export function HeroTreemap({
   slots = DEFAULT_SLOTS,
   owner = HERO_OWNER_DEFAULTS,
-  storyEvents = DEFAULT_STORY_EVENTS,
-  isAdmin = false
+  previewOnly = false
 }: {
   slots?: HeroAdSlot[];
   owner?: HeroOwner;
-  storyEvents?: StoryEvent[];
-  isAdmin?: boolean;
+  /** Editor previews: the storyabout.me badge is drawn but is not a link. */
+  previewOnly?: boolean;
 }) {
   const [lightbox, setLightbox] = useState<LightboxState>(null);
-  const [bio, setBio] = useState<BioState>(null);
-  const [storyOpen, setStoryOpen] = useState(false);
-  const modalOpen = !!lightbox || !!bio;
+  const modalOpen = !!lightbox;
   const tiles = buildTileMap(slots, owner);
 
   useEffect(() => {
     if (!modalOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setLightbox(null);
-        setBio(null);
-      }
+      if (e.key === 'Escape') setLightbox(null);
     };
     document.body.style.overflow = 'hidden';
     window.addEventListener('keydown', onKey);
@@ -621,7 +598,7 @@ export function HeroTreemap({
               width={tile.width}
               height={tile.height}
               onOpen={setLightbox}
-              onBio={setBio}
+              badgeIsStatic={previewOnly}
             />
           ))}
         </svg>
@@ -661,63 +638,6 @@ export function HeroTreemap({
           </figure>
         </div>
       )}
-
-      {bio && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="ბიოგრაფია"
-          onClick={() => setBio(null)}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 md:p-8"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-[540px] rounded-2xl bg-sur shadow-2xl overflow-hidden"
-          >
-            <button
-              type="button"
-              onClick={() => setBio(null)}
-              aria-label="დახურვა"
-              className="absolute top-3 right-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/25 text-white hover:bg-black/40 transition-colors"
-            >
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 6L6 18" />
-                <path d="M6 6l12 12" />
-              </svg>
-            </button>
-            {bio.img && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={bio.img.replace(/w=\d+/, 'w=1200').replace(/q=\d+/, 'q=85')}
-                alt={bio.name}
-                loading="lazy"
-                decoding="async"
-                className="w-full h-64 object-cover"
-              />
-            )}
-            <div className="p-6 md:p-7">
-              <h2 className="text-xl md:text-2xl font-bold text-navy leading-tight">
-                {bio.name}
-              </h2>
-              <p className="mt-1 text-sm text-text-2 font-medium">{bio.title}</p>
-              <p className="mt-4 text-sm md:text-base text-text leading-relaxed whitespace-pre-line">
-                {bio.bio}
-              </p>
-            </div>
-            <div className="flex justify-center border-t border-bdr bg-sur-2 px-5 py-[18px]">
-              <CrownButton onClick={() => setStoryOpen(true)} />
-            </div>
-          </div>
-        </div>
-      )}
-
-      <StoryTimelineModal
-        open={storyOpen}
-        ownerName={owner.name}
-        events={storyEvents}
-        isAdmin={isAdmin}
-        onClose={() => setStoryOpen(false)}
-      />
     </>
   );
 }

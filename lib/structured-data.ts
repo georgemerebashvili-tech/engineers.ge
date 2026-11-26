@@ -7,6 +7,7 @@
  *
  * Schemas used:
  *   - Organization       — company card (root layout)
+ *   - Person             — /georgemerebashvili portfolio page
  *   - WebSite            — site-search action (root layout)
  *   - WebApplication     — per-calc rich card with standards, category
  *   - HowTo              — step-by-step for calculators with known steps
@@ -80,6 +81,30 @@ export function calcApplicationJsonLd(input: CalcApplicationInput) {
         }
       : {}),
     publisher: {'@id': `${SITE_URL}#org`}
+  };
+}
+
+/**
+ * Person schema for /georgemerebashvili. Only facts the owner's portfolio design states: name (both
+ * spellings), the two-word job title, the company he founded and the contact address.
+ */
+export function personJsonLd() {
+  const url = `${SITE_URL}/georgemerebashvili`;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: 'გიორგი მერებაშვილი',
+    alternateName: 'Giorgi Merebashvili',
+    jobTitle: 'ინჟინერი, მეწარმე',
+    url,
+    image: `${SITE_URL}/georgemerebashvili/portrait.jpg`,
+    email: 'ceo@sazeo.io',
+    worksFor: {
+      '@type': 'Organization',
+      name: 'Sazeo',
+      legalName: 'შპს „ციფრული მართვის ტექნოლოგიები“'
+    },
+    mainEntityOfPage: url
   };
 }
 
