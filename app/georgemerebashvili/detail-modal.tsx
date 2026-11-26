@@ -95,7 +95,7 @@ export function DetailModal({
         tabIndex={-1}
         onKeyDown={keepFocusInside}
       >
-        <button type="button" className={styles.close} aria-label={MODAL_COPY.close} onClick={onClose}>
+        <button type="button" className={styles.close} aria-label={pick(MODAL_COPY.close, lang)} onClick={onClose}>
           ×
         </button>
         <span className={styles.storyKicker}>{content.kicker}</span>

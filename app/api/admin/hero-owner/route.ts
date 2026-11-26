@@ -10,8 +10,7 @@ export const dynamic = 'force-dynamic';
 const Body = z.object({
   image_url: z.string().max(2000).default(''),
   name: z.string().min(1).max(120),
-  title: z.string().max(160).default(''),
-  bio: z.string().max(2000).default('')
+  title: z.string().max(160).default('')
 });
 
 export async function PUT(req: NextRequest) {
@@ -34,7 +33,6 @@ export async function PUT(req: NextRequest) {
           image_url: body.image_url,
           name: body.name,
           title: body.title,
-          bio: body.bio,
           updated_at: new Date().toISOString()
         },
         {onConflict: 'id'}

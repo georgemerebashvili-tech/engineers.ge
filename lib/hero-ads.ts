@@ -4,22 +4,19 @@ export type HeroOwner = {
   image_url: string;
   name: string;
   title: string;
-  bio: string;
 };
 
 export const HERO_OWNER_DEFAULTS: HeroOwner = {
   image_url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=900&q=75',
   name: HERO_OWNER_NAME,
-  title: 'HVAC ინჟინერი · ენტერპრენერი',
-  bio: 'გამარჯობა! მე ვარ გიორგი მერებაშვილი — HVAC ინჟინერი და engineers.ge-ის დამფუძნებელი. 10+ წელი ვმუშაობ საინჟინრო პროექტებზე — თბოდანაკარგების გაანგარიშება, ვენტილაციის სისტემის დიზაინი, შენობის ენერგოეფექტურობა. ეს პლატფორმა ქართველი ინჟინრების კოლექტიური ხელსაწყოა: უფასო კალკულატორები EN 12831, ISO 6946 და ASHRAE სტანდარტებით. ჩემი მიზანია გავხადო ქართული ენგინიერინგი უფრო სწრაფი, ზუსტი და ხელმისაწვდომი.'
+  title: 'HVAC ინჟინერი · ენტერპრენერი'
 };
 
 export function normalizeHeroOwner(row: Partial<HeroOwner> | null | undefined): HeroOwner {
   return {
     image_url: row?.image_url?.trim() || HERO_OWNER_DEFAULTS.image_url,
     name: row?.name?.trim() || HERO_OWNER_DEFAULTS.name,
-    title: row?.title?.trim() || HERO_OWNER_DEFAULTS.title,
-    bio: row?.bio?.trim() || HERO_OWNER_DEFAULTS.bio
+    title: row?.title?.trim() || HERO_OWNER_DEFAULTS.title
   };
 }
 

@@ -2,7 +2,7 @@
 
 import clsx from 'clsx';
 import {useEffect, useRef, useState} from 'react';
-import {EXPERTISE_COPY, EXPERTISE_ITEMS, type Lang} from './content';
+import {EXPERTISE_COPY, EXPERTISE_ITEMS, pick, type Lang} from './content';
 import type {OpenModalHandler} from './detail-modal';
 import styles from './portfolio.module.css';
 
@@ -42,7 +42,7 @@ function ExpertiseRow({
   }, [position]);
 
   const name = (index: number) => (lang === 'ka' ? EXPERTISE_ITEMS[index].ka : EXPERTISE_ITEMS[index].en);
-  const rowLabel = EXPERTISE_ITEMS[row].ka;
+  const rowLabel = name(row);
 
   return (
     <section className={clsx(styles.expertiseSection, styles.expertiseRow)} aria-label={rowLabel}>
@@ -50,13 +50,13 @@ function ExpertiseRow({
         {String(row + 1).padStart(2, '0')} / 05 · {name(position)}
       </div>
       <div className={styles.expertiseCarousel}>
-        <button type="button" className={styles.expertiseNav} aria-label={EXPERTISE_COPY.prevSlide} onClick={() => step(-1)}>
+        <button type="button" className={styles.expertiseNav} aria-label={pick(EXPERTISE_COPY.prevSlide, lang)} onClick={() => step(-1)}>
           ‹
         </button>
         <div
           className={styles.expertiseStage}
           role="group"
-          aria-label={`${rowLabel} — ხუთბარათიანი მოძრავი ბლოკი`}
+          aria-label={`${rowLabel} — ${pick(EXPERTISE_COPY.carouselSuffix, lang)}`}
           onTouchStart={(event) => {
             touchStartX.current = event.changedTouches[0].screenX;
           }}
@@ -111,7 +111,7 @@ function ExpertiseRow({
                         <span className={styles.fullDirectionIcon} aria-hidden="true">
                           {item.icon}
                         </span>
-                        <p>{lang === 'ka' ? item.descKa : item.descEn}</p>
+                        <span className={styles.cardText}>{lang === 'ka' ? item.descKa : item.descEn}</span>
                       </button>
                     );
                   })}
@@ -120,7 +120,7 @@ function ExpertiseRow({
             ))}
           </div>
         </div>
-        <button type="button" className={styles.expertiseNav} aria-label={EXPERTISE_COPY.nextSlide} onClick={() => step(1)}>
+        <button type="button" className={styles.expertiseNav} aria-label={pick(EXPERTISE_COPY.nextSlide, lang)} onClick={() => step(1)}>
           ›
         </button>
       </div>

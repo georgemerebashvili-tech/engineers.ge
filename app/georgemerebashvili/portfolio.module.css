@@ -325,7 +325,7 @@
   box-shadow: 0 4px 18px #0a203909;
 }
 .root .galleryCard img { display: block; width: 100%; height: 185px; object-fit: cover; border-radius: 7px; }
-.root .galleryCard span { display: block; padding: 12px 8px 8px; font-size: 14px; font-weight: 750; }
+.root .galleryCard .galleryLabel { display: block; padding: 12px 8px 8px; font-size: 14px; font-weight: 750; }
 .root .galleryControls { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
 .root .galleryControls button {
   border: 1px solid #dce4ee;
@@ -353,7 +353,8 @@
 .root .contact a { font-size: 19px; color: #ff9140; text-decoration: none; font-weight: 750; }
 .root .contact p { font-size: 13px; color: #b8c6d6; }
 .root footer { background: #08192c; color: #9cacbf; font-size: 12px; padding: 15px clamp(20px,3.8vw,65px); }
-.root .modal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; }
+/* above the site's cookie banner (fixed, z-100, later in the DOM), which would otherwise paint over the dialog */
+.root .modal { position: fixed; inset: 0; z-index: 110; display: grid; place-items: center; padding: 20px; }
 .root .modalBg { position: absolute; inset: 0; background: rgba(5,20,38,.88); }
 .root .modalBox {
   position: relative;
@@ -700,7 +701,8 @@
   border-radius: 13px;
   box-sizing: border-box;
 }
-.root :global(#gallery) .galleryPhoto { width: 100%; height: 190px; border-radius: 9px; overflow: hidden; background: #e5edf5; }
+/* a <span>, not a <div>: a button may only hold phrasing content */
+.root :global(#gallery) .galleryPhoto { display: block; width: 100%; height: 190px; border-radius: 9px; overflow: hidden; background: #e5edf5; }
 .root :global(#gallery) .galleryPhoto img {
   width: 100%;
   height: 100%;
@@ -709,7 +711,7 @@
   transition: transform .3s ease;
 }
 .root :global(#gallery) .galleryCard:hover img { transform: scale(1.04); }
-.root :global(#gallery) .galleryCard span { display: block; padding: 0 5px 6px; font-weight: 750; white-space: normal; }
+.root :global(#gallery) .galleryCard .galleryLabel { display: block; padding: 0 5px 6px; font-weight: 750; white-space: normal; }
 @media (max-width: 1050px) {
   .root .heroCopy { padding: 18px 23px; }
   .root .companyThumb { height: 65px; }
@@ -808,7 +810,7 @@
   order: 1;
 }
 .root .fullDirectionCard.centered .fullDirectionIcon { background: #fff0e4; }
-.root .fullDirectionCard p {
+.root .fullDirectionCard .cardText {
   font-size: clamp(10px,.76vw,11px);
   line-height: 1.35;
   color: #5d7390;
@@ -820,7 +822,7 @@
   order: 2;
 }
 :global(html.dark) .root .fullDirectionCard { background: #233b55; color: #fff; border-color: #415b78; }
-:global(html.dark) .root .fullDirectionCard p { color: #c8d4e0; }
+:global(html.dark) .root .fullDirectionCard .cardText { color: #c8d4e0; }
 :global(html.dark) .root .fullDirectionCard.centered { border-color: #ff7a0b; }
 @media (max-width: 700px) {
   .root :global(#timeline) .expertiseStage { height: 173px !important; min-height: 173px; }
@@ -828,7 +830,7 @@
   .root .fullDirectionCard { display: none; }
   .root .fullDirectionCard.centered { display: flex; width: min(100%,350px); height: 160px; transform: none; }
   .root .fullDirectionCard strong { font-size: 18px; }
-  .root .fullDirectionCard p { font-size: 12px; -webkit-line-clamp: 3; }
+  .root .fullDirectionCard .cardText { font-size: 12px; -webkit-line-clamp: 3; }
 }
 
 /*Timeline: centered active year, enough scroll room at both ends.*/
@@ -882,7 +884,7 @@
 .root :global(#timeline) .fullSlideFive { height: 100%; gap: 10px; }
 .root :global(#timeline) .fullDirectionCard { height: 126px; padding: 10px 12px; gap: 5px; }
 .root :global(#timeline) .fullDirectionCard.centered { height: 145px; }
-.root :global(#timeline) .fullDirectionCard p { font-size: 11px; -webkit-line-clamp: 3; }
+.root :global(#timeline) .fullDirectionCard .cardText { font-size: 11px; -webkit-line-clamp: 3; }
 .root :global(#timeline) .fullDirectionIcon { width: 26px; height: 26px; font-size: 15px; }
 .root :global(#timeline) .directionContext { font-weight: 800; font-size: 13px; min-height: 22px; color: #163756; }
 .root :global(#timeline) .expertiseDots { margin-top: 3px; }
@@ -896,7 +898,7 @@
   .root :global(#timeline) .fullDirectionCard { display: none; }
   .root :global(#timeline) .fullDirectionCard.centered { display: flex; width: min(100%,340px); height: 154px; }
   .root :global(#timeline) .fullDirectionCard strong { white-space: normal; overflow: visible; font-size: 17px; }
-  .root :global(#timeline) .fullDirectionCard p { font-size: 12px; }
+  .root :global(#timeline) .fullDirectionCard .cardText { font-size: 12px; }
 }
 
 /*Career milestones on their actual calendar years; parallel paths at age 18.*/

@@ -23,11 +23,12 @@ export function Gallery({lang, onOpenModal}: {lang: Lang; onOpenModal: OpenModal
             const label = resolveText(item.label, lang);
             return (
               <button
-                key={item.ariaLabel}
+                key={item.image.src}
                 type="button"
                 className={styles.galleryCard}
-                aria-label={item.ariaLabel}
-                title={GALLERY_COPY.title}
+                // the visible label is part of the name (WCAG 2.5.3), in the page's current language
+                aria-label={`${pick(GALLERY_COPY.openPhoto, lang)}: ${label}`}
+                title={pick(GALLERY_COPY.title, lang)}
                 onClick={(event) =>
                   onOpenModal(
                     {
@@ -40,7 +41,7 @@ export function Gallery({lang, onOpenModal}: {lang: Lang; onOpenModal: OpenModal
                   )
                 }
               >
-                <div className={styles.galleryPhoto}>
+                <span className={styles.galleryPhoto}>
                   <Image
                     src={item.image.src}
                     width={item.image.width}
@@ -48,17 +49,17 @@ export function Gallery({lang, onOpenModal}: {lang: Lang; onOpenModal: OpenModal
                     alt={item.alt}
                     unoptimized
                   />
-                </div>
-                <span>{label}</span>
+                </span>
+                <span className={styles.galleryLabel}>{label}</span>
               </button>
             );
           })}
         </div>
         <div className={styles.galleryControls}>
-          <button type="button" aria-label={GALLERY_COPY.back} onClick={() => scroll(-SCROLL_STEP)}>
+          <button type="button" aria-label={pick(GALLERY_COPY.back, lang)} onClick={() => scroll(-SCROLL_STEP)}>
             ‹
           </button>
-          <button type="button" aria-label={GALLERY_COPY.forward} onClick={() => scroll(SCROLL_STEP)}>
+          <button type="button" aria-label={pick(GALLERY_COPY.forward, lang)} onClick={() => scroll(SCROLL_STEP)}>
             ›
           </button>
         </div>

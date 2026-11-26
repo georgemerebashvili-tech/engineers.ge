@@ -18,7 +18,7 @@ export async function getHeroOwner(): Promise<HeroOwner> {
   try {
     const {data, error} = await supabaseAdmin()
       .from('hero_owner')
-      .select('image_url,name,title,bio')
+      .select('image_url,name,title')
       .eq('id', 1)
       .maybeSingle();
 

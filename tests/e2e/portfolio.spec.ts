@@ -7,6 +7,11 @@ import {expect, test} from '@playwright/test';
  * Note: the design's own stylesheet hides the story card (`#storyCard{display:none!important}`), so
  * the year tests read its title with toHaveText (which does not need the element to be visible) and
  * also check the visible year button.
+ *
+ * Note: a fresh browser context also shows the site's cookie banner, which is itself a
+ * role="dialog" (components/cookie-consent.tsx) that sits AFTER the page in DOM and tab order. So
+ * the portfolio dialog is always looked up by its name, never as a bare `getByRole('dialog')`, and
+ * the focus checks name the control that must hold focus rather than "somewhere inside a dialog".
  */
 
 const PAGE = '/georgemerebashvili';
@@ -37,6 +42,15 @@ test.describe('portfolio page', () => {
     await expect(page.getByRole('button', {name: '2012', exact: true})).toHaveAttribute('aria-pressed', 'true');
   });
 
+  test('starts in English when the site language cookie is "en"', async ({page, context, baseURL}) => {
+    // `lang` is the site's own locale cookie (i18n/routing.ts), written by the nav's language switch
+    await context.addCookies([{name: 'lang', value: 'en', url: baseURL ?? 'http://localhost:3001'}]);
+    await page.goto(PAGE);
+    await expect(page.getByRole('link', {name: 'Timeline'})).toBeVisible();
+    await expect(page.getByRole('button', {name: 'EN', exact: true})).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+  });
+
   test('the EN toggle switches the page language', async ({page}) => {
     await page.goto(PAGE);
     await expect(page.getByRole('link', {name: 'თაიმლაინი'})).toBeVisible();
@@ -57,15 +71,31 @@ test.describe('portfolio page', () => {
     const card = page.getByTestId('expertise-centre-card').first();
     await card.click();
 
-    const dialog = page.getByRole('dialog');
+    // the portfolio dialog, by its name (the h2): the cookie banner is a dialog too
+    const dialog = page.getByRole('dialog', {name: 'პროექტირება'});
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('heading', {name: 'პროექტირება'})).toBeVisible();
-    // focus moves into the dialog and Tab cannot leave it
+
+    // the dialog paints above the cookie banner: the bottom edge of the screen is not the banner
+    expect(
+      await page.evaluate(
+        () => !!document.elementFromPoint(window.innerWidth / 2, window.innerHeight - 8)?.closest('[aria-label="Cookie consent"]')
+      )
+    ).toBe(false);
+
+    // focus moves into the dialog and neither Tab nor Shift+Tab can leave it: its only control is
+    // the close button, so every press must land on it (without the trap, Tab goes on to the
+    // cookie banner and Shift+Tab back into the page)
+    const close = dialog.getByRole('button', {name: 'დახურვა'});
     await expect(dialog).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    await expect(close).toBeFocused();
     await page.keyboard.press('Tab');
+    await expect(close).toBeFocused();
     await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
-    expect(await page.evaluate(() => !!document.activeElement?.closest('[role="dialog"]'))).toBe(true);
+    await expect(close).toBeFocused();
+    await page.keyboard.press('Shift+Tab');
+    await expect(close).toBeFocused();
 
     await page.keyboard.press('Escape');
     await expect(dialog).toHaveCount(0);

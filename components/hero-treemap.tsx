@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {useEffect, useState} from 'react';
 import {
   HERO_OWNER_DEFAULTS,
@@ -292,14 +293,16 @@ function Cell(props: CellProps) {
           );
           if (badgeIsStatic) return <g aria-hidden="true">{pill}</g>;
           return (
-            <a
+            // next/link renders an <a> (SVG namespace here): client-side navigation and prefetch.
+            // stopPropagation is a guard: no ancestor of this tile handles clicks today.
+            <Link
               href={PORTFOLIO_HREF}
               onClick={(e) => e.stopPropagation()}
               style={{cursor: 'pointer'}}
               aria-label={`storyabout.me${personalName ? `: ${personalName}` : ''}`}
             >
               {pill}
-            </a>
+            </Link>
           );
         })()}
         {innerW > 100 && innerH > 70 && (

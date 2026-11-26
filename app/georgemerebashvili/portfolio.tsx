@@ -59,15 +59,25 @@ export function Portfolio({initialLang}: {initialLang: Lang}) {
   }, [lang]);
 
   // The design's `html{scroll-behavior:smooth;scroll-padding-top:64px}`, scoped to this page's lifetime
-  // (and not smooth for visitors who asked for reduced motion).
+  // (and not smooth for visitors who asked for reduced motion). `data-scroll-behavior="smooth"` is
+  // Next's own opt-in to switch smooth scrolling off while it changes route, so leaving this page
+  // (or arriving from one) jumps to the top instead of animating there.
   useEffect(() => {
     const html = document.documentElement;
-    const before = {behavior: html.style.scrollBehavior, padding: html.style.scrollPaddingTop};
-    html.style.scrollBehavior = smoothBehavior() === 'smooth' ? 'smooth' : 'auto';
+    const before = {
+      behavior: html.style.scrollBehavior,
+      padding: html.style.scrollPaddingTop,
+      flag: html.dataset.scrollBehavior
+    };
+    const smooth = smoothBehavior() === 'smooth';
+    html.style.scrollBehavior = smooth ? 'smooth' : 'auto';
     html.style.scrollPaddingTop = '64px';
+    if (smooth) html.dataset.scrollBehavior = 'smooth';
     return () => {
       html.style.scrollBehavior = before.behavior;
       html.style.scrollPaddingTop = before.padding;
+      if (before.flag === undefined) delete html.dataset.scrollBehavior;
+      else html.dataset.scrollBehavior = before.flag;
     };
   }, []);
 
@@ -78,7 +88,7 @@ export function Portfolio({initialLang}: {initialLang: Lang}) {
           <span className={styles.brandMark} aria-hidden="true" />
           <span>{pick(BRAND, lang)}</span>
         </div>
-        <nav aria-label={NAV_ARIA_LABEL}>
+        <nav aria-label={pick(NAV_ARIA_LABEL, lang)}>
           {NAV_LINKS.map((link) => (
             <a key={link.href} href={link.href}>
               {resolveText(link.label, lang)}
@@ -86,7 +96,12 @@ export function Portfolio({initialLang}: {initialLang: Lang}) {
           ))}
         </nav>
         <div className={styles.headActions}>
-          <button type="button" aria-label={THEME_BUTTON_LABEL} title={THEME_BUTTON_LABEL} onClick={toggleTheme}>
+          <button
+            type="button"
+            aria-label={pick(THEME_BUTTON_LABEL, lang)}
+            title={pick(THEME_BUTTON_LABEL, lang)}
+            onClick={toggleTheme}
+          >
             ☀ / ☾
           </button>
           <button
@@ -141,7 +156,7 @@ export function Portfolio({initialLang}: {initialLang: Lang}) {
               <span aria-hidden="true">▶</span>
               <span>{pick(HERO.cta, lang)}</span>
             </button>
-            <div className={styles.companyGroup} role="group" aria-label={HERO.companiesAriaLabel}>
+            <div className={styles.companyGroup} role="group" aria-label={pick(HERO.companiesAriaLabel, lang)}>
               <div className={styles.companyTitle}>{pick(HERO.companiesTitle, lang)}</div>
               <div className={styles.companyCards}>
                 {COMPANIES.map((company) => (
@@ -175,7 +190,7 @@ export function Portfolio({initialLang}: {initialLang: Lang}) {
               <div className={styles.orangeLine} />
               <p>{pick(TIMELINE_COPY.lead, lang)}</p>
             </div>
-            <YearStrip year={year} onChange={setYear} />
+            <YearStrip year={year} lang={lang} onChange={setYear} />
           </div>
           <ExpertiseRows lang={lang} year={year} onOpenModal={openModal} />
           <StoryCard year={year} lang={lang} onOpenModal={openModal} />
