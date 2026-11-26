@@ -23,6 +23,8 @@
   --ink: #102743;
   --muted: #536780;
   --orange: #ff7100;
+  /* orange as TEXT on white: #ff7100 is 2.76:1 (fails AA), #b84a00 is 5.23:1; dark mode restores the brand orange (4.74:1 on its panel) */
+  --orange-text: #b84a00;
   --bg: #f1f5f9;
   --card: #ffffff;
   --stroke: #dde5ef;
@@ -241,7 +243,7 @@
 /* a year without focus areas: the description takes the whole card (3 classes, so it also wins inside the media blocks) */
 .root .storyContent.storyContentSolo { grid-template-columns: minmax(0,1fr); }
 .root .storyDescription { min-width: 0; }
-.root .storyKicker { font-size: 14px; color: var(--orange); font-weight: 800; }
+.root .storyKicker { font-size: 14px; color: var(--orange-text); font-weight: 800; }
 .root .storyDescription h3 { font-size: clamp(21px,1.85vw,28px); margin: 9px 0 9px; }
 .root .storyDescription p { color: var(--muted); font-size: 15px; line-height: 1.75; margin: 0; }
 .root .directionPanel {
@@ -370,6 +372,7 @@
   --bg: #10233b;
   --card: #162a44;
   --stroke: #38506b;
+  --orange-text: var(--orange);
   background: #10233b;
   color: #e8f1ff;
 }
@@ -433,8 +436,8 @@
   .root .yearNavigation { gap: 8px; }
   .root .yearItem { min-width: 79px; font-size: 13px; }
   .root .yearSide { width: 32px; height: 32px; }
-  .root .storyPanel { display: block; }
-  .root .storyVisual { min-height: 112px; padding: 20px; flex-direction: row; align-items: center; }
+  .root .storyPanel { display: block; min-height: 0; }
+  .root .storyVisual { min-height: 112px; padding: 20px; flex-direction: row; align-items: center; justify-content: flex-start; }
   .root .storyVisual strong { font-size: 72px; }
   .root .storyContent { padding: 22px; display: block; }
   .root .storyDescription h3 { font-size: 21px; }
@@ -973,5 +976,17 @@
 
 /* ---- Ported-image sizing (the design's <img> had no width/height attributes; next/image writes them) ---- */
 .root .sazeo img { height: auto; }
-/* the app mark is a square: shown at its own 128px (cut at 256 for 2x), not stretched to the 260px column */
-.root .sazeo .sazeoMark { width: 128px; height: 128px; max-height: none; object-fit: contain; border-radius: 0; justify-self: end; }
+/* the app mark is a square: shown at its own 128px (cut at 256 for 2x), not stretched to the 260px column.
+   It sits on the same light tile as the hero's company logos: its blue (#1565c0) is 5.4:1 on the tile but only
+   2.57:1 on the dark-mode section (#132941), so without the tile its edge nearly merges with the background. */
+.root .sazeo .sazeoMark {
+  width: 144px;
+  height: 144px;
+  padding: 8px;
+  box-sizing: border-box;
+  background: #f6f9fc;
+  max-height: none;
+  object-fit: contain;
+  border-radius: 12px;
+  justify-self: end;
+}
