@@ -4,6 +4,49 @@
 
 ---
 
+## 2026-11-27 — Admin pages are gated in `proxy.ts`; admin session uses its own derived key
+Measured on production 26.11.2026: `curl -H 'RSC: 1' https://engineers.ge/admin/launch-checklist` with no cookie answered
+200 and the RSC payload carried the page's server-rendered content next to the layout's `NEXT_REDIRECT`. Layout and page
+render in parallel, so a layout `redirect()` is NOT an auth gate — 35 of 36 admin pages (incl. `/admin/users`) had no check
+of their own; `/sazeo` and `/tag-console` were gated the same way. Separately, DMT sessions (`dmt_session`) are HS256 JWTs
+signed with the same raw `AUTH_SECRET`, and the old `getSession()` checked only the signature, so any DMT user could paste
+that value into `admin_jwt` and open the whole admin panel.
+
+- `proxy.ts` now redirects every unauthenticated request for `/admin/*` (public: `/admin`, `/admin/forgot`,
+  `/admin/magic`), `/sazeo/*` (except `/sazeo/api/*`, machine endpoints that authenticate themselves), `/tag-console/*` and
+  `/audit.sazeo*` (internal blueprints) before anything renders. Layout checks stay as defence in depth.
+- Admin session key = `HKDF-SHA256(AUTH_SECRET, salt "engineers.ge", info "admin-session/v1")`; tokens carry
+  `aud engineers.ge/admin`, `scope admin`, `sub = ADMIN_USER`; verification requires all of them
+  (`lib/admin-session-token.ts`, used by `proxy.ts` and `lib/auth.ts`).
+- Rule for this repo: **never gate data in a layout alone** — gate in `proxy.ts` (or in the page/data function itself).
+- `AUTH_SECRET` rotated on the same deploy (owner yes, 26.11.2026): DMT users sign in once more; any token minted before is dead.
+
+## 2026-11-27 — Admin "forgot password" = e-mail magic link (replaces the reset flow that never worked)
+The old flow (`/admin/forgot` → `/admin/reset` → Vercel API env PATCH) was dead in production on four counts (no
+`ADMIN_RECOVERY_EMAIL`, no `RESEND_API_KEY`, no `VERCEL_TOKEN`, and table `admin_password_reset_tokens` never created) and
+told the user "sent" anyway. Replaced by a single-use sign-in link:
+- Link `…/admin/magic#t=<JWT>` (fragment never reaches servers/logs); JWT HS256 with its own HKDF key
+  (`admin-magic-link/v1`), `aud engineers.ge/admin-magic`, `scope admin-magic`, `jti`, 15 min, no username inside.
+- Landing page consumes nothing on load (mail scanners); the click POSTs to `/api/admin/magic-link/consume`.
+- Single use and the send cap (6 mails/hour) are atomic inserts into the existing `rate_limits` table (PK `(bucket,key)`,
+  bucket `admin_magic`) — no migration needed; DB error → fail closed (password login still works).
+- **Rejected: binding the link to the requesting browser (nonce cookie).** Anyone can trigger a fresh link into the
+  mailbox, so binding protects only against someone who sees the link but not the mailbox — while it breaks the
+  phone / mail-app in-app-browser case for the owner. Short TTL + single use + fragment + click-to-confirm instead.
+- Config (production env): `ADMIN_RECOVERY_EMAIL=ceo@sazeo.io` (owner's choice, 26.11.2026), `RESEND_API_KEY` (not yet —
+  owner chose a new password first), `MAIL_FROM` (Resend test sender `onboarding@resend.dev` works only for the Resend
+  account's own address; otherwise verify the domain). Until the key exists the page says plainly that e-mail sign-in is
+  not enabled (503 `email_not_configured`).
+- `/admin/password` (needs `VERCEL_TOKEN`/`VERCEL_PROJECT_ID`, absent in production) now says so before the user types.
+
+## 2026-11-27 — `/georgemerebashvili` portfolio = the owner's own design, standalone
+The owner supplied a single-file HTML portfolio (ChatGPT, 2.9 MB, 98 % base64 images). Ported 1:1 to
+`app/georgemerebashvili/` outside the `(withSidebar)` group (own header, own palette and Noto Sans Georgian — an intentional
+deviation from DESIGN_RULES for this one page, owner's design wins). Content kept exactly as supplied, placeholders
+included, until the owner replaces them. The home-page `storyabout.me` badge now links here; the old bio/timeline modal,
+`/admin/story` and `/api/admin/story-events` were removed (superseded; their 5 events were never edited from the seed).
+The DB table `hero_owner_story_events` and the `hero_owner.bio` column are left in place, unused.
+
 ## 2026-04-30 — STEP viewer stays isolated as a one-file prototype
 STEP/STP visualizer გაკეთდა ცალკე static prototype-ად
 `tools/step-viewer-prototype/index.html`-ში, მთავარი Next.js route/admin/sidebar
@@ -238,6 +281,8 @@ normalized full-page text-ზე. მიზეზი:
   როცა extraction strategy მოგვიანებით დაიხვეწება.
 
 ## 2026-04-21 — Admin password recovery via ADMIN_RECOVERY_EMAIL
+> **SUPERSEDED 2026-11-27** by the e-mail magic link (see the 2026-11-27 entry above). This flow never worked in production.
+
 Admin ერთ-user-იანი hardcoded-env auth-ია (`ADMIN_USER` + `ADMIN_PASS_HASH`),
 რაც self-service password change-ს ართულებდა პაროლის დავიწყების შემთხვევაში.
 დავამატე forgot-password flow-ი მხოლოდ ერთ-ერთ hardcoded recovery მისამართზე:

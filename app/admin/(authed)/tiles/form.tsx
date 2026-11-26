@@ -253,7 +253,7 @@ export function HeroAdsForm({initial, initialOwner = HERO_OWNER_DEFAULTS}: Props
             </div>
             <p className="text-[10px] text-fg-muted">
               ეს tile ჩანს მთავარ გვერდზე hero grid-ის მარცხენა ზედა კუთხეში. ყველა სარეკლამო
-              slot-ზე owner ნიშნად გამოჩნდება „{owner.name || HERO_OWNER_NAME}".
+              slot-ზე owner ნიშნად გამოჩნდება „{owner.name || HERO_OWNER_NAME}“.
             </p>
             <a
               href="#ad-slots-section"
@@ -274,7 +274,7 @@ export function HeroAdsForm({initial, initialOwner = HERO_OWNER_DEFAULTS}: Props
             </h2>
           </div>
           <p className="-mt-2 mb-3 text-[11px] text-fg-muted">
-            აირჩიე slot → ატვირთე JPG/PNG → შეავსე ფასი + ვადა → დააჭირე „შენახვა"-ს (ფორმის ბოლოში).
+            აირჩიე slot → ატვირთე JPG/PNG → შეავსე ფასი + ვადა → დააჭირე „შენახვა“-ს (ფორმის ბოლოში).
           </p>
 
           <div className="space-y-3">
