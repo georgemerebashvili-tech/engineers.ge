@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import {useEffect, useId, useRef} from 'react';
-import {MODAL_COPY, pick, resolveText, type Bilingual, type Lang, type PortfolioImage} from './content';
+import {MODAL_COPY, langOfText, pick, resolveText, type Bilingual, type Lang, type PortfolioImage} from './content';
 import styles from './portfolio.module.css';
 
 export type ModalContent = {
@@ -23,7 +23,8 @@ const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabi
  * The design's detail dialog (expertise cards, year directions, gallery photos), with the focus
  * handling the design lacked: focus moves into the dialog on open, Tab stays inside it, and focus
  * returns to the control that opened it on close. Escape, the backdrop and × close it; the page
- * behind does not scroll while it is open. Text and photos are drawn only when there are some.
+ * behind does not scroll while it is open. Text and photos are drawn only when there are some; a
+ * Georgian-only title or text on the English page is marked lang="ka".
  */
 export function DetailModal({
   content,
@@ -100,8 +101,10 @@ export function DetailModal({
           ×
         </button>
         <span className={styles.storyKicker}>{content.kicker}</span>
-        <h2 id={titleId}>{title}</h2>
-        {text && <p>{text}</p>}
+        <h2 id={titleId} lang={langOfText(title, lang)}>
+          {title}
+        </h2>
+        {text && <p lang={langOfText(text, lang)}>{text}</p>}
         {content.images.length > 0 && (
           <div className={styles.modalGrid}>
             {content.images.map((image) => (

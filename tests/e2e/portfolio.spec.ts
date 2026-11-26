@@ -1,4 +1,4 @@
-import {expect, test, type Page} from '@playwright/test';
+import {expect, test, type Locator, type Page} from '@playwright/test';
 
 /**
  * /georgemerebashvili — the owner's portfolio page (ported from his ChatGPT design), and the
@@ -28,8 +28,20 @@ const YEARS: ReadonlyArray<{year: number; ka: string; en: string}> = [
   {year: 2023, ka: 'Sazeo-ს MVP საქართველოში', en: 'Sazeo-ს MVP საქართველოში'}
 ];
 
-/** The placeholder wording of the owner's design, in both languages. */
-const PLACEHOLDERS = /demo|შესავსებია|სადემონსტრაციო|დასამატებელია|to be completed|will be added|are pending/i;
+/** The placeholder wording of the owner's design (and its "to be specified" variants), in both languages. */
+const PLACEHOLDERS =
+  /demo|შესავსებია|სადემონსტრაციო|დასამატებელია|დასაზუსტებ|to be (completed|specified|determined|replaced|clarified)|will be added|are pending/i;
+
+/** The portfolio's own dialog: the cookie banner is a role="dialog" too, but it has an aria-label, not an aria-labelledby. */
+const portfolioDialog = (page: Page) => page.locator('[role="dialog"][aria-labelledby]');
+
+/** alt, title and aria-label of every element: the removed demo wording also lived in attributes. */
+const attributeText = (page: Page) =>
+  page.evaluate(() =>
+    Array.from(document.querySelectorAll('[alt],[title],[aria-label]'))
+      .flatMap((element) => ['alt', 'title', 'aria-label'].map((name) => element.getAttribute(name) ?? ''))
+      .join('\n')
+  );
 
 /** A year button of the strip (milestone years carry an icon whose label is part of the button's name). */
 const yearButton = (page: Page, year: number) =>
@@ -76,6 +88,36 @@ test.describe('portfolio page', () => {
     await expect(yearButton(page, 2023)).toHaveAttribute('aria-pressed', 'true');
   });
 
+  test('the year strip stops at both ends and the arrow keys carry the focus', async ({page}) => {
+    await page.goto(PAGE);
+    const title = page.getByTestId('story-title');
+
+    // lower end: "previous" and ArrowLeft at 1987 change nothing
+    await yearButton(page, 1987).click();
+    await page.getByRole('button', {name: 'წინა წელი'}).click();
+    await expect(yearButton(page, 1987)).toHaveAttribute('aria-pressed', 'true');
+    await yearButton(page, 1987).focus();
+    await page.keyboard.press('ArrowLeft');
+    await expect(yearButton(page, 1987)).toHaveAttribute('aria-pressed', 'true');
+    await expect(yearButton(page, 1987)).toBeFocused();
+
+    // ArrowRight moves the selection to the next year and the focus with it
+    await page.keyboard.press('ArrowRight');
+    await expect(yearButton(page, 1992)).toHaveAttribute('aria-pressed', 'true');
+    await expect(yearButton(page, 1992)).toBeFocused();
+    await expect(title).toHaveText('სკოლა');
+    await page.keyboard.press('ArrowLeft');
+    await expect(yearButton(page, 1987)).toHaveAttribute('aria-pressed', 'true');
+    await expect(yearButton(page, 1987)).toBeFocused();
+
+    // upper end: ArrowRight at 2023 changes nothing
+    await yearButton(page, 2023).click();
+    await yearButton(page, 2023).focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(yearButton(page, 2023)).toHaveAttribute('aria-pressed', 'true');
+    await expect(yearButton(page, 2023)).toBeFocused();
+  });
+
   test('a written year shows its kicker, text and focus areas', async ({page}) => {
     await page.goto(PAGE);
     const card = page.locator('#storyCard');
@@ -98,7 +140,6 @@ test.describe('portfolio page', () => {
     await expect(dialog).toContainText('MVP საქართველოში — 2023 წელი.');
     // no photos for this focus area: no photo area at all, and no "photos will be added" stand-in
     await expect(dialog.locator('img')).toHaveCount(0);
-    await expect(dialog.locator('[class*="modalGrid"]')).toHaveCount(0);
     expect(await dialog.innerText()).not.toMatch(PLACEHOLDERS);
   });
 
@@ -127,6 +168,62 @@ test.describe('portfolio page', () => {
     await expect(page.locator('#years').getByRole('img', {name: 'Work / entrepreneurship'})).toHaveCount(1);
   });
 
+  test('Georgian-only text on the English page is marked lang="ka"', async ({page}) => {
+    await page.goto(PAGE);
+    const card = page.locator('#storyCard');
+    const title = card.getByTestId('story-title');
+    // Georgian page: nothing is marked
+    await expect(title).not.toHaveAttribute('lang', /.+/);
+
+    await page.getByRole('button', {name: 'EN', exact: true}).click();
+    // 2018 is written in Georgian only: title, paragraph and focus-area buttons are marked
+    await expect(title).toHaveAttribute('lang', 'ka');
+    await expect(card.locator('p')).toHaveAttribute('lang', 'ka');
+    await expect(card.getByRole('button', {name: 'კომპანია', exact: true})).toHaveAttribute('lang', 'ka');
+    await expect(card.getByRole('heading', {level: 4})).not.toHaveAttribute('lang', /.+/);
+    // the same goes for the dialog a focus area opens
+    await card.getByRole('button', {name: 'კომპანია', exact: true}).click();
+    const dialog = portfolioDialog(page);
+    await expect(dialog.getByRole('heading', {level: 2})).toHaveAttribute('lang', 'ka');
+    await expect(dialog.locator('p')).toHaveAttribute('lang', 'ka');
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+
+    // a Latin-script focus-area name is not marked; a milestone title is English and is not marked
+    await yearButton(page, 2023).click();
+    await expect(card.getByRole('button', {name: 'BMS / IoT'})).not.toHaveAttribute('lang', /.+/);
+    await yearButton(page, 2005).click();
+    await expect(title).toHaveText('University · Work / entrepreneurship');
+    await expect(title).not.toHaveAttribute('lang', /.+/);
+
+    // back to Georgian: nothing is marked again
+    await page.getByRole('button', {name: 'ქარ', exact: true}).click();
+    await yearButton(page, 2018).click();
+    await expect(title).not.toHaveAttribute('lang', /.+/);
+    await expect(card.getByRole('button', {name: 'კომპანია', exact: true})).not.toHaveAttribute('lang', /.+/);
+  });
+
+  test('the story kicker reads at WCAG AA contrast on its panel', async ({page}) => {
+    await page.goto(PAGE);
+    await expect(page.getByTestId('story-title')).toBeVisible();
+    // computed colours, so it holds in whichever theme the page opened in
+    const ratio = await page.evaluate(() => {
+      const channels = (css: string) => (css.match(/[\d.]+/g) ?? []).slice(0, 3).map(Number);
+      const luminance = ([red, green, blue]: number[]) => {
+        const linear = (value: number) => {
+          const unit = value / 255;
+          return unit <= 0.03928 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
+        };
+        return 0.2126 * linear(red) + 0.7152 * linear(green) + 0.0722 * linear(blue);
+      };
+      const kicker = document.querySelector('#storyCard h3')!.previousElementSibling!;
+      const text = luminance(channels(getComputedStyle(kicker).color));
+      const ground = luminance(channels(getComputedStyle(document.getElementById('storyCard')!).backgroundColor));
+      return (Math.max(text, ground) + 0.05) / (Math.min(text, ground) + 0.05);
+    });
+    expect(ratio).toBeGreaterThanOrEqual(4.5);
+  });
+
   test('no placeholder text on the page, in Georgian or English', async ({page}) => {
     await page.goto(PAGE);
     await expect(page.getByTestId('story-title')).toBeVisible();
@@ -138,6 +235,7 @@ test.describe('portfolio page', () => {
     const georgian = await page.evaluate(() => document.body.innerText);
     expect(georgian).not.toMatch(PLACEHOLDERS);
     expect(georgian).toContain('© 2026 გიორგი მერებაშვილი');
+    expect(await attributeText(page)).not.toMatch(PLACEHOLDERS);
 
     await page.getByRole('button', {name: 'EN', exact: true}).click();
     await expect(page.getByRole('link', {name: 'Timeline'})).toBeVisible();
@@ -148,6 +246,43 @@ test.describe('portfolio page', () => {
     const english = await page.evaluate(() => document.body.innerText);
     expect(english).not.toMatch(PLACEHOLDERS);
     expect(english).toContain('© 2026 Giorgi Merebashvili');
+    expect(await attributeText(page)).not.toMatch(PLACEHOLDERS);
+  });
+
+  test('no dialog the page can open carries placeholder text, in Georgian or English', async ({page}) => {
+    await page.goto(PAGE);
+    await expect(page.getByTestId('story-title')).toBeVisible();
+    const card = page.locator('#storyCard');
+    const dialog = portfolioDialog(page);
+
+    const scan = async (opener: Locator) => {
+      await opener.click();
+      await expect(dialog).toBeVisible();
+      expect(await dialog.innerText()).not.toMatch(PLACEHOLDERS);
+      // alt/title/aria-label of the whole page, dialog included
+      expect(await attributeText(page)).not.toMatch(PLACEHOLDERS);
+      await page.keyboard.press('Escape');
+      await expect(dialog).toHaveCount(0);
+    };
+
+    for (const language of ['ka', 'en']) {
+      if (language === 'en') await page.getByRole('button', {name: 'EN', exact: true}).click();
+      // every focus-area button of every year (2018: 2, 2023: 2; the milestone years have none)
+      let focusAreas = 0;
+      for (const {year} of YEARS) {
+        await yearButton(page, year).click();
+        const buttons = card.locator('button');
+        const count = await buttons.count();
+        for (let index = 0; index < count; index++) await scan(buttons.nth(index));
+        focusAreas += count;
+      }
+      expect(focusAreas, `focus areas in ${language}`).toBe(4);
+      // every expertise row's centre card
+      const centres = page.getByTestId('expertise-centre-card');
+      const rows = await centres.count();
+      expect(rows, `expertise rows in ${language}`).toBeGreaterThan(0);
+      for (let index = 0; index < rows; index++) await scan(centres.nth(index));
+    }
   });
 
   test('gallery and awards have no section and no nav link while they hold nothing', async ({page}) => {
@@ -186,6 +321,8 @@ test.describe('portfolio page', () => {
       await expect(logo).toHaveAttribute('alt', /\S/);
       await expect(logo).toHaveAttribute('alt', /ლოგო$/);
     }
+    // the third card shows the KAYA wordmark, so its alt says KAYA (the card's visible name says KAYA Engineering)
+    await expect(logos.nth(2)).toHaveAttribute('alt', 'KAYA ლოგო');
     // no demo photo is left behind
     expect(await logos.evaluateAll((images) => images.map((img) => (img as HTMLImageElement).src))).toEqual([
       expect.stringContaining('/georgemerebashvili/logos/kaya.webp'),
@@ -201,6 +338,8 @@ test.describe('portfolio page', () => {
     await mark.scrollIntoViewIfNeeded();
     await expect.poll(() => mark.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
     await expect(mark).toHaveAttribute('alt', 'Sazeo ლოგო');
+    // it sits on the same light tile as the hero logos: its blue is only 2.57:1 on the dark-mode section
+    await expect(mark).toHaveCSS('background-color', 'rgb(246, 249, 252)');
   });
 
   test('starts in English when the site language cookie is "en"', async ({page, context, baseURL}) => {
@@ -304,15 +443,31 @@ test.describe('portfolio page on a phone', () => {
     await expect(page.locator('#storyCard')).toBeVisible();
     for (const {year} of YEARS) {
       await yearButton(page, year).click();
+      // measure only once the card shows THIS year (the title is visible for the previous year too)
+      await expect(page.locator('#storyCard strong').first()).toHaveText(String(year));
       await expect(page.getByTestId('story-title')).toBeVisible();
       const fit = await page.evaluate(() => {
         const root = document.documentElement;
-        const card = document.getElementById('storyCard')!.getBoundingClientRect();
-        return {scrollWidth: root.scrollWidth, clientWidth: root.clientWidth, left: card.left, right: card.right};
+        const panel = document.getElementById('storyCard')!;
+        const card = panel.getBoundingClientRect();
+        const band = panel.firstElementChild!.getBoundingClientRect();
+        const stamp = panel.querySelector('strong')!.getBoundingClientRect();
+        return {
+          scrollWidth: root.scrollWidth,
+          clientWidth: root.clientWidth,
+          left: card.left,
+          right: card.right,
+          yearIndent: stamp.left - band.left,
+          minHeight: getComputedStyle(panel).minHeight
+        };
       });
       expect(fit.scrollWidth, `year ${year}`).toBeLessThanOrEqual(fit.clientWidth + 1);
       expect(fit.left, `year ${year}`).toBeGreaterThanOrEqual(0);
       expect(fit.right, `year ${year}`).toBeLessThanOrEqual(fit.clientWidth + 1);
+      // the big year sits at the left edge of its band (20px padding), like the text below it, not centred
+      expect(fit.yearIndent, `year ${year}`).toBeLessThanOrEqual(24);
+      // no empty strip under a short card
+      expect(fit.minHeight, `year ${year}`).toBe('0px');
     }
   });
 
@@ -324,12 +479,24 @@ test.describe('portfolio page on a phone', () => {
       const logo = logos.nth(index);
       await logo.scrollIntoViewIfNeeded();
       await expect.poll(() => logo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
-      const inside = await logo.evaluate((img) => {
+      const drawn = await logo.evaluate((element) => {
+        const img = element as HTMLImageElement;
         const tile = img.closest('div')!.getBoundingClientRect();
         const box = img.getBoundingClientRect();
-        return box.left >= tile.left - 1 && box.right <= tile.right + 1 && box.top >= tile.top - 1 && box.bottom <= tile.bottom + 1;
+        // object-fit: contain draws the whole picture at the largest size that fits the box
+        const scale = Math.min(box.width / img.naturalWidth, box.height / img.naturalHeight);
+        return {
+          fit: getComputedStyle(img).objectFit,
+          inside: box.left >= tile.left - 1 && box.right <= tile.right + 1 && box.top >= tile.top - 1 && box.bottom <= tile.bottom + 1,
+          artworkWidth: img.naturalWidth * scale,
+          artworkHeight: img.naturalHeight * scale
+        };
       });
-      expect(inside, `logo ${index}`).toBe(true);
+      expect(drawn.fit, `logo ${index}`).toBe('contain');
+      expect(drawn.inside, `logo ${index}`).toBe(true);
+      // the artwork itself, not its box, is legible: the KAYA wordmark is ~88x14 here, the Sazeo mark ~48x48
+      expect(drawn.artworkWidth, `logo ${index}`).toBeGreaterThanOrEqual(40);
+      expect(drawn.artworkHeight, `logo ${index}`).toBeGreaterThanOrEqual(10);
     }
   });
 });

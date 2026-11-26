@@ -19,6 +19,14 @@ export const pick = (text: Bilingual, lang: Lang): string => text[lang];
 export const resolveText = (value: Bilingual | string, lang: Lang): string =>
   typeof value === 'string' ? value : value[lang];
 
+/**
+ * The `lang` attribute a resolved text needs: "ka" when the page is English but the text is
+ * Georgian-only (a plain string of the design, not a pair), so that a screen reader does not read it
+ * with an English voice (WCAG 3.1.2); nothing otherwise. Decided by the script of the text itself.
+ */
+export const langOfText = (text: string, lang: Lang): 'ka' | undefined =>
+  lang === 'en' && /[\u10A0-\u10FF\u1C90-\u1CBF]/.test(text) ? 'ka' : undefined;
+
 const bi = (ka: string, en: string): Bilingual => ({ka, en});
 
 /* ------------------------------------------------------------------ header */
@@ -67,7 +75,8 @@ export const COMPANIES: ReadonlyArray<{
   {
     name: 'KAYA Engineering',
     monogram: 'K',
-    alt: bi('KAYA Engineering ლოგო', 'KAYA Engineering logo'),
+    // the image is the KAYA wordmark; the card's visible name says "KAYA Engineering"
+    alt: bi('KAYA ლოგო', 'KAYA logo'),
     image: LOGOS.kaya
   }
 ];
@@ -115,7 +124,7 @@ const TIMELINE_DATA: Record<number, YearRecord> = {
     tag: 'SAZEO',
     directions: {
       'კომპანია': dir('შპს „ციფრული მართვის ტექნოლოგიები“ დაარსდა 2018 წელს.'),
-      'ბრენდის განვითარება': dir('DMT → Sazero → Sazeo. ეტაპების ზუსტი თარიღები დასაზუსტებელია.')
+      'ბრენდის განვითარება': dir('DMT → Sazero → Sazeo.')
     }
   },
   2023: {
@@ -149,7 +158,11 @@ export const YEAR_VALUES: readonly number[] = [
   ...new Set([...Object.keys(MILESTONES), ...Object.keys(TIMELINE_DATA)].map(Number))
 ].sort((a, b) => a - b);
 
-export const DEFAULT_YEAR = 2018;
+/**
+ * The year the page opens on: 2018 (the company's founding) while the strip offers it, otherwise
+ * the latest year, so that an edit of the years can never leave the page with no selected year.
+ */
+export const DEFAULT_YEAR: number = YEAR_VALUES.includes(2018) ? 2018 : YEAR_VALUES[YEAR_VALUES.length - 1];
 
 /** Record for a year of YEAR_VALUES. A milestone year without a record is its milestone label(s) and nothing else. */
 export function yearRecord(year: number): YearRecord {
