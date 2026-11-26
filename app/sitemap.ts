@@ -51,6 +51,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.5
+    },
+    {
+      url: `${base}/georgemerebashvili`,
+      lastModified: now,
+      changeFrequency: 'monthly',
+      priority: 0.6
     }
   ];
 

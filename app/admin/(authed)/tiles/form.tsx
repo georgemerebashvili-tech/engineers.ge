@@ -499,7 +499,7 @@ export function HeroAdsForm({initial, initialOwner = HERO_OWNER_DEFAULTS}: Props
               Live Preview
             </div>
           </div>
-          <HeroTreemap slots={previewSlots} owner={previewOwner} />
+          <HeroTreemap slots={previewSlots} owner={previewOwner} previewOnly />
         </section>
       </div>
 

@@ -95,8 +95,8 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       {
         id: 'story',
-        label: 'storyabout.me',
-        href: '/admin/story',
+        label: 'პორტფოლიო · storyabout.me',
+        href: '/georgemerebashvili',
         icon: Crown
       },
       {

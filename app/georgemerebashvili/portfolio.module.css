@@ -1,0 +1,984 @@
+/*
+ * /georgemerebashvili — the owner's portfolio design (ChatGPT export), ported from its style.css.
+ *
+ * Scoping. The design styled bare body/header/section/button/a/*, so every selector is re-rooted under
+ * .root and nothing here can reach the rest of the site (nor can the site's global element rules reach
+ * the page: this sheet is unlayered, so it also beats Tailwind's preflight).
+ *   - ids that are real anchors/hooks (#timeline, #gallery, #years, #yearViewport, #storyCard) stay as
+ *     :global(#id): the design's cascade leans on id specificity and the nav links need the real ids.
+ *   - `body.dark` became `html.dark`: the page's dark palette follows the SITE theme
+ *     (components/theme-provider.tsx toggles the `dark` class on <html>), see the dark block below.
+ *   - dropped as dead: rules for markup the design does not contain (.cycle*, .expertise-card*, ...)
+ *     and `#timeline #expertise{...}`, which matched nothing in the design (the nav link #expertise
+ *     pointed at no element). The five-rows block now carries that id, so that rule must stay dropped
+ *     or it would add padding the design never had.
+ */
+
+/* ---- Design tokens (the design's :root) + its former body rule ---- */
+.root {
+  --navy: #102743;
+  --navydark: #0a2039;
+  --ink: #102743;
+  --muted: #536780;
+  --orange: #ff7100;
+  --bg: #f1f5f9;
+  --card: #ffffff;
+  --stroke: #dde5ef;
+  --shadow: 0 18px 46px rgba(16,39,67,.08);
+  margin: 0;
+  color: var(--ink);
+  background: #fff;
+  /* --font-noto-georgian is set by next/font on this element (app/georgemerebashvili/font.ts) */
+  font-family: var(--font-noto-georgian), 'Noto Sans Georgian', 'DejaVu Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* the design never set these on body: browser defaults. The site sets html{font-size:13px;line-height:1.5}. */
+  font-size: 16px;
+  line-height: normal;
+  -webkit-font-smoothing: antialiased;
+}
+.root * { box-sizing: border-box; }
+/* the design's `*` rule never reached pseudo-elements, which stay content-box (the year dots are sized that way) */
+.root ::before, .root ::after { box-sizing: content-box; }
+
+/* ---- Browser defaults the design relied on and Tailwind's preflight (app/globals.css) zeroes ---- */
+.root h1, .root h2, .root h3, .root h4 { font-weight: 700; }
+.root p { margin: 1em 0; }
+.root button { padding: 1px 6px; color: #000; }
+
+.root button, .root a { font: inherit; }
+.root button { cursor: pointer; }
+.root a { color: inherit; }
+.root button:focus-visible, .root a:focus-visible { outline: 3px solid #ffa044; outline-offset: 3px; }
+.root section[id] { scroll-margin-top: 58px; }
+/* #expertise is the five-rows <div>, which section[id] does not reach */
+.root .fiveRows[id] { scroll-margin-top: 58px; }
+/* the dialog box takes focus when it opens; it is not a control, so it shows no ring */
+.root .modalBox:focus { outline: none; }
+.root .top {
+  height: 52px;
+  background: #0d263f;
+  border-bottom: 1px solid #34516c;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(18px,3.7vw,66px);
+  gap: 24px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+.root .brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  font-weight: 800;
+  font-size: 18px;
+  white-space: nowrap;
+  letter-spacing: -.35px;
+}
+.root .brandMark {
+  width: 21px;
+  height: 23px;
+  background: var(--orange);
+  transform: skewX(-26deg);
+  display: inline-block;
+  flex-shrink: 0;
+}
+.root .top nav { display: flex; gap: clamp(12px,1.7vw,30px); align-items: center; }
+.root .top nav a { font-size: 12px; text-decoration: none; white-space: nowrap; font-weight: 600; opacity: .94; }
+.root .top nav a:hover, .root .top nav a:focus-visible { color: #ff9c4c; }
+.root .headActions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+.root .headActions button { color: #fff; border: 0; background: none; font-size: 12px; font-weight: 750; padding: 7px 4px; }
+.root .headActions button.active { color: var(--orange); border-bottom: 2px solid var(--orange); }
+.root .hero { height: clamp(360px,29vw,475px); display: grid; grid-template-columns: 50% 50%; color: #fff; background: #08203c; }
+.root .heroPicture { position: relative; min-width: 0; overflow: hidden; background: #153552; }
+.root .heroPicture img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 34%;
+  filter: saturate(.85);
+}
+.root .heroPicture:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,rgba(2,23,45,.12),rgba(10,38,67,.26)),linear-gradient(0deg,rgba(9,31,55,.25),transparent 55%);
+}
+.root .heroCopy {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 22px clamp(30px,5.2vw,98px);
+  background: radial-gradient(ellipse at right top,#163a60,#09203b 80%);
+  min-width: 0;
+}
+.root .heroCopy h1 { font-size: clamp(35px,4.3vw,67px); line-height: 1.07; letter-spacing: -1.6px; margin: 0; font-weight: 850; }
+.root .heroSubtitle { font-size: clamp(13px,1vw,18px); margin: 13px 0 0; white-space: normal; }
+.root .orangeLine { width: 96px; height: 4px; background: var(--orange); margin: 20px 0 14px; }
+.root .heroCopy h2 { font-size: clamp(25px,2.65vw,41px); line-height: 1.24; margin: 0 0 22px; letter-spacing: -.6px; }
+.root .cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 20px;
+  border-radius: 9px;
+  border: 0;
+  background: var(--orange);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 750;
+  box-shadow: 0 7px 16px #0002;
+}
+.root .cta:hover { background: #f06600; }
+.root .timeline { background: var(--bg); padding: 32px clamp(20px,3.8vw,65px) 39px; }
+.root .timelineUpper {
+  display: grid;
+  grid-template-columns: 280px minmax(0,1fr);
+  gap: 30px;
+  align-items: end;
+  margin-bottom: 21px;
+}
+.root .timelineTitle h2 { font-size: clamp(31px,2.5vw,39px); margin: 0 0 10px; }
+.root .timelineTitle p { font-size: 15px; color: var(--muted); line-height: 1.55; margin: 12px 0 0; }
+.root .timelineTitle .orangeLine { width: 45px; margin: 12px 0; }
+.root .yearNavigation { display: flex; align-items: center; gap: 14px; min-width: 0; padding-bottom: 12px; }
+.root .yearSide {
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 3px 16px #10274312;
+  color: var(--navy);
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  font-size: 25px;
+  display: grid;
+  place-items: center;
+}
+.root .yearSide:hover { color: var(--orange); }
+.root .yearViewport { flex: 1; overflow-x: auto; scrollbar-width: none; scroll-behavior: smooth; min-width: 0; }
+.root .yearViewport::-webkit-scrollbar { display: none; }
+.root .years {
+  display: flex;
+  justify-content: space-between;
+  min-width: max-content;
+  position: relative;
+  border-bottom: 2px solid #98a9bc;
+  padding: 0 5px 18px;
+  gap: 10px;
+}
+.root .yearItem {
+  position: relative;
+  min-width: 85px;
+  border: 0;
+  background: transparent;
+  color: #465c75;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 6px 7px 7px;
+  white-space: nowrap;
+}
+.root .yearItem:after {
+  content: "";
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #788da5;
+  bottom: -24px;
+  left: calc(50% - 4.5px);
+  border: 2px solid var(--bg);
+}
+.root .yearItem.current { color: #fff; background: var(--orange); border-radius: 9px; box-shadow: 0 4px 13px #ff710044; }
+.root .yearItem.current:after {
+  width: 14px;
+  height: 14px;
+  background: white;
+  border: 4px solid var(--orange);
+  bottom: -27px;
+  left: calc(50% - 7px);
+}
+.root .storyPanel {
+  display: grid;
+  grid-template-columns: clamp(230px,25vw,360px) minmax(0,1fr);
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  border: 1px solid #e4e9f1;
+  min-height: 235px;
+}
+.root .storyVisual {
+  position: relative;
+  background: linear-gradient(135deg,#143c62,#091f38);
+  color: #fff;
+  padding: 25px 30px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+.root .storyVisual:before { content: '⌁'; color: #ffffff12; font-size: 190px; position: absolute; right: 12px; top: -65px; }
+.root .storyStamp {
+  display: inline-flex;
+  align-self: flex-start;
+  background: #ffffff21;
+  border: 1px solid #ffffff48;
+  border-radius: 30px;
+  font-size: 12px;
+  padding: 7px 12px;
+  position: relative;
+}
+.root .storyVisual strong {
+  font-size: clamp(66px,7vw,115px);
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: -3px;
+  position: relative;
+}
+.root .storyContent {
+  display: grid;
+  grid-template-columns: minmax(0,1.3fr) minmax(235px,1fr);
+  align-items: center;
+  padding: 30px 33px;
+  gap: 38px;
+}
+.root .storyDescription { min-width: 0; }
+.root .storyKicker { font-size: 14px; color: var(--orange); font-weight: 800; }
+.root .storyDescription h3 { font-size: clamp(21px,1.85vw,28px); margin: 9px 0 9px; }
+.root .storyDescription p { color: var(--muted); font-size: 15px; line-height: 1.75; margin: 0; }
+.root .demoNote { font-size: 12px; color: #8b704c; margin-top: 12px; }
+.root .directionPanel {
+  border-left: 1px solid var(--stroke);
+  padding-left: 29px;
+  min-height: 125px;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+}
+.root .directionPanel h4 { font-size: 14px; margin: 0; }
+.root .directionTags { display: flex; flex-wrap: wrap; gap: 8px; }
+.root .directionTags button {
+  background: #f2f5f9;
+  border: 1px solid #dce4ec;
+  padding: 8px 12px;
+  color: var(--ink);
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 750;
+  max-width: 100%;
+  text-align: left;
+}
+.root .directionTags button:hover { background: #fff0e4; border-color: #ffb77e; }
+.root .directionTags button:before { content: '▸'; color: var(--orange); margin-right: 6px; }
+.root .timelineHelp { text-align: right; color: #8492a4; font-size: 12px; margin: 10px 4px 0; }
+.root .sazeo {
+  display: grid;
+  grid-template-columns: 180px minmax(220px,1fr) minmax(290px,1.1fr) 260px;
+  gap: 29px;
+  align-items: center;
+  padding: 31px clamp(20px,3.8vw,65px);
+  background: #fff;
+}
+.root .sazeoLogo { font-size: 44px; font-weight: 900; letter-spacing: -2px; white-space: nowrap; }
+.root .sazeoLogo .slash {
+  display: inline-block;
+  background: var(--orange);
+  width: 25px;
+  height: 33px;
+  margin-right: 10px;
+  transform: skewX(-25deg);
+  vertical-align: -1px;
+}
+.root .sazeoFacts { font-size: 13px; line-height: 2.05; }
+.root .sazeoHighlights { border-left: 1px solid #bfcede; padding-left: 25px; font-size: 14px; line-height: 1.7; }
+.root .sazeoHighlights div { margin: 5px 0; }
+.root .sazeoHighlights div:before { content: '▶'; color: var(--orange); font-size: 11px; margin-right: 10px; }
+.root .sazeo img { display: block; width: 100%; max-height: 154px; object-fit: cover; border-radius: 10px; }
+.root .lower { padding: 50px clamp(20px,3.8vw,65px); background: var(--bg); }
+.root .lower.white { background: #fff; }
+.root .sectionHeading { font-size: 32px; margin: 0 0 10px; }
+.root .sectionSub { font-size: 14px; color: var(--muted); margin: 0 0 21px; }
+.root .galleryWrap { position: relative; }
+.root .galleryStrip {
+  display: flex;
+  gap: 17px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  padding: 8px 0 18px;
+  scrollbar-width: thin;
+}
+.root .galleryCard {
+  flex: 0 0 clamp(230px,27vw,360px);
+  background: #fff;
+  border: 1px solid #e0e7f1;
+  border-radius: 12px;
+  padding: 8px;
+  text-align: left;
+  color: var(--ink);
+  scroll-snap-align: start;
+  box-shadow: 0 4px 18px #0a203909;
+}
+.root .galleryCard img { display: block; width: 100%; height: 185px; object-fit: cover; border-radius: 7px; }
+.root .galleryCard span { display: block; padding: 12px 8px 8px; font-size: 14px; font-weight: 750; }
+.root .galleryControls { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.root .galleryControls button {
+  border: 1px solid #dce4ee;
+  background: #fff;
+  border-radius: 50%;
+  height: 36px;
+  width: 36px;
+  font-size: 23px;
+}
+.root .awardGrid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; }
+.root .awardCard { border: 1px solid var(--stroke); border-radius: 12px; background: #fff; padding: 25px; min-height: 160px; }
+.root .awardCard strong { display: block; font-size: 19px; margin-bottom: 12px; }
+.root .awardCard p { font-size: 14px; color: var(--muted); line-height: 1.5; }
+.root .demoPill {
+  font-size: 11px;
+  color: #a85900;
+  background: #fff2e7;
+  border-radius: 4px;
+  padding: 4px 7px;
+  display: inline-block;
+  font-weight: 750;
+}
+.root .contact { background: #0d263f; color: #fff; padding: 40px clamp(20px,3.8vw,65px); }
+.root .contact h2 { font-size: 31px; margin: 0 0 16px; }
+.root .contact a { font-size: 19px; color: #ff9140; text-decoration: none; font-weight: 750; }
+.root .contact p { font-size: 13px; color: #b8c6d6; }
+.root footer { background: #08192c; color: #9cacbf; font-size: 12px; padding: 15px clamp(20px,3.8vw,65px); }
+.root .modal { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; }
+.root .modalBg { position: absolute; inset: 0; background: rgba(5,20,38,.88); }
+.root .modalBox {
+  position: relative;
+  background: #fff;
+  color: #0e2844;
+  border-radius: 16px;
+  width: min(760px,100%);
+  max-height: 90vh;
+  overflow: auto;
+  padding: 32px;
+  box-shadow: 0 35px 110px #0007;
+}
+.root .modalBox h2 { font-size: 28px; margin: 10px 0 8px; }
+.root .modalBox p { color: #51647a; line-height: 1.7; }
+.root .close {
+  position: absolute;
+  right: 16px;
+  top: 12px;
+  background: #eef3f7;
+  border: 0;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 24px;
+}
+.root .modalGrid { display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 13px; margin-top: 20px; }
+.root .modalGrid img { width: 100%; height: 165px; object-fit: cover; border-radius: 9px; }
+.root .emptyPhoto { background: #f0f4f9; color: #61758f; border-radius: 9px; padding: 20px; font-size: 14px; }
+:global(html.dark) .root {
+  --ink: #ecf4ff;
+  --muted: #b7c8dd;
+  --bg: #10233b;
+  --card: #162a44;
+  --stroke: #38506b;
+  background: #10233b;
+  color: #e8f1ff;
+}
+:global(html.dark) .root .sazeo, :global(html.dark) .root .lower.white { background: #132941; }
+:global(html.dark) .root .storyPanel,
+:global(html.dark) .root .awardCard,
+:global(html.dark) .root .galleryCard,
+:global(html.dark) .root .modalBox {
+  background: #18324e;
+  color: #eff5ff;
+  border-color: #38506b;
+}
+:global(html.dark) .root .storyDescription p, :global(html.dark) .root .awardCard p { color: #b7c8dd; }
+:global(html.dark) .root .directionTags button,
+:global(html.dark) .root .yearSide,
+:global(html.dark) .root .galleryControls button {
+  background: #203a56;
+  color: #fff;
+  border-color: #45627d;
+}
+:global(html.dark) .root .yearItem:after { border-color: #10233b; }
+@media (max-width: 1250px) {
+  .root .top nav { gap: 12px; }
+  .root .top nav a { font-size: 11px; }
+  .root .brand { font-size: 16px; }
+  .root .sazeo { grid-template-columns: 180px 1fr 1.15fr; }
+  .root .sazeo img { display: none; }
+  .root .storyContent { gap: 22px; padding: 25px; }
+  .root .directionPanel { padding-left: 20px; }
+}
+@media (max-width: 950px) {
+  .root .top { gap: 12px; padding: 0 19px; }
+  .root .top nav { overflow-x: auto; max-width: 60vw; scrollbar-width: none; }
+  .root .top nav::-webkit-scrollbar { display: none; }
+  .root .headActions { gap: 5px; }
+  .root .hero { height: auto; min-height: 360px; }
+  .root .heroCopy { padding: 28px; }
+  .root .heroCopy h1 { font-size: clamp(33px,5vw,50px); }
+  .root .timelineUpper { grid-template-columns: 1fr; gap: 12px; }
+  .root .timelineTitle p { margin-bottom: 10px; }
+  .root .yearNavigation { padding-bottom: 5px; }
+  .root .storyPanel { grid-template-columns: 220px 1fr; }
+  .root .storyContent { grid-template-columns: 1fr; gap: 20px; }
+  .root .directionPanel { border-left: 0; border-top: 1px solid var(--stroke); padding: 16px 0 0; min-height: 0; }
+  .root .sazeo { grid-template-columns: 190px 1fr; gap: 15px; }
+  .root .sazeoHighlights { grid-column: 1/-1; border-left: 0; border-top: 1px solid var(--stroke); padding: 17px 0 0; }
+}
+@media (max-width: 650px) {
+  .root .top { height: auto; min-height: 52px; flex-wrap: wrap; padding: 9px 15px; gap: 6px; }
+  .root .brand { font-size: 15px; }
+  .root .top nav { order: 3; max-width: none; width: 100%; padding: 5px 0 2px; gap: 19px; }
+  .root .top nav a { font-size: 11px; }
+  .root .hero { display: flex; flex-direction: column; }
+  .root .heroPicture { height: 250px; order: 0; }
+  .root .heroCopy { order: 1; padding: 25px 24px 33px; }
+  .root .heroCopy h1 { font-size: 42px; }
+  .root .heroCopy h2 { font-size: 27px; }
+  .root .heroSubtitle { font-size: 13px; }
+  .root .timeline { padding: 27px 16px; }
+  .root .timelineTitle h2 { font-size: 34px; }
+  .root .yearNavigation { gap: 8px; }
+  .root .yearItem { min-width: 79px; font-size: 13px; }
+  .root .yearSide { width: 32px; height: 32px; }
+  .root .storyPanel { display: block; }
+  .root .storyVisual { min-height: 165px; padding: 20px; flex-direction: row; align-items: center; }
+  .root .storyVisual strong { font-size: 72px; }
+  .root .storyContent { padding: 22px; display: block; }
+  .root .storyDescription h3 { font-size: 21px; }
+  .root .directionPanel { margin-top: 20px; }
+  .root .sazeo { grid-template-columns: 1fr; padding: 28px 20px; }
+  .root .sazeoHighlights { grid-column: auto; }
+  .root .awardGrid { grid-template-columns: 1fr; }
+  .root .lower { padding: 35px 20px; }
+  .root .modalBox { padding: 24px; }
+  .root .timelineHelp { text-align: left; }
+}
+
+/*User revision: direct transition from hero into the timeline (no full-cycle row).*/
+.root .timeline { padding-top: 20px; padding-bottom: 38px; }
+.root .timelineUpper { align-items: center; margin-bottom: 16px; }
+.root .timelineTitle h2 { margin-bottom: 4px; }
+.root .timelineTitle .orangeLine { margin: 7px 0 8px; }
+.root .timelineTitle p { margin: 0; max-width: 330px; }
+.root .yearNavigation { align-self: center; padding-bottom: 3px; }
+@media (max-width: 950px) {
+  .root .timeline { padding-top: 22px; }
+  .root .timelineUpper { gap: 18px; }
+  .root .yearNavigation { width: 100%; }
+}
+@media (max-width: 650px) {
+  .root .timeline { padding-top: 24px; }
+  .root .timelineUpper { gap: 12px; }
+  .root .yearNavigation { margin-top: 2px; }
+}
+
+/*2026 portfolio refinements*/
+.root .hero { height: clamp(480px,45vw,630px); min-height: 480px; grid-template-columns: 50% 50%; overflow: hidden; }
+.root .heroPicture { height: 100%; min-height: 0; overflow: hidden; background: #1c2838; position: relative; }
+.root .heroPicture img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 40%;
+  display: block;
+  filter: none;
+  transform: none;
+}
+.root .heroPicture:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,transparent 70%,#0d284522);
+  pointer-events: none;
+}
+.root .heroCopy {
+  padding: clamp(22px,3.5vw,64px) clamp(24px,4.5vw,75px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+.root .heroCopy h1 { font-size: clamp(36px,3.7vw,63px); line-height: 1.05; margin: 0 0 7px; }
+.root .heroCopy h2 { font-size: clamp(20px,2.15vw,35px); white-space: normal; line-height: 1.3; max-width: 670px; }
+.root .heroCopy .cta { align-self: flex-start; }
+.root .companyGroup { margin-top: clamp(21px,3.2vw,48px); width: 100%; max-width: 690px; }
+.root .companyTitle { font-size: 11px; letter-spacing: .06em; color: #9eb7d1; font-weight: 650; margin-bottom: 10px; }
+.root .companyCards { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.root .companyCard {
+  border: 1px solid #58718b;
+  background: #ffffff0b;
+  border-radius: 12px;
+  min-height: 77px;
+  padding: 12px 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #fff;
+  min-width: 0;
+}
+.root .companyCard.selected { border-color: #ff7a00; background: #ff7a0016; }
+.root .companyCard strong { font-size: clamp(11px,.96vw,15px); line-height: 1.25; overflow-wrap: anywhere; }
+.root .companyMonogram {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  background: #ff7900;
+  color: #fff;
+  font-weight: 900;
+  border-radius: 7px;
+}
+.root .timeline { padding-top: 32px; padding-bottom: 30px; }
+.root .timelineUpper { grid-template-columns: 230px minmax(0,1fr); gap: 28px; }
+.root .yearNavigation { min-width: 0; width: 100%; gap: 10px; }
+.root .yearViewport { overscroll-behavior-x: contain; scroll-snap-type: x proximity; }
+.root .years {
+  justify-content: flex-start;
+  padding-left: calc(50% - 49px);
+  padding-right: calc(50% - 49px);
+  gap: 28px;
+  border-bottom: 2px solid #97a9be;
+}
+.root .yearItem {
+  flex: 0 0 96px;
+  min-width: 96px;
+  scroll-snap-align: center;
+  transition: background .22s,color .22s,transform .22s;
+}
+.root .yearItem.current { transform: translateY(-3px); }
+.root .expertiseSection { background: #fff; padding: 52px clamp(18px,3.8vw,65px) 62px; overflow: hidden; }
+.root .expertiseCarousel { display: flex; align-items: center; gap: 7px; max-width: 1600px; margin: auto; }
+.root .expertiseNav {
+  border: 0;
+  background: #102944;
+  color: white;
+  border-radius: 50%;
+  height: 42px;
+  width: 42px;
+  font-size: 28px;
+  flex: none;
+  cursor: pointer;
+  box-shadow: 0 3px 15px #07182c26;
+  z-index: 5;
+}
+.root .expertiseNav:hover { background: #ff7600; }
+.root .expertiseStage {
+  position: relative;
+  width: 100%;
+  height: 342px;
+  overflow: hidden;
+  isolation: isolate;
+  touch-action: pan-y;
+}
+.root .expertiseDots { display: flex; justify-content: center; gap: 9px; margin-top: 12px; }
+.root .expertiseDot {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border-radius: 20px;
+  border: 0;
+  background: #b5c6d6;
+  cursor: pointer;
+  transition: width .2s;
+}
+.root .expertiseDot.active { width: 32px; background: #ff7900; }
+:global(html.dark) .root .expertiseSection { background: #132941; }
+@media (max-width: 1050px) {
+  .root .hero { height: auto; min-height: 490px; }
+  .root .heroCopy { padding: 25px; }
+  .root .heroCopy h2 { font-size: 24px; }
+  .root .companyGroup { margin-top: 19px; }
+  .root .companyCard { padding: 7px; min-height: 59px; }
+  .root .companyMonogram { width: 22px; height: 22px; }
+}
+@media (max-width: 700px) {
+  .root .hero { display: flex; flex-direction: column; min-height: 0; height: auto; }
+  .root .heroPicture { height: auto; aspect-ratio: 1.13/1; max-height: 420px; min-height: 0; }
+  .root .heroPicture img { object-position: 50% 29%; }
+  .root .heroCopy { padding: 27px 21px 34px; }
+  .root .heroCopy h1 { font-size: 39px; }
+  .root .heroCopy h2 { font-size: 25px; }
+  .root .companyCards { gap: 6px; }
+  .root .companyCard { flex-direction: column; align-items: flex-start; gap: 4px; min-height: 72px; }
+  .root .companyCard strong { font-size: 10px; }
+  .root .companyTitle { font-size: 10px; }
+  .root .timelineUpper { grid-template-columns: 1fr; gap: 12px; }
+  .root .timelineTitle h2 { font-size: 31px; }
+  .root .yearViewport { width: 100%; }
+  .root .years { gap: 8px; padding-left: calc(50% - 44px); padding-right: calc(50% - 44px); }
+  .root .yearItem { flex-basis: 88px; min-width: 88px; }
+  .root .timeline { padding-top: 24px; }
+  .root .expertiseSection { padding: 40px 13px 44px; }
+  .root .expertiseStage { height: 342px; }
+  .root .expertiseNav { width: 31px; height: 31px; font-size: 22px; }
+  .root .expertiseCarousel { gap: 0; }
+}
+
+/*Compact timeline and five-across discipline carousel*/
+.root :global(#storyCard), .root .timelineHelp { display: none !important; }
+.root :global(#timeline) { padding-top: 22px; padding-bottom: 32px; }
+.root :global(#timeline) .timelineUpper { margin-bottom: 14px; }
+.root :global(#timeline) .expertiseSection { background: transparent; padding: 9px 0 0; max-width: 100%; overflow: hidden; }
+.root :global(#timeline) .expertiseCarousel { width: 100%; max-width: none; gap: 11px; }
+.root :global(#timeline) .expertiseStage { height: 288px; overflow: hidden; }
+.root :global(#timeline) .expertiseNav { height: 39px; width: 39px; }
+.root :global(#timeline) .expertiseDots { margin-top: 5px; }
+@media (max-width: 750px) {
+  .root :global(#timeline) .expertiseSection { padding-top: 5px; }
+  .root :global(#timeline) .expertiseStage { height: 315px; }
+  .root :global(#timeline) .expertiseCarousel { gap: 2px; }
+  .root :global(#timeline) .expertiseNav { height: 32px; width: 32px; }
+}
+
+/*Company photo cards; same content across desktop and mobile*/
+.root .companyCards { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; align-items: stretch; }
+.root .companyCard {
+  min-width: 0;
+  height: auto;
+  min-height: 134px !important;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 7px !important;
+  gap: 8px !important;
+  overflow: hidden;
+  border-radius: 12px;
+}
+.root .companyThumb { height: 82px; width: 100%; overflow: hidden; border-radius: 7px; background: #23405b; }
+.root .companyThumb img { height: 100%; width: 100%; object-fit: cover; display: block; transition: transform .3s ease; }
+.root .companyCard:hover .companyThumb img { transform: scale(1.035); }
+.root .companyCard .companyMonogram { display: none; }
+.root .companyCard strong {
+  font-size: clamp(10px,1vw,14px) !important;
+  line-height: 1.3;
+  min-height: 26px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: auto;
+}
+.root .heroCopy { padding-top: 20px; padding-bottom: 20px; }
+.root .heroCopy h1 { font-size: clamp(34px,3.5vw,61px); }
+.root .heroCopy h2 { font-size: clamp(19px,2vw,32px); }
+.root .companyGroup { margin-top: clamp(14px,2vw,28px); }
+
+/*Gallery thumbnails always stay contained in their own cards*/
+.root :global(#gallery) .galleryStrip {
+  display: flex;
+  gap: 15px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 8px;
+  align-items: stretch;
+  padding: 8px 0 16px;
+}
+.root :global(#gallery) .galleryCard {
+  flex: 0 0 clamp(220px,30%,350px);
+  min-width: 0;
+  padding: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: left;
+  scroll-snap-align: start;
+  overflow: hidden;
+  border-radius: 13px;
+  box-sizing: border-box;
+}
+.root :global(#gallery) .galleryPhoto { width: 100%; height: 190px; border-radius: 9px; overflow: hidden; background: #e5edf5; }
+.root :global(#gallery) .galleryPhoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform .3s ease;
+}
+.root :global(#gallery) .galleryCard:hover img { transform: scale(1.04); }
+.root :global(#gallery) .galleryCard span { display: block; padding: 0 5px 6px; font-weight: 750; white-space: normal; }
+@media (max-width: 1050px) {
+  .root .heroCopy { padding: 18px 23px; }
+  .root .companyThumb { height: 65px; }
+  .root .companyCard { min-height: 113px !important; }
+  .root .companyCard strong { font-size: 11px !important; }
+  .root .companyGroup { margin-top: 14px; }
+  .root .heroCopy h1 { font-size: clamp(34px,4vw,48px); }
+  .root .heroCopy h2 { font-size: clamp(20px,2.4vw,27px); }
+}
+@media (max-width: 700px) {
+  .root .companyCards { gap: 6px; }
+  .root .companyCard { padding: 5px !important; min-height: 106px !important; }
+  .root .companyThumb { height: 64px; }
+  .root .companyCard strong { font-size: 10px !important; min-height: 28px; padding: 0 2px; }
+  .root :global(#gallery) .galleryCard { flex-basis: 82%; max-width: 350px; }
+  .root :global(#gallery) .galleryPhoto { height: 210px; }
+}
+
+/*Five distinct discipline cards: heading on first row, fixed canonical order*/
+
+/*Five full-width slides, each containing exactly five direction cards.
+   Original composition height: 288px; new height: 173px (-40%).*/
+.root :global(#timeline) .expertiseStage {
+  height: 173px !important;
+  min-height: 173px;
+  overflow: hidden !important;
+  width: 100%;
+  border-radius: 12px;
+}
+.root :global(#timeline) .expertiseCarousel { max-width: 100%; gap: 8px; }
+.root :global(#timeline) .expertiseSection { padding: 4px 0 0 !important; }
+.root :global(#timeline) .expertiseDots { margin-top: 8px; }
+.root .fullSlideRail {
+  display: flex;
+  width: 500%;
+  height: 100%;
+  transition: transform .52s cubic-bezier(.2,.8,.2,1);
+  will-change: transform;
+}
+.root .fullSlide { flex: 0 0 20%; width: 20%; height: 100%; padding: 5px 3px; box-sizing: border-box; overflow: hidden; }
+.root .fullSlideFive {
+  display: grid;
+  grid-template-columns: repeat(5,minmax(0,1fr));
+  align-items: center;
+  gap: 12px;
+  height: 100%;
+  padding: 0 6px;
+  box-sizing: border-box;
+}
+.root .fullDirectionCard {
+  height: 142px;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 7px;
+  padding: 13px 14px;
+  border: 1px solid #d8e4f0;
+  border-radius: 13px;
+  background: linear-gradient(135deg,#fff,#f1f6fb);
+  color: #102844;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 5px 16px #0d2c4610;
+  transition: transform .3s,border-color .3s;
+  overflow: hidden;
+}
+.root .fullDirectionCard.centered {
+  height: 162px;
+  background: #fff;
+  border: 1.5px solid #ff7a0b;
+  transform: scale(1.025);
+  box-shadow: 0 8px 22px #153c601a;
+}
+.root .fullDirectionCard strong {
+  display: block;
+  font-size: clamp(12px,1.2vw,17px);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  order: 0;
+}
+.root .fullDirectionIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #e7f0fa;
+  color: #0b2948;
+  font-size: 18px;
+  order: 1;
+}
+.root .fullDirectionCard.centered .fullDirectionIcon { background: #fff0e4; }
+.root .fullDirectionCard p {
+  font-size: clamp(10px,.76vw,11px);
+  line-height: 1.35;
+  color: #5d7390;
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  order: 2;
+}
+:global(html.dark) .root .fullDirectionCard { background: #233b55; color: #fff; border-color: #415b78; }
+:global(html.dark) .root .fullDirectionCard p { color: #c8d4e0; }
+:global(html.dark) .root .fullDirectionCard.centered { border-color: #ff7a0b; }
+@media (max-width: 700px) {
+  .root :global(#timeline) .expertiseStage { height: 173px !important; min-height: 173px; }
+  .root .fullSlideFive { display: flex; justify-content: center; gap: 0; padding: 0 3px; }
+  .root .fullDirectionCard { display: none; }
+  .root .fullDirectionCard.centered { display: flex; width: min(100%,350px); height: 160px; transform: none; }
+  .root .fullDirectionCard strong { font-size: 18px; }
+  .root .fullDirectionCard p { font-size: 12px; -webkit-line-clamp: 3; }
+}
+
+/*Timeline: centered active year, enough scroll room at both ends.*/
+.root :global(#yearViewport) { scroll-behavior: smooth; overflow-x: auto; min-width: 0; }
+.root :global(#years) {
+  justify-content: flex-start !important;
+  gap: clamp(9px,1.6vw,25px) !important;
+  padding-left: max(8px,calc((100% - 96px)/2)) !important;
+  padding-right: max(8px,calc((100% - 96px)/2)) !important;
+  width: max-content;
+  min-width: 100%;
+  box-sizing: border-box;
+}
+.root :global(#years) .yearItem { flex: 0 0 96px; min-width: 96px; box-sizing: border-box; text-align: center; }
+
+/*Avoid cutting portrait subjects off. Keep source aspect ratio.*/
+.root .hero { height: clamp(480px,38vw,620px); grid-template-columns: minmax(0,42%) minmax(0,58%); }
+.root .heroPicture { display: flex; align-items: center; justify-content: center; background: #10253d; }
+.root .heroPicture img { width: 100%; height: 100%; object-fit: contain; object-position: center center; filter: none; }
+@media (max-width: 950px) {
+  .root .hero { height: auto; min-height: 430px; grid-template-columns: 42% 58%; }
+}
+@media (max-width: 700px) {
+  .root .hero { display: flex; flex-direction: column; height: auto; min-height: 0; }
+  .root .heroPicture { height: auto; aspect-ratio: 1120/1366; max-height: none; }
+  .root .heroPicture img { width: 100%; height: 100%; object-fit: contain; }
+  .root :global(#years) .yearItem { flex-basis: 84px; min-width: 84px; }
+  .root :global(#years) {
+    padding-left: max(8px,calc((100% - 84px)/2)) !important;
+    padding-right: max(8px,calc((100% - 84px)/2)) !important;
+  }
+}
+
+/*Corrected requirements: visible mission phrase and ONE carousel of FIVE whole slides.*/
+.root .futureStatement {
+  font-size: clamp(16px,1.55vw,26px);
+  font-weight: 750;
+  line-height: 1.38;
+  color: #ff8a25;
+  margin: 6px 0 22px;
+  letter-spacing: .01em;
+}
+.root .heroCopy { overflow: hidden; }
+.root .companyCards { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; width: 100%; }
+.root .companyCard { min-width: 0; }
+.root .companyCard strong { overflow-wrap: anywhere; }
+
+/*Five independently selectable full slides; each slide is its own five-card composition.*/
+.root :global(#timeline) .expertiseStage { height: 184px; min-height: 184px; }
+.root :global(#timeline) .fullSlide { height: 100%; padding: 2px 4px; }
+.root :global(#timeline) .fullSlideFive { height: 100%; gap: 10px; }
+.root :global(#timeline) .fullDirectionCard { height: 126px; padding: 10px 12px; gap: 5px; }
+.root :global(#timeline) .fullDirectionCard.centered { height: 145px; }
+.root :global(#timeline) .fullDirectionCard p { font-size: 11px; -webkit-line-clamp: 3; }
+.root :global(#timeline) .fullDirectionIcon { width: 26px; height: 26px; font-size: 15px; }
+.root :global(#timeline) .directionContext { font-weight: 800; font-size: 13px; min-height: 22px; color: #163756; }
+.root :global(#timeline) .expertiseDots { margin-top: 3px; }
+@media (max-width: 700px) {
+  .root .heroCopy { padding: 27px 22px; }
+  .root .futureStatement { font-size: 18px; margin-bottom: 18px; }
+  .root .companyCards { gap: 6px; }
+  .root .companyCard { padding: 5px; }
+  .root :global(#timeline) .expertiseStage { height: 184px !important; min-height: 184px !important; }
+  .root :global(#timeline) .fullSlideFive { display: flex; justify-content: center; gap: 0; }
+  .root :global(#timeline) .fullDirectionCard { display: none; }
+  .root :global(#timeline) .fullDirectionCard.centered { display: flex; width: min(100%,340px); height: 154px; }
+  .root :global(#timeline) .fullDirectionCard strong { white-space: normal; overflow: visible; font-size: 17px; }
+  .root :global(#timeline) .fullDirectionCard p { font-size: 12px; }
+}
+
+/*Career milestones on their actual calendar years; parallel paths at age 18.*/
+.root .years { border-bottom: 0 !important; padding-bottom: 90px !important; align-items: flex-start; }
+.root .years::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 43px;
+  height: 2px;
+  background: #98a9bc;
+  pointer-events: none;
+}
+.root .yearItem { min-height: 33px; overflow: visible; }
+.root .yearItem:after, .root .yearItem.current:after { top: 39px !important; bottom: auto !important; }
+.root .milestoneIcons {
+  position: absolute;
+  z-index: 2;
+  top: 62px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 3px;
+  justify-content: center;
+  white-space: nowrap;
+}
+.root .milestonePill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: #fff;
+  border: 1px solid #cdd8e6;
+  box-shadow: 0 2px 5px #0b294415;
+  font-size: 17px;
+  cursor: help;
+}
+.root .milestonePill, .root .yearItem.current .milestonePill { color: #111 !important; background: #fff !important; }
+:global(html.dark) .root .milestonePill { background: #fff !important; color: #111 !important; border-color: #54708b; }
+@media (max-width: 650px) {
+  .root .milestonePill { width: 27px; height: 27px; font-size: 15px; }
+  .root .years { padding-bottom: 84px !important; }
+}
+
+/*Five stacked, independently controlled complete carousels*/
+.root :global(#timeline) .fiveRows { display: flex; flex-direction: column; gap: 13px; margin-top: 16px; }
+.root :global(#timeline) .expertiseRow { padding: 6px 0 10px; border-bottom: 1px solid #dce5ef; }
+.root :global(#timeline) .expertiseRow:last-child { border-bottom: 0; }
+.root :global(#timeline) .expertiseRow .expertiseStage { height: 191px; }
+.root :global(#timeline) .expertiseRow .expertiseCarousel { gap: 8px; }
+.root :global(#timeline) .expertiseRow .fullDirectionCard { height: 128px; }
+.root :global(#timeline) .expertiseRow .fullDirectionCard.centered { height: 150px; }
+.root :global(#timeline) .expertiseRow .directionContext { margin-bottom: 0; font-size: 12px; }
+.root :global(#timeline) .expertiseRow .expertiseDots { margin-top: 2px; }
+:global(html.dark) .root :global(#timeline) .expertiseRow { border-color: #3e5368; }
+@media (max-width: 700px) {
+  .root :global(#timeline) .fiveRows { gap: 14px; }
+  .root :global(#timeline) .expertiseRow .expertiseStage { height: 187px; }
+  .root :global(#timeline) .expertiseRow .fullSlideFive { display: flex; justify-content: center; gap: 0; }
+  .root :global(#timeline) .expertiseRow .fullDirectionCard { display: none; }
+  .root :global(#timeline) .expertiseRow .fullDirectionCard.centered {
+    display: flex;
+    width: min(100%,350px);
+    max-width: 100%;
+    height: 150px;
+    transform: none;
+    flex: none;
+  }
+  .root :global(#timeline) .expertiseRow .expertiseCarousel { gap: 4px; }
+}
+
+/* ---- Dark contrast fixes (deviation from the design, dark mode only) ----
+ * The design's dark block never reached these three: #directionContext (its intended rule) matches no
+ * element because the ids carry a digit, and .year-item / .modal-box p have no dark value at all.
+ * Values are the design's own dark palette (#c6d2df from the dead rule, --muted dark = #b7c8dd). */
+:global(html.dark) .root :global(#timeline) .directionContext { color: #c6d2df; }
+:global(html.dark) .root .yearItem { color: #b7c8dd; }
+:global(html.dark) .root .yearItem.current { color: #fff; }
+:global(html.dark) .root .modalBox p { color: #b7c8dd; }
+
+/* ---- Ported-image sizing (the design's <img> had no width/height attributes; next/image writes them) ---- */
+.root .sazeo img { height: auto; }
