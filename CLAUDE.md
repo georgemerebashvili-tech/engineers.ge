@@ -80,6 +80,21 @@ User-მა მოგცა **სრული autonomous execution** უფლ�
 
 ---
 
+## 🔐 Auth gates live in `proxy.ts` — never in a layout alone (persistent · 2026-11-27)
+
+- A layout `redirect()` is **not** an auth gate: layout and page render in parallel, and the page's server data streams
+  in the RSC payload anyway (`curl -H 'RSC: 1' /admin/<page>` with no cookie returned the page content in production
+  until 27.11.2026). Every protected section is gated in `proxy.ts` (or inside the page / data function itself).
+- Each product signs its sessions with its OWN key. The admin session key is HKDF-derived from `AUTH_SECRET`
+  (`lib/admin-session-token.ts`) and requires `aud` + `scope` + `sub`; never verify one product's token with another's key.
+- Locked by `tests/e2e/admin-auth.spec.ts` (mutation-tested). Details: `docs/DECISIONS.md` 2026-11-27.
+
+## 🎨 `/georgemerebashvili` — the owner's own design (intentional deviation · 2026-11-27)
+
+The portfolio page is a 1:1 port of the owner-supplied HTML design: standalone route outside `(withSidebar)`, its own
+palette (CSS variables on the page root) and Noto Sans Georgian. `docs/DESIGN_RULES.md` does not apply to this page;
+content changes only on the owner's word (`docs/TODO.md` → „პორტფოლიო … შესავსები").
+
 ## პრიორიტეტი (pipeline)
 
 1. მთავარი გვერდი (ბანერი rotator) + admin upload.

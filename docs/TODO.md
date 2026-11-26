@@ -8,6 +8,13 @@
 
 ---
 
+## 🟡 პორტფოლიო `/georgemerebashvili` — owner-ის შესავსები (2026-11-27)
+- [ ] 2026-11-27 — კომპანიების ბარათებზე წერია „KAIA“ და „KAIA Engineering“ — სწორია, თუ „KAYA“? (owner)
+- [ ] 2026-11-27 — წლების ზოლი: დადასტურებულია მხოლოდ 2018 (კომპანია) და 2023 (MVP); სხვა წლები „DEMO · შესავსებია“ (owner-ის ბიოგრაფია)
+- [ ] 2026-11-27 — გალერეის 3 სადემონსტრაციო ფოტო, ჯილდოები/სერტიფიკატები, ტელეფონი და სოც. ქსელები — შესავსებია (owner)
+- [ ] 2026-11-27 — დიზაინში წლის „ისტორიის ბარათი“ დამალულია (`display:none`) — წელზე დაჭერა მხოლოდ ნიშნულს ამოძრავებს. ჩავრთოთ? (owner)
+- [ ] 2026-11-27 — მთავარ გვერდზე owner-ის tile-ზე სტოკ ფოტოა (Unsplash), არა owner-ის — ჩავანაცვლოთ პორტფოლიოს ფოტოთი (`hero_owner.image_url`, prod data — owner yes საჭიროა)
+
 ## 🔴 AHU calc — admin catalog + wizard reorder (in-progress 2026-05-07)
 
 **Architecture:** AHU wizard = selector over admin catalog (real models, real components, real ΔP), არა აბსტრაქტული formula. ცხრილები → admin-ში; wizard ამოარჩევს airflow + flow-type-ის მიხედვით.
@@ -65,7 +72,7 @@
 
 ## 🟢 audit.sazeo workspace — done (2026-04-22)
 
-Scaffold: `/audit.sazeo` live. Left sidebar → 3 groups (Blueprints / Reports / Decisions). Auth-gated (`/admin` redirect). Content rendered via iframe.
+Scaffold: `/audit.sazeo` live. Left sidebar → 3 groups (Blueprints / Reports / Decisions). Auth-gated since 2026-11-27 (`proxy.ts` gate → `/admin`; until then it was publicly readable, incl. `public/audit.sazeo/*.html`). Content rendered via iframe.
 
 შესრულებული:
 - [x] 2026-04-22 — Blueprints → IoT BMS — Infrastructure (28 layer `l1`–`l28` sub-item-ით, #anchor navigation).
@@ -149,7 +156,7 @@ Phase 3 shipped 2026-04-21: event detail modal on circle/card click (hero image 
 - [x] 2026-04-21 — **Admin shortcut on timeline modal** — `getSession()` wired through `Hero → HeroTreemap → StoryTimelineModal` as `isAdmin` prop; if admin session → show ✎ რედაქტირება link in modal header (md+ only) pointing to `/admin/story`. (done 2026-04-21)
 
 Remaining:
-- [ ] 2026-04-21 — **Real event data** — user-ი შეავსებს რეალურ წლებს/ტექსტებს `/admin/story`-ზე; placeholder 5 event-ი გადაიწეროს.
+- [x] 2026-04-21 — ~~**Real event data** — `/admin/story`~~ *(obsolete 2026-11-27: `/admin/story` and the timeline modal were removed; the owner's biography/timeline now lives on `/georgemerebashvili`)*
 
 ---
 
@@ -281,7 +288,7 @@ Formula audit (2026-04-21): core EN 12831 formulas (`Qh = U·A·ΔT·f·f_tb`, `
 
 ## 🟡 Auth & Session
 
-- [x] 2026-04-21 — Admin password recovery via email (`ADMIN_RECOVERY_EMAIL=g_merebashvili@yahoo.com`) — `/admin/forgot` → email link → `/admin/reset?token=…`. Migration `0026_admin_password_reset.sql`. Requires prod env: `ADMIN_RECOVERY_EMAIL`, `RESEND_API_KEY`, `VERCEL_TOKEN`, `VERCEL_PROJECT_ID` + migration applied on Supabase. *(done 2026-04-21)*
+- [x] 2026-04-21 — Admin password recovery via email (`/admin/forgot` → `/admin/reset?token=…`, Vercel-API env PATCH) — **SUPERSEDED 2026-11-27**: it never worked in production (no `ADMIN_RECOVERY_EMAIL`, no `RESEND_API_KEY`, no `VERCEL_TOKEN`, migration 0026 never applied) and was replaced by the e-mail magic link — see DECISIONS 2026-11-27.
 - [x] 2026-04-18 — Admin login "დამახსოვრება" checkbox (username localStorage) *(done 2026-04-18)*
 - [ ] 2026-04-18 — Admin login credentials → Supabase-based (currently hardcoded env vars per PRD). გადავწყვიტოთ: დავტოვოთ env-ში (მფლობელი ერთადერთი) თუ გადავიტანოთ Supabase-ზე (extensibility)?
 - [ ] 2026-04-18 — "Sign in with Google/email" — ვიზიტორებისთვის, რომ პროექტები შეინახონ (Supabase Auth)
@@ -336,8 +343,8 @@ Formula audit (2026-04-21): core EN 12831 formulas (`Qh = U·A·ΔT·f·f_tb`, `
 - [ ] 2026-04-18 — Migration `0010` გაშვება Supabase project-ზე
 - [ ] 2026-04-18 — Migration `0011_referral_verification.sql` გაშვება — ref_code auto-gen, email_verify_tokens, verified_engineer, disposable_email/fraud_score ველები, users_review_queue view
 - [ ] 2026-04-18 — Migration `0009_admin_editable_copy.sql` გაშვება — share-bar visibility/intro_text, donation heading/description, ad_text, per-platform share URLs
-- [ ] 2026-04-18 — `RESEND_API_KEY` env var-ი (email verification links გაგზავნისთვის)
-- [ ] 2026-04-18 — `CRON_SECRET` env var-ი Vercel-ზე (cron auth-ისთვის)
+- [ ] 2026-04-18 — `RESEND_API_KEY` env var-ი (email verification links გაგზავნისთვის) — 🔴 2026-11-27: ადმინის მეილით შესვლასაც ეს სჭირდება (`ADMIN_RECOVERY_EMAIL=ceo@sazeo.io` უკვე დაყენებულია); owner-მა ჯერ პაროლი აირჩია. Resend-ის სატესტო გამგზავნი მხოლოდ ანგარიშის საკუთარ მისამართზე აგზავნის → ანგარიში ceo@sazeo.io-ით, ან დომენის დადასტურება.
+- [ ] 2026-04-18 — `CRON_SECRET` env var-ი Vercel-ზე (cron auth-ისთვის) — 2026-11-27: `lib/cron-auth.ts` უკვე მზადაა; სანამ ცვლადი არ დაყენდება, `x-vercel-cron: 1` header-ით ნებისმიერს შეუძლია cron-ების გაშვება (ზიანი მცირეა: იგივეს აკეთებენ, რასაც განრიგით).
 - [x] 2026-04-18 — `/api/register` update — `source`, `ref_code`, `interests` ველების ჩაწერა (`eng_ref` cookie + body `ref`-იდან). Ref attribution + disposable-email ბლოკი + email verification token. *(done 2026-04-18)*
 - [ ] 2026-04-18 — `project_count` — როცა user save-ავს `calc_projects`-ში, trigger ან nightly sum-ით განვაახლო
 - [x] 2026-04-18 — RegisterPromptModal — interests multi-select + ref_code ავტო-ამოკითხვა cookie-დან *(done 2026-04-19 — 11 interest chip-ები (HVAC/ventilation/electrical/fire-safety/… ქართული label-ებით, max 12), `interests` ველი `/api/register` body schema-ში + `createUser()` persists to `users.interests` text[]. ref_code API-მ უკვე `eng_ref` cookie fallback-ით კითხულობდა, client-side explicit პასვაც აღარ საჭიროა.)*
